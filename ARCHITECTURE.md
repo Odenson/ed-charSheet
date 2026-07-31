@@ -261,9 +261,11 @@ just `character.json`.
   data/
     character.json    # Chakka
   rules/
-    steps.json talents.json disciplines.json races.json …
-  tools/
-    import-xlsx.mjs   # one-off: convert Chakka-v7.13.xlsx → character.json + rules/*.json
+    steps.json talents.json disciplines.json races.json …  # hand-curated
+  docs/
+    EFFECT-TAXONOMY.md   # controlled vocabulary for rule effects
+  tools/archive/
+    import-xlsx.mjs   # ARCHIVED bootstrap importer (provenance only; not run)
   ARCHITECTURE.md
 ```
 
@@ -271,9 +273,11 @@ just `character.json`.
 
 ## 9. Delivery phases
 
-- **Phase 0 — Importer.** Script that reads `Chakka-v7.13.xlsx` and emits
-  `character.json` + `rules/*.json`. Gives real data to build against and a
-  repeatable path if the sheet changes.
+- **Phase 0 — Importer.** *(Complete, now archived.)* A one-off script read
+  `Chakka-v7.13.xlsx` and emitted `character.json` + `rules/*.json` to bootstrap
+  real data. Those JSON files are now the source of truth and are hand-maintained
+  per `docs/EFFECT-TAXONOMY.md`; the importer lives in `tools/archive/` for
+  provenance and is no longer run.
 - **Phase 1 — Read-only stat display.** `index.html` + store + `stats-view`.
   Loads `character.json`, shows attributes/values/steps, health, karma,
   disciplines. *Hostable on GitHub Pages immediately.*

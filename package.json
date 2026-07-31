@@ -3,11 +3,6 @@
   "version": "0.1.0",
   "description": "Earthdawn character sheet — static, GitHub-Pages-hosted viewer and rules engine",
   "type": "module",
-  "scripts": {
-    "import": "node tools/import-xlsx.mjs Chakka-v7.13.xlsx"
-  },
   "license": "GPL-3.0",
-  "devDependencies": {
-    "xlsx": "^0.18.5"
-  }
+  "private": true
 }

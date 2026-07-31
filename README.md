@@ -8,8 +8,9 @@ It starts as a simple stat display and grows into a small rules engine, modelled
 on a long-running spreadsheet version of the character that had most of the game
 logic already built in.
 
-> **Status:** early development. Phase 0 (data importer) is complete; the web UI
-> is next. See the [roadmap](#roadmap).
+> **Status:** early development. Data is imported and hand-curated; Phase 1
+> (read-only sheet) is live. See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the
+> roadmap.
 
 ## How it works
 
@@ -33,24 +34,24 @@ Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 ```
 data/            character.json (the character's inputs)
 rules/           steps, attributes, talents (mechanics), disciplines, skills, races
-tools/           import-xlsx.mjs — dev-only importer (spreadsheet -> JSON)
+docs/            EFFECT-TAXONOMY.md — vocabulary for rule effects
 engine/          rules engine (added from Phase 3)
 ui/              Lit components (added from Phase 1)
+tools/archive/   import-xlsx.mjs — archived data-bootstrap importer (not run)
 ARCHITECTURE.md  architecture and phased delivery plan
 ```
 
 ## Development
 
-The web app itself is static — no build required to run it. The only tooling is
-the **importer**, a one-off script that regenerates the JSON data from the source
-spreadsheet.
+The app is fully static — **no build and no dependencies to run it**. The JSON in
+`data/` and `rules/` is the source of truth and is hand-maintained per
+[docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md).
 
-```bash
-npm install          # installs the importer's dev dependency (SheetJS)
-npm run import       # reads the local .xlsx -> data/character.json + rules/*.json
-```
+The data was originally bootstrapped from a spreadsheet by
+`tools/archive/import-xlsx.mjs`, which is now **archived** (kept for provenance,
+not run — see its header).
 
-Running the app locally (once the UI lands) is just serving the folder, e.g.:
+Run the app locally by serving the folder, e.g.:
 
 ```bash
 npx http-server .
