@@ -1,1995 +1,2417 @@
 {
-  "Acrobatic Defense": {
-    "name": "Acrobatic Defense",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Acting": {
-    "name": "Acting",
-    "action": "Sustain"
-  },
-  "Air Dance": {
-    "name": "Air Dance",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Air Sailing": {
-    "name": "Air Sailing",
-    "action": "Sustain",
-    "attribute": "Willpower"
-  },
-  "Air Speaking": {
-    "name": "Air Speaking",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Alchemy": {
-    "name": "Alchemy",
-    "action": "Sustain"
-  },
-  "Animal Bond": {
-    "name": "Animal Bond",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Animal Companion Durability": {
-    "name": "Animal Companion Durability"
-  },
-  "Animal Handling": {
-    "name": "Animal Handling",
-    "action": "Standard"
-  },
-  "Animal Possession": {
-    "name": "Animal Possession",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Animal Talk": {
-    "name": "Animal Talk",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Animal Training": {
-    "name": "Animal Training",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Anticipate Blow": {
-    "name": "Anticipate Blow",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Arcane Mutterings": {
-    "name": "Arcane Mutterings",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Armor Mount": {
-    "name": "Armor Mount",
-    "action": "Simple",
-    "attribute": "Willpower"
-  },
-  "Artisan": {
-    "name": "Artisan",
-    "action": "Sustain"
-  },
-  "Artist": {
-    "name": "Artist",
-    "action": "Sustain"
-  },
-  "Astral Interference": {
-    "name": "Astral Interference",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Astral Sight": {
-    "name": "Astral Sight",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Avoid Blow": {
-    "name": "Avoid Blow",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Awareness": {
-    "name": "Awareness",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Banish": {
-    "name": "Banish",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Bank Shot": {
-    "name": "Bank Shot",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Battle Bellow": {
-    "name": "Battle Bellow",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Battle Shout": {
-    "name": "Battle Shout",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Blade Juggle": {
-    "name": "Blade Juggle",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Blood Share": {
-    "name": "Blood Share",
-    "action": "Standard",
-    "attribute": "Toughness"
-  },
-  "Book Memory": {
-    "name": "Book Memory",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Borrow Sense": {
-    "name": "Borrow Sense",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Bribery": {
-    "name": "Bribery",
-    "action": "Standard"
-  },
-  "Call Animal Companion": {
-    "name": "Call Animal Companion",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Call Missile": {
-    "name": "Call Missile",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Charge": {
-    "name": "Charge",
-    "action": "Free",
-    "attribute": "Strength"
-  },
-  "Claw Frenzy": {
-    "name": "Claw Frenzy",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Claw Shape": {
-    "name": "Claw Shape",
-    "action": "Standard",
-    "attribute": "Strength"
-  },
-  "Climbing": {
-    "name": "Climbing",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Cobra Strike": {
-    "name": "Cobra Strike",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Cold Purify": {
-    "name": "Cold Purify",
-    "action": "Sustain",
-    "attribute": "Willpower"
-  },
-  "Command Nightflyer": {
-    "name": "Command Nightflyer",
-    "action": "Sustain",
-    "attribute": "Willpower"
-  },
-  "Conceal Object": {
-    "name": "Conceal Object",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Conversation": {
-    "name": "Conversation",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Craft Armor": {
-    "name": "Craft Armor",
-    "action": "Sustain"
-  },
-  "Craft Weapon": {
-    "name": "Craft Weapon",
-    "action": "Sustain"
-  },
-  "Craftsman": {
-    "name": "Craftsman",
-    "action": "Sustain"
-  },
-  "Creature Analysis": {
-    "name": "Creature Analysis",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Crushing Blow": {
-    "name": "Crushing Blow",
-    "action": "Free",
-    "attribute": "Strength"
-  },
-  "Down Strike": {
-    "name": "Down Strike",
-    "action": "Free",
-    "attribute": "Strength"
-  },
-  "Durability": {
-    "name": "Durability",
-    "action": "Passive"
-  },
-  "Earth Skin": {
-    "name": "Earth Skin",
-    "action": "Standard",
-    "attribute": "Toughness"
-  },
-  "False Sight": {
-    "name": "False Sight",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Fire Blood": {
-    "name": "Fire Blood",
-    "action": "Standard"
-  },
-  "First Impression": {
-    "name": "First Impression",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Flame Arrow": {
-    "name": "Flame Arrow",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Frighten": {
-    "name": "Frighten",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Impressive Display": {
-    "name": "Impressive Display",
-    "action": "Simple"
-  },
-  "Lion Heart": {
-    "name": "Lion Heart",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Long Shot": {
-    "name": "Long Shot",
-    "action": "Simple"
-  },
-  "Melee Weapon": {
-    "name": "Melee Weapon",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Missile Weapon": {
-    "name": "Missile Weapon",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Mystic Aim": {
-    "name": "Mystic Aim",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Mystic Pursuit": {
-    "name": "Mystic Pursuit",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Navigation": {
-    "name": "Navigation",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Public Speaking": {
-    "name": "Public Speaking",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Spot Armor Flaw": {
-    "name": "Spot Armor Flaw",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Sprint": {
-    "name": "Sprint",
-    "action": "Simple"
-  },
-  "Stealthy Stride": {
-    "name": "Stealthy Stride",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Surprise Strike": {
-    "name": "Surprise Strike",
-    "action": "Free",
-    "attribute": "Strength"
-  },
-  "Swift Kick": {
-    "name": "Swift Kick",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Tattooist": {
-    "name": "Tattooist",
-    "action": "Sustain",
-    "attribute": "Dexterity"
-  },
-  "Temper Flesh": {
-    "name": "Temper Flesh",
-    "action": "Sustain",
-    "attribute": "Willpower"
-  },
-  "Throwing Weapon": {
-    "name": "Throwing Weapon",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Tiger Spring": {
-    "name": "Tiger Spring",
-    "action": "Free"
-  },
-  "Tracking": {
-    "name": "Tracking",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "True Shot": {
-    "name": "True Shot",
-    "action": "Free"
-  },
-  "True Sight": {
-    "name": "True Sight"
-  },
-  "Unarmed Combat": {
-    "name": "Unarmed Combat",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Waterfall Slam": {
-    "name": "Waterfall Slam",
-    "action": "Free"
-  },
-  "Wood Skin": {
-    "name": "Wood Skin",
-    "action": "Standard",
-    "attribute": "Toughness"
-  },
-  "Wound Balance": {
-    "name": "Wound Balance",
-    "action": "Free",
-    "attribute": "Strength"
-  },
-  "Read/Write Language (Dwarf)": {
-    "name": "Read/Write Language (Dwarf)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Elf)": {
-    "name": "Read/Write Language (Elf)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Human)": {
-    "name": "Read/Write Language (Human)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Obsidiman)": {
-    "name": "Read/Write Language (Obsidiman)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Ork)": {
-    "name": "Read/Write Language (Ork)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (T`skrang)": {
-    "name": "Read/Write Language (T`skrang)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Troll)": {
-    "name": "Read/Write Language (Troll)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Windling)": {
-    "name": "Read/Write Language (Windling)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Throalic)": {
-    "name": "Read/Write Language (Throalic)",
-    "action": "Standrd"
-  },
-  "Read/Write Language (Theran)": {
-    "name": "Read/Write Language (Theran)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Read/Write Language (Drake)": {
-    "name": "Read/Write Language (Drake)",
-    "action": "Standrd"
-  },
-  "Speak Language (Dwarf)": {
-    "name": "Speak Language (Dwarf)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Elf)": {
-    "name": "Speak Language (Elf)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Human)": {
-    "name": "Speak Language (Human)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Obsidiman)": {
-    "name": "Speak Language (Obsidiman)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Ork)": {
-    "name": "Speak Language (Ork)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (T`skrang)": {
-    "name": "Speak Language (T`skrang)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Troll)": {
-    "name": "Speak Language (Troll)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Windling)": {
-    "name": "Speak Language (Windling)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Throalic)": {
-    "name": "Speak Language (Throalic)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Theran)": {
-    "name": "Speak Language (Theran)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Speak Language (Drake)": {
-    "name": "Speak Language (Drake)",
-    "action": "Standrd",
-    "attribute": "Perception"
-  },
-  "Point-Blank Shot": {
-    "name": "Point-Blank Shot",
-    "action": "Standard"
-  },
-  "Picking Pockets": {
-    "name": "Picking Pockets",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Power Mask": {
-    "name": "Power Mask",
-    "action": "Sustain",
-    "attribute": "Willpower"
-  },
-  "Alley Cat Approach": {
-    "name": "Alley Cat Approach",
-    "action": "Standard"
-  },
-  "Animal Leadership": {
-    "name": "Animal Leadership",
-    "action": "Standard"
-  },
-  "Armored Matrix": {
-    "name": "Armored Matrix",
-    "action": "NA"
-  },
-  "Astral Domain": {
-    "name": "Astral Domain",
-    "action": "Standard"
-  },
-  "Astral Pocket": {
-    "name": "Astral Pocket",
-    "action": "Standard"
-  },
-  "Aura Armor": {
-    "name": "Aura Armor",
-    "action": "Standard"
-  },
-  "Bardic Voice": {
-    "name": "Bardic Voice",
-    "action": "Free"
-  },
-  "Beguiling Blade": {
-    "name": "Beguiling Blade",
-    "action": "Free"
-  },
-  "Blind Fire": {
-    "name": "Blind Fire",
-    "action": "Simple"
-  },
-  "Blood Insight": {
-    "name": "Blood Insight",
-    "action": "Sustained"
-  },
-  "Blood of Death’s Sea": {
-    "name": "Blood of Death’s Sea",
-    "action": "Free"
-  },
-  "Bloodhound Form": {
-    "name": "Bloodhound Form",
-    "action": "Sustained"
-  },
-  "Burning Vigor": {
-    "name": "Burning Vigor",
-    "action": "Free"
-  },
-  "Casting Pattern": {
-    "name": "Casting Pattern",
-    "action": "Simple"
-  },
-  "Chameleon": {
-    "name": "Chameleon",
-    "action": "Free"
-  },
-  "Champion Challenge": {
-    "name": "Champion Challenge",
-    "action": "Standard"
-  },
-  "Chilling Strike": {
-    "name": "Chilling Strike",
-    "action": "Free"
-  },
-  "Concentrated Assault": {
-    "name": "Concentrated Assault",
-    "action": "Standard"
-  },
-  "Concise Casting": {
-    "name": "Concise Casting",
-    "action": "Simple"
-  },
-  "Confront Horror": {
-    "name": "Confront Horror",
-    "action": "Standard"
-  },
-  "Contest of Wills": {
-    "name": "Contest of Wills",
-    "action": "Free"
-  },
-  "Critical Hit": {
-    "name": "Critical Hit",
-    "action": "Free"
-  },
-  "Cutting Words": {
-    "name": "Cutting Words",
-    "action": "Simple"
-  },
-  "Defensive Posture": {
-    "name": "Defensive Posture",
-    "action": "Free"
-  },
-  "Disarming Smile": {
-    "name": "Disarming Smile",
-    "action": "Standard"
-  },
-  "Dream Thief": {
-    "name": "Dream Thief",
-    "action": "Standard"
-  },
-  "Eagle Eye": {
-    "name": "Eagle Eye",
-    "action": "Free"
-  },
-  "Echolocation": {
-    "name": "Echolocation",
-    "action": "Free"
-  },
-  "Effect Pattern": {
-    "name": "Effect Pattern",
-    "action": "Simple"
-  },
-  "Eidetic Memory": {
-    "name": "Eidetic Memory",
-    "action": "Simple"
-  },
-  "Elemental Mastery": {
-    "name": "Elemental Mastery",
-    "action": "Free"
-  },
-  "Elemental Walk": {
-    "name": "Elemental Walk",
-    "action": "Standard"
-  },
-  "Enthralling Visions": {
-    "name": "Enthralling Visions",
-    "action": "Free"
-  },
-  "Escape Plan": {
-    "name": "Escape Plan",
-    "action": "Sustained"
-  },
-  "Ethereal Weapon": {
-    "name": "Ethereal Weapon",
-    "action": "Simple"
-  },
-  "Fluid Movement": {
-    "name": "Fluid Movement",
-    "action": "Simple"
-  },
-  "Forge Flesh": {
-    "name": "Forge Flesh",
-    "action": "Standard"
-  },
-  "Glyph of Attunement": {
-    "name": "Glyph of Attunement",
-    "action": "Simple"
-  },
-  "Glyph of Reversal": {
-    "name": "Glyph of Reversal",
-    "action": "Free"
-  },
-  "Glyph of Shielding": {
-    "name": "Glyph of Shielding",
-    "action": "Simple"
-  },
-  "Glyph of Unweaving": {
-    "name": "Glyph of Unweaving",
-    "action": "Free"
-  },
-  "Goring Attack": {
-    "name": "Goring Attack",
-    "action": "Free"
-  },
-  "Howl": {
-    "name": "Howl",
-    "action": "Simple"
-  },
-  "Impossible Hide": {
-    "name": "Impossible Hide",
-    "action": "Standard"
-  },
-  "Influence Missile": {
-    "name": "Influence Missile",
-    "action": "Free"
-  },
-  "Infuse Memory": {
-    "name": "Infuse Memory",
-    "action": "Free"
-  },
-  "Lion Spirit": {
-    "name": "Lion Spirit",
-    "action": "NA"
-  },
-  "Living Weapon": {
-    "name": "Living Weapon",
-    "action": "Standard"
-  },
-  "Matrix Sight": {
-    "name": "Matrix Sight",
-    "action": "Simple"
-  },
-  "Memory Probe": {
-    "name": "Memory Probe",
-    "action": "Sustained"
-  },
-  "Missile Lock": {
-    "name": "Missile Lock",
-    "action": "Simple"
-  },
-  "Multi-Charge": {
-    "name": "Multi-Charge",
-    "action": "Simple"
-  },
-  "Multi-Shot": {
-    "name": "Multi-Shot",
-    "action": "Simple"
-  },
-  "Multi-Strike": {
-    "name": "Multi-Strike",
-    "action": "Simple"
-  },
-  "Nethersoul": {
-    "name": "Nethersoul",
-    "action": "Standard"
-  },
-  "Netherwalk": {
-    "name": "Netherwalk",
-    "action": "Standard"
-  },
-  "Perfect Focus": {
-    "name": "Perfect Focus",
-    "action": "Simple"
-  },
-  "Plant Talk": {
-    "name": "Plant Talk",
-    "action": "Standard"
-  },
-  "Rally": {
-    "name": "Rally",
-    "action": "Standard"
-  },
-  "Range Pattern": {
-    "name": "Range Pattern",
-    "action": "Simple"
-  },
-  "Relentless Recovery": {
-    "name": "Relentless Recovery",
-    "action": "Free"
-  },
-  "Resist Pain": {
-    "name": "Resist Pain",
-    "action": "NA"
-  },
-  "Safe Thought": {
-    "name": "Safe Thought",
-    "action": "Free"
-  },
-  "Second Chance": {
-    "name": "Second Chance",
-    "action": "Free"
-  },
-  "Shared Matrix": {
-    "name": "Shared Matrix",
-    "action": "NA"
-  },
-  "Shock Treatment": {
-    "name": "Shock Treatment",
-    "action": "Standard"
-  },
-  "Snapshot": {
-    "name": "Snapshot",
-    "action": "Free"
-  },
-  "Snatch Talent": {
-    "name": "Snatch Talent",
-    "action": "Standard"
-  },
-  "Song of Battle": {
-    "name": "Song of Battle",
-    "action": "Free"
-  },
-  "Song of Deflection": {
-    "name": "Song of Deflection",
-    "action": "Standard"
-  },
-  "Soul Aegis": {
-    "name": "Soul Aegis",
-    "action": "Standard"
-  },
-  "Spirit Strike": {
-    "name": "Spirit Strike",
-    "action": "Standard"
-  },
-  "Spliced Weave": {
-    "name": "Spliced Weave",
-    "action": "Simple"
-  },
-  "Stone Skin": {
-    "name": "Stone Skin",
-    "action": "Standard"
-  },
-  "Storm Shield": {
-    "name": "Storm Shield",
-    "action": "Standard"
-  },
-  "Summoning Circle": {
-    "name": "Summoning Circle",
-    "action": "Sustained"
-  },
-  "Thunderstruck": {
-    "name": "Thunderstruck",
-    "action": "Free"
-  },
-  "Thunderous Resolve": {
-    "name": "Thunderous Resolve",
-    "action": "Free"
-  },
-  "Truth Through Lies": {
-    "name": "Truth Through Lies",
-    "action": "Standard"
-  },
-  "Undermine": {
-    "name": "Undermine",
-    "action": "Simple"
-  },
-  "Venom": {
-    "name": "Venom",
-    "action": "Free"
-  },
-  "Vicious Wound": {
-    "name": "Vicious Wound",
-    "action": "Simple"
-  },
-  "Vine Armor": {
-    "name": "Vine Armor",
-    "action": "Free"
-  },
-  "Vital Strike": {
-    "name": "Vital Strike",
-    "action": "Free"
-  },
-  "Vital Ward": {
-    "name": "Vital Ward",
-    "action": "Free"
-  },
-  "Weapon Breaker": {
-    "name": "Weapon Breaker",
-    "action": "Free"
-  },
-  "Witty Repartee": {
-    "name": "Witty Repartee",
-    "action": "Free"
-  },
-  "World Pulse": {
-    "name": "World Pulse",
-    "action": "Sustained"
-  },
-  "Unflinching Fortitude": {
-    "name": "Unflinching Fortitude"
-  },
-  "Absorb Spell": {
-    "name": "Absorb Spell",
-    "action": "Free"
-  },
-  "Accompaniment": {
-    "name": "Accompaniment",
-    "action": "Sustained (10 min)"
-  },
-  "Acid Splash": {
-    "name": "Acid Splash",
-    "action": "Standard (Special)"
-  },
-  "Acrobatic Recovery": {
-    "name": "Acrobatic Recovery",
-    "action": "Simple"
-  },
-  "Acrobatic Strike": {
-    "name": "Acrobatic Strike",
-    "action": "Simple"
-  },
-  "Aggressive Maneuver": {
-    "name": "Aggressive Maneuver",
-    "action": "Simple"
-  },
-  "Air Legs": {
-    "name": "Air Legs",
-    "action": "Free"
-  },
-  "Anticipate Movement": {
-    "name": "Anticipate Movement",
-    "action": "Simple"
-  },
-  "Anticipate Spell": {
-    "name": "Anticipate Spell",
-    "action": "Simple"
-  },
-  "Arcane Accuracy": {
-    "name": "Arcane Accuracy",
-    "action": "Standard (Special)"
-  },
-  "Arcane Curses (Special Maneuver)": {
-    "name": "Arcane Curses (Special Maneuver)",
-    "action": "NA"
-  },
-  "Arcane Edge": {
-    "name": "Arcane Edge",
-    "action": "Standard (Special)"
-  },
-  "Arrow Cutting (Special Maneuver)": {
-    "name": "Arrow Cutting (Special Maneuver)"
-  },
-  "Assess Intentions": {
-    "name": "Assess Intentions",
-    "action": "Sustained (10 minutes)"
-  },
-  "Astral Stealth": {
-    "name": "Astral Stealth",
-    "action": "Standard"
-  },
-  "Astral Strain": {
-    "name": "Astral Strain",
-    "action": "Standard (Special)"
-  },
-  "Astral Survey": {
-    "name": "Astral Survey",
-    "action": "Sustained (10 minutes)"
-  },
-  "Astral Ward": {
-    "name": "Astral Ward",
-    "action": "Standard (Special)"
-  },
-  "Augment Ally’s Form": {
-    "name": "Augment Ally’s Form",
-    "action": "Sustained"
-  },
-  "Beast Summons": {
-    "name": "Beast Summons",
-    "action": "Free"
-  },
-  "Befuddle": {
-    "name": "Befuddle",
-    "action": "Standard (Special)"
-  },
-  "Bleed": {
-    "name": "Bleed",
-    "action": "Standard (Special)"
-  },
-  "Body Blade": {
-    "name": "Body Blade",
-    "action": "Free"
-  },
-  "Burst of Speed": {
-    "name": "Burst of Speed",
-    "action": "Standard (Special)"
-  },
-  "Call Any Missile": {
-    "name": "Call Any Missile",
-    "action": "Simple"
-  },
-  "Claw Riposte": {
-    "name": "Claw Riposte",
-    "action": "Free"
-  },
-  "Claw Tool": {
-    "name": "Claw Tool",
-    "action": "Sustained"
-  },
-  "Cold Case": {
-    "name": "Cold Case",
-    "action": "Sustained (10 minutes)"
-  },
-  "Control the Tempo": {
-    "name": "Control the Tempo",
-    "action": "Simple"
-  },
-  "Courage": {
-    "name": "Courage",
-    "action": "Standard (Special)"
-  },
-  "Craft Blood Charm": {
-    "name": "Craft Blood Charm",
-    "action": "N/A"
-  },
-  "Craft Common Magic Item": {
-    "name": "Craft Common Magic Item",
-    "action": "N/A"
-  },
-  "Craft Poison": {
-    "name": "Craft Poison",
-    "action": "N/A"
-  },
-  "Craft True Pattern": {
-    "name": "Craft True Pattern",
-    "action": "N/A"
-  },
-  "Create Orichalcum": {
-    "name": "Create Orichalcum",
-    "action": "N/A"
-  },
-  "Defiant Shout": {
-    "name": "Defiant Shout",
-    "action": "Simple"
-  },
-  "Deflect Blow": {
-    "name": "Deflect Blow",
-    "action": "Simple"
-  },
-  "Deflection": {
-    "name": "Deflection",
-    "action": "Standard (Special)"
-  },
-  "Deny Terrain": {
-    "name": "Deny Terrain",
-    "action": "Simple"
-  },
-  "Design Enchanting Pattern": {
-    "name": "Design Enchanting Pattern",
-    "action": "N/A"
-  },
-  "Destructive Shout": {
-    "name": "Destructive Shout",
-    "action": "Simple"
-  },
-  "Detect Poison": {
-    "name": "Detect Poison",
-    "action": "Simple"
-  },
-  "Detect Spirit": {
-    "name": "Detect Spirit",
-    "action": "Standard"
-  },
-  "Detect True Element": {
-    "name": "Detect True Element",
-    "action": "Standard"
-  },
-  "Detect Weapon": {
-    "name": "Detect Weapon",
-    "action": "Simple"
-  },
-  "Dirty Fighting": {
-    "name": "Dirty Fighting",
-    "action": "Simple"
-  },
-  "Doubt": {
-    "name": "Doubt",
-    "action": "Standard (Special)"
-  },
-  "Efficient Armor Forging": {
-    "name": "Efficient Armor Forging",
-    "action": "Sustained"
-  },
-  "Efficient Weapon Forging": {
-    "name": "Efficient Weapon Forging",
-    "action": "Sustained"
-  },
-  "Empathic Command": {
-    "name": "Empathic Command",
-    "action": "Free"
-  },
-  "Evaluate": {
-    "name": "Evaluate",
-    "action": "Standard"
-  },
-  "Extend Range": {
-    "name": "Extend Range",
-    "action": "Simple"
-  },
-  "Eye Gouge (Special Maneuver)": {
-    "name": "Eye Gouge (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Feint": {
-    "name": "Feint",
-    "action": "Simple"
-  },
-  "Flare": {
-    "name": "Flare",
-    "action": "Standard"
-  },
-  "Flirting": {
-    "name": "Flirting",
-    "action": "Sustained"
-  },
-  "Fluster": {
-    "name": "Fluster",
-    "action": "Standard (Special)"
-  },
-  "Foresee Aggression": {
-    "name": "Foresee Aggression",
-    "action": "Simple"
-  },
-  "Forgery": {
-    "name": "Forgery",
-    "action": "Sustained"
-  },
-  "Fortify Armor": {
-    "name": "Fortify Armor",
-    "action": "Standard (Special)"
-  },
-  "Fortify Pattern": {
-    "name": "Fortify Pattern",
-    "action": "Standard (Special)"
-  },
-  "Getting to Know You (Special Maneuver)": {
-    "name": "Getting to Know You (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Ghost Master Ritual": {
-    "name": "Ghost Master Ritual",
-    "action": "Sustained"
-  },
-  "Give Ground (Special Maneuver)": {
-    "name": "Give Ground (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Glide": {
-    "name": "Glide",
-    "action": "Standard"
-  },
-  "Grand Entrance": {
-    "name": "Grand Entrance",
-    "action": "Standard"
-  },
-  "Grasping Vines": {
-    "name": "Grasping Vines",
-    "action": "Standard (Special)"
-  },
-  "Halt Disease": {
-    "name": "Halt Disease",
-    "action": "Sustained (1 min)"
-  },
-  "Hamstring (Special Maneuver)": {
-    "name": "Hamstring (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Handle Elements": {
-    "name": "Handle Elements",
-    "action": "N/A"
-  },
-  "Harrying Attack (Special Maneuver)": {
-    "name": "Harrying Attack (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Harvest True Element": {
-    "name": "Harvest True Element",
-    "action": "Sustained (4 hours)"
-  },
-  "Heal Animal Companion": {
-    "name": "Heal Animal Companion",
-    "action": "Standard"
-  },
-  "I’ll Take That (Special Maneuver)": {
-    "name": "I’ll Take That (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Ideal Appearance": {
-    "name": "Ideal Appearance",
-    "action": "Simple"
-  },
-  "Improved Improvised Weapon": {
-    "name": "Improved Improvised Weapon",
-    "action": "Standard"
-  },
-  "Improvised Pattern": {
-    "name": "Improvised Pattern",
-    "action": "Simple"
-  },
-  "Improvised Weapon": {
-    "name": "Improvised Weapon",
-    "action": "Standard"
-  },
-  "Incorporate Bound Spirit": {
-    "name": "Incorporate Bound Spirit",
-    "action": "N/A"
-  },
-  "Incorporate Glyph": {
-    "name": "Incorporate Glyph",
-    "action": "N/A"
-  },
-  "Intimidating Bellow": {
-    "name": "Intimidating Bellow",
-    "action": "Simple"
-  },
-  "Jinx": {
-    "name": "Jinx",
-    "action": "Simple"
-  },
-  "Lip Reading": {
-    "name": "Lip Reading",
-    "action": "Standard"
-  },
-  "Make Concession": {
-    "name": "Make Concession",
-    "action": "Free"
-  },
-  "Mapmaking": {
-    "name": "Mapmaking",
-    "action": "Sustained"
-  },
-  "Mind Armor": {
-    "name": "Mind Armor",
-    "action": "Standard"
-  },
-  "Mind Blade": {
-    "name": "Mind Blade",
-    "action": "Standard"
-  },
-  "Mobile Interference": {
-    "name": "Mobile Interference",
-    "action": "Standard"
-  },
-  "Mold Ally’s Form": {
-    "name": "Mold Ally’s Form",
-    "action": "Sustained"
-  },
-  "One Eye Open": {
-    "name": "One Eye Open",
-    "action": "Sustained (10 min)"
-  },
-  "Opening (Special Maneuver)": {
-    "name": "Opening (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Other Sense": {
-    "name": "Other Sense",
-    "action": "Standard"
-  },
-  "Overpower (Special Maneuver)": {
-    "name": "Overpower (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Overrun (Special Maneuver)": {
-    "name": "Overrun (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Patient Maneuver": {
-    "name": "Patient Maneuver",
-    "action": "Free - see text"
-  },
-  "Pattern Stress": {
-    "name": "Pattern Stress",
-    "action": "Standard (Special)"
-  },
-  "Photographic Memory": {
-    "name": "Photographic Memory",
-    "action": "Standard"
-  },
-  "Pilot Boat": {
-    "name": "Pilot Boat",
-    "action": "Sustained"
-  },
-  "Poisoned Influence": {
-    "name": "Poisoned Influence",
-    "action": "Sustained"
-  },
-  "Pounce (Special Maneuver)": {
-    "name": "Pounce (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Precise Shot": {
-    "name": "Precise Shot",
-    "action": "Simple"
-  },
-  "Psychometry": {
-    "name": "Psychometry",
-    "action": "Standard"
-  },
-  "Push Against the Horror": {
-    "name": "Push Against the Horror",
-    "action": "Standard"
-  },
-  "Rapid Armor Forging (Special Maneuver)": {
-    "name": "Rapid Armor Forging (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Rapid Weapon Forging (Special Maneuver)": {
-    "name": "Rapid Weapon Forging (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Read River": {
-    "name": "Read River",
-    "action": "Sustained"
-  },
-  "Redirect Attack (Special Maneuver)": {
-    "name": "Redirect Attack (Special Maneuver)",
-    "action": "N/A"
-  },
-  "Remember Conversation": {
-    "name": "Remember Conversation",
-    "action": "Standard"
-  },
-  "Returning": {
-    "name": "Returning",
-    "action": "Free"
-  },
-  "Roll With the Punches": {
-    "name": "Roll With the Punches",
-    "action": "Free"
-  },
-  "Sailing": {
-    "name": "Sailing",
-    "action": "Sustained"
-  },
-  "Savage Limbs": {
-    "name": "Savage Limbs",
-    "action": "Free"
-  },
-  "Sculpt Ally’s Form": {
-    "name": "Sculpt Ally’s Form",
-    "action": "Sustained"
-  },
-  "Seduction": {
-    "name": "Seduction",
-    "action": "Sustained (10 min)"
-  },
-  "Setup": {
-    "name": "Setup",
-    "action": "Simple"
-  },
-  "Shackle Shrug": {
-    "name": "Shackle Shrug",
-    "action": "Sustained (1 minute)"
-  },
-  "Shield Drive": {
-    "name": "Shield Drive",
-    "action": "Simple"
-  },
-  "Soothe Venom": {
-    "name": "Soothe Venom",
-    "action": "Standard (Special)"
-  },
-  "Spider Climb": {
-    "name": "Spider Climb",
-    "action": "Standard"
-  },
-  "Sprain": {
-    "name": "Sprain",
-    "action": "Standard (Special)"
-  },
-  "Streetwise": {
-    "name": "Streetwise",
-    "action": "Sustained"
-  },
-  "Strength of Bronze": {
-    "name": "Strength of Bronze",
-    "action": "N/A"
-  },
-  "Strength of Iron": {
-    "name": "Strength of Iron",
-    "action": "N/A"
-  },
-  "Strength of Steel": {
-    "name": "Strength of Steel",
-    "action": "N/A"
-  },
-  "Stutter": {
-    "name": "Stutter",
-    "action": "Standard (Special)"
-  },
-  "Subtle Casting": {
-    "name": "Subtle Casting",
-    "action": "Free"
-  },
-  "Swing Attack": {
-    "name": "Swing Attack",
-    "action": "Standard"
-  },
-  "Swinging Move": {
-    "name": "Swinging Move",
-    "action": "Standard"
-  },
-  "Tail Weapon": {
-    "name": "Tail Weapon",
-    "action": "Simple"
-  },
-  "Take the Hit": {
-    "name": "Take the Hit",
-    "action": "Simple"
-  },
-  "Tame Animal": {
-    "name": "Tame Animal",
-    "action": "Standard"
-  },
-  "Telling the Tale": {
-    "name": "Telling the Tale",
-    "action": "Sustained"
-  },
-  "Throw Anything": {
-    "name": "Throw Anything",
-    "action": "N/A"
-  },
-  "Touching the Past": {
-    "name": "Touching the Past",
-    "action": "Standard"
-  },
-  "Traceless Stride": {
-    "name": "Traceless Stride",
-    "action": "Standard"
-  },
-  "Unsettle": {
-    "name": "Unsettle",
-    "action": "Standard (Special)"
-  },
-  "Vault Opponent": {
-    "name": "Vault Opponent",
-    "action": "Simple"
-  },
-  "Wind Bow": {
-    "name": "Wind Bow",
-    "action": "Standard"
-  },
-  "Wrecking Claws": {
-    "name": "Wrecking Claws",
-    "action": "Sustained"
-  },
-  "Arrow Fletching (Artisan)": {
-    "name": "Arrow Fletching (Artisan)",
-    "action": "Sustain"
-  },
-  "Body Painting (Artisan)": {
-    "name": "Body Painting (Artisan)",
-    "action": "Sustain"
-  },
-  "Bone Carving (Artisan)": {
-    "name": "Bone Carving (Artisan)",
-    "action": "Sustain"
-  },
-  "Braiding (Artisan)": {
-    "name": "Braiding (Artisan)",
-    "action": "Sustain"
-  },
-  "Danger Sense": {
-    "name": "Danger Sense",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Dead Fall": {
-    "name": "Dead Fall",
-    "action": "Simple",
-    "attribute": "Willpower"
-  },
-  "Diplomacy": {
-    "name": "Diplomacy",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Direction Arrow": {
-    "name": "Direction Arrow",
-    "action": "Standard"
-  },
-  "Disarm": {
-    "name": "Disarm",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Disarm Trap": {
-    "name": "Disarm Trap",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Disguise": {
-    "name": "Disguise",
-    "action": "Sustain"
-  },
-  "Disguise Self": {
-    "name": "Disguise Self",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Dispel Magic": {
-    "name": "Dispel Magic",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Distract": {
-    "name": "Distract",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Dominate Beast": {
-    "name": "Dominate Beast",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Double Charge": {
-    "name": "Double Charge",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Elemental Hold": {
-    "name": "Elemental Hold",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Elemental Tongues": {
-    "name": "Elemental Tongues",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Embroidery": {
-    "name": "Embroidery",
-    "action": "Sustain"
-  },
-  "Emotion Song": {
-    "name": "Emotion Song",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Empathic Sense": {
-    "name": "Empathic Sense",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Engaging Banter": {
-    "name": "Engaging Banter",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Entertaining": {
-    "name": "Entertaining",
-    "action": "Sustain"
-  },
-  "Etiquette": {
-    "name": "Etiquette",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Evidence Analysis": {
-    "name": "Evidence Analysis",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Fast Hand": {
-    "name": "Fast Hand",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Fearsome Charge": {
-    "name": "Fearsome Charge",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Fire Heal": {
-    "name": "Fire Heal",
-    "action": "Sustain",
-    "attribute": "Willpower"
-  },
-  "Forge Armor": {
-    "name": "Forge Armor",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Forge Weapon": {
-    "name": "Forge Weapon",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Gliding Stride": {
-    "name": "Gliding Stride",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Graceful Exit": {
-    "name": "Graceful Exit",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Great Leap": {
-    "name": "Great Leap",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Haggle": {
-    "name": "Haggle",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Heartening Laugh": {
-    "name": "Heartening Laugh",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Hold Thread": {
-    "name": "Hold Thread",
-    "action": "Simple",
-    "attribute": "Willpower"
-  },
-  "Hypnotize": {
-    "name": "Hypnotize",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Inspire Others": {
-    "name": "Inspire Others",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Iron Constitution": {
-    "name": "Iron Constitution",
-    "action": "Free",
-    "attribute": "Toughness"
-  },
-  "Item History": {
-    "name": "Item History",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Knowledge": {
-    "name": "Knowledge",
-    "action": "Standard"
-  },
-  "Lasting Impression": {
-    "name": "Lasting Impression",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Leadership": {
-    "name": "Leadership",
-    "action": "Sustain",
-    "attribute": "Charisma"
-  },
-  "Life Check": {
-    "name": "Life Check",
-    "action": "Free",
-    "attribute": "Toughness"
-  },
-  "Lifesight": {
-    "name": "Lifesight",
-    "action": "Simple",
-    "attribute": "Perception"
-  },
-  "Lock Pick": {
-    "name": "Lock Pick",
-    "action": "Standard"
-  },
-  "Maneuver": {
-    "name": "Maneuver",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Manuscript Illumination": {
-    "name": "Manuscript Illumination",
-    "action": "Sustain"
-  },
-  "Map Making": {
-    "name": "Map Making",
-    "action": "Sustain"
-  },
-  "Mimic Voice": {
-    "name": "Mimic Voice",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Momentum Attack": {
-    "name": "Momentum Attack",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Mount Attack": {
-    "name": "Mount Attack",
-    "action": "Simple"
-  },
-  "Orbiting Spy": {
-    "name": "Orbiting Spy",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Painting": {
-    "name": "Painting",
-    "action": "Sustain"
-  },
-  "Physician": {
-    "name": "Physician",
-    "action": "Sustain"
-  },
-  "Poetry": {
-    "name": "Poetry",
-    "action": "Sustain"
-  },
-  "Read/Write Language": {
-    "name": "Read/Write Language",
-    "action": "Sustain"
-  },
-  "Research": {
-    "name": "Research",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Resist Taunt": {
-    "name": "Resist Taunt",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Riposte": {
-    "name": "Riposte",
-    "action": "Free",
-    "attribute": "Dexterity"
-  },
-  "Robe Embroidery": {
-    "name": "Robe Embroidery",
-    "action": "Sustain"
-  },
-  "Rune Carving": {
-    "name": "Rune Carving",
-    "action": "Sustain"
-  },
-  "Safe Path": {
-    "name": "Safe Path",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Sail Embroidery": {
-    "name": "Sail Embroidery",
-    "action": "Sustain"
-  },
-  "Sculpting": {
-    "name": "Sculpting",
-    "action": "Sustain"
-  },
-  "Second Attack": {
-    "name": "Second Attack",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Second Shot": {
-    "name": "Second Shot",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Second Weapon": {
-    "name": "Second Weapon",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Shield Bash": {
-    "name": "Shield Bash",
-    "action": "Simple",
-    "attribute": "Strength"
-  },
-  "Skinning": {
-    "name": "Skinning",
-    "action": "Sustained",
-    "attribute": "Dexterity"
-  },
-  "Slough Blame": {
-    "name": "Slough Blame",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Speak Language": {
-    "name": "Speak Language",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Spellcasting": {
-    "name": "Spellcasting",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Spirit Hold": {
-    "name": "Spirit Hold",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Spirit Mount": {
-    "name": "Spirit Mount",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Spirit Talk": {
-    "name": "Spirit Talk",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Steel Thought": {
-    "name": "Steel Thought",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Steely Stare": {
-    "name": "Steely Stare",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Stopping Aim": {
-    "name": "Stopping Aim",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Summon": {
-    "name": "Summon",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Suppress Curse": {
-    "name": "Suppress Curse",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Sure Mount": {
-    "name": "Sure Mount",
-    "action": "Free",
-    "attribute": "Strength"
-  },
-  "Swimming": {
-    "name": "Swimming",
-    "action": "Standard"
-  },
-  "Tactics": {
-    "name": "Tactics",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Tailor": {
-    "name": "Tailor",
-    "action": "Standard"
-  },
-  "Taunt": {
-    "name": "Taunt",
-    "action": "Simple",
-    "attribute": "Charisma"
-  },
-  "Tenacious Weave": {
-    "name": "Tenacious Weave",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Thought Link": {
-    "name": "Thought Link",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving": {
-    "name": "Thread Weaving",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Air Sailor)": {
-    "name": "Thread Weaving (Air Sailor)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Archer)": {
-    "name": "Thread Weaving (Archer)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Beast Master)": {
-    "name": "Thread Weaving (Beast Master)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Cavalryman)": {
-    "name": "Thread Weaving (Cavalryman)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Elementalist)": {
-    "name": "Thread Weaving (Elementalist)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (illusionist)": {
-    "name": "Thread Weaving (illusionist)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Nethermancer)": {
-    "name": "Thread Weaving (Nethermancer)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Scout)": {
-    "name": "Thread Weaving (Scout)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Sky Raider)": {
-    "name": "Thread Weaving (Sky Raider)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Swordmaster)": {
-    "name": "Thread Weaving (Swordmaster)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Thief)": {
-    "name": "Thread Weaving (Thief)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Troubadour)": {
-    "name": "Thread Weaving (Troubadour)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Warrior)": {
-    "name": "Thread Weaving (Warrior)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Weaponsmith)": {
-    "name": "Thread Weaving (Weaponsmith)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Thread Weaving (Wizard)": {
-    "name": "Thread Weaving (Wizard)",
-    "action": "Standard",
-    "attribute": "Perception"
-  },
-  "Trick Riding": {
-    "name": "Trick Riding",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Versatility": {
-    "name": "Versatility",
-    "action": "Passive"
-  },
-  "Wheeling Attack": {
-    "name": "Wheeling Attack",
-    "action": "Standard",
-    "attribute": "Dexterity"
-  },
-  "Wheeling Defense": {
-    "name": "Wheeling Defense",
-    "action": "Simple",
-    "attribute": "Dexterity"
-  },
-  "Wilderness Survival": {
-    "name": "Wilderness Survival",
-    "action": "Sustain",
-    "attribute": "Perception"
-  },
-  "Willforce": {
-    "name": "Willforce",
-    "action": "Free",
-    "attribute": "Willpower"
-  },
-  "Wind Catcher": {
-    "name": "Wind Catcher",
-    "action": "Standard",
-    "attribute": "Willpower"
-  },
-  "Winning Smile": {
-    "name": "Winning Smile",
-    "action": "Standard",
-    "attribute": "Charisma"
-  },
-  "Wood Carving": {
-    "name": "Wood Carving",
-    "action": "Sustain"
-  },
-  "Horror Lore": {
-    "name": "Horror Lore",
-    "action": "Sustained",
-    "attribute": "Perception"
-  },
-  "Animal Tracking": {
-    "name": "Animal Tracking",
-    "action": "Sustained"
-  },
-  "Hunting": {
-    "name": "Hunting",
-    "action": "Sustained",
-    "attribute": "Perception"
-  },
-  "Riding": {
-    "name": "Riding",
-    "action": "Sustained"
-  },
-  "Tanning": {
-    "name": "Tanning",
-    "action": "Sustained",
-    "attribute": "Perception"
-  },
-  "Patterncraft": {
-    "name": "Patterncraft",
-    "attribute": "Perception"
-  },
-  "Enhance Animal Companion": {
-    "name": "Enhance Animal Companion",
-    "attribute": "Willpower"
-  },
-  "Fireblood": {
-    "name": "Fireblood",
-    "attribute": "Toughness"
-  },
-  "Lock Picking": {
-    "name": "Lock Picking",
-    "attribute": "Dexterity"
-  },
-  "Melee Weapons": {
-    "name": "Melee Weapons",
-    "attribute": "Dexterity"
-  },
-  "Missile Weapons": {
-    "name": "Missile Weapons",
-    "attribute": "Dexterity"
-  },
-  "Read and Write Language": {
-    "name": "Read and Write Language",
-    "attribute": "Perception"
-  },
-  "Throwing Weapons": {
-    "name": "Throwing Weapons",
-    "attribute": "Dexterity"
+  "schema": "ed-talents/1",
+  "source": "Earthdawn 4E — talents. Mechanics + original-wording summaries (no verbatim rulebook prose). Consolidated single file (replaces the separate talents.descriptions.json).",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v1)",
+  "notes": [
+    "460 talents catalogued. Mechanics (name/action/attribute) for all; strain/skillUse/tier/summary/effects fully authored for Chakka's 24 talents so far — the rest are enriched incrementally.",
+    "Talent step = attribute step + rank (attribute-less talents like Durability/True Shot use rank only).",
+    "Effects follow docs/EFFECT-TAXONOMY.md; action outcomes use condition:on-success (+ perSuccess where they scale)."
+  ],
+  "talents": {
+    "Acrobatic Defense": {
+      "name": "Acrobatic Defense",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Acting": {
+      "name": "Acting",
+      "action": "Sustain"
+    },
+    "Air Dance": {
+      "name": "Air Dance",
+      "action": "Free",
+      "attribute": "Dexterity"
+    },
+    "Air Sailing": {
+      "name": "Air Sailing",
+      "action": "Sustain",
+      "attribute": "Willpower"
+    },
+    "Air Speaking": {
+      "name": "Air Speaking",
+      "action": "Simple",
+      "attribute": "Perception"
+    },
+    "Alchemy": {
+      "name": "Alchemy",
+      "action": "Sustain"
+    },
+    "Animal Bond": {
+      "name": "Animal Bond",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Animal Companion Durability": {
+      "name": "Animal Companion Durability"
+    },
+    "Animal Handling": {
+      "name": "Animal Handling",
+      "action": "Standard"
+    },
+    "Animal Possession": {
+      "name": "Animal Possession",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Animal Talk": {
+      "name": "Animal Talk",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Animal Training": {
+      "name": "Animal Training",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Anticipate Blow": {
+      "name": "Anticipate Blow",
+      "action": "Simple",
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "target's Mystic Defense (requires higher Initiative than the target)",
+      "summary": "Read a foe you out-initiative (vs Mystic Defense): each success adds +2 to your Physical Defense against that foe's attacks until end of round, and +2 per success to your first Attack test against them. Usable up to rank times per round.",
+      "effects": [
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "on-success",
+          "perSuccess": true,
+          "duration": "rounds",
+          "rounds": 1,
+          "scope": "vs the target's attacks",
+          "source": "talent"
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "result",
+          "condition": "on-success",
+          "perSuccess": true,
+          "scope": "first Attack test vs the target",
+          "source": "talent"
+        }
+      ]
+    },
+    "Arcane Mutterings": {
+      "name": "Arcane Mutterings",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Armor Mount": {
+      "name": "Armor Mount",
+      "action": "Simple",
+      "attribute": "Willpower"
+    },
+    "Artisan": {
+      "name": "Artisan",
+      "action": "Sustain"
+    },
+    "Artist": {
+      "name": "Artist",
+      "action": "Sustain"
+    },
+    "Astral Interference": {
+      "name": "Astral Interference",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Astral Sight": {
+      "name": "Astral Sight",
+      "action": "Simple",
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "Difficulty 6 (modified by conditions) / target's Mystic Defense",
+      "summary": "Perceive astral space — auras, imprints, and patterns; may examine the pattern of any target whose Mystic Defense is at or below the test result.",
+      "effects": [
+        {
+          "type": "sense",
+          "target": {
+            "domain": "sense",
+            "name": "AstralSight"
+          },
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "See astral patterns and magical auras."
+        }
+      ]
+    },
+    "Avoid Blow": {
+      "name": "Avoid Blow",
+      "action": "Free",
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "attacker's Attack test result",
+      "summary": "Reactively dodge or parry an incoming close- or ranged-combat attack; on a success the blow is avoided. Usable up to rank times per round (one attempt per attack); not usable while blindsided or surprised.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Negates the triggering attack."
+        }
+      ]
+    },
+    "Awareness": {
+      "name": "Awareness",
+      "action": "Simple",
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "summary": "Notice hidden or concealed things, used in place of a Perception test to spot a target: 1 success spots at short range, 3+ at medium range.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Spot the searched-for target (range by success level)."
+        }
+      ]
+    },
+    "Banish": {
+      "name": "Banish",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Bank Shot": {
+      "name": "Bank Shot",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Battle Bellow": {
+      "name": "Battle Bellow",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Battle Shout": {
+      "name": "Battle Shout",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Blade Juggle": {
+      "name": "Blade Juggle",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Blood Share": {
+      "name": "Blood Share",
+      "action": "Standard",
+      "attribute": "Toughness"
+    },
+    "Book Memory": {
+      "name": "Book Memory",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Borrow Sense": {
+      "name": "Borrow Sense",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Bribery": {
+      "name": "Bribery",
+      "action": "Standard"
+    },
+    "Call Animal Companion": {
+      "name": "Call Animal Companion",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Call Missile": {
+      "name": "Call Missile",
+      "action": "Simple",
+      "attribute": "Perception"
+    },
+    "Charge": {
+      "name": "Charge",
+      "action": "Free",
+      "attribute": "Strength"
+    },
+    "Claw Frenzy": {
+      "name": "Claw Frenzy",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Claw Shape": {
+      "name": "Claw Shape",
+      "action": "Standard",
+      "attribute": "Strength"
+    },
+    "Climbing": {
+      "name": "Climbing",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Cobra Strike": {
+      "name": "Cobra Strike",
+      "action": "Free",
+      "attribute": "Dexterity"
+    },
+    "Cold Purify": {
+      "name": "Cold Purify",
+      "action": "Sustain",
+      "attribute": "Willpower"
+    },
+    "Command Nightflyer": {
+      "name": "Command Nightflyer",
+      "action": "Sustain",
+      "attribute": "Willpower"
+    },
+    "Conceal Object": {
+      "name": "Conceal Object",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Conversation": {
+      "name": "Conversation",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Craft Armor": {
+      "name": "Craft Armor",
+      "action": "Sustain"
+    },
+    "Craft Weapon": {
+      "name": "Craft Weapon",
+      "action": "Sustain"
+    },
+    "Craftsman": {
+      "name": "Craftsman",
+      "action": "Sustain"
+    },
+    "Creature Analysis": {
+      "name": "Creature Analysis",
+      "action": "Simple",
+      "attribute": "Perception"
+    },
+    "Crushing Blow": {
+      "name": "Crushing Blow",
+      "action": "Free",
+      "attribute": "Strength"
+    },
+    "Down Strike": {
+      "name": "Down Strike",
+      "action": "Free",
+      "attribute": "Strength"
+    },
+    "Durability": {
+      "name": "Durability",
+      "action": "Passive",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Passive. Each rank permanently adds the Discipline's Durability value to the character's Death Rating and Unconsciousness Rating.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "+ (Discipline Durability x rank) to Death Rating and Unconsciousness Rating."
+        }
+      ]
+    },
+    "Earth Skin": {
+      "name": "Earth Skin",
+      "action": "Standard",
+      "attribute": "Toughness"
+    },
+    "False Sight": {
+      "name": "False Sight",
+      "action": "Free",
+      "attribute": "Willpower"
+    },
+    "Fire Blood": {
+      "name": "Fire Blood",
+      "action": "Standard"
+    },
+    "First Impression": {
+      "name": "First Impression",
+      "action": "Standard",
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "target's Social Defense",
+      "summary": "Make a strong first impression on someone newly met (vs Social Defense); on success improve their Attitude by one degree, more with extra successes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Improve the target's Attitude by one degree (+ per extra successes)."
+        }
+      ]
+    },
+    "Flame Arrow": {
+      "name": "Flame Arrow",
+      "action": "Free",
+      "attribute": "Willpower"
+    },
+    "Frighten": {
+      "name": "Frighten",
+      "action": "Standard",
+      "attribute": "Willpower",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "target's Mystic Defense",
+      "summary": "Instill fear with a silent stare (vs Mystic Defense); each success imposes -2 to all the target's tests while frightened.",
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Action"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "result",
+          "condition": "on-success",
+          "perSuccess": true,
+          "scope": "the frightened target's tests",
+          "duration": "special",
+          "source": "talent"
+        }
+      ]
+    },
+    "Impressive Display": {
+      "name": "Impressive Display",
+      "action": "Simple"
+    },
+    "Lion Heart": {
+      "name": "Lion Heart",
+      "action": "Free",
+      "attribute": "Willpower"
+    },
+    "Long Shot": {
+      "name": "Long Shot",
+      "action": "Simple",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Imbue a ranged weapon with magical force, extending its effective range beyond normal limits.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Extend a ranged weapon's effective range."
+        }
+      ]
+    },
+    "Melee Weapon": {
+      "name": "Melee Weapon",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Missile Weapon": {
+      "name": "Missile Weapon",
+      "action": "Standard",
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "target's Physical Defense",
+      "summary": "Ranged attack with a bow, crossbow, or similar projectile weapon against the target's Physical Defense; on a hit, make a Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Hit — follow with a ranged Damage test."
+        }
+      ]
+    },
+    "Mystic Aim": {
+      "name": "Mystic Aim",
+      "action": "Simple",
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "target's Mystic Defense",
+      "summary": "Take careful, magically-marked aim at a visible target (vs Mystic Defense); each success grants +2 to ranged attacks against that target.",
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "result",
+          "condition": "on-success",
+          "perSuccess": true,
+          "scope": "ranged attacks vs the marked target",
+          "duration": "special",
+          "source": "talent"
+        }
+      ]
+    },
+    "Mystic Pursuit": {
+      "name": "Mystic Pursuit",
+      "action": "Standard",
+      "attribute": "Perception",
+      "strain": 2,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Sense the direction and relative location of a person or object by focusing on an item associated with it (a hair, a fragment, a Pattern Item).",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Learn the target's relative location/direction."
+        }
+      ]
+    },
+    "Navigation": {
+      "name": "Navigation",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Public Speaking": {
+      "name": "Public Speaking",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Spot Armor Flaw": {
+      "name": "Spot Armor Flaw",
+      "action": "Simple",
+      "attribute": "Perception"
+    },
+    "Sprint": {
+      "name": "Sprint",
+      "action": "Simple"
+    },
+    "Stealthy Stride": {
+      "name": "Stealthy Stride",
+      "action": "Simple",
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "summary": "Move quietly and unobtrusively; opposed by observers' Perception/Awareness to avoid being detected.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Move undetected past observers."
+        }
+      ]
+    },
+    "Surprise Strike": {
+      "name": "Surprise Strike",
+      "action": "Free",
+      "attribute": "Strength"
+    },
+    "Swift Kick": {
+      "name": "Swift Kick",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Tattooist": {
+      "name": "Tattooist",
+      "action": "Sustain",
+      "attribute": "Dexterity"
+    },
+    "Temper Flesh": {
+      "name": "Temper Flesh",
+      "action": "Sustain",
+      "attribute": "Willpower"
+    },
+    "Throwing Weapon": {
+      "name": "Throwing Weapon",
+      "action": "Standard",
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "target's Physical Defense",
+      "summary": "Ranged attack with a thrown weapon against the target's Physical Defense; on a hit, make a Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Hit — follow with a Damage test."
+        }
+      ]
+    },
+    "Tiger Spring": {
+      "name": "Tiger Spring",
+      "action": "Free"
+    },
+    "Tracking": {
+      "name": "Tracking",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "True Shot": {
+      "name": "True Shot",
+      "action": "Free",
+      "strain": 2,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Spend extra Karma on a Missile or Throwing Weapons test (2 Strain), adding up to rank additional Karma to greatly boost accuracy.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Adds extra Karma (up to rank) to a ranged Attack test."
+        }
+      ]
+    },
+    "True Sight": {
+      "name": "True Sight"
+    },
+    "Unarmed Combat": {
+      "name": "Unarmed Combat",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Waterfall Slam": {
+      "name": "Waterfall Slam",
+      "action": "Free"
+    },
+    "Wood Skin": {
+      "name": "Wood Skin",
+      "action": "Standard",
+      "attribute": "Toughness"
+    },
+    "Wound Balance": {
+      "name": "Wound Balance",
+      "action": "Free",
+      "attribute": "Strength"
+    },
+    "Read/Write Language (Dwarf)": {
+      "name": "Read/Write Language (Dwarf)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Elf)": {
+      "name": "Read/Write Language (Elf)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Human)": {
+      "name": "Read/Write Language (Human)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Obsidiman)": {
+      "name": "Read/Write Language (Obsidiman)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Ork)": {
+      "name": "Read/Write Language (Ork)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (T`skrang)": {
+      "name": "Read/Write Language (T`skrang)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Troll)": {
+      "name": "Read/Write Language (Troll)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Windling)": {
+      "name": "Read/Write Language (Windling)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Throalic)": {
+      "name": "Read/Write Language (Throalic)",
+      "action": "Standrd"
+    },
+    "Read/Write Language (Theran)": {
+      "name": "Read/Write Language (Theran)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Read/Write Language (Drake)": {
+      "name": "Read/Write Language (Drake)",
+      "action": "Standrd"
+    },
+    "Speak Language (Dwarf)": {
+      "name": "Speak Language (Dwarf)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Elf)": {
+      "name": "Speak Language (Elf)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Human)": {
+      "name": "Speak Language (Human)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Obsidiman)": {
+      "name": "Speak Language (Obsidiman)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Ork)": {
+      "name": "Speak Language (Ork)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (T`skrang)": {
+      "name": "Speak Language (T`skrang)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Troll)": {
+      "name": "Speak Language (Troll)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Windling)": {
+      "name": "Speak Language (Windling)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Throalic)": {
+      "name": "Speak Language (Throalic)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Theran)": {
+      "name": "Speak Language (Theran)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Speak Language (Drake)": {
+      "name": "Speak Language (Drake)",
+      "action": "Standrd",
+      "attribute": "Perception"
+    },
+    "Point-Blank Shot": {
+      "name": "Point-Blank Shot",
+      "action": "Standard"
+    },
+    "Picking Pockets": {
+      "name": "Picking Pockets",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Power Mask": {
+      "name": "Power Mask",
+      "action": "Sustain",
+      "attribute": "Willpower"
+    },
+    "Alley Cat Approach": {
+      "name": "Alley Cat Approach",
+      "action": "Standard"
+    },
+    "Animal Leadership": {
+      "name": "Animal Leadership",
+      "action": "Standard"
+    },
+    "Armored Matrix": {
+      "name": "Armored Matrix",
+      "action": "NA"
+    },
+    "Astral Domain": {
+      "name": "Astral Domain",
+      "action": "Standard"
+    },
+    "Astral Pocket": {
+      "name": "Astral Pocket",
+      "action": "Standard"
+    },
+    "Aura Armor": {
+      "name": "Aura Armor",
+      "action": "Standard"
+    },
+    "Bardic Voice": {
+      "name": "Bardic Voice",
+      "action": "Free"
+    },
+    "Beguiling Blade": {
+      "name": "Beguiling Blade",
+      "action": "Free"
+    },
+    "Blind Fire": {
+      "name": "Blind Fire",
+      "action": "Simple"
+    },
+    "Blood Insight": {
+      "name": "Blood Insight",
+      "action": "Sustained"
+    },
+    "Blood of Death’s Sea": {
+      "name": "Blood of Death’s Sea",
+      "action": "Free"
+    },
+    "Bloodhound Form": {
+      "name": "Bloodhound Form",
+      "action": "Sustained"
+    },
+    "Burning Vigor": {
+      "name": "Burning Vigor",
+      "action": "Free"
+    },
+    "Casting Pattern": {
+      "name": "Casting Pattern",
+      "action": "Simple"
+    },
+    "Chameleon": {
+      "name": "Chameleon",
+      "action": "Free"
+    },
+    "Champion Challenge": {
+      "name": "Champion Challenge",
+      "action": "Standard"
+    },
+    "Chilling Strike": {
+      "name": "Chilling Strike",
+      "action": "Free"
+    },
+    "Concentrated Assault": {
+      "name": "Concentrated Assault",
+      "action": "Standard"
+    },
+    "Concise Casting": {
+      "name": "Concise Casting",
+      "action": "Simple"
+    },
+    "Confront Horror": {
+      "name": "Confront Horror",
+      "action": "Standard"
+    },
+    "Contest of Wills": {
+      "name": "Contest of Wills",
+      "action": "Free"
+    },
+    "Critical Hit": {
+      "name": "Critical Hit",
+      "action": "Free"
+    },
+    "Cutting Words": {
+      "name": "Cutting Words",
+      "action": "Simple"
+    },
+    "Defensive Posture": {
+      "name": "Defensive Posture",
+      "action": "Free"
+    },
+    "Disarming Smile": {
+      "name": "Disarming Smile",
+      "action": "Standard"
+    },
+    "Dream Thief": {
+      "name": "Dream Thief",
+      "action": "Standard"
+    },
+    "Eagle Eye": {
+      "name": "Eagle Eye",
+      "action": "Free"
+    },
+    "Echolocation": {
+      "name": "Echolocation",
+      "action": "Free"
+    },
+    "Effect Pattern": {
+      "name": "Effect Pattern",
+      "action": "Simple"
+    },
+    "Eidetic Memory": {
+      "name": "Eidetic Memory",
+      "action": "Simple"
+    },
+    "Elemental Mastery": {
+      "name": "Elemental Mastery",
+      "action": "Free"
+    },
+    "Elemental Walk": {
+      "name": "Elemental Walk",
+      "action": "Standard"
+    },
+    "Enthralling Visions": {
+      "name": "Enthralling Visions",
+      "action": "Free"
+    },
+    "Escape Plan": {
+      "name": "Escape Plan",
+      "action": "Sustained"
+    },
+    "Ethereal Weapon": {
+      "name": "Ethereal Weapon",
+      "action": "Simple"
+    },
+    "Fluid Movement": {
+      "name": "Fluid Movement",
+      "action": "Simple"
+    },
+    "Forge Flesh": {
+      "name": "Forge Flesh",
+      "action": "Standard"
+    },
+    "Glyph of Attunement": {
+      "name": "Glyph of Attunement",
+      "action": "Simple"
+    },
+    "Glyph of Reversal": {
+      "name": "Glyph of Reversal",
+      "action": "Free"
+    },
+    "Glyph of Shielding": {
+      "name": "Glyph of Shielding",
+      "action": "Simple"
+    },
+    "Glyph of Unweaving": {
+      "name": "Glyph of Unweaving",
+      "action": "Free"
+    },
+    "Goring Attack": {
+      "name": "Goring Attack",
+      "action": "Free"
+    },
+    "Howl": {
+      "name": "Howl",
+      "action": "Simple"
+    },
+    "Impossible Hide": {
+      "name": "Impossible Hide",
+      "action": "Standard"
+    },
+    "Influence Missile": {
+      "name": "Influence Missile",
+      "action": "Free"
+    },
+    "Infuse Memory": {
+      "name": "Infuse Memory",
+      "action": "Free"
+    },
+    "Lion Spirit": {
+      "name": "Lion Spirit",
+      "action": "NA"
+    },
+    "Living Weapon": {
+      "name": "Living Weapon",
+      "action": "Standard"
+    },
+    "Matrix Sight": {
+      "name": "Matrix Sight",
+      "action": "Simple"
+    },
+    "Memory Probe": {
+      "name": "Memory Probe",
+      "action": "Sustained"
+    },
+    "Missile Lock": {
+      "name": "Missile Lock",
+      "action": "Simple"
+    },
+    "Multi-Charge": {
+      "name": "Multi-Charge",
+      "action": "Simple"
+    },
+    "Multi-Shot": {
+      "name": "Multi-Shot",
+      "action": "Simple"
+    },
+    "Multi-Strike": {
+      "name": "Multi-Strike",
+      "action": "Simple"
+    },
+    "Nethersoul": {
+      "name": "Nethersoul",
+      "action": "Standard"
+    },
+    "Netherwalk": {
+      "name": "Netherwalk",
+      "action": "Standard"
+    },
+    "Perfect Focus": {
+      "name": "Perfect Focus",
+      "action": "Simple"
+    },
+    "Plant Talk": {
+      "name": "Plant Talk",
+      "action": "Standard"
+    },
+    "Rally": {
+      "name": "Rally",
+      "action": "Standard"
+    },
+    "Range Pattern": {
+      "name": "Range Pattern",
+      "action": "Simple"
+    },
+    "Relentless Recovery": {
+      "name": "Relentless Recovery",
+      "action": "Free"
+    },
+    "Resist Pain": {
+      "name": "Resist Pain",
+      "action": "NA"
+    },
+    "Safe Thought": {
+      "name": "Safe Thought",
+      "action": "Free"
+    },
+    "Second Chance": {
+      "name": "Second Chance",
+      "action": "Free"
+    },
+    "Shared Matrix": {
+      "name": "Shared Matrix",
+      "action": "NA"
+    },
+    "Shock Treatment": {
+      "name": "Shock Treatment",
+      "action": "Standard"
+    },
+    "Snapshot": {
+      "name": "Snapshot",
+      "action": "Free"
+    },
+    "Snatch Talent": {
+      "name": "Snatch Talent",
+      "action": "Standard"
+    },
+    "Song of Battle": {
+      "name": "Song of Battle",
+      "action": "Free"
+    },
+    "Song of Deflection": {
+      "name": "Song of Deflection",
+      "action": "Standard"
+    },
+    "Soul Aegis": {
+      "name": "Soul Aegis",
+      "action": "Standard"
+    },
+    "Spirit Strike": {
+      "name": "Spirit Strike",
+      "action": "Standard"
+    },
+    "Spliced Weave": {
+      "name": "Spliced Weave",
+      "action": "Simple"
+    },
+    "Stone Skin": {
+      "name": "Stone Skin",
+      "action": "Standard"
+    },
+    "Storm Shield": {
+      "name": "Storm Shield",
+      "action": "Standard"
+    },
+    "Summoning Circle": {
+      "name": "Summoning Circle",
+      "action": "Sustained"
+    },
+    "Thunderstruck": {
+      "name": "Thunderstruck",
+      "action": "Free"
+    },
+    "Thunderous Resolve": {
+      "name": "Thunderous Resolve",
+      "action": "Free"
+    },
+    "Truth Through Lies": {
+      "name": "Truth Through Lies",
+      "action": "Standard"
+    },
+    "Undermine": {
+      "name": "Undermine",
+      "action": "Simple"
+    },
+    "Venom": {
+      "name": "Venom",
+      "action": "Free"
+    },
+    "Vicious Wound": {
+      "name": "Vicious Wound",
+      "action": "Simple"
+    },
+    "Vine Armor": {
+      "name": "Vine Armor",
+      "action": "Free"
+    },
+    "Vital Strike": {
+      "name": "Vital Strike",
+      "action": "Free"
+    },
+    "Vital Ward": {
+      "name": "Vital Ward",
+      "action": "Free"
+    },
+    "Weapon Breaker": {
+      "name": "Weapon Breaker",
+      "action": "Free"
+    },
+    "Witty Repartee": {
+      "name": "Witty Repartee",
+      "action": "Free"
+    },
+    "World Pulse": {
+      "name": "World Pulse",
+      "action": "Sustained"
+    },
+    "Unflinching Fortitude": {
+      "name": "Unflinching Fortitude"
+    },
+    "Absorb Spell": {
+      "name": "Absorb Spell",
+      "action": "Free"
+    },
+    "Accompaniment": {
+      "name": "Accompaniment",
+      "action": "Sustained (10 min)"
+    },
+    "Acid Splash": {
+      "name": "Acid Splash",
+      "action": "Standard (Special)"
+    },
+    "Acrobatic Recovery": {
+      "name": "Acrobatic Recovery",
+      "action": "Simple"
+    },
+    "Acrobatic Strike": {
+      "name": "Acrobatic Strike",
+      "action": "Simple"
+    },
+    "Aggressive Maneuver": {
+      "name": "Aggressive Maneuver",
+      "action": "Simple"
+    },
+    "Air Legs": {
+      "name": "Air Legs",
+      "action": "Free"
+    },
+    "Anticipate Movement": {
+      "name": "Anticipate Movement",
+      "action": "Simple"
+    },
+    "Anticipate Spell": {
+      "name": "Anticipate Spell",
+      "action": "Simple"
+    },
+    "Arcane Accuracy": {
+      "name": "Arcane Accuracy",
+      "action": "Standard (Special)"
+    },
+    "Arcane Curses (Special Maneuver)": {
+      "name": "Arcane Curses (Special Maneuver)",
+      "action": "NA"
+    },
+    "Arcane Edge": {
+      "name": "Arcane Edge",
+      "action": "Standard (Special)"
+    },
+    "Arrow Cutting (Special Maneuver)": {
+      "name": "Arrow Cutting (Special Maneuver)"
+    },
+    "Assess Intentions": {
+      "name": "Assess Intentions",
+      "action": "Sustained (10 minutes)"
+    },
+    "Astral Stealth": {
+      "name": "Astral Stealth",
+      "action": "Standard"
+    },
+    "Astral Strain": {
+      "name": "Astral Strain",
+      "action": "Standard (Special)"
+    },
+    "Astral Survey": {
+      "name": "Astral Survey",
+      "action": "Sustained (10 minutes)"
+    },
+    "Astral Ward": {
+      "name": "Astral Ward",
+      "action": "Standard (Special)"
+    },
+    "Augment Ally’s Form": {
+      "name": "Augment Ally’s Form",
+      "action": "Sustained"
+    },
+    "Beast Summons": {
+      "name": "Beast Summons",
+      "action": "Free"
+    },
+    "Befuddle": {
+      "name": "Befuddle",
+      "action": "Standard (Special)"
+    },
+    "Bleed": {
+      "name": "Bleed",
+      "action": "Standard (Special)"
+    },
+    "Body Blade": {
+      "name": "Body Blade",
+      "action": "Free"
+    },
+    "Burst of Speed": {
+      "name": "Burst of Speed",
+      "action": "Standard (Special)"
+    },
+    "Call Any Missile": {
+      "name": "Call Any Missile",
+      "action": "Simple"
+    },
+    "Claw Riposte": {
+      "name": "Claw Riposte",
+      "action": "Free"
+    },
+    "Claw Tool": {
+      "name": "Claw Tool",
+      "action": "Sustained"
+    },
+    "Cold Case": {
+      "name": "Cold Case",
+      "action": "Sustained (10 minutes)"
+    },
+    "Control the Tempo": {
+      "name": "Control the Tempo",
+      "action": "Simple"
+    },
+    "Courage": {
+      "name": "Courage",
+      "action": "Standard (Special)"
+    },
+    "Craft Blood Charm": {
+      "name": "Craft Blood Charm",
+      "action": "N/A"
+    },
+    "Craft Common Magic Item": {
+      "name": "Craft Common Magic Item",
+      "action": "N/A"
+    },
+    "Craft Poison": {
+      "name": "Craft Poison",
+      "action": "N/A"
+    },
+    "Craft True Pattern": {
+      "name": "Craft True Pattern",
+      "action": "N/A"
+    },
+    "Create Orichalcum": {
+      "name": "Create Orichalcum",
+      "action": "N/A"
+    },
+    "Defiant Shout": {
+      "name": "Defiant Shout",
+      "action": "Simple"
+    },
+    "Deflect Blow": {
+      "name": "Deflect Blow",
+      "action": "Simple"
+    },
+    "Deflection": {
+      "name": "Deflection",
+      "action": "Standard (Special)"
+    },
+    "Deny Terrain": {
+      "name": "Deny Terrain",
+      "action": "Simple"
+    },
+    "Design Enchanting Pattern": {
+      "name": "Design Enchanting Pattern",
+      "action": "N/A"
+    },
+    "Destructive Shout": {
+      "name": "Destructive Shout",
+      "action": "Simple"
+    },
+    "Detect Poison": {
+      "name": "Detect Poison",
+      "action": "Simple"
+    },
+    "Detect Spirit": {
+      "name": "Detect Spirit",
+      "action": "Standard"
+    },
+    "Detect True Element": {
+      "name": "Detect True Element",
+      "action": "Standard"
+    },
+    "Detect Weapon": {
+      "name": "Detect Weapon",
+      "action": "Simple"
+    },
+    "Dirty Fighting": {
+      "name": "Dirty Fighting",
+      "action": "Simple"
+    },
+    "Doubt": {
+      "name": "Doubt",
+      "action": "Standard (Special)"
+    },
+    "Efficient Armor Forging": {
+      "name": "Efficient Armor Forging",
+      "action": "Sustained"
+    },
+    "Efficient Weapon Forging": {
+      "name": "Efficient Weapon Forging",
+      "action": "Sustained"
+    },
+    "Empathic Command": {
+      "name": "Empathic Command",
+      "action": "Free"
+    },
+    "Evaluate": {
+      "name": "Evaluate",
+      "action": "Standard"
+    },
+    "Extend Range": {
+      "name": "Extend Range",
+      "action": "Simple"
+    },
+    "Eye Gouge (Special Maneuver)": {
+      "name": "Eye Gouge (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Feint": {
+      "name": "Feint",
+      "action": "Simple"
+    },
+    "Flare": {
+      "name": "Flare",
+      "action": "Standard"
+    },
+    "Flirting": {
+      "name": "Flirting",
+      "action": "Sustained"
+    },
+    "Fluster": {
+      "name": "Fluster",
+      "action": "Standard (Special)"
+    },
+    "Foresee Aggression": {
+      "name": "Foresee Aggression",
+      "action": "Simple"
+    },
+    "Forgery": {
+      "name": "Forgery",
+      "action": "Sustained"
+    },
+    "Fortify Armor": {
+      "name": "Fortify Armor",
+      "action": "Standard (Special)"
+    },
+    "Fortify Pattern": {
+      "name": "Fortify Pattern",
+      "action": "Standard (Special)"
+    },
+    "Getting to Know You (Special Maneuver)": {
+      "name": "Getting to Know You (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Ghost Master Ritual": {
+      "name": "Ghost Master Ritual",
+      "action": "Sustained"
+    },
+    "Give Ground (Special Maneuver)": {
+      "name": "Give Ground (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Glide": {
+      "name": "Glide",
+      "action": "Standard"
+    },
+    "Grand Entrance": {
+      "name": "Grand Entrance",
+      "action": "Standard"
+    },
+    "Grasping Vines": {
+      "name": "Grasping Vines",
+      "action": "Standard (Special)"
+    },
+    "Halt Disease": {
+      "name": "Halt Disease",
+      "action": "Sustained (1 min)"
+    },
+    "Hamstring (Special Maneuver)": {
+      "name": "Hamstring (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Handle Elements": {
+      "name": "Handle Elements",
+      "action": "N/A"
+    },
+    "Harrying Attack (Special Maneuver)": {
+      "name": "Harrying Attack (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Harvest True Element": {
+      "name": "Harvest True Element",
+      "action": "Sustained (4 hours)"
+    },
+    "Heal Animal Companion": {
+      "name": "Heal Animal Companion",
+      "action": "Standard"
+    },
+    "I’ll Take That (Special Maneuver)": {
+      "name": "I’ll Take That (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Ideal Appearance": {
+      "name": "Ideal Appearance",
+      "action": "Simple"
+    },
+    "Improved Improvised Weapon": {
+      "name": "Improved Improvised Weapon",
+      "action": "Standard"
+    },
+    "Improvised Pattern": {
+      "name": "Improvised Pattern",
+      "action": "Simple"
+    },
+    "Improvised Weapon": {
+      "name": "Improvised Weapon",
+      "action": "Standard"
+    },
+    "Incorporate Bound Spirit": {
+      "name": "Incorporate Bound Spirit",
+      "action": "N/A"
+    },
+    "Incorporate Glyph": {
+      "name": "Incorporate Glyph",
+      "action": "N/A"
+    },
+    "Intimidating Bellow": {
+      "name": "Intimidating Bellow",
+      "action": "Simple"
+    },
+    "Jinx": {
+      "name": "Jinx",
+      "action": "Simple"
+    },
+    "Lip Reading": {
+      "name": "Lip Reading",
+      "action": "Standard"
+    },
+    "Make Concession": {
+      "name": "Make Concession",
+      "action": "Free"
+    },
+    "Mapmaking": {
+      "name": "Mapmaking",
+      "action": "Sustained"
+    },
+    "Mind Armor": {
+      "name": "Mind Armor",
+      "action": "Standard"
+    },
+    "Mind Blade": {
+      "name": "Mind Blade",
+      "action": "Standard"
+    },
+    "Mobile Interference": {
+      "name": "Mobile Interference",
+      "action": "Standard"
+    },
+    "Mold Ally’s Form": {
+      "name": "Mold Ally’s Form",
+      "action": "Sustained"
+    },
+    "One Eye Open": {
+      "name": "One Eye Open",
+      "action": "Sustained (10 min)"
+    },
+    "Opening (Special Maneuver)": {
+      "name": "Opening (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Other Sense": {
+      "name": "Other Sense",
+      "action": "Standard"
+    },
+    "Overpower (Special Maneuver)": {
+      "name": "Overpower (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Overrun (Special Maneuver)": {
+      "name": "Overrun (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Patient Maneuver": {
+      "name": "Patient Maneuver",
+      "action": "Free - see text"
+    },
+    "Pattern Stress": {
+      "name": "Pattern Stress",
+      "action": "Standard (Special)"
+    },
+    "Photographic Memory": {
+      "name": "Photographic Memory",
+      "action": "Standard"
+    },
+    "Pilot Boat": {
+      "name": "Pilot Boat",
+      "action": "Sustained"
+    },
+    "Poisoned Influence": {
+      "name": "Poisoned Influence",
+      "action": "Sustained"
+    },
+    "Pounce (Special Maneuver)": {
+      "name": "Pounce (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Precise Shot": {
+      "name": "Precise Shot",
+      "action": "Simple"
+    },
+    "Psychometry": {
+      "name": "Psychometry",
+      "action": "Standard"
+    },
+    "Push Against the Horror": {
+      "name": "Push Against the Horror",
+      "action": "Standard"
+    },
+    "Rapid Armor Forging (Special Maneuver)": {
+      "name": "Rapid Armor Forging (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Rapid Weapon Forging (Special Maneuver)": {
+      "name": "Rapid Weapon Forging (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Read River": {
+      "name": "Read River",
+      "action": "Sustained"
+    },
+    "Redirect Attack (Special Maneuver)": {
+      "name": "Redirect Attack (Special Maneuver)",
+      "action": "N/A"
+    },
+    "Remember Conversation": {
+      "name": "Remember Conversation",
+      "action": "Standard"
+    },
+    "Returning": {
+      "name": "Returning",
+      "action": "Free"
+    },
+    "Roll With the Punches": {
+      "name": "Roll With the Punches",
+      "action": "Free"
+    },
+    "Sailing": {
+      "name": "Sailing",
+      "action": "Sustained"
+    },
+    "Savage Limbs": {
+      "name": "Savage Limbs",
+      "action": "Free"
+    },
+    "Sculpt Ally’s Form": {
+      "name": "Sculpt Ally’s Form",
+      "action": "Sustained"
+    },
+    "Seduction": {
+      "name": "Seduction",
+      "action": "Sustained (10 min)"
+    },
+    "Setup": {
+      "name": "Setup",
+      "action": "Simple"
+    },
+    "Shackle Shrug": {
+      "name": "Shackle Shrug",
+      "action": "Sustained (1 minute)"
+    },
+    "Shield Drive": {
+      "name": "Shield Drive",
+      "action": "Simple"
+    },
+    "Soothe Venom": {
+      "name": "Soothe Venom",
+      "action": "Standard (Special)"
+    },
+    "Spider Climb": {
+      "name": "Spider Climb",
+      "action": "Standard"
+    },
+    "Sprain": {
+      "name": "Sprain",
+      "action": "Standard (Special)"
+    },
+    "Streetwise": {
+      "name": "Streetwise",
+      "action": "Sustained"
+    },
+    "Strength of Bronze": {
+      "name": "Strength of Bronze",
+      "action": "N/A"
+    },
+    "Strength of Iron": {
+      "name": "Strength of Iron",
+      "action": "N/A"
+    },
+    "Strength of Steel": {
+      "name": "Strength of Steel",
+      "action": "N/A"
+    },
+    "Stutter": {
+      "name": "Stutter",
+      "action": "Standard (Special)"
+    },
+    "Subtle Casting": {
+      "name": "Subtle Casting",
+      "action": "Free"
+    },
+    "Swing Attack": {
+      "name": "Swing Attack",
+      "action": "Standard"
+    },
+    "Swinging Move": {
+      "name": "Swinging Move",
+      "action": "Standard"
+    },
+    "Tail Weapon": {
+      "name": "Tail Weapon",
+      "action": "Simple"
+    },
+    "Take the Hit": {
+      "name": "Take the Hit",
+      "action": "Simple"
+    },
+    "Tame Animal": {
+      "name": "Tame Animal",
+      "action": "Standard"
+    },
+    "Telling the Tale": {
+      "name": "Telling the Tale",
+      "action": "Sustained"
+    },
+    "Throw Anything": {
+      "name": "Throw Anything",
+      "action": "N/A"
+    },
+    "Touching the Past": {
+      "name": "Touching the Past",
+      "action": "Standard"
+    },
+    "Traceless Stride": {
+      "name": "Traceless Stride",
+      "action": "Standard"
+    },
+    "Unsettle": {
+      "name": "Unsettle",
+      "action": "Standard (Special)"
+    },
+    "Vault Opponent": {
+      "name": "Vault Opponent",
+      "action": "Simple"
+    },
+    "Wind Bow": {
+      "name": "Wind Bow",
+      "action": "Standard"
+    },
+    "Wrecking Claws": {
+      "name": "Wrecking Claws",
+      "action": "Sustained"
+    },
+    "Arrow Fletching (Artisan)": {
+      "name": "Arrow Fletching (Artisan)",
+      "action": "Sustain"
+    },
+    "Body Painting (Artisan)": {
+      "name": "Body Painting (Artisan)",
+      "action": "Sustain"
+    },
+    "Bone Carving (Artisan)": {
+      "name": "Bone Carving (Artisan)",
+      "action": "Sustain"
+    },
+    "Braiding (Artisan)": {
+      "name": "Braiding (Artisan)",
+      "action": "Sustain"
+    },
+    "Danger Sense": {
+      "name": "Danger Sense",
+      "action": "Free",
+      "attribute": "Dexterity"
+    },
+    "Dead Fall": {
+      "name": "Dead Fall",
+      "action": "Simple",
+      "attribute": "Willpower"
+    },
+    "Diplomacy": {
+      "name": "Diplomacy",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Direction Arrow": {
+      "name": "Direction Arrow",
+      "action": "Standard"
+    },
+    "Disarm": {
+      "name": "Disarm",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Disarm Trap": {
+      "name": "Disarm Trap",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Disguise": {
+      "name": "Disguise",
+      "action": "Sustain"
+    },
+    "Disguise Self": {
+      "name": "Disguise Self",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Dispel Magic": {
+      "name": "Dispel Magic",
+      "action": "Standard",
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "End an ongoing spell or talent effect within rank x2 yards; tested against a Difficulty based on the effect's power.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Cancel the targeted magical effect."
+        }
+      ]
+    },
+    "Distract": {
+      "name": "Distract",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Dominate Beast": {
+      "name": "Dominate Beast",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Double Charge": {
+      "name": "Double Charge",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Elemental Hold": {
+      "name": "Elemental Hold",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Elemental Tongues": {
+      "name": "Elemental Tongues",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Embroidery": {
+      "name": "Embroidery",
+      "action": "Sustain"
+    },
+    "Emotion Song": {
+      "name": "Emotion Song",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Empathic Sense": {
+      "name": "Empathic Sense",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Engaging Banter": {
+      "name": "Engaging Banter",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Entertaining": {
+      "name": "Entertaining",
+      "action": "Sustain"
+    },
+    "Etiquette": {
+      "name": "Etiquette",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Evidence Analysis": {
+      "name": "Evidence Analysis",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Fast Hand": {
+      "name": "Fast Hand",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Fearsome Charge": {
+      "name": "Fearsome Charge",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Fire Heal": {
+      "name": "Fire Heal",
+      "action": "Sustain",
+      "attribute": "Willpower"
+    },
+    "Forge Armor": {
+      "name": "Forge Armor",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Forge Weapon": {
+      "name": "Forge Weapon",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Gliding Stride": {
+      "name": "Gliding Stride",
+      "action": "Free",
+      "attribute": "Dexterity"
+    },
+    "Graceful Exit": {
+      "name": "Graceful Exit",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Great Leap": {
+      "name": "Great Leap",
+      "action": "Free",
+      "attribute": "Dexterity"
+    },
+    "Haggle": {
+      "name": "Haggle",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Heartening Laugh": {
+      "name": "Heartening Laugh",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Hold Thread": {
+      "name": "Hold Thread",
+      "action": "Simple",
+      "attribute": "Willpower"
+    },
+    "Hypnotize": {
+      "name": "Hypnotize",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Inspire Others": {
+      "name": "Inspire Others",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Iron Constitution": {
+      "name": "Iron Constitution",
+      "action": "Free",
+      "attribute": "Toughness"
+    },
+    "Item History": {
+      "name": "Item History",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Knowledge": {
+      "name": "Knowledge",
+      "action": "Standard"
+    },
+    "Lasting Impression": {
+      "name": "Lasting Impression",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Leadership": {
+      "name": "Leadership",
+      "action": "Sustain",
+      "attribute": "Charisma"
+    },
+    "Life Check": {
+      "name": "Life Check",
+      "action": "Free",
+      "attribute": "Toughness"
+    },
+    "Lifesight": {
+      "name": "Lifesight",
+      "action": "Simple",
+      "attribute": "Perception"
+    },
+    "Lock Pick": {
+      "name": "Lock Pick",
+      "action": "Standard"
+    },
+    "Maneuver": {
+      "name": "Maneuver",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Manuscript Illumination": {
+      "name": "Manuscript Illumination",
+      "action": "Sustain"
+    },
+    "Map Making": {
+      "name": "Map Making",
+      "action": "Sustain"
+    },
+    "Mimic Voice": {
+      "name": "Mimic Voice",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Momentum Attack": {
+      "name": "Momentum Attack",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Mount Attack": {
+      "name": "Mount Attack",
+      "action": "Simple"
+    },
+    "Orbiting Spy": {
+      "name": "Orbiting Spy",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Painting": {
+      "name": "Painting",
+      "action": "Sustain"
+    },
+    "Physician": {
+      "name": "Physician",
+      "action": "Sustain"
+    },
+    "Poetry": {
+      "name": "Poetry",
+      "action": "Sustain"
+    },
+    "Read/Write Language": {
+      "name": "Read/Write Language",
+      "action": "Sustain"
+    },
+    "Research": {
+      "name": "Research",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Resist Taunt": {
+      "name": "Resist Taunt",
+      "action": "Free",
+      "attribute": "Willpower"
+    },
+    "Riposte": {
+      "name": "Riposte",
+      "action": "Free",
+      "attribute": "Dexterity"
+    },
+    "Robe Embroidery": {
+      "name": "Robe Embroidery",
+      "action": "Sustain"
+    },
+    "Rune Carving": {
+      "name": "Rune Carving",
+      "action": "Sustain"
+    },
+    "Safe Path": {
+      "name": "Safe Path",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Sail Embroidery": {
+      "name": "Sail Embroidery",
+      "action": "Sustain"
+    },
+    "Sculpting": {
+      "name": "Sculpting",
+      "action": "Sustain"
+    },
+    "Second Attack": {
+      "name": "Second Attack",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Second Shot": {
+      "name": "Second Shot",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Second Weapon": {
+      "name": "Second Weapon",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Shield Bash": {
+      "name": "Shield Bash",
+      "action": "Simple",
+      "attribute": "Strength"
+    },
+    "Skinning": {
+      "name": "Skinning",
+      "action": "Sustained",
+      "attribute": "Dexterity"
+    },
+    "Slough Blame": {
+      "name": "Slough Blame",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Speak Language": {
+      "name": "Speak Language",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Spellcasting": {
+      "name": "Spellcasting",
+      "action": "Standard",
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "the spell's Casting Difficulty",
+      "summary": "Cast a spell held in a matrix by testing against its Casting Difficulty; on success the spell takes effect.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Spell is cast; resolve its effect."
+        }
+      ]
+    },
+    "Spirit Hold": {
+      "name": "Spirit Hold",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Spirit Mount": {
+      "name": "Spirit Mount",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Spirit Talk": {
+      "name": "Spirit Talk",
+      "action": "Standard",
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "spirit's Mystic Defense",
+      "summary": "Communicate with spirits and entities regardless of shared language (vs Mystic Defense) for a number of minutes equal to rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Converse with the spirit for rank minutes."
+        }
+      ]
+    },
+    "Steel Thought": {
+      "name": "Steel Thought",
+      "action": "Free",
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "opponent's test result",
+      "summary": "Reactively resist an ability targeting your Mystic Defense; on success you reinforce your will and the ability fails to affect you.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Negate an ability targeting your Mystic Defense."
+        }
+      ]
+    },
+    "Steely Stare": {
+      "name": "Steely Stare",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Stopping Aim": {
+      "name": "Stopping Aim",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Summon": {
+      "name": "Summon",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Suppress Curse": {
+      "name": "Suppress Curse",
+      "action": "Standard",
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Temporarily nullify curses or negative magical effects on a target; tested against the highest effect Step/Dispel Difficulty (+1 per additional effect).",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Suppress the target's negative magical effects."
+        }
+      ]
+    },
+    "Sure Mount": {
+      "name": "Sure Mount",
+      "action": "Free",
+      "attribute": "Strength"
+    },
+    "Swimming": {
+      "name": "Swimming",
+      "action": "Standard"
+    },
+    "Tactics": {
+      "name": "Tactics",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Tailor": {
+      "name": "Tailor",
+      "action": "Standard"
+    },
+    "Taunt": {
+      "name": "Taunt",
+      "action": "Simple",
+      "attribute": "Charisma"
+    },
+    "Tenacious Weave": {
+      "name": "Tenacious Weave",
+      "action": "Free",
+      "attribute": "Willpower"
+    },
+    "Thought Link": {
+      "name": "Thought Link",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving": {
+      "name": "Thread Weaving",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Air Sailor)": {
+      "name": "Thread Weaving (Air Sailor)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Archer)": {
+      "name": "Thread Weaving (Archer)",
+      "action": "Standard",
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Weave and maintain magical threads (to thread items, patterns, and Archer thread abilities such as Arrow Weaving); max active threads and thread rank equal to rank.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Enables weaving threads for thread items/abilities."
+        }
+      ]
+    },
+    "Thread Weaving (Beast Master)": {
+      "name": "Thread Weaving (Beast Master)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Cavalryman)": {
+      "name": "Thread Weaving (Cavalryman)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Elementalist)": {
+      "name": "Thread Weaving (Elementalist)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (illusionist)": {
+      "name": "Thread Weaving (illusionist)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Nethermancer)": {
+      "name": "Thread Weaving (Nethermancer)",
+      "action": "Standard",
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Weave and maintain magical threads (to thread items, spell patterns, and Nethermancer abilities); max active threads and thread rank equal to rank.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Enables weaving threads for thread items/spell abilities."
+        }
+      ]
+    },
+    "Thread Weaving (Scout)": {
+      "name": "Thread Weaving (Scout)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Sky Raider)": {
+      "name": "Thread Weaving (Sky Raider)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Swordmaster)": {
+      "name": "Thread Weaving (Swordmaster)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Thief)": {
+      "name": "Thread Weaving (Thief)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Troubadour)": {
+      "name": "Thread Weaving (Troubadour)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Warrior)": {
+      "name": "Thread Weaving (Warrior)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Weaponsmith)": {
+      "name": "Thread Weaving (Weaponsmith)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Thread Weaving (Wizard)": {
+      "name": "Thread Weaving (Wizard)",
+      "action": "Standard",
+      "attribute": "Perception"
+    },
+    "Trick Riding": {
+      "name": "Trick Riding",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Versatility": {
+      "name": "Versatility",
+      "action": "Passive"
+    },
+    "Wheeling Attack": {
+      "name": "Wheeling Attack",
+      "action": "Standard",
+      "attribute": "Dexterity"
+    },
+    "Wheeling Defense": {
+      "name": "Wheeling Defense",
+      "action": "Simple",
+      "attribute": "Dexterity"
+    },
+    "Wilderness Survival": {
+      "name": "Wilderness Survival",
+      "action": "Sustain",
+      "attribute": "Perception"
+    },
+    "Willforce": {
+      "name": "Willforce",
+      "action": "Free",
+      "attribute": "Willpower"
+    },
+    "Wind Catcher": {
+      "name": "Wind Catcher",
+      "action": "Standard",
+      "attribute": "Willpower"
+    },
+    "Winning Smile": {
+      "name": "Winning Smile",
+      "action": "Standard",
+      "attribute": "Charisma"
+    },
+    "Wood Carving": {
+      "name": "Wood Carving",
+      "action": "Sustain"
+    },
+    "Horror Lore": {
+      "name": "Horror Lore",
+      "action": "Sustained",
+      "attribute": "Perception"
+    },
+    "Animal Tracking": {
+      "name": "Animal Tracking",
+      "action": "Sustained"
+    },
+    "Hunting": {
+      "name": "Hunting",
+      "action": "Sustained",
+      "attribute": "Perception"
+    },
+    "Riding": {
+      "name": "Riding",
+      "action": "Sustained"
+    },
+    "Tanning": {
+      "name": "Tanning",
+      "action": "Sustained",
+      "attribute": "Perception"
+    },
+    "Patterncraft": {
+      "name": "Patterncraft",
+      "attribute": "Perception",
+      "action": "Standard",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Understand the workings of magic — read and write magical writing, and analyze magical patterns (e.g. translating grimoire pages).",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Read/analyze magical patterns and writing."
+        }
+      ]
+    },
+    "Enhance Animal Companion": {
+      "name": "Enhance Animal Companion",
+      "attribute": "Willpower"
+    },
+    "Fireblood": {
+      "name": "Fireblood",
+      "attribute": "Toughness"
+    },
+    "Lock Picking": {
+      "name": "Lock Picking",
+      "attribute": "Dexterity"
+    },
+    "Melee Weapons": {
+      "name": "Melee Weapons",
+      "attribute": "Dexterity"
+    },
+    "Missile Weapons": {
+      "name": "Missile Weapons",
+      "attribute": "Dexterity"
+    },
+    "Read and Write Language": {
+      "name": "Read and Write Language",
+      "attribute": "Perception"
+    },
+    "Throwing Weapons": {
+      "name": "Throwing Weapons",
+      "attribute": "Dexterity"
+    },
+    "Karma Ritual": {
+      "name": "Karma Ritual",
+      "action": "NA",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "A daily ritual (about an hour) that refills the character's Karma pool to its maximum.",
+      "effects": [
+        {
+          "type": "resource-modifier",
+          "target": {
+            "domain": "resource",
+            "name": "Karma"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "resource|Karma|Max"
+          },
+          "measure": "points",
+          "source": "talent",
+          "summary": "Refills Karma to maximum."
+        }
+      ]
+    },
+    "Standard Matrix": {
+      "name": "Standard Matrix",
+      "action": "NA",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "A basic spell matrix — an astral construct that safely holds one spell for casting without astral interference; rank governs the spell it can hold.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Holds one spell for safe casting."
+        }
+      ]
+    }
   }
 }

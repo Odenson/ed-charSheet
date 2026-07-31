@@ -8,9 +8,6 @@ Chakka-v7.13.xlsx
 # never commit / publish)
 rulebook extracts/
 
-# Verbatim copyrighted rulebook prose extracted into data (local only)
-rules/talents.descriptions.json
-
 # OS
 .DS_Store
 

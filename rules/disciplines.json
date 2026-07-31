@@ -1,0 +1,156 @@
+{
+  "schema": "ed-disciplines/1",
+  "source": "Earthdawn 4E Player's Guide — Disciplines. Mechanics distilled into structured data; no verbatim rulebook prose. Talent names normalized to match rules/talents.json and data/character.json (e.g. rulebook 'Missile Weapons' -> 'Missile Weapon', 'Thread Weaving (Arrow Weaving)' -> 'Thread Weaving (Archer)').",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v1)",
+  "notes": [
+    "Each circle lists only what it ADDS. The engine applies effects from every circle up to the character's current circle.",
+    "Progressive bonuses (e.g. Physical Defense +1/+2/+3 at circles 2/6/8) use stacking:highest so only the largest applies rather than summing.",
+    "This file covers circles 1-8 (Novice + Journeyman) as in the Player's Guide core; Warden/Master tiers to be added later.",
+    "Consolidates and replaces the former rules/disciplineTalents.json."
+  ],
+  "disciplines": [
+    {
+      "name": "Archer",
+      "importantAttributes": ["Dexterity", "Perception"],
+      "karmaRitual": { "summary": "Oils and strings the bow, meditates for stillness, then fires four arrows into a tight cluster. Restores the Karma pool." },
+      "artisanSkills": ["Arrow Fletching", "Wood Carving"],
+      "halfMagic": { "summary": "Care for and recognize ranged weapons, ammunition, and their makers." },
+      "durability": 5,
+      "talentOptions": {
+        "novice": ["Awareness", "Climbing", "Creature Analysis", "First Impression", "Impressive Display", "Navigation", "Stealthy Stride", "Throwing Weapon", "Tracking", "Wilderness Survival"],
+        "journeyman": ["Conversation", "Danger Sense", "Distract", "Etiquette", "Evidence Analysis", "Resist Taunt", "Speak Language", "Steel Thought", "Stopping Aim", "Tiger Spring"]
+      },
+      "circles": [
+        {
+          "circle": 1,
+          "freeTalents": ["Call Missile"],
+          "talents": ["Avoid Blow", "Missile Weapon", "Mystic Aim", "Thread Weaving (Archer)", "True Shot"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Perception" }, "scope": "sight-based", "source": "discipline", "summary": "May spend Karma on sight-based Perception tests." }
+          ]
+        },
+        {
+          "circle": 2,
+          "talents": ["Mystic Pursuit"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 3,
+          "talents": ["Anticipate Blow"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Initiative" }, "source": "discipline", "summary": "May spend Karma on Initiative tests." }
+          ]
+        },
+        {
+          "circle": 4,
+          "talents": ["Long Shot"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Mystic Defense." }
+          ]
+        },
+        {
+          "circle": 5,
+          "talents": ["Spot Armor Flaw"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Damage" }, "scope": "ranged weapons", "source": "discipline", "summary": "May spend Karma on Damage tests made with ranged weapons." },
+            { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "Create Projectile: once/round as a Standard action, take 1 Strain and make an Arrow Weaving (6) test; each success creates one arrow/bolt/throwing weapon (same type), lasting Arrow Weaving Rank minutes." }
+          ]
+        },
+        {
+          "circle": 6,
+          "talents": ["Bank Shot"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+2 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 7,
+          "talents": ["Flame Arrow"],
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "add", "value": 1, "measure": "step", "source": "discipline", "summary": "+1 Step to Initiative." }
+          ]
+        },
+        {
+          "circle": 8,
+          "talents": ["Second Shot"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+3 Physical Defense." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Nethermancer",
+      "importantAttributes": ["Charisma", "Perception", "Willpower"],
+      "karmaRitual": { "summary": "Shares tea and conversation about the world beyond with a spirit servant for half an hour. Restores the Karma pool." },
+      "artisanSkills": ["Bone Carving", "Robe Embroidery"],
+      "halfMagic": { "summary": "Recognize nethermantic magic, undead, spirits, and blood-magic rituals; understand blood charms; passively sense spirits within 30 yards (test vs the spirit's Mystic Defense)." },
+      "durability": 3,
+      "talentOptions": {
+        "novice": ["Arcane Mutterings", "Avoid Blow", "Awareness", "Command Nightflyer", "Dispel Magic", "Read/Write Language", "Speak Language", "Standard Matrix", "Stealthy Stride", "Suppress Curse"],
+        "journeyman": ["Astral Interference", "Banish", "Blood Share", "Enhanced Matrix", "Lifesight", "Lion Heart", "Research", "Spirit Mount", "Steely Stare", "Tenacious Weave"]
+      },
+      "circles": [
+        {
+          "circle": 1,
+          "freeTalents": ["Standard Matrix", "Standard Matrix"],
+          "talents": ["Astral Sight", "Frighten", "Patterncraft", "Spellcasting", "Thread Weaving (Nethermancer)"],
+          "effects": []
+        },
+        {
+          "circle": 2,
+          "talents": ["Steel Thought"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Mystic Defense." }
+          ]
+        },
+        {
+          "circle": 3,
+          "talents": ["Spirit Talk"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Action" }, "scope": "vs Horrors, Horror Constructs, or undead", "source": "discipline", "summary": "May spend Karma once per round on any test against a Horror, Horror Construct, or undead target." }
+          ]
+        },
+        {
+          "circle": 4,
+          "talents": ["Spirit Hold"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Social" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Social Defense." }
+          ]
+        },
+        {
+          "circle": 5,
+          "talents": ["Summon [Ally Spirits]"],
+          "effects": [
+            { "type": "note", "source": "discipline", "summary": "Free Talent upgrade: one of the free Standard Matrix talents is upgraded to an Enhanced Matrix." },
+            { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "Blood Summon: may take Blood Magic Damage equal to a summoned spirit's Strength rating to gain an extra success on a Summon test (healable only a full day after the spirit leaves service)." },
+            { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "May spend a Karma Point to increase the target's penalty from a spell being cast by 2." }
+          ]
+        },
+        {
+          "circle": 6,
+          "talents": ["Willforce"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+2 Mystic Defense." }
+          ]
+        },
+        {
+          "circle": 7,
+          "talents": ["Orbiting Spy"],
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "source": "discipline", "summary": "+1 Mystic Armor." }
+          ]
+        },
+        {
+          "circle": 8,
+          "talents": ["Hold Thread"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+3 Mystic Defense." }
+          ]
+        }
+      ]
+    }
+  ]
+}

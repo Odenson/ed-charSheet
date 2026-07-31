@@ -53,6 +53,7 @@ required; the rest are used as each `type` needs.
 | `measure` | modifiers | What the value counts in (prevents step/result/rating confusion) | §5 |
 | `condition` | optional (default `always`) | When it applies | §6 |
 | `scope` | optional | Narrowing qualifier (enum-or-text) | §6 |
+| `perSuccess` | optional (default `false`) | `value` applies per success on the triggering test (e.g. +2 PD per success) | boolean |
 | `stacking` | optional (default `cumulative`) | How multiples on the same target combine | §7 |
 | `duration` | optional (default `permanent`) | How long it lasts | §8 |
 | `source` | usually engine-set | Provenance, for tracking & display | §9 |
@@ -77,7 +78,14 @@ Small on purpose. Each maps to one way the engine applies the effect.
 | `sense` | gives a sensory capability | `sense` |
 | `resource-modifier` | adjusts a pool | `resource` |
 | `enable-option` | unlocks a combat / action option | `option` |
+| `grant-karma-use` | grants permission to spend Karma on a category of test | `test` |
 | `note` | records a non-numeric / roleplay effect (no dispatch) | — |
+
+`grant-karma-use` mirrors the source spreadsheet's `…UseKarma` flags: a Discipline
+circle grants the adept the right to spend a Karma Point on a class of test (e.g.
+Perception, Initiative, ranged Damage). `target` is a `test`; use `scope` to
+narrow it ("sight-based", "ranged weapons", "vs Horrors/undead"). It carries no
+`value`/`operation` — it is a permission, not a numeric change.
 
 ---
 
@@ -166,6 +174,9 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 - `"always"` (default) — permanent; the engine applies it automatically.
 - `"situational"` — applies only in the context named by `scope`; usually paired
   with `gmDiscretion: true`.
+- `"on-success"` — applies only when the triggering test (usually the talent's
+  own roll) succeeds. Pair with `perSuccess: true` when the effect scales per
+  success, and often with `duration: "rounds"`. Used mainly by talent outcomes.
 - A structured **trigger** for future automation, reusing the sheet's model:
 
 ```jsonc

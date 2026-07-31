@@ -18,12 +18,14 @@ async function loadJSON(path) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export async function loadCharacterModel() {
-  const [character, steps, talentCatalog] = await Promise.all([
+  const [character, steps, talentsFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
   ]);
 
+  // talents.json is now { schema, …, talents: { name: {…} } }.
+  const talentCatalog = talentsFile.talents ?? talentsFile;
   const diceForStep = makeDiceForStep(steps);
 
   // Attributes -> value/step/dice, preserving the canonical order.
