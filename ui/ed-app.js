@@ -8,7 +8,7 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
   { id: 'disciplines', label: 'Disciplines', icon: '◈' },
   { id: 'spells', label: 'Spells', icon: '✦' },
-  { id: 'gear', label: 'Gear', icon: '⚔' },
+  { id: 'equipment', label: 'Equipment', icon: '⚔' },
   { id: 'notes', label: 'Notes', icon: '❋' },
 ];
 
@@ -109,8 +109,8 @@ export class EdApp extends LitElement {
         return html`<ed-disciplines .model=${m}></ed-disciplines>`;
       case 'spells':
         return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
-      case 'gear':
-        return html`<div class="stub"><span class="big">⚔</span>Gear — weapons, armour, thread items, kit. Coming soon.</div>`;
+      case 'equipment':
+        return html`<div class="stub"><span class="big">⚔</span>Equipment — weapons, armour, thread items, kit. Coming soon.</div>`;
       case 'notes':
         return html`<div class="stub"><span class="big">❋</span>Notes — a running history of the character. Coming soon.</div>`;
       default:
@@ -145,7 +145,7 @@ export class EdApp extends LitElement {
         >${this._dark ? '☀' : '☾'}</button>
       </div>
       ${this._panel()}
-      <footer>Earthdawn Character Sheet</footer>
+      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4</footer>
     `;
   }
 }
