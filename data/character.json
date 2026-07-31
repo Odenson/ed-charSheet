@@ -299,7 +299,13 @@
     },
     "roundTracker": 218
   },
-  "extraTraits": [
-    "Gahad - Dwarves carying whips\nComes from the Dwarf that had Chakker captured for two years on the airship.  \r\nThe slaver was very proud of the whip and even more happy when he used it on the larger Orks"
+  "traits": [
+    {
+      "name": "Gahad trigger",
+      "type": "trigger",
+      "relatedTo": { "type": "ability", "name": "Gahad" },
+      "summary": "Dwarves in amour carrying whips",
+      "description": "Comes from the Dwarf that had Chakka captured for two years on the airship. The slaver was very proud of the whip, and even more happy when he used it on the larger Orks."
+    }
   ]
 }

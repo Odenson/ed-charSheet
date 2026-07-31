@@ -93,7 +93,7 @@
         },
         {
           "name": "Low-Light Vision",
-          "summary": "As elves: sees at much lower light levels than humans; complete darkness still blinds.",
+          "summary": "Sees at much lower light levels than humans; a single torch lights a large hall and starlight is ample. No extra susceptibility to flash-blindness. Complete darkness still blinds.",
           "effects": [
             { "type": "sense", "target": { "domain": "sense", "name": "LowLightVision" }, "condition": "always", "source": "race" }
           ]
@@ -108,7 +108,7 @@
       "abilities": [
         {
           "name": "Heat Sight",
-          "summary": "As dwarfs: sees radiated heat, allowing sight in the dark at the expense of detail; blocked by effects that block normal sight.",
+          "summary": "Sees radiated heat as colour; allows seeing in the dark at the expense of detail. Fades as ambient light increases, does not penetrate objects, and is blocked by effects that block normal sight.",
           "effects": [
             { "type": "sense", "target": { "domain": "sense", "name": "HeatSight" }, "condition": "always", "source": "race" }
           ]

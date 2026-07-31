@@ -224,7 +224,7 @@ Where the effect comes from. Usually set by the engine from where the effect
 lives, but may be stated explicitly.
 
 `race` · `discipline` · `talent` · `skill` · `knack` · `item` · `blood-magic` ·
-`spell` · `thread` · `condition` · `horror`
+`spell` · `thread` · `trait` · `condition` · `horror`
 
 ---
 

@@ -18,17 +18,22 @@ async function loadJSON(path) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export async function loadCharacterModel() {
-  const [character, steps, talentsFile, disciplinesFile] = await Promise.all([
+  const [character, steps, talentsFile, disciplinesFile, racesFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),
+    loadJSON('./rules/races.json'),
   ]);
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
   const discByName = Object.fromEntries((disciplinesFile.disciplines ?? []).map((d) => [d.name, d]));
   const diceForStep = makeDiceForStep(steps);
+
+  // Racial special abilities for the character's race.
+  const raceEntry = (racesFile.races ?? []).find((r) => r.name === character.meta?.race);
+  const racialAbilities = (raceEntry?.abilities ?? []).map((a) => ({ name: a.name, summary: a.summary }));
 
   // Attributes -> value/step/dice, preserving the canonical order.
   const order = ['Dexterity', 'Strength', 'Toughness', 'Perception', 'Willpower', 'Charisma'];
@@ -64,7 +69,7 @@ export async function loadCharacterModel() {
     // Discipline abilities granted at circles up to the character's current circle.
     const abilities = (ref.circles ?? [])
       .filter((c) => c.circle <= d.circle)
-      .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, summary: e.summary })))
+      .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, type: e.type, summary: e.summary })))
       .filter((a) => a.summary);
     return {
       name: d.name,
@@ -82,8 +87,9 @@ export async function loadCharacterModel() {
     attributes,
     resources: character.resources ?? {},
     disciplines,
+    racialAbilities,
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],
-    extraTraits: character.extraTraits ?? [],
+    traits: character.traits ?? [],
   };
 }

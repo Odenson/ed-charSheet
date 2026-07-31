@@ -7,7 +7,10 @@ import { LitElement, html, css } from 'lit';
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
 export class EdOverview extends LitElement {
-  static properties = { model: { attribute: false } };
+  static properties = {
+    model: { attribute: false },
+    _modal: { state: true },
+  };
 
   static styles = css`
     :host {
@@ -40,12 +43,27 @@ export class EdOverview extends LitElement {
     .acell .av { font-size: 1rem; font-weight: 500; line-height: 1; }
     .acell .asd { font-size: 0.62rem; color: var(--muted); }
     .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; flex: none; padding: 0; }
-    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; }
+    .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1; }
     .stack { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
     .line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 0.8rem; }
     .line .rl { display: flex; align-items: center; gap: 6px; }
     .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
     .val { font-weight: 500; }
+    .feat { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; font-size: 0.72rem; }
+    .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
+    .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
+    .ftag.race { background: var(--accent-bg); color: var(--accent); }
+    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; }
+    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
+    .modal { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); border-radius: 12px; max-width: 32rem; max-height: 80vh; overflow: auto; padding: 1rem 1.25rem; }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
+    .mbody { font-size: 0.85rem; line-height: 1.5; color: var(--muted); }
+    .mpara { margin: 0 0 0.6rem; }
+    .mtrigger { border-top: 1px solid var(--border); padding-top: 0.6rem; margin-top: 0.2rem; }
+    .mtlabel { font-weight: 500; color: light-dark(#111418, #f0f3f7); margin-bottom: 0.25rem; }
+    .mtsummary { color: var(--accent); margin-bottom: 0.3rem; }
+    .mtdesc { line-height: 1.5; }
     @media (max-width: 720px) {
       .grid { grid-template-columns: 1fr; }
       .portrait { min-height: 220px; }
@@ -55,6 +73,77 @@ export class EdOverview extends LitElement {
   _pend() { return html`<span class="pend">—</span>`; }
   _roll(label) {
     return html`<button class="roll" title="Roll ${label} (coming soon)" aria-label="Roll ${label}">⚄</button>`;
+  }
+
+  _openModal(title, body) { this._modal = { title, body }; }
+  _closeModal() { this._modal = null; }
+
+  // Character-specific traits related to a given ability (e.g. Gahad triggers).
+  // A trait links via relatedTo: { type: 'ability', name }.
+  _traitsFor(abilityName) {
+    return (this.model.traits ?? []).filter(
+      (t) => t.relatedTo?.type === 'ability' && t.relatedTo?.name === abilityName,
+    );
+  }
+
+  // Modal body for a racial ability: the generic description plus any of this
+  // character's linked traits (e.g. their particular Gahad trigger(s)).
+  _abilityModalBody(a) {
+    const traits = this._traitsFor(a.name);
+    return html`
+      ${a.summary ? html`<p class="mpara">${a.summary}</p>` : ''}
+      ${traits.map(
+        (t) => html`
+          <div class="mtrigger">
+            <div class="mtlabel">${t.name ?? "This character's trait"}</div>
+            ${t.summary ? html`<div class="mtsummary">${t.summary}</div>` : ''}
+            ${t.description ? html`<div class="mtdesc">${t.description}</div>` : ''}
+          </div>
+        `,
+      )}
+    `;
+  }
+
+  // Special features: racial abilities + discipline circle abilities that are
+  // genuine features. Plain stat increases (defence/armour/health/attribute/test)
+  // are omitted — the engine will surface those on the stats themselves.
+  _specialFeatures() {
+    const m = this.model;
+    const race = m.meta?.race;
+    const racial = m.racialAbilities ?? [];
+    const STAT_INCREASE = new Set([
+      'attribute-modifier',
+      'defense-modifier',
+      'armor-modifier',
+      'characteristic-modifier',
+      'test-modifier',
+    ]);
+    const discAbilities = (m.disciplines ?? []).flatMap((d) =>
+      (d.abilities ?? [])
+        .filter((ab) => !STAT_INCREASE.has(ab.type))
+        .map((ab) => ({ tag: `${d.name.slice(0, 3)} ${ab.circle}`, summary: ab.summary })),
+    );
+    if (!racial.length && !discAbilities.length) return html``;
+    return html`
+      <div class="blk">
+        <h4>Special Features</h4>
+        ${racial.map(
+          (a) => html`
+            <div class="feat">
+              <span class="ftag race">${race}</span>
+              <span class="txt"
+                >${a.name}${a.summary || this._traitsFor(a.name).length
+                  ? html`<button class="info" aria-label="About ${a.name}" title="Details" @click=${() => this._openModal(a.name, this._abilityModalBody(a))}>ⓘ</button>`
+                  : ''}</span
+              >
+            </div>
+          `,
+        )}
+        ${discAbilities.map(
+          (a) => html`<div class="feat"><span class="ftag">${a.tag}</span><span class="txt">${a.summary}</span></div>`,
+        )}
+      </div>
+    `;
   }
 
   render() {
@@ -137,10 +226,24 @@ export class EdOverview extends LitElement {
                 <div class="line"><span>Knockdown</span><span class="rl">${this._pend()}${this._roll('Knockdown')}</span></div>
                 <div class="line"><span>Karma</span><span class="rl">${this._pend()}${this._roll('Karma')}</span></div>
               </div>
+              ${this._specialFeatures()}
             </div>
           </div>
         </div>
       </div>
+      ${this._modal
+        ? html`
+            <div class="overlay" @click=${this._closeModal}>
+              <div class="modal" @click=${(e) => e.stopPropagation()}>
+                <div class="mhead">
+                  <span>${this._modal.title}</span>
+                  <button class="mclose" aria-label="Close" @click=${this._closeModal}>✕</button>
+                </div>
+                <div class="mbody">${this._modal.body}</div>
+              </div>
+            </div>
+          `
+        : ''}
     `;
   }
 }
