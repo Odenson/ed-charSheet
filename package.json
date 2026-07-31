@@ -6,7 +6,7 @@
   "scripts": {
     "import": "node tools/import-xlsx.mjs Chakka-v7.13.xlsx"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "GPL-3.0",
   "devDependencies": {
     "xlsx": "^0.18.5"
   }
