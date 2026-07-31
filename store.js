@@ -18,14 +18,16 @@ async function loadJSON(path) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export async function loadCharacterModel() {
-  const [character, steps, talentsFile] = await Promise.all([
+  const [character, steps, talentsFile, disciplinesFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
+    loadJSON('./rules/disciplines.json'),
   ]);
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
+  const discByName = Object.fromEntries((disciplinesFile.disciplines ?? []).map((d) => [d.name, d]));
   const diceForStep = makeDiceForStep(steps);
 
   // Attributes -> value/step/dice, preserving the canonical order.
@@ -41,11 +43,11 @@ export async function loadCharacterModel() {
       return { name, value, step, dice: diceForStep(step), ...a };
     });
 
-  // Disciplines -> talents with derived step/dice where an attribute link exists.
-  const disciplines = (character.disciplines ?? []).map((d) => ({
-    name: d.name,
-    circle: d.circle,
-    talents: (d.talents ?? []).map((t) => {
+  // Disciplines -> talents with derived step/dice, plus reference detail
+  // (durability, half-magic, artisan skills, per-circle abilities) from rules.
+  const disciplines = (character.disciplines ?? []).map((d) => {
+    const ref = discByName[d.name] ?? {};
+    const talents = (d.talents ?? []).map((t) => {
       const cat = talentCatalog[t.name] || {};
       const attribute = cat.attribute || null;
       const aStep = attribute ? attrStepByName[attribute] : undefined;
@@ -58,8 +60,22 @@ export async function loadCharacterModel() {
         step,
         dice: step != null ? diceForStep(step) : '',
       };
-    }),
-  }));
+    });
+    // Discipline abilities granted at circles up to the character's current circle.
+    const abilities = (ref.circles ?? [])
+      .filter((c) => c.circle <= d.circle)
+      .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, summary: e.summary })))
+      .filter((a) => a.summary);
+    return {
+      name: d.name,
+      circle: d.circle,
+      durability: ref.durability ?? null,
+      halfMagic: ref.halfMagic?.summary ?? null,
+      artisanSkills: ref.artisanSkills ?? [],
+      talents,
+      abilities,
+    };
+  });
 
   return {
     meta: character.meta ?? {},

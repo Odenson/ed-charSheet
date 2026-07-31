@@ -4,6 +4,7 @@
     "name": "Chakka",
     "race": "Ork",
     "description": "Orc Power, with no privilage and a whole lot of fucken rage..",
+    "portrait": "data/chakka.jpg",
     "age": 17,
     "weight": "120 kg",
     "sex": "Male",
