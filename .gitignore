@@ -1,0 +1,12 @@
+# Claude Code local session/settings
+.claude/
+
+# Source spreadsheet (local only — source of truth for the importer)
+Chakka-v7.13.xlsx
+
+# OS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
