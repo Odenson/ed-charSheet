@@ -17,6 +17,7 @@ export class EdApp extends LitElement {
     _model: { state: true },
     _error: { state: true },
     _tab: { state: true },
+    _dark: { state: true },
   };
 
   static styles = css`
@@ -25,12 +26,12 @@ export class EdApp extends LitElement {
       max-width: 60rem;
       margin: 0 auto;
       padding: 1rem 1rem 1.5rem;
-      color: var(--value, light-dark(#111418, #f0f3f7));
+      color: light-dark(#111418, #f0f3f7);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
-    :host { color-scheme: light dark; }
     .tabbar {
       display: flex;
+      align-items: center;
       gap: 2px;
       border-bottom: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
       margin-bottom: 0.9rem;
@@ -42,8 +43,15 @@ export class EdApp extends LitElement {
       color: var(--muted, #6b7280); background: none; border: none;
       border-bottom: 2px solid transparent; cursor: pointer;
     }
-    .tab[aria-selected='true'] { color: var(--value, #111); border-bottom-color: var(--accent, #b26a00); }
+    .tab[aria-selected='true'] { color: light-dark(#111418, #f0f3f7); border-bottom-color: var(--accent, #b26a00); }
     .tab .ico { font-size: 0.8rem; opacity: 0.8; }
+    .theme-btn {
+      margin-left: auto; width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
+      color: var(--muted, #6b7280); cursor: pointer; font-size: 0.9rem; line-height: 1;
+    }
+    .theme-btn:hover { color: light-dark(#111418, #f0f3f7); }
     .status { padding: 2rem 0; color: var(--muted, #667); font-weight: 500; }
     .status.error { color: #c0392b; }
     .stub { text-align: center; color: var(--muted, #889); padding: 3rem 0; font-size: 0.9rem; }
@@ -66,6 +74,10 @@ export class EdApp extends LitElement {
     this._model = null;
     this._error = null;
     this._tab = 'overview';
+    // Theme: honour a saved preference, else follow the system setting.
+    const saved = localStorage.getItem('ed-theme');
+    this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    this._applyTheme();
   }
 
   async connectedCallback() {
@@ -75,6 +87,17 @@ export class EdApp extends LitElement {
     } catch (e) {
       this._error = String(e);
     }
+  }
+
+  _applyTheme() {
+    // Force the color-scheme on the document root so light-dark() everywhere follows it.
+    document.documentElement.style.colorScheme = this._dark ? 'dark' : 'light';
+  }
+
+  _toggleTheme() {
+    this._dark = !this._dark;
+    localStorage.setItem('ed-theme', this._dark ? 'dark' : 'light');
+    this._applyTheme();
   }
 
   _panel() {
@@ -114,6 +137,12 @@ export class EdApp extends LitElement {
             </button>
           `,
         )}
+        <button
+          class="theme-btn"
+          @click=${this._toggleTheme}
+          title=${this._dark ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label=${this._dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >${this._dark ? '☀' : '☾'}</button>
       </div>
       ${this._panel()}
       <footer>Earthdawn Character Sheet</footer>

@@ -17,12 +17,12 @@ export class EdDisciplines extends LitElement {
       --muted: light-dark(#5a6472, #93a0b3);
       --accent: light-dark(#7a3e12, #d9944e);
       --accent-bg: light-dark(#f6e9dc, #3a2a17);
-      display: block; color-scheme: light dark;
+      display: block;
     }
     .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
     .seg { display: inline-flex; background: var(--bg-card); border-radius: 999px; padding: 3px; gap: 2px; }
     .seg button { border: none; background: none; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
-    .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--value, #111); border: 1px solid var(--border); }
+    .seg button[aria-pressed='true'] { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); }
     .circle { font-size: 0.72rem; padding: 2px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
     .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin-bottom: 12px; }
     .mcell { background: var(--bg-card); border-radius: 8px; padding: 6px 9px; }

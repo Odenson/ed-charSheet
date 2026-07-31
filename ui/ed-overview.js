@@ -17,7 +17,7 @@ export class EdOverview extends LitElement {
       --muted: light-dark(#5a6472, #93a0b3);
       --accent: light-dark(#7a3e12, #d9944e);
       --accent-bg: light-dark(#f6e9dc, #3a2a17);
-      display: block; color-scheme: light dark;
+      display: block;
     }
     .grid { display: grid; grid-template-columns: 250px 1fr; gap: 12px; align-items: stretch; }
     .hero { display: flex; flex-direction: column; }
