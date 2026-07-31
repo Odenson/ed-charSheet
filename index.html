@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Earthdawn Character Sheet</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      .env {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+      }
+      .env.prod { background: #1b5e20; color: #fff; }
+      .env.dev  { background: #b26a00; color: #fff; }
+      code { background: rgba(127,127,127,0.18); padding: 0.1rem 0.35rem; border-radius: 0.3rem; }
+    </style>
+  </head>
+  <body>
+    <p><span id="env" class="env">…</span></p>
+    <h1>Earthdawn Character Sheet</h1>
+    <p>Deployment pipeline is live. The character UI arrives in Phase 1.</p>
+    <p id="data">Loading character data…</p>
+
+    <script type="module">
+      // The dev instance is served from a "/dev/" subpath; production from root.
+      const isDev = location.pathname.includes('/dev/');
+      const envEl = document.getElementById('env');
+      envEl.textContent = isDev ? 'DEV' : 'PRODUCTION';
+      envEl.classList.add(isDev ? 'dev' : 'prod');
+
+      // Relative fetch: works from both root and the /dev/ subpath.
+      try {
+        const res = await fetch('./data/character.json');
+        const c = await res.json();
+        const a = c.attributes ?? {};
+        document.getElementById('data').innerHTML =
+          `Loaded <code>${c.meta?.name ?? '?'}</code> — ${c.meta?.race ?? '?'}, ` +
+          `${Object.keys(a).length} attributes, ` +
+          `${(c.disciplines ?? []).length} disciplines.`;
+      } catch (e) {
+        document.getElementById('data').textContent = 'Could not load character data: ' + e;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+name: Deploy to GitHub Pages
+
+# One Pages site serves both environments:
+#   main -> https://odenson.github.io/ed-charSheet/        (production)
+#   dev  -> https://odenson.github.io/ed-charSheet/dev/    (testing)
+#
+# A push to EITHER branch rebuilds the whole site from the current state of BOTH
+# branches, so the two instances never drift. Promotion is a normal PR: dev -> main.
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialize deploys; don't cancel an in-flight production deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (production)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: src-main
+
+      - name: Checkout dev (testing)
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: src-dev
+
+      - name: Assemble site (main -> root, dev -> /dev)
+        run: |
+          set -euo pipefail
+          # Files that are not part of the deployable static app.
+          EXCLUDES=(
+            --exclude='.git' --exclude='.github' --exclude='tools'
+            --exclude='node_modules' --exclude='package.json'
+            --exclude='package-lock.json' --exclude='*.xlsx'
+          )
+          mkdir -p _site
+          rsync -a --delete "${EXCLUDES[@]}" src-main/ _site/
+          mkdir -p _site/dev
+          rsync -a --delete "${EXCLUDES[@]}" src-dev/ _site/dev/
+          touch _site/.nojekyll   # skip Jekyll; serve files as-is
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

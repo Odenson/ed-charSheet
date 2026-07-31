@@ -56,6 +56,12 @@ Running the app locally (once the UI lands) is just serving the folder, e.g.:
 npx http-server .
 ```
 
+### Deployment
+
+The app is deployed to GitHub Pages via Actions — `main` to production and `dev`
+to a `/dev/` testing instance. See **[WORKFLOW.md](WORKFLOW.md)** for the dev→main
+process and one-time Pages setup.
+
 ## Data & copyright
 
 This repository contains **only** original character data and *game mechanics*
