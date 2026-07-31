@@ -1,7 +1,8 @@
 {
   "Acrobatic Defense": {
     "name": "Acrobatic Defense",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Acting": {
     "name": "Acting",
@@ -9,7 +10,8 @@
   },
   "Air Dance": {
     "name": "Air Dance",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Dexterity"
   },
   "Air Sailing": {
     "name": "Air Sailing",
@@ -18,7 +20,8 @@
   },
   "Air Speaking": {
     "name": "Air Speaking",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Perception"
   },
   "Alchemy": {
     "name": "Alchemy",
@@ -26,7 +29,8 @@
   },
   "Animal Bond": {
     "name": "Animal Bond",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Animal Companion Durability": {
     "name": "Animal Companion Durability"
@@ -37,15 +41,18 @@
   },
   "Animal Possession": {
     "name": "Animal Possession",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Animal Talk": {
     "name": "Animal Talk",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Animal Training": {
     "name": "Animal Training",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Anticipate Blow": {
     "name": "Anticipate Blow",
@@ -54,11 +61,13 @@
   },
   "Arcane Mutterings": {
     "name": "Arcane Mutterings",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Armor Mount": {
     "name": "Armor Mount",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Willpower"
   },
   "Artisan": {
     "name": "Artisan",
@@ -70,7 +79,8 @@
   },
   "Astral Interference": {
     "name": "Astral Interference",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Astral Sight": {
     "name": "Astral Sight",
@@ -89,35 +99,43 @@
   },
   "Banish": {
     "name": "Banish",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Bank Shot": {
     "name": "Bank Shot",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Battle Bellow": {
     "name": "Battle Bellow",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Battle Shout": {
     "name": "Battle Shout",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Blade Juggle": {
     "name": "Blade Juggle",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Blood Share": {
     "name": "Blood Share",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Toughness"
   },
   "Book Memory": {
     "name": "Book Memory",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Borrow Sense": {
     "name": "Borrow Sense",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Bribery": {
     "name": "Bribery",
@@ -125,7 +143,8 @@
   },
   "Call Animal Companion": {
     "name": "Call Animal Companion",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Call Missile": {
     "name": "Call Missile",
@@ -134,39 +153,48 @@
   },
   "Charge": {
     "name": "Charge",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Strength"
   },
   "Claw Frenzy": {
     "name": "Claw Frenzy",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Claw Shape": {
     "name": "Claw Shape",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Strength"
   },
   "Climbing": {
     "name": "Climbing",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Cobra Strike": {
     "name": "Cobra Strike",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Dexterity"
   },
   "Cold Purify": {
     "name": "Cold Purify",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Willpower"
   },
   "Command Nightflyer": {
     "name": "Command Nightflyer",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Willpower"
   },
   "Conceal Object": {
     "name": "Conceal Object",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Conversation": {
     "name": "Conversation",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Craft Armor": {
     "name": "Craft Armor",
@@ -182,15 +210,18 @@
   },
   "Creature Analysis": {
     "name": "Creature Analysis",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Perception"
   },
   "Crushing Blow": {
     "name": "Crushing Blow",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Strength"
   },
   "Down Strike": {
     "name": "Down Strike",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Strength"
   },
   "Durability": {
     "name": "Durability",
@@ -198,11 +229,13 @@
   },
   "Earth Skin": {
     "name": "Earth Skin",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Toughness"
   },
   "False Sight": {
     "name": "False Sight",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Willpower"
   },
   "Fire Blood": {
     "name": "Fire Blood",
@@ -215,7 +248,8 @@
   },
   "Flame Arrow": {
     "name": "Flame Arrow",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Willpower"
   },
   "Frighten": {
     "name": "Frighten",
@@ -228,7 +262,8 @@
   },
   "Lion Heart": {
     "name": "Lion Heart",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Willpower"
   },
   "Long Shot": {
     "name": "Long Shot",
@@ -266,7 +301,8 @@
   },
   "Spot Armor Flaw": {
     "name": "Spot Armor Flaw",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Perception"
   },
   "Sprint": {
     "name": "Sprint",
@@ -279,11 +315,13 @@
   },
   "Surprise Strike": {
     "name": "Surprise Strike",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Strength"
   },
   "Swift Kick": {
     "name": "Swift Kick",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Tattooist": {
     "name": "Tattooist",
@@ -292,7 +330,8 @@
   },
   "Temper Flesh": {
     "name": "Temper Flesh",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Willpower"
   },
   "Throwing Weapon": {
     "name": "Throwing Weapon",
@@ -326,11 +365,13 @@
   },
   "Wood Skin": {
     "name": "Wood Skin",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Toughness"
   },
   "Wound Balance": {
     "name": "Wound Balance",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Strength"
   },
   "Read/Write Language (Dwarf)": {
     "name": "Read/Write Language (Dwarf)",
@@ -379,19 +420,23 @@
   },
   "Speak Language (Dwarf)": {
     "name": "Speak Language (Dwarf)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Elf)": {
     "name": "Speak Language (Elf)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Human)": {
     "name": "Speak Language (Human)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Obsidiman)": {
     "name": "Speak Language (Obsidiman)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Ork)": {
     "name": "Speak Language (Ork)",
@@ -400,15 +445,18 @@
   },
   "Speak Language (T`skrang)": {
     "name": "Speak Language (T`skrang)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Troll)": {
     "name": "Speak Language (Troll)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Windling)": {
     "name": "Speak Language (Windling)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Speak Language (Throalic)": {
     "name": "Speak Language (Throalic)",
@@ -422,7 +470,8 @@
   },
   "Speak Language (Drake)": {
     "name": "Speak Language (Drake)",
-    "action": "Standrd"
+    "action": "Standrd",
+    "attribute": "Perception"
   },
   "Point-Blank Shot": {
     "name": "Point-Blank Shot",
@@ -430,11 +479,13 @@
   },
   "Picking Pockets": {
     "name": "Picking Pockets",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Power Mask": {
     "name": "Power Mask",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Willpower"
   },
   "Alley Cat Approach": {
     "name": "Alley Cat Approach",
@@ -1364,15 +1415,18 @@
   },
   "Danger Sense": {
     "name": "Danger Sense",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Dexterity"
   },
   "Dead Fall": {
     "name": "Dead Fall",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Willpower"
   },
   "Diplomacy": {
     "name": "Diplomacy",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Direction Arrow": {
     "name": "Direction Arrow",
@@ -1380,11 +1434,13 @@
   },
   "Disarm": {
     "name": "Disarm",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Disarm Trap": {
     "name": "Disarm Trap",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Disguise": {
     "name": "Disguise",
@@ -1392,7 +1448,8 @@
   },
   "Disguise Self": {
     "name": "Disguise Self",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Dispel Magic": {
     "name": "Dispel Magic",
@@ -1401,23 +1458,28 @@
   },
   "Distract": {
     "name": "Distract",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Dominate Beast": {
     "name": "Dominate Beast",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Double Charge": {
     "name": "Double Charge",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Elemental Hold": {
     "name": "Elemental Hold",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Elemental Tongues": {
     "name": "Elemental Tongues",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Embroidery": {
     "name": "Embroidery",
@@ -1425,15 +1487,18 @@
   },
   "Emotion Song": {
     "name": "Emotion Song",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Empathic Sense": {
     "name": "Empathic Sense",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Engaging Banter": {
     "name": "Engaging Banter",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Entertaining": {
     "name": "Entertaining",
@@ -1441,71 +1506,88 @@
   },
   "Etiquette": {
     "name": "Etiquette",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Evidence Analysis": {
     "name": "Evidence Analysis",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Perception"
   },
   "Fast Hand": {
     "name": "Fast Hand",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Fearsome Charge": {
     "name": "Fearsome Charge",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Fire Heal": {
     "name": "Fire Heal",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Willpower"
   },
   "Forge Armor": {
     "name": "Forge Armor",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Perception"
   },
   "Forge Weapon": {
     "name": "Forge Weapon",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Perception"
   },
   "Gliding Stride": {
     "name": "Gliding Stride",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Dexterity"
   },
   "Graceful Exit": {
     "name": "Graceful Exit",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Great Leap": {
     "name": "Great Leap",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Dexterity"
   },
   "Haggle": {
     "name": "Haggle",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Heartening Laugh": {
     "name": "Heartening Laugh",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Hold Thread": {
     "name": "Hold Thread",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Willpower"
   },
   "Hypnotize": {
     "name": "Hypnotize",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Inspire Others": {
     "name": "Inspire Others",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Iron Constitution": {
     "name": "Iron Constitution",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Toughness"
   },
   "Item History": {
     "name": "Item History",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Perception"
   },
   "Knowledge": {
     "name": "Knowledge",
@@ -1513,19 +1595,23 @@
   },
   "Lasting Impression": {
     "name": "Lasting Impression",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Leadership": {
     "name": "Leadership",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Charisma"
   },
   "Life Check": {
     "name": "Life Check",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Toughness"
   },
   "Lifesight": {
     "name": "Lifesight",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Perception"
   },
   "Lock Pick": {
     "name": "Lock Pick",
@@ -1533,7 +1619,8 @@
   },
   "Maneuver": {
     "name": "Maneuver",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Manuscript Illumination": {
     "name": "Manuscript Illumination",
@@ -1545,11 +1632,13 @@
   },
   "Mimic Voice": {
     "name": "Mimic Voice",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Momentum Attack": {
     "name": "Momentum Attack",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Mount Attack": {
     "name": "Mount Attack",
@@ -1557,7 +1646,8 @@
   },
   "Orbiting Spy": {
     "name": "Orbiting Spy",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Painting": {
     "name": "Painting",
@@ -1577,15 +1667,18 @@
   },
   "Research": {
     "name": "Research",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Perception"
   },
   "Resist Taunt": {
     "name": "Resist Taunt",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Willpower"
   },
   "Riposte": {
     "name": "Riposte",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Dexterity"
   },
   "Robe Embroidery": {
     "name": "Robe Embroidery",
@@ -1597,7 +1690,8 @@
   },
   "Safe Path": {
     "name": "Safe Path",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Sail Embroidery": {
     "name": "Sail Embroidery",
@@ -1609,19 +1703,23 @@
   },
   "Second Attack": {
     "name": "Second Attack",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Second Shot": {
     "name": "Second Shot",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Second Weapon": {
     "name": "Second Weapon",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Shield Bash": {
     "name": "Shield Bash",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Strength"
   },
   "Skinning": {
     "name": "Skinning",
@@ -1630,11 +1728,13 @@
   },
   "Slough Blame": {
     "name": "Slough Blame",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Speak Language": {
     "name": "Speak Language",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Spellcasting": {
     "name": "Spellcasting",
@@ -1643,11 +1743,13 @@
   },
   "Spirit Hold": {
     "name": "Spirit Hold",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Spirit Mount": {
     "name": "Spirit Mount",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Spirit Talk": {
     "name": "Spirit Talk",
@@ -1661,15 +1763,18 @@
   },
   "Steely Stare": {
     "name": "Steely Stare",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Stopping Aim": {
     "name": "Stopping Aim",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Summon": {
     "name": "Summon",
-    "action": "Sustain"
+    "action": "Sustain",
+    "attribute": "Perception"
   },
   "Suppress Curse": {
     "name": "Suppress Curse",
@@ -1678,7 +1783,8 @@
   },
   "Sure Mount": {
     "name": "Sure Mount",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Strength"
   },
   "Swimming": {
     "name": "Swimming",
@@ -1686,7 +1792,8 @@
   },
   "Tactics": {
     "name": "Tactics",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Tailor": {
     "name": "Tailor",
@@ -1694,23 +1801,28 @@
   },
   "Taunt": {
     "name": "Taunt",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Charisma"
   },
   "Tenacious Weave": {
     "name": "Tenacious Weave",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Willpower"
   },
   "Thought Link": {
     "name": "Thought Link",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving": {
     "name": "Thread Weaving",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Air Sailor)": {
     "name": "Thread Weaving (Air Sailor)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Archer)": {
     "name": "Thread Weaving (Archer)",
@@ -1719,19 +1831,23 @@
   },
   "Thread Weaving (Beast Master)": {
     "name": "Thread Weaving (Beast Master)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Cavalryman)": {
     "name": "Thread Weaving (Cavalryman)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Elementalist)": {
     "name": "Thread Weaving (Elementalist)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (illusionist)": {
     "name": "Thread Weaving (illusionist)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Nethermancer)": {
     "name": "Thread Weaving (Nethermancer)",
@@ -1740,39 +1856,48 @@
   },
   "Thread Weaving (Scout)": {
     "name": "Thread Weaving (Scout)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Sky Raider)": {
     "name": "Thread Weaving (Sky Raider)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Swordmaster)": {
     "name": "Thread Weaving (Swordmaster)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Thief)": {
     "name": "Thread Weaving (Thief)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Troubadour)": {
     "name": "Thread Weaving (Troubadour)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Warrior)": {
     "name": "Thread Weaving (Warrior)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Weaponsmith)": {
     "name": "Thread Weaving (Weaponsmith)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Thread Weaving (Wizard)": {
     "name": "Thread Weaving (Wizard)",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Perception"
   },
   "Trick Riding": {
     "name": "Trick Riding",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Versatility": {
     "name": "Versatility",
@@ -1780,11 +1905,13 @@
   },
   "Wheeling Attack": {
     "name": "Wheeling Attack",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Dexterity"
   },
   "Wheeling Defense": {
     "name": "Wheeling Defense",
-    "action": "Simple"
+    "action": "Simple",
+    "attribute": "Dexterity"
   },
   "Wilderness Survival": {
     "name": "Wilderness Survival",
@@ -1793,15 +1920,18 @@
   },
   "Willforce": {
     "name": "Willforce",
-    "action": "Free"
+    "action": "Free",
+    "attribute": "Willpower"
   },
   "Wind Catcher": {
     "name": "Wind Catcher",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Willpower"
   },
   "Winning Smile": {
     "name": "Winning Smile",
-    "action": "Standard"
+    "action": "Standard",
+    "attribute": "Charisma"
   },
   "Wood Carving": {
     "name": "Wood Carving",
@@ -1833,5 +1963,33 @@
   "Patterncraft": {
     "name": "Patterncraft",
     "attribute": "Perception"
+  },
+  "Enhance Animal Companion": {
+    "name": "Enhance Animal Companion",
+    "attribute": "Willpower"
+  },
+  "Fireblood": {
+    "name": "Fireblood",
+    "attribute": "Toughness"
+  },
+  "Lock Picking": {
+    "name": "Lock Picking",
+    "attribute": "Dexterity"
+  },
+  "Melee Weapons": {
+    "name": "Melee Weapons",
+    "attribute": "Dexterity"
+  },
+  "Missile Weapons": {
+    "name": "Missile Weapons",
+    "attribute": "Dexterity"
+  },
+  "Read and Write Language": {
+    "name": "Read and Write Language",
+    "attribute": "Perception"
+  },
+  "Throwing Weapons": {
+    "name": "Throwing Weapons",
+    "attribute": "Dexterity"
   }
 }

@@ -13,7 +13,7 @@
 //  - rules/*.json holds shared Earthdawn reference data.
 
 import XLSX from 'xlsx';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -281,6 +281,34 @@ function buildDisciplineTalents() {
 }
 
 // =====================================================================
+// Talent -> attribute backfill from the local rulebook extract.
+// Reference file is gitignored (copyrighted); we read ONLY the mechanical
+// "Step: Rank + <ATTR>" line, never the prose. Degrades gracefully if absent.
+// =====================================================================
+const ATTR_CODE = {
+  DEX: 'Dexterity', STR: 'Strength', TOU: 'Toughness',
+  PER: 'Perception', WIL: 'Willpower', CHA: 'Charisma',
+};
+function parseTalentAttributes() {
+  const refPath = resolve(ROOT, 'rulebook extracts/text-talents-players.txt');
+  if (!existsSync(refPath)) return { map: {}, found: false, count: 0 };
+  const map = {};
+  let current = null;
+  for (const line of readFileSync(refPath, 'utf8').split(/\r?\n/)) {
+    const t = /^Talents - (.+?)\s*$/.exec(line);
+    if (t) { current = t[1].trim(); continue; }
+    if (current && /^Step:/i.test(line)) {
+      const a = /Rank\s*\+\s*(DEX|STR|TOU|PER|WIL|CHA)/i.exec(line);
+      if (a) map[current] = ATTR_CODE[a[1].toUpperCase()];
+      current = null;
+    }
+  }
+  return { map, found: true, count: Object.keys(map).length };
+}
+// strip a discipline suffix, e.g. "Thread Weaving (Archer)" -> "Thread Weaving"
+const baseTalentName = (n) => n.replace(/\s*\(.*\)\s*$/, '').trim();
+
+// =====================================================================
 // rules/talents.json  (catalog from EDTables Ability props + attribute links)
 // =====================================================================
 function buildTalentCatalog() {
@@ -326,14 +354,39 @@ function buildTalentCatalog() {
     }
   }
 
+  // Backfill attributes from the rulebook extract (authoritative core rules).
+  const ref = parseTalentAttributes();
+  let refLinked = 0;
+  const conflicts = [];
+  if (ref.found) {
+    // Add any core talents not present in the workbook catalog.
+    for (const name of Object.keys(ref.map)) {
+      if (!mechanics[name]) mechanics[name] = { name };
+    }
+    for (const m of Object.values(mechanics)) {
+      const a = ref.map[m.name] ?? ref.map[baseTalentName(m.name)];
+      if (!a) continue;
+      if (m.attribute && m.attribute !== a) {
+        conflicts.push(`${m.name}: Properties=${m.attribute} vs rulebook=${a}`);
+      }
+      m.attribute = a; // rulebook wins
+      refLinked++;
+    }
+  }
+
   const total = Object.keys(mechanics).length;
   const missing = Object.values(mechanics).filter((t) => !t.attribute).length;
   note(
-    `talents.json: ${total} talents catalogued (mechanics only); ${linked} have an attribute ` +
-      `link (from the computed Properties sheet). ${missing} have NO attribute link -- the ` +
-      `workbook has no generic talent->attribute table, so those must be filled from core rules ` +
-      `before their dice can be derived.`
+    `talents.json: ${total} talents catalogued (mechanics only); ${total - missing} now have an ` +
+      `attribute link. Sources: ${linked} from the computed Properties sheet, ${refLinked} matched ` +
+      `to the rulebook extract` +
+      (ref.found ? ` (${ref.count} talents parsed)` : ` (rulebook extract NOT found -- using ` +
+        `Properties only)`) +
+      `. ${missing} still have no attribute link.`
   );
+  if (conflicts.length) {
+    note(`talent attribute conflicts (rulebook preferred): ${conflicts.join('; ')}`);
+  }
   note(
     `talent descriptions/summaries written to rules/talents.descriptions.json (gitignored) -- ` +
       `verbatim copyrighted rulebook text kept out of the public repo.`
@@ -422,7 +475,15 @@ const steps = buildSteps();
 const { mechanics: talentCatalog, prose: talentProse } = buildTalentCatalog();
 
 console.log('Writing outputs...');
-writeJSON('data/character.json', character);
+// character.json is user-owned (hand-editable, and fully so from Phase 2). Don't
+// clobber existing edits on re-import unless --force is given. rules/*.json are
+// derived reference data and always regenerate.
+const FORCE = process.argv.includes('--force');
+if (existsSync(resolve(ROOT, 'data/character.json')) && !FORCE) {
+  console.log('  SKIP data/character.json (exists; user-owned — pass --force to overwrite)');
+} else {
+  writeJSON('data/character.json', character);
+}
 writeJSON('rules/steps.json', steps);
 writeJSON('rules/attributes.json', buildAttributesRules());
 writeJSON('rules/races.json', buildRaces());
