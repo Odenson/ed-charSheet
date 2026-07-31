@@ -1,0 +1,13 @@
+{
+  "name": "ed-charsheet",
+  "version": "0.1.0",
+  "description": "Earthdawn character sheet — static, GitHub-Pages-hosted viewer and rules engine",
+  "type": "module",
+  "scripts": {
+    "import": "node tools/import-xlsx.mjs Chakka-v7.13.xlsx"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "devDependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

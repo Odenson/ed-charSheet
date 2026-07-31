@@ -1,0 +1,9 @@
+{
+  "generatedAt": "2026-07-31T02:25:41.175Z",
+  "source": "Chakka-v7.13.xlsx",
+  "notes": [
+    "talents.json: 451 talents catalogued (mechanics only); 36 have an attribute link (from the computed Properties sheet). 415 have NO attribute link -- the workbook has no generic talent->attribute table, so those must be filled from core rules before their dice can be derived.",
+    "talent descriptions/summaries written to rules/talents.descriptions.json (gitignored) -- verbatim copyrighted rulebook text kept out of the public repo.",
+    "talent-step rule (attributeStep + rank) verified on 33 of Chakka's talents with 0 anomalies. 3 knacks skipped (knacks derive their step from a parent ability -- a separate mechanic the engine must model)."
+  ]
+}

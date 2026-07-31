@@ -4,6 +4,13 @@
 # Source spreadsheet (local only — source of truth for the importer)
 Chakka-v7.13.xlsx
 
+# Rulebook text extracts — local reference only (copyrighted FASA material,
+# never commit / publish)
+rulebook extracts/
+
+# Verbatim copyrighted rulebook prose extracted into data (local only)
+rules/talents.descriptions.json
+
 # OS
 .DS_Store
 

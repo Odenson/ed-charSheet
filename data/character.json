@@ -1,0 +1,304 @@
+{
+  "schema": "ed-character/1",
+  "meta": {
+    "name": "Chakka",
+    "race": "Ork",
+    "description": "White Power, with white privilage and a whole lot of fucken anger",
+    "age": 16,
+    "weight": "120 kg",
+    "sex": "Male",
+    "height": "6'8",
+    "sourceSheetVersion": "7.13.2"
+  },
+  "attributes": {
+    "Dexterity": {
+      "base": 10,
+      "points": 8,
+      "increases": 2
+    },
+    "Strength": {
+      "base": 13,
+      "points": 5,
+      "increases": 2
+    },
+    "Toughness": {
+      "base": 11,
+      "points": 4,
+      "increases": 2
+    },
+    "Perception": {
+      "base": 10,
+      "points": 3,
+      "increases": 1
+    },
+    "Willpower": {
+      "base": 8,
+      "points": 4,
+      "increases": 1
+    },
+    "Charisma": {
+      "base": 9,
+      "points": 2,
+      "increases": 2
+    }
+  },
+  "disciplines": [
+    {
+      "name": "Archer",
+      "circle": 4,
+      "talents": [
+        {
+          "name": "Avoid Blow",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Durability",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Karma Ritual",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Missile Weapon",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Mystic Aim",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Archer)",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "True Shot",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Awareness",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Mystic Pursuit",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Throwing Weapon",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Anticipate Blow",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 3
+        },
+        {
+          "name": "Stealthy Stride",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 3
+        },
+        {
+          "name": "Long Shot",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 4
+        },
+        {
+          "name": "First Impression",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 4
+        }
+      ]
+    },
+    {
+      "name": "Nethermancer",
+      "circle": 3,
+      "talents": [
+        {
+          "name": "Astral Sight",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Frighten",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Patterncraft",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Spellcasting",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Nethermancer)",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Dispel Magic",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Steel Thought",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Standard Matrix",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Spirit Talk",
+          "rank": 1,
+          "tier": "Novice",
+          "circle": 3
+        },
+        {
+          "name": "Suppress Curse",
+          "rank": 1,
+          "tier": "Novice",
+          "circle": 3
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Speak Language (Ork)",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Theran)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Throalic)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Read/Write Language (Theran)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Navigation",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Tracking",
+      "rank": 3,
+      "tier": "Novice"
+    },
+    {
+      "name": "Air Sailing",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Public Speaking",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Tattooist",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Unarmed Combat",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Melee Weapon",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Wilderness Survival",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Horror Lore",
+      "rank": 1,
+      "tier": "Novice"
+    }
+  ],
+  "knacks": [
+    {
+      "name": "Hunting (Tracking)"
+    },
+    {
+      "name": "Skinning (Tracking)"
+    },
+    {
+      "name": "Tanning (Tracking)"
+    }
+  ],
+  "resources": {
+    "karma": {
+      "available": 18,
+      "converted": 123,
+      "spent": 105,
+      "fromRace": 7,
+      "legend": 861
+    },
+    "legend": {
+      "totalSpent": 44661,
+      "totalEarnt": 45315,
+      "available": 654
+    },
+    "health": {
+      "damage": 4,
+      "wounds": 0,
+      "recoveriesUsed": 0
+    },
+    "roundTracker": 218
+  },
+  "extraTraits": [
+    "Gahad - Dwarves carying whips\nComes from the Dwarf that had Chakker captured for two years on the airship.  \r\nThe slaver was very proud of the whip and even more happy when he used it on the larger Orks"
+  ]
+}

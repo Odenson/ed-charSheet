@@ -1,0 +1,377 @@
+[
+  {
+    "step": 0,
+    "dice": null,
+    "breakdown": {},
+    "modifier": 0
+  },
+  {
+    "step": 1,
+    "dice": "D4 (-2)",
+    "breakdown": {
+      "D4": 1
+    },
+    "modifier": -2
+  },
+  {
+    "step": 2,
+    "dice": "D4 (-1)",
+    "breakdown": {
+      "D4": 1
+    },
+    "modifier": -1
+  },
+  {
+    "step": 3,
+    "dice": "D4",
+    "breakdown": {
+      "D4": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 4,
+    "dice": "D6",
+    "breakdown": {
+      "D6": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 5,
+    "dice": "D8",
+    "breakdown": {
+      "D8": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 6,
+    "dice": "D10",
+    "breakdown": {
+      "D10": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 7,
+    "dice": "D12",
+    "breakdown": {
+      "D12": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 8,
+    "dice": "2D6",
+    "breakdown": {
+      "D6": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 9,
+    "dice": "D8+D6",
+    "breakdown": {
+      "D6": 1,
+      "D8": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 10,
+    "dice": "2D8",
+    "breakdown": {
+      "D8": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 11,
+    "dice": "D10+D8",
+    "breakdown": {
+      "D8": 1,
+      "D10": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 12,
+    "dice": "2D10",
+    "breakdown": {
+      "D10": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 13,
+    "dice": "D12+D10",
+    "breakdown": {
+      "D10": 1,
+      "D12": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 14,
+    "dice": "2D12",
+    "breakdown": {
+      "D12": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 15,
+    "dice": "D12+2D6",
+    "breakdown": {
+      "D6": 2,
+      "D12": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 16,
+    "dice": "D12+D8+D6",
+    "breakdown": {
+      "D6": 1,
+      "D8": 1,
+      "D12": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 17,
+    "dice": "D12+2D8",
+    "breakdown": {
+      "D8": 1,
+      "D10": 1,
+      "D12": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 18,
+    "dice": "D12+D10+D8",
+    "breakdown": {
+      "D6": 2,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 19,
+    "dice": "D20+2D6",
+    "breakdown": {
+      "D6": 2,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 20,
+    "dice": "D20+D8+D6",
+    "breakdown": {
+      "D6": 1,
+      "D8": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 21,
+    "dice": "D20+2D8",
+    "breakdown": {
+      "D8": 2,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 22,
+    "dice": "D20+D10+D8",
+    "breakdown": {
+      "D8": 1,
+      "D10": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 23,
+    "dice": "D20+2D10",
+    "breakdown": {
+      "D10": 2,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 24,
+    "dice": "D20+D12+D10",
+    "breakdown": {
+      "D10": 1,
+      "D12": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 25,
+    "dice": "D20+2D12",
+    "breakdown": {
+      "D12": 2,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 26,
+    "dice": "D20+D12+2D6",
+    "breakdown": {
+      "D6": 2,
+      "D12": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 27,
+    "dice": "D20+D12+D8+D6",
+    "breakdown": {
+      "D6": 1,
+      "D8": 1,
+      "D12": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 28,
+    "dice": "D20+D12+2D8",
+    "breakdown": {
+      "D8": 2,
+      "D12": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 29,
+    "dice": "D20+D12+D10+D8",
+    "breakdown": {
+      "D8": 1,
+      "D10": 1,
+      "D12": 1,
+      "D20": 1
+    },
+    "modifier": 0
+  },
+  {
+    "step": 30,
+    "dice": "2D20+2D6",
+    "breakdown": {
+      "D6": 2,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 31,
+    "dice": "2D20+D8+D6",
+    "breakdown": {
+      "D6": 1,
+      "D8": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 32,
+    "dice": "2D20+2D8",
+    "breakdown": {
+      "D8": 2,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 33,
+    "dice": "2D20+D10+D8",
+    "breakdown": {
+      "D8": 1,
+      "D10": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 34,
+    "dice": "2D20+2D10",
+    "breakdown": {
+      "D10": 2,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 35,
+    "dice": "2D20+D12+D10",
+    "breakdown": {
+      "D10": 1,
+      "D12": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 36,
+    "dice": "2D20+2D12",
+    "breakdown": {
+      "D12": 2,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 37,
+    "dice": "2D20+D12+2D6",
+    "breakdown": {
+      "D6": 2,
+      "D12": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 38,
+    "dice": "2D20+D12+D8+D6",
+    "breakdown": {
+      "D6": 1,
+      "D8": 1,
+      "D12": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 39,
+    "dice": "2D20+D12+2D8",
+    "breakdown": {
+      "D8": 2,
+      "D12": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  },
+  {
+    "step": 40,
+    "dice": "2D20+D12+D10+D8",
+    "breakdown": {
+      "D8": 1,
+      "D10": 1,
+      "D12": 1,
+      "D20": 2
+    },
+    "modifier": 0
+  }
+]

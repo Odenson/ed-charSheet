@@ -1,0 +1,618 @@
+[
+  {
+    "name": "Acrobatic Defense",
+    "tier": 1
+  },
+  {
+    "name": "Acting",
+    "tier": 1
+  },
+  {
+    "name": "Aggressive Maneuver",
+    "tier": 2
+  },
+  {
+    "name": "Air Sailing",
+    "tier": 1
+  },
+  {
+    "name": "Alchemy",
+    "tier": 1
+  },
+  {
+    "name": "Animal Bond",
+    "tier": 1
+  },
+  {
+    "name": "Animal Handling",
+    "tier": 1
+  },
+  {
+    "name": "Animal Tracking",
+    "tier": 1
+  },
+  {
+    "name": "Animal Training",
+    "tier": 1
+  },
+  {
+    "name": "Anticipate Blow",
+    "tier": 1
+  },
+  {
+    "name": "Arcane Mutterings",
+    "tier": 1
+  },
+  {
+    "name": "Arrow Fletching (Artisan)",
+    "tier": 1
+  },
+  {
+    "name": "Artisan",
+    "tier": 1
+  },
+  {
+    "name": "Artist",
+    "tier": 1
+  },
+  {
+    "name": "Assess Intentions",
+    "tier": 2
+  },
+  {
+    "name": "Avoid Blow",
+    "tier": 1
+  },
+  {
+    "name": "Awareness",
+    "tier": 1
+  },
+  {
+    "name": "Battle Bellow",
+    "tier": 2
+  },
+  {
+    "name": "Battle Shout",
+    "tier": 1
+  },
+  {
+    "name": "Blade Juggle",
+    "tier": 2
+  },
+  {
+    "name": "Body Painting (Artisan)",
+    "tier": 1
+  },
+  {
+    "name": "Bone Carving (Artisan)",
+    "tier": 1
+  },
+  {
+    "name": "Braiding (Artisan)",
+    "tier": 1
+  },
+  {
+    "name": "Bribery",
+    "tier": 1
+  },
+  {
+    "name": "Bribery",
+    "tier": 1
+  },
+  {
+    "name": "Charge",
+    "tier": 1
+  },
+  {
+    "name": "Climbing",
+    "tier": 1
+  },
+  {
+    "name": "Conceal Object",
+    "tier": 2
+  },
+  {
+    "name": "Conversation",
+    "tier": 1
+  },
+  {
+    "name": "Craft Armor",
+    "tier": 1
+  },
+  {
+    "name": "Craft Weapon",
+    "tier": 1
+  },
+  {
+    "name": "Craftsman",
+    "tier": 1
+  },
+  {
+    "name": "Create Orichalcum",
+    "tier": 3
+  },
+  {
+    "name": "Critical Hit",
+    "tier": 3
+  },
+  {
+    "name": "Danger Sense",
+    "tier": 1
+  },
+  {
+    "name": "Defensive Posture",
+    "tier": 3
+  },
+  {
+    "name": "Design Enchanting Pattern",
+    "tier": 2
+  },
+  {
+    "name": "Detect True Element",
+    "tier": 2
+  },
+  {
+    "name": "Diplomacy",
+    "tier": 1
+  },
+  {
+    "name": "Disarm",
+    "tier": 2
+  },
+  {
+    "name": "Disarm Trap",
+    "tier": 1
+  },
+  {
+    "name": "Disguise",
+    "tier": 1
+  },
+  {
+    "name": "Distract",
+    "tier": 1
+  },
+  {
+    "name": "Down Strike",
+    "tier": 2
+  },
+  {
+    "name": "Embroidery",
+    "tier": 1
+  },
+  {
+    "name": "Emotion Song",
+    "tier": 1
+  },
+  {
+    "name": "Engaging Banter",
+    "tier": 1
+  },
+  {
+    "name": "Entertaining",
+    "tier": 1
+  },
+  {
+    "name": "Evaluate",
+    "tier": 1
+  },
+  {
+    "name": "Evidence Analysis",
+    "tier": 2
+  },
+  {
+    "name": "Fast Hand",
+    "tier": 2
+  },
+  {
+    "name": "Feint",
+    "tier": 2
+  },
+  {
+    "name": "First Impression",
+    "tier": 1
+  },
+  {
+    "name": "Flirting",
+    "tier": 1
+  },
+  {
+    "name": "Forgery",
+    "tier": 1
+  },
+  {
+    "name": "Graceful Exit",
+    "tier": 1
+  },
+  {
+    "name": "Great Leap",
+    "tier": 1
+  },
+  {
+    "name": "Haggle",
+    "tier": 1
+  },
+  {
+    "name": "Harvest True Element",
+    "tier": 2
+  },
+  {
+    "name": "Heartening Laugh",
+    "tier": 1
+  },
+  {
+    "name": "Horror Lore",
+    "tier": 1
+  },
+  {
+    "name": "Hunting",
+    "tier": 1
+  },
+  {
+    "name": "Hypnotize",
+    "tier": 2
+  },
+  {
+    "name": "Impressive Display",
+    "tier": 1
+  },
+  {
+    "name": "Intimidating Bellow",
+    "tier": 2
+  },
+  {
+    "name": "Knowledge",
+    "tier": 1
+  },
+  {
+    "name": "Leadership",
+    "tier": 2
+  },
+  {
+    "name": "Lip Reading",
+    "tier": 1
+  },
+  {
+    "name": "Lock Pick",
+    "tier": 1
+  },
+  {
+    "name": "Maneuver",
+    "tier": 1
+  },
+  {
+    "name": "Manuscript Illumination",
+    "tier": 1
+  },
+  {
+    "name": "Map Making",
+    "tier": 1
+  },
+  {
+    "name": "Melee Weapon",
+    "tier": 1
+  },
+  {
+    "name": "Mimic Voice",
+    "tier": 1
+  },
+  {
+    "name": "Missile Weapon",
+    "tier": 1
+  },
+  {
+    "name": "Mount Attack",
+    "tier": 2
+  },
+  {
+    "name": "Navigation",
+    "tier": 1
+  },
+  {
+    "name": "Painting",
+    "tier": 1
+  },
+  {
+    "name": "Patient Maneuver",
+    "tier": 2
+  },
+  {
+    "name": "Physician",
+    "tier": 1
+  },
+  {
+    "name": "Picking Pockets",
+    "tier": 1
+  },
+  {
+    "name": "Pilot Boat",
+    "tier": 1
+  },
+  {
+    "name": "Poetry",
+    "tier": 1
+  },
+  {
+    "name": "Poisoned Influence",
+    "tier": 2
+  },
+  {
+    "name": "Public Speaking",
+    "tier": 1
+  },
+  {
+    "name": "Read River",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Drake)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Dwarf)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Elf)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Human)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Obsidiman)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Ork)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (T`skrang)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Theran)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Throalic)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Troll)",
+    "tier": 1
+  },
+  {
+    "name": "Read/Write Language (Windling)",
+    "tier": 1
+  },
+  {
+    "name": "Research",
+    "tier": 1
+  },
+  {
+    "name": "Resist Pain",
+    "tier": 3
+  },
+  {
+    "name": "Resist Taunt",
+    "tier": 2
+  },
+  {
+    "name": "Riding",
+    "tier": 1
+  },
+  {
+    "name": "Riposte",
+    "tier": 2
+  },
+  {
+    "name": "Robe Embroidery",
+    "tier": 1
+  },
+  {
+    "name": "Rune Carving",
+    "tier": 1
+  },
+  {
+    "name": "Sail Embroidery",
+    "tier": 1
+  },
+  {
+    "name": "Sailing",
+    "tier": 1
+  },
+  {
+    "name": "Sculpting",
+    "tier": 1
+  },
+  {
+    "name": "Second Attack",
+    "tier": 2
+  },
+  {
+    "name": "Second Shot",
+    "tier": 2
+  },
+  {
+    "name": "Second Weapon",
+    "tier": 2
+  },
+  {
+    "name": "Seduction",
+    "tier": 1
+  },
+  {
+    "name": "Setup",
+    "tier": 2
+  },
+  {
+    "name": "Shield Bash",
+    "tier": 1
+  },
+  {
+    "name": "Shield Drive",
+    "tier": 2
+  },
+  {
+    "name": "Skinning",
+    "tier": 1
+  },
+  {
+    "name": "Skinning",
+    "tier": 1
+  },
+  {
+    "name": "Slough Blame",
+    "tier": 2
+  },
+  {
+    "name": "Speak Language",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Drake)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Dwarf)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Elf)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Human)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Obsidiman)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Ork)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (T`skrang)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Theran)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Throalic)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Troll)",
+    "tier": 1
+  },
+  {
+    "name": "Speak Language (Windling)",
+    "tier": 1
+  },
+  {
+    "name": "Stealthy Stride",
+    "tier": 1
+  },
+  {
+    "name": "Sure Mount",
+    "tier": 1
+  },
+  {
+    "name": "Surprise Strike",
+    "tier": 1
+  },
+  {
+    "name": "Swift Kick",
+    "tier": 1
+  },
+  {
+    "name": "Swimming",
+    "tier": 1
+  },
+  {
+    "name": "Swing Attack",
+    "tier": 1
+  },
+  {
+    "name": "Swinging Move",
+    "tier": 1
+  },
+  {
+    "name": "Tactics",
+    "tier": 1
+  },
+  {
+    "name": "Tailor",
+    "tier": 1
+  },
+  {
+    "name": "Tanning",
+    "tier": 1
+  },
+  {
+    "name": "Tattooist",
+    "tier": 1
+  },
+  {
+    "name": "Taunt",
+    "tier": 1
+  },
+  {
+    "name": "Throwing Weapon",
+    "tier": 1
+  },
+  {
+    "name": "Tracking",
+    "tier": 1
+  },
+  {
+    "name": "Trick Riding",
+    "tier": 1
+  },
+  {
+    "name": "Unarmed Combat",
+    "tier": 1
+  },
+  {
+    "name": "Vicious Wound",
+    "tier": 3
+  },
+  {
+    "name": "Weapon Breaker",
+    "tier": 3
+  },
+  {
+    "name": "Wheeling Attack",
+    "tier": 2
+  },
+  {
+    "name": "Wheeling Defense",
+    "tier": 2
+  },
+  {
+    "name": "Wilderness Survival",
+    "tier": 1
+  },
+  {
+    "name": "Witty Repartee",
+    "tier": 3
+  },
+  {
+    "name": "Wood Carving",
+    "tier": 1
+  },
+  {
+    "name": "Wound Balance",
+    "tier": 1
+  }
+]
