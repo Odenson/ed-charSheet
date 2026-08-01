@@ -3,6 +3,7 @@ import { LitElement, html, css } from 'lit';
 import { loadCharacterModel } from '../store.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
+import './ed-roll-modal.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -18,6 +19,7 @@ export class EdApp extends LitElement {
     _error: { state: true },
     _tab: { state: true },
     _dark: { state: true },
+    _roll: { state: true },
   };
 
   static styles = css`
@@ -82,6 +84,12 @@ export class EdApp extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
+    // Any roll button in a child view bubbles an 'ed-roll' event up to here.
+    this.addEventListener('ed-roll', (e) => {
+      const { label, step } = e.detail;
+      const stepRow = this._model?.stepByNumber?.[step];
+      if (stepRow) this._roll = { label, stepRow };
+    });
     try {
       this._model = await loadCharacterModel();
     } catch (e) {
@@ -145,6 +153,13 @@ export class EdApp extends LitElement {
         >${this._dark ? '☀' : '☾'}</button>
       </div>
       ${this._panel()}
+      ${this._roll
+        ? html`<ed-roll-modal
+            .label=${this._roll.label}
+            .stepRow=${this._roll.stepRow}
+            @close=${() => (this._roll = null)}
+          ></ed-roll-modal>`
+        : ''}
       <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4</footer>
     `;
   }

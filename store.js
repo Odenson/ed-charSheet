@@ -30,6 +30,7 @@ export async function loadCharacterModel() {
   const talentCatalog = talentsFile.talents ?? talentsFile;
   const discByName = Object.fromEntries((disciplinesFile.disciplines ?? []).map((d) => [d.name, d]));
   const diceForStep = makeDiceForStep(steps);
+  const stepByNumber = Object.fromEntries(steps.map((s) => [s.step, s])); // for the dice roller
 
   // Racial special abilities for the character's race.
   const raceEntry = (racesFile.races ?? []).find((r) => r.name === character.meta?.race);
@@ -88,6 +89,7 @@ export async function loadCharacterModel() {
     resources: character.resources ?? {},
     disciplines,
     racialAbilities,
+    stepByNumber,
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],
     traits: character.traits ?? [],

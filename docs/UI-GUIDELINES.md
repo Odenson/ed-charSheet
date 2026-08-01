@@ -43,6 +43,15 @@ The hero portrait is an image file committed to the repo, referenced by
 `meta.portrait` in `character.json` (e.g. `data/chakka.jpg`). If the field is
 absent the UI falls back to a placeholder icon.
 
+## 7. Modal keyboard conventions
+Every modal/overlay follows the same keyboard contract:
+- **Escape closes** the modal (equivalent to clicking the backdrop or the ✕).
+  This is mandatory for *any* modal that appears.
+- **Enter confirms** — for modals that accept input or ask for confirmation,
+  Enter triggers the primary action (Save / OK / Confirm). Read-only modals (like
+  the current roll and ability modals) have no primary action, so Enter is a
+  no-op there; wire it as soon as a modal gains an accept action.
+
 ## Other conventions
 - **Roll affordance:** every rollable stat (attributes, initiative, knockdown,
   karma, talents) carries a small dice button. Rolling itself is wired in Phase 4.

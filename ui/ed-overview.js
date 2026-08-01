@@ -43,6 +43,7 @@ export class EdOverview extends LitElement {
     .acell .av { font-size: 1rem; font-weight: 500; line-height: 1; }
     .acell .asd { font-size: 0.62rem; color: var(--muted); }
     .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; flex: none; padding: 0; }
+    .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
     .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1; }
     .stack { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
     .line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 0.8rem; }
@@ -71,8 +72,33 @@ export class EdOverview extends LitElement {
   `;
 
   _pend() { return html`<span class="pend">—</span>`; }
-  _roll(label) {
-    return html`<button class="roll" title="Roll ${label} (coming soon)" aria-label="Roll ${label}">⚄</button>`;
+  // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
+  // Disabled when there's no step yet (e.g. engine-derived combat stats).
+  _rollBtn(label, step) {
+    const disabled = step == null;
+    return html`<button
+      class="roll"
+      ?disabled=${disabled}
+      title=${disabled ? 'Step not yet available' : `Roll ${label}`}
+      aria-label="Roll ${label}"
+      @click=${(e) => {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step }, bubbles: true, composed: true }));
+      }}
+    >⚄</button>`;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._onKeydown = (e) => {
+      if (e.key === 'Escape' && this._modal) this._closeModal();
+    };
+    document.addEventListener('keydown', this._onKeydown);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener('keydown', this._onKeydown);
+    super.disconnectedCallback();
   }
 
   _openModal(title, body) { this._modal = { title, body }; }
@@ -185,7 +211,7 @@ export class EdOverview extends LitElement {
                     <div class="r">
                       <span class="av">${a.value}</span>
                       <span class="asd">s${a.step} ${a.dice}</span>
-                      ${this._roll(a.name)}
+                      ${this._rollBtn(a.name, a.step)}
                     </div>
                   </div>
                 `,
@@ -222,9 +248,9 @@ export class EdOverview extends LitElement {
             <div class="stack" style="justify-content: flex-start">
               <div class="blk">
                 <h4>Combat</h4>
-                <div class="line"><span>Initiative</span><span class="rl">${this._pend()}${this._roll('Initiative')}</span></div>
-                <div class="line"><span>Knockdown</span><span class="rl">${this._pend()}${this._roll('Knockdown')}</span></div>
-                <div class="line"><span>Karma</span><span class="rl">${this._pend()}${this._roll('Karma')}</span></div>
+                <div class="line"><span>Initiative</span><span class="rl">${this._pend()}${this._rollBtn('Initiative', null)}</span></div>
+                <div class="line"><span>Knockdown</span><span class="rl">${this._pend()}${this._rollBtn('Knockdown', null)}</span></div>
+                <div class="line"><span>Karma</span><span class="rl">${this._pend()}${this._rollBtn('Karma', null)}</span></div>
               </div>
               ${this._specialFeatures()}
             </div>

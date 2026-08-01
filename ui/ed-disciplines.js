@@ -36,6 +36,7 @@ export class EdDisciplines extends LitElement {
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .sd { font-size: 0.72rem; color: var(--muted); }
     .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; padding: 0; }
+    .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
     .abil { display: flex; gap: 10px; padding: 5px 0; font-size: 0.8rem; align-items: baseline; }
     .cbadge { font-size: 0.62rem; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
     .section-gap { margin-top: 14px; }
@@ -83,7 +84,16 @@ export class EdDisciplines extends LitElement {
               <span class="num">${t.rank}</span>
               <span class="sd">${t.step != null ? `${t.step} · ${t.dice}` : '—'}</span>
               <span class="action sd">${t.action ?? ''}</span>
-              <button class="roll" title="Roll ${t.name} (coming soon)" aria-label="Roll ${t.name}">⚄</button>
+              <button
+                class="roll"
+                ?disabled=${t.step == null}
+                title=${t.step == null ? 'No step to roll' : `Roll ${t.name}`}
+                aria-label="Roll ${t.name}"
+                @click=${() =>
+                  this.dispatchEvent(
+                    new CustomEvent('ed-roll', { detail: { label: t.name, step: t.step }, bubbles: true, composed: true }),
+                  )}
+              >⚄</button>
             </div>
           `,
         )}
