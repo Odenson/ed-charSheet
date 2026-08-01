@@ -21,6 +21,9 @@ export class EdOverview extends LitElement {
       --muted: light-dark(#5a6472, #93a0b3);
       --accent: light-dark(#7a3e12, #d9944e);
       --accent-bg: light-dark(#f6e9dc, #3a2a17);
+      /* Karma semantic colour (Sage) — distinct from the amber general accent. */
+      --karma: light-dark(#3d6b4a, #82c39a);
+      --karma-bg: light-dark(#e7f0ea, #223029);
       display: block;
     }
     .grid { display: grid; grid-template-columns: 250px 1fr; gap: 12px; align-items: stretch; }
@@ -47,6 +50,8 @@ export class EdOverview extends LitElement {
     .acell .av { font-size: 1rem; font-weight: 500; line-height: 1; }
     .acell .asd { font-size: 0.62rem; color: var(--muted); }
     .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; flex: none; padding: 0; }
+    .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
+    .kmark { color: var(--karma); }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
     .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1; }
     .stack { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
@@ -83,16 +88,34 @@ export class EdOverview extends LitElement {
 
   _pend() { return html`<span class="pend">—</span>`; }
 
+  // Label a modifier by its exact source: an abbreviated discipline + circle
+  // ("Arc 4", "Net 2" — matching the Special Features tags) or a race name, so
+  // two same-value bonuses from different disciplines are distinguishable.
+  _modLabel(m) {
+    const o = m.origin;
+    if (o?.kind === 'discipline') return `${o.name.slice(0, 3)} ${o.circle}`;
+    if (o?.kind === 'race') return o.name ?? 'race';
+    return m.source ?? '';
+  }
+
+  // The " +1 (Arc 4) +1 (Net 2)" fragment shared by every value tooltip.
+  _modSummary(modifiers) {
+    return (modifiers ?? [])
+      .map((m) => {
+        const sign = m.operation === 'subtract' ? '−' : m.operation === 'add' ? '+' : `${m.operation} `;
+        const label = this._modLabel(m);
+        return ` ${sign}${m.value}${label ? ` (${label})` : ''}`;
+      })
+      .join('');
+  }
+
   // Render an engine-derived characteristic as a real number, or fall back to the
   // placeholder pill if the engine hasn't computed it (UI-GUIDELINES §5: never a
   // fabricated number). Hovering shows how the value was built (base + modifiers).
   _char(key) {
     const c = this.model?.characteristics?.[key];
     if (!c || c.value == null) return this._pend();
-    const sign = (op) => (op === 'subtract' ? '−' : op === 'add' ? '+' : `${op} `);
-    const title = (c.modifiers ?? []).length
-      ? `Base ${c.base}` + c.modifiers.map((m) => ` ${sign(m.operation)}${m.value}${m.source ? ` (${m.source})` : ''}`).join('')
-      : `Base ${c.base}`;
+    const title = `Base ${c.base}${this._modSummary(c.modifiers)}`;
     return html`<span class="val" title=${title}>${c.value}</span>`;
   }
 
@@ -101,11 +124,8 @@ export class EdOverview extends LitElement {
   _combatStep(key, label) {
     const c = this.model?.characteristics?.[key];
     if (!c || c.value == null) return html`${this._pend()}${this._rollBtn(label, null)}`;
-    const mods = (c.modifiers ?? []).length
-      ? ' ' + c.modifiers.map((m) => `${m.operation === 'subtract' ? '−' : '+'}${m.value}`).join(' ')
-      : '';
-    const title = `Step ${c.value} (base ${c.base}${mods})`;
-    return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value)}`;
+    const title = `Step ${c.value} (base ${c.base}${this._modSummary(c.modifiers)})`;
+    return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma)}`;
   }
 
   // Karma: available points (max in the tooltip); the roll button rolls the D6 Karma die.
@@ -113,20 +133,30 @@ export class EdOverview extends LitElement {
     const k = this.model?.characteristics?.karma;
     if (!k) return html`${this._pend()}${this._rollBtn(label, null)}`;
     const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma · die D6`;
-    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step)}`;
+    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step, null, true)}`;
   }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
-  // Disabled when there's no step yet (e.g. engine-derived combat stats).
-  _rollBtn(label, step) {
+  // Disabled when there's no step yet (e.g. engine-derived combat stats). If the
+  // test is karma-eligible (`karma` grants present), passes a karma context so the
+  // roll modal can offer an optional +D6 Karma die.
+  _rollBtn(label, step, karma, km = false) {
     const disabled = step == null;
+    const karmaCtx =
+      karma?.grants?.length
+        ? {
+            grants: karma.grants,
+            available: this.model?.characteristics?.karma?.available ?? null,
+            step: this.model?.characteristics?.karma?.step ?? null,
+          }
+        : null;
     return html`<button
-      class="roll"
+      class="roll ${km ? 'km' : ''}"
       ?disabled=${disabled}
-      title=${disabled ? 'Step not yet available' : `Roll ${label}`}
+      title=${disabled ? 'Step not yet available' : `Roll ${label}${karmaCtx ? ' (Karma available)' : ''}`}
       aria-label="Roll ${label}"
       @click=${(e) => {
         e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step }, bubbles: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step, karma: karmaCtx }, bubbles: true, composed: true }));
       }}
     >⚄</button>`;
   }
@@ -207,7 +237,7 @@ export class EdOverview extends LitElement {
     const discAbilities = (m.disciplines ?? []).flatMap((d) =>
       (d.abilities ?? [])
         .filter((ab) => !STAT_INCREASE.has(ab.type))
-        .map((ab) => ({ tag: `${d.name.slice(0, 3)} ${ab.circle}`, summary: ab.summary })),
+        .map((ab) => ({ tag: `${d.name.slice(0, 3)} ${ab.circle}`, summary: ab.summary, type: ab.type })),
     );
     if (!racial.length && !discAbilities.length) return html``;
     return html`
@@ -226,7 +256,7 @@ export class EdOverview extends LitElement {
           `,
         )}
         ${discAbilities.map(
-          (a) => html`<div class="feat"><span class="ftag">${a.tag}</span><span class="txt">${a.summary}</span></div>`,
+          (a) => html`<div class="feat"><span class="ftag">${a.tag}</span><span class="txt">${a.type === 'grant-karma-use' ? html`<span class="kmark" title="Karma use">✦</span> ` : ''}${a.summary}</span></div>`,
         )}
       </div>
     `;
@@ -281,7 +311,7 @@ export class EdOverview extends LitElement {
                     <div class="r">
                       <span class="av">${a.value}</span>
                       <span class="asd">s${a.step} ${a.dice}</span>
-                      ${this._rollBtn(a.name, a.step)}
+                      ${this._rollBtn(a.name, a.step, a.karma)}
                     </div>
                   </div>
                 `,

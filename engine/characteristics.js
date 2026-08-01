@@ -71,6 +71,7 @@ export function applyModifiers(base, effects, match) {
       value: e.value,
       operation: e.operation,
       source: e.source ?? null,
+      origin: e.origin ?? null,
       summary: e.summary ?? null,
     });
   }
@@ -153,6 +154,29 @@ export function knockdown(strengthStep, effects) {
 
 // The Karma die is an extra D6 = Step 4 (may grow later via effects/grants).
 export const KARMA_STEP = 4;
+
+/**
+ * Karma-use permissions for a test. An adept may spend a Karma Point (an extra
+ * exploding D6) only on tests their race/Discipline grants via `grant-karma-use`
+ * effects. Scoped grants ("sight-based", "vs Horrors") are contextual, so they
+ * are surfaced with their scope rather than auto-decided. (Talent tests are
+ * karma-eligible by the core rule, applied where talents roll.)
+ *
+ * @param {string} testName  e.g. 'Initiative', 'Perception', 'Damage'
+ * @param {Array<object>} effects  active effects (each may carry an `origin`)
+ * @returns {{grants: Array<{scope:string|null, via:object|null, summary:string|null}>}|null}
+ */
+export function karmaUse(testName, effects) {
+  const grants = (effects ?? [])
+    .filter(
+      (e) =>
+        e.type === 'grant-karma-use' &&
+        e.target?.domain === 'test' &&
+        e.target?.name === testName,
+    )
+    .map((e) => ({ scope: e.scope ?? null, via: e.origin ?? null, summary: e.summary ?? null }));
+  return grants.length ? { grants } : null;
+}
 
 /**
  * Maximum Karma = race Karma Modifier × Circle (+ leftover attribute points,

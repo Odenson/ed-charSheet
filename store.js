@@ -13,6 +13,7 @@ import {
   knockdown,
   maxKarma,
   KARMA_STEP,
+  karmaUse,
 } from './engine/characteristics.js';
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
@@ -98,12 +99,18 @@ export async function loadCharacterModel() {
   // Sources the engine currently knows about: race + discipline circles reached.
   // Items / threads / spells join this list in later slices.
   const lookupChar = makeCharacteristics(characteristicsFile);
+  // Each effect carries an `origin` so a modifier can name its exact source
+  // (e.g. distinguish an Archer bonus from a Nethermancer one in a tooltip).
   const activeEffects = [
-    ...(raceEntry?.abilities ?? []).flatMap((a) => a.effects ?? []),
+    ...(raceEntry?.abilities ?? []).flatMap((a) =>
+      (a.effects ?? []).map((e) => ({ ...e, origin: { kind: 'race', name: raceEntry.name, ability: a.name } })),
+    ),
     ...(character.disciplines ?? []).flatMap((d) =>
       ((discByName[d.name] ?? {}).circles ?? [])
         .filter((c) => c.circle <= d.circle)
-        .flatMap((c) => c.effects ?? []),
+        .flatMap((c) =>
+          (c.effects ?? []).map((e) => ({ ...e, origin: { kind: 'discipline', name: d.name, circle: c.circle } })),
+        ),
     ),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
@@ -129,6 +136,16 @@ export async function loadCharacterModel() {
           }
         : null,
   };
+
+  // Karma-use eligibility per rollable (a test may spend Karma only where a
+  // grant-karma-use permission covers it). Attribute tests match by name;
+  // Initiative matches its granted test. Deferred: talent tests (default-eligible).
+  attributes.forEach((a) => {
+    a.karma = karmaUse(a.name, activeEffects);
+  });
+  if (characteristics.initiative) {
+    characteristics.initiative.karma = karmaUse('Initiative', activeEffects);
+  }
 
   return {
     meta: character.meta ?? {},

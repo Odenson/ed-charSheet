@@ -87,9 +87,15 @@ export class EdApp extends LitElement {
     super.connectedCallback();
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
-      const { label, step } = e.detail;
+      const { label, step, karma } = e.detail;
       const stepRow = this._model?.stepByNumber?.[step];
-      if (stepRow) this._roll = { label, stepRow };
+      if (!stepRow) return;
+      // Resolve the Karma die's step row (D6) so the modal can offer +D6.
+      const karmaCtx =
+        karma?.step != null && this._model?.stepByNumber?.[karma.step]
+          ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
+          : null;
+      this._roll = { label, stepRow, karma: karmaCtx };
     });
     try {
       this._model = await loadCharacterModel();
@@ -158,6 +164,7 @@ export class EdApp extends LitElement {
         ? html`<ed-roll-modal
             .label=${this._roll.label}
             .stepRow=${this._roll.stepRow}
+            .karma=${this._roll.karma}
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}

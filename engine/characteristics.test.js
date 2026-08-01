@@ -14,6 +14,7 @@ import {
   knockdown,
   maxKarma,
   KARMA_STEP,
+  karmaUse,
 } from './characteristics.js';
 
 // Build a defense-modifier effect targeting one kind of defense.
@@ -140,6 +141,18 @@ test('Chakka: Max Karma = karmaModifier 5 × highest Circle 4 = 20; die is D6 (s
 test('maxKarma guards missing inputs', () => {
   assert.equal(maxKarma(null, 4), null);
   assert.equal(maxKarma(5, undefined), null);
+});
+
+test('karmaUse finds grant-karma-use permissions by test name, with scope', () => {
+  const effects = [
+    { type: 'grant-karma-use', target: { domain: 'test', name: 'Initiative' }, origin: { kind: 'discipline', name: 'Archer', circle: 3 } },
+    { type: 'grant-karma-use', target: { domain: 'test', name: 'Perception' }, scope: 'sight-based', origin: { kind: 'discipline', name: 'Archer', circle: 1 } },
+    { type: 'defense-modifier', target: { domain: 'defense', name: 'Physical' }, operation: 'add', value: 1 },
+  ];
+  assert.equal(karmaUse('Initiative', effects).grants[0].scope, null); // unscoped
+  assert.equal(karmaUse('Initiative', effects).grants[0].via.name, 'Archer');
+  assert.equal(karmaUse('Perception', effects).grants[0].scope, 'sight-based');
+  assert.equal(karmaUse('Strength', effects), null); // no grant → not karma-eligible
 });
 
 test('applyModifiers folds operations in order', () => {
