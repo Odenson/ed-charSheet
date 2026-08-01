@@ -27,8 +27,10 @@ testable layers:
   Characteristics Table plus the taxonomy effects, recomputing everything from
   inputs so editing one attribute cascades to all derived values; plus a Step→Dice
   roller with exploding dice. Run the tests with `npm test` (no dependencies).
-- **UI** — thin [Lit](https://lit.dev) Web Components; no build step (loaded via
-  CDN + import maps), so the page stays small and features load on demand.
+- **UI** — thin [Lit](https://lit.dev) Web Components; no build step. Lit is
+  self-hosted (`vendor/`) and resolved via an import map, so the page stays small,
+  features load on demand, and there's **no external runtime dependency** (works
+  offline; no CDN outage can blank the app).
 
 Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
@@ -40,6 +42,7 @@ rules/           steps, attributes, characteristics, talents, disciplines, skill
 docs/            EFFECT-TAXONOMY.md (effect vocabulary), UI-GUIDELINES.md (UI/UX contract)
 engine/          pure rules engine + *.test.js (derive, characteristics, dice)
 ui/              Lit components (added from Phase 1)
+vendor/          self-hosted Lit bundle (+ provenance) — no external runtime dep
 tools/archive/   import-xlsx.mjs — archived data-bootstrap importer (not run)
 ARCHITECTURE.md  architecture and phased delivery plan
 CLAUDE.md        working agreement — protected surfaces & change tiers
@@ -55,10 +58,52 @@ The data was originally bootstrapped from a spreadsheet by
 `tools/archive/import-xlsx.mjs`, which is now **archived** (kept for provenance,
 not run — see its header).
 
-Run the app locally by serving the folder, e.g.:
+### Running locally
+
+The app must be served over **HTTP** — opening `index.html` as a `file://` URL
+won't work, because ES modules and `fetch()` of the JSON data are blocked on the
+`file://` origin. Serve the project root with any static server; two options:
+
+**Python** (no install needed on macOS/Linux):
 
 ```bash
-npx http-server .
+python3 -m http.server 8000
+```
+
+**Node** (`npx`, downloads on first use):
+
+```bash
+npx http-server . -p 8000
+```
+
+Then open <http://localhost:8000> in a browser.
+
+### Stopping the app
+
+If the server is running in the **foreground**, stop it with `Ctrl+C` in that
+terminal.
+
+If you started it in the **background** (ran with a trailing `&`), stop it by
+port:
+
+```bash
+# macOS / Linux — kill whatever is serving port 8000
+kill "$(lsof -ti tcp:8000)"
+```
+
+Or, if you know how it was launched, match the command:
+
+```bash
+pkill -f "http.server 8000"     # the Python server above
+pkill -f "http-server"          # the npx/Node server above
+```
+
+### Tests
+
+The engine ships pure, dependency-free tests (Node's built-in runner):
+
+```bash
+npm test
 ```
 
 ### Deployment

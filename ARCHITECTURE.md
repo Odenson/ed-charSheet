@@ -244,8 +244,11 @@ This is an explicit requirement, so it's a first-class design concern:
 3. **Feature = module** — each capability (combat, magic, karma, thread items)
    is a self-contained engine+view pair, added without touching existing ones.
 4. **Lit as the UI layer** — chosen for its ~5–6KB runtime, standards-based Web
-   Components, and **no build step** (loads straight from a CDN via import maps,
-   so the "edit → push → live on Pages" workflow is preserved). Each view is a
+   Components, and **no build step**. Lit is **self-hosted** (`vendor/lit-*.js`,
+   a single self-contained bundle) and resolved via an import map, so the
+   "edit → push → live on Pages" workflow is preserved *and* there is no external
+   runtime dependency — a failed third-party fetch can no longer blank the app,
+   and it works offline (see §10). Each view is a
    self-contained Lit component; reactive properties auto-update the DOM when the
    engine reports a change, which is exactly what the attribute cascade needs.
    The engine stays pure and framework-agnostic, so Lit only ever touches the UI
@@ -292,6 +295,9 @@ just `character.json`.
   rules/
     steps.json attributes.json characteristics.json talents.json
     disciplines.json skills.json races.json …             # hand-curated
+  vendor/
+    lit-3.2.1.js         # self-hosted Lit bundle (no external runtime dep)
+    README.md            # provenance + how to refresh/upgrade
   docs/
     EFFECT-TAXONOMY.md   # controlled vocabulary for rule effects
     UI-GUIDELINES.md     # locked UI/UX contract
@@ -331,9 +337,18 @@ just `character.json`.
 
 ## 10. Decisions
 
-- **Tech stack — DECIDED: Lit.** Web Components, ~5–6KB runtime, no build step
-  (CDN + import maps), reactive properties for the cascade UI. Engine remains
-  framework-agnostic; Lit only touches the UI layer. See §6.4.
+- **Tech stack — DECIDED: Lit.** Web Components, ~5–6KB runtime, no build step,
+  reactive properties for the cascade UI. Engine remains framework-agnostic; Lit
+  only touches the UI layer. See §6.4.
+- **Lit hosting — DECIDED: self-hosted, was CDN.** Originally loaded from
+  `esm.sh` via import map; that made every cold page load depend on a third party
+  being reachable, and a failed/slow fetch rendered the whole app as a blank
+  (dark) screen with no fallback. Now vendored as a single self-contained bundle
+  in `vendor/` (see `vendor/README.md` for source + refresh steps) and resolved
+  by a **relative** import-map entry so it works at both `/` and `/dev/`. Keeps
+  the no-build ethos, removes the blank-screen failure mode, works offline, and
+  is deterministic/reproducible. Trade-off accepted: a ~16KB vendored file in the
+  repo and a manual re-fetch to upgrade Lit (rare, since the version is pinned).
 - **Persistence — DECIDED: localStorage + file export/import.** Auto-save to the
   browser plus download/upload of `character.json`. No secrets, works offline.
   GitHub-API sync remains a clean later add-on since state is just

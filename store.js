@@ -5,7 +5,7 @@
 // the reactive cascade come in later phases.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
-import { makeCharacteristics, physicalDefense } from './engine/characteristics.js';
+import { makeCharacteristics, defense, DEFENSE_ATTRIBUTE } from './engine/characteristics.js';
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
@@ -98,9 +98,11 @@ export async function loadCharacterModel() {
         .flatMap((c) => c.effects ?? []),
     ),
   ];
-  const dexValue = attributeValue(character.attributes?.Dexterity);
+  const attrVal = (name) => attributeValue(character.attributes?.[name]);
   const characteristics = {
-    physicalDefense: physicalDefense(dexValue, activeEffects, lookupChar),
+    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
+    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
+    socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
   };
 
   return {

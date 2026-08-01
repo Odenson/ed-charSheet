@@ -274,8 +274,8 @@ export class EdOverview extends LitElement {
               <div class="blk">
                 <h4>Defences</h4>
                 <div class="line"><span>Physical</span>${this._char('physicalDefense')}</div>
-                <div class="line"><span>Mystic</span>${this._pend()}</div>
-                <div class="line"><span>Social</span>${this._pend()}</div>
+                <div class="line"><span>Mystic</span>${this._char('mysticDefense')}</div>
+                <div class="line"><span>Social</span>${this._char('socialDefense')}</div>
               </div>
               <div class="blk">
                 <h4>Armour</h4>

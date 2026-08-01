@@ -77,24 +77,35 @@ export function applyModifiers(base, effects, match) {
   return { base, value, modifiers };
 }
 
+// Which attribute drives each Defense rating. This "attribute → characteristic"
+// mapping is engine logic (§5), kept here so callers don't re-encode it.
+export const DEFENSE_ATTRIBUTE = {
+  Physical: 'Dexterity',
+  Mystic: 'Perception',
+  Social: 'Charisma',
+};
+
 /**
- * Physical Defense = the Defense column of the Characteristics Table at the
- * character's Dexterity value, plus any always-on defense-modifier effects that
- * target Physical defense (rating measure).
+ * A Defense rating = the Defense column of the Characteristics Table at the
+ * governing attribute's value, plus any always-on defense-modifier effects that
+ * target this kind of defense (rating measure). Physical/Mystic/Social all share
+ * the one Defense column; they differ only by governing attribute and effect
+ * target — so one function serves all three.
  *
- * @param {number} dexterityValue
+ * @param {'Physical'|'Mystic'|'Social'} kind
+ * @param {number} attributeValue  value of DEFENSE_ATTRIBUTE[kind]
  * @param {Array<object>} effects  active effects from race/discipline/items/…
  * @param {(value:number)=>object|undefined} lookup  from makeCharacteristics()
  * @returns {{base:number, value:number, modifiers:Array<object>}|null} null if
  *          the value is off the table (renders as a placeholder pill upstream)
  */
-export function physicalDefense(dexterityValue, effects, lookup) {
-  const row = lookup(dexterityValue);
+export function defense(kind, attributeValue, effects, lookup) {
+  const row = lookup(attributeValue);
   if (!row || typeof row.defense !== 'number') return null;
   const match = (e) =>
     e.type === 'defense-modifier' &&
     e.target?.domain === 'defense' &&
-    e.target?.name === 'Physical' &&
+    e.target?.name === kind &&
     (e.measure ?? 'rating') === 'rating';
   return applyModifiers(row.defense, effects, match);
 }
