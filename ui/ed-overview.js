@@ -2,15 +2,17 @@
 // and the Defences/Armour/Movement/Health/Combat panels. Fit-to-viewport,
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
 export class EdOverview extends LitElement {
   static properties = {
     model: { attribute: false },
+    editMode: { attribute: false },
     _modal: { state: true },
     _lightbox: { state: true },
+    _edit: { state: true },
   };
 
   static styles = css`
@@ -29,6 +31,12 @@ export class EdOverview extends LitElement {
     .grid { display: grid; grid-template-columns: 250px 1fr; gap: 12px; align-items: stretch; }
     .hero { display: flex; flex-direction: column; }
     .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .details { flex: 1; border-radius: 6px; }
+    /* Edit mode: the details block (name/meta) and the blurb become click-to-edit
+       regions. A faint dashed outline signals "editable"; it brightens on hover/
+       focus. Outline never reflows, so read-mode layout is untouched. */
+    .editable { cursor: pointer; outline: 1px dashed var(--border); outline-offset: 3px; transition: outline-color 0.15s ease, background 0.15s ease; }
+    .editable:hover, .editable:focus-visible { outline-color: var(--accent); background: var(--accent-bg); }
     .name { font-size: 1.25rem; font-weight: 500; line-height: 1.1; }
     .meta { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
     .discs { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
@@ -63,7 +71,14 @@ export class EdOverview extends LitElement {
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
     .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
     .ftag.race { background: var(--accent-bg); color: var(--accent); }
-    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; }
+    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
+    /* Universal hover-reveal: ANY info icon stays hidden until you hover (or
+       keyboard-focus) the element it sits in, so it never clutters the read view.
+       The icon is placed as a child of the label it annotates, so hovering that
+       label reveals it. Touch has no hover, so icons are always shown there
+       (UI-GUIDELINES: mobile must work). */
+    *:hover > .info, *:focus-within > .info, .info:focus-visible { opacity: 1; }
+    @media (hover: none) { .info { opacity: 1; } }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); border-radius: 12px; max-width: 32rem; max-height: 80vh; overflow: auto; padding: 1rem 1.25rem; }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
@@ -87,6 +102,24 @@ export class EdOverview extends LitElement {
   `;
 
   _pend() { return html`<span class="pend">—</span>`; }
+
+  // Wrap content as a click-to-edit region. Only interactive in edit mode; in
+  // read mode it's an inert container (no outline, no focus, no handler effect),
+  // so the read view stays clean. Opens the details form (Enter/Space too).
+  _editRegion(cls, content) {
+    const on = this.editMode;
+    return html`<div
+      class="${cls}${on ? ' editable' : ''}"
+      role=${on ? 'button' : nothing}
+      tabindex=${on ? '0' : nothing}
+      aria-label=${on ? 'Edit character details' : nothing}
+      title=${on ? 'Edit character details' : nothing}
+      @click=${() => { if (this.editMode) this._edit = true; }}
+      @keydown=${(e) => {
+        if (this.editMode && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this._edit = true; }
+      }}
+    >${content}</div>`;
+  }
 
   // Label a modifier by its exact source: an abbreviated discipline + circle
   // ("Arc 4", "Net 2" — matching the Special Features tags) or a race name, so
@@ -277,22 +310,30 @@ export class EdOverview extends LitElement {
             ${portrait
               ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @click=${() => (this._lightbox = true)} />`
               : ''}
-            <div style="flex: 1">
-              <div class="name">
-                ${meta.name ?? 'Unnamed'}<button
-                  class="info"
-                  title="Character details"
-                  aria-label="Character details"
-                  @click=${() => this._openModal(meta.name ?? 'Character details', this._metaBody())}
-                >ⓘ</button>
-              </div>
-              <div class="meta">${metaLine}</div>
-            </div>
+            ${this._editRegion(
+              'details',
+              html`
+                <div class="name">
+                  ${meta.name ?? 'Unnamed'}${this.editMode
+                    ? nothing
+                    : html`<button
+                        class="info"
+                        title="Character details"
+                        aria-label="Character details"
+                        @click=${(e) => {
+                          e.stopPropagation();
+                          this._openModal(meta.name ?? 'Character details', this._metaBody());
+                        }}
+                      >ⓘ</button>`}
+                </div>
+                <div class="meta">${metaLine}</div>
+              `,
+            )}
             <div class="discs">
               ${(m.disciplines ?? []).map((d) => html`<span class="dtile">${d.name} ${d.circle}</span>`)}
             </div>
           </div>
-          ${meta.description ? html`<div class="blurb">${meta.description}</div>` : ''}
+          ${meta.description ? this._editRegion('blurb', meta.description) : ''}
           <div class="portrait">
             ${portrait
               ? html`<img src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />`
@@ -374,6 +415,9 @@ export class EdOverview extends LitElement {
         ? html`<div class="overlay" @click=${() => (this._lightbox = false)}>
             <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />
           </div>`
+        : ''}
+      ${this._edit
+        ? html`<ed-edit-meta .meta=${meta} @close=${() => (this._edit = false)}></ed-edit-meta>`
         : ''}
     `;
   }

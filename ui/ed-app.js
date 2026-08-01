@@ -1,10 +1,11 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacterModel } from '../store.js';
+import { loadCharacter, deriveModel, saveMetaEdits } from '../store.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
+import './ed-edit-meta.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -21,7 +22,14 @@ export class EdApp extends LitElement {
     _tab: { state: true },
     _dark: { state: true },
     _roll: { state: true },
+    _editMode: { state: true },
   };
+
+  // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
+  // dispatched up from views mutate these here, then re-derive _model (data
+  // flows back down). Not reactive state — _model is the render trigger.
+  _character = null;
+  _rules = null;
 
   static styles = css`
     :host {
@@ -48,8 +56,18 @@ export class EdApp extends LitElement {
     }
     .tab[aria-selected='true'] { color: light-dark(#111418, #f0f3f7); border-bottom-color: var(--accent, #b26a00); }
     .tab .ico { font-size: 0.8rem; opacity: 0.8; }
+    .edit-btn {
+      margin-left: auto; display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 0.8rem;
+      background: none; border: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
+      color: var(--muted, #6b7280); cursor: pointer; line-height: 1;
+    }
+    .edit-btn:hover { color: light-dark(#111418, #f0f3f7); }
+    .edit-btn.active {
+      background: var(--accent, #b26a00); border-color: var(--accent, #b26a00); color: #fff;
+    }
     .theme-btn {
-      margin-left: auto; width: 28px; height: 28px; border-radius: 50%;
+      margin-left: 6px; width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       background: none; border: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
       color: var(--muted, #6b7280); cursor: pointer; font-size: 0.9rem; line-height: 1;
@@ -77,6 +95,10 @@ export class EdApp extends LitElement {
     this._model = null;
     this._error = null;
     this._tab = 'overview';
+    // Editing is a transient, global mode: read mode stays clean (no per-field
+    // affordances); flip this on to reveal editable regions. Not persisted —
+    // the sheet always opens in read mode.
+    this._editMode = false;
     // Theme: honour a saved preference, else follow the system setting.
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -97,11 +119,24 @@ export class EdApp extends LitElement {
           : null;
       this._roll = { label, stepRow, karma: karmaCtx };
     });
+    // A view edited character inputs. Apply the patch, persist the overlay, and
+    // re-derive the model from inputs — the UI never mutates derived state.
+    this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     try {
-      this._model = await loadCharacterModel();
+      const { character, rules } = await loadCharacter();
+      this._character = character;
+      this._rules = rules;
+      this._model = deriveModel(character, rules);
     } catch (e) {
       this._error = String(e);
     }
+  }
+
+  _editMeta(patch) {
+    if (!this._character || !patch) return;
+    this._character = { ...this._character, meta: { ...this._character.meta, ...patch } };
+    saveMetaEdits(patch);
+    this._model = deriveModel(this._character, this._rules);
   }
 
   _applyTheme() {
@@ -119,7 +154,7 @@ export class EdApp extends LitElement {
     const m = this._model;
     switch (this._tab) {
       case 'overview':
-        return html`<ed-overview .model=${m}></ed-overview>`;
+        return html`<ed-overview .model=${m} .editMode=${this._editMode}></ed-overview>`;
       case 'disciplines':
         return html`<ed-disciplines .model=${m}></ed-disciplines>`;
       case 'spells':
@@ -152,6 +187,13 @@ export class EdApp extends LitElement {
             </button>
           `,
         )}
+        <button
+          class="edit-btn ${this._editMode ? 'active' : ''}"
+          role="switch"
+          aria-checked=${this._editMode}
+          @click=${() => (this._editMode = !this._editMode)}
+          title=${this._editMode ? 'Finish editing' : 'Edit character details'}
+        ><span aria-hidden="true">✎</span>${this._editMode ? 'Done' : 'Edit'}</button>
         <button
           class="theme-btn"
           @click=${this._toggleTheme}

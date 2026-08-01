@@ -1,8 +1,9 @@
 // store.js — loads data and builds the derived view-model the UI renders.
 //
-// Phase 1 is read-only: load character.json + the rules files we need, compute
-// display values, and hand a plain object to the UI. Editing, persistence, and
-// the reactive cascade come in later phases.
+// Load character.json + the rules files we need, compute display values, and
+// hand a plain object to the UI. Phase 2 adds editing of *inputs*: edits are
+// dispatched up to the app layer, persisted here, and the model is re-derived
+// from inputs (data flows back down). Derived values are never stored.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import {
@@ -23,11 +24,43 @@ async function loadJSON(path) {
   return res.json();
 }
 
+// --- Persistence (Phase 2) -------------------------------------------------
+// ARCHITECTURE §7/§10: localStorage now, file export/import later. We store an
+// *edits overlay* — only the inputs the player changed — not a whole character
+// snapshot. The repo's character.json stays the source of truth for everything
+// untouched; the overlay is merged on top at load. "Store only inputs" holds:
+// meta fields are raw inputs, never derived values.
+const EDITS_KEY = 'ed-character-edits';
+
+function loadEdits() {
+  try {
+    return JSON.parse(localStorage.getItem(EDITS_KEY) || '{}') || {};
+  } catch {
+    return {}; // corrupt/absent overlay must never block loading the character
+  }
+}
+
+/** Merge a `meta` patch into the saved edits overlay and persist it. */
+export function saveMetaEdits(patch) {
+  const edits = loadEdits();
+  edits.meta = { ...(edits.meta || {}), ...patch };
+  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  return edits;
+}
+
+/** Apply the saved edits overlay onto a freshly-fetched character. */
+function applyEdits(character, edits) {
+  if (!edits || !edits.meta) return character;
+  return { ...character, meta: { ...(character.meta || {}), ...edits.meta } };
+}
+
 /**
- * Load everything and return a derived view-model:
- * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
+ * Fetch the character (with any saved edits overlaid) and the rules files.
+ * Returns { character, rules } — the raw *inputs* the app layer holds and
+ * re-derives from. Keep this separate from deriveModel so an edit can rebuild
+ * the model without re-fetching.
  */
-export async function loadCharacterModel() {
+export async function loadCharacter() {
   const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
@@ -36,6 +69,16 @@ export async function loadCharacterModel() {
     loadJSON('./rules/races.json'),
     loadJSON('./rules/characteristics.json'),
   ]);
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile };
+  return { character: applyEdits(character, loadEdits()), rules };
+}
+
+/**
+ * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
+ * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
+ */
+export function deriveModel(character, rules) {
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
