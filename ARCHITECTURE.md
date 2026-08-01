@@ -150,15 +150,32 @@ Static Earthdawn data, split so the browser only fetches what a view needs:
 rules/
   steps.json          # Step → dice expression + explode flag
   attributes.json     # value/step curve, point costs, karma costs
+  characteristics.json# the ED4 Characteristics Table: Value → Step, Defense,
+                      #   Carrying Capacity, Uncon/Death/Wound/Recovery (a table,
+                      #   not formulas — Carrying Capacity has no closed form)
   talents.json        # talent → linked attribute, action type, strain, tier
-  disciplines.json    # discipline → talents per circle
+  disciplines.json    # discipline → talents per circle (+ per-circle effects)
   skills.json
-  races.json          # racial mods, movement, karma
+  races.json          # racial abilities, each carrying effects[] (+ movement, karma)
   spells.json         # (loaded only when the Magic view opens)
-  rules.json          # declarative modifier/trigger rules
 ```
 
 Adding a talent = one entry in `talents.json`. No code change.
+
+**Modifiers are data, embedded, not a separate `rules.json`.** Rather than a
+central declarative rules file, each ability/item/spell carries its own
+`effects` array in the controlled vocabulary of
+[docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md). The engine gathers the
+active effects from every source and layers them onto base values. This is the
+model actually in use (see `races.json`, `disciplines.json`); it superseded the
+earlier "`EDTables` expression language in one `rules.json`" sketch.
+
+**Base characteristics are a table, computed by code.** Earthdawn's derived
+characteristics come from a printed lookup table (`characteristics.json`), not
+arithmetic — and Carrying Capacity is non-linear, so no formula would do. The
+data is the table; a thin code module (`engine/characteristics.js`) holds the
+*logic* — which attribute drives which characteristic, +Circle on Death Rating,
+and applying the taxonomy `effects` on top. **Table as data, logic as code.**
 
 ### 4.3 The property store (in-memory, runtime)
 At load, character + rules are flattened into a single map keyed exactly like
@@ -171,19 +188,31 @@ reads and writes. Views subscribe to the slices they display.
 
 Four pure modules. Each is independently testable and lazy-loaded.
 
-### 5.1 Expression evaluator
-Interprets the small language from `EDTables`
-(`ADD/MINUS/MULTIPLY/DIVIDE/REF/FIB/MAX/MIN/IF/GE/GR/LS/LE/EQ/NE/DEFAULT/STR`).
-`REF` reads another property — the mechanism behind cascades.
+### 5.1 Effect application + (later) a small expression evaluator
+The engine's modifier model is the taxonomy `effects` array (§4.2): it gathers
+active effects and folds them onto base values by `operation`/`measure`. Only
+**always-on, non-`gmDiscretion`** effects auto-apply; situational and triggered
+ones are surfaced for the player/GM, never silently baked into a static rating.
 
-### 5.2 Property resolver + dependency graph  ← *the attribute cascade*
-Builds a dependency graph from `REF`s. When an input changes, it recomputes
-**only** the affected downstream properties in dependency order.
+A small expression evaluator is still expected **later**, but with a narrowed
+near-term job: resolving `{ "ref": … }`-valued effects (e.g. a talent step that
+references another ability's rank). The full `EDTables` language
+(`ADD/REF/MAX/IF/…`) is deferred until a rule actually needs it — we don't build
+the interpreter ahead of the data that would use it.
 
-> *"If I update an attribute, the effect cascades across all other attributes."*
-> This is exactly that: change `Toughness.points` → recompute `ToughnessValue` →
-> `ToughnessStep` → Death Rating, Wound Threshold, Recovery Test dice,
-> Physical Defense, any talent that `REF`s Toughness.
+### 5.2 The cascade — **recompute-all, not a dependency graph** (DECIDED)
+> *"If I update an attribute, the effect cascades across everything derived."*
+
+For a single character (a few dozen properties) the cascade is a pure
+`derive(inputs) → derived` that **recomputes everything** on any change —
+simple, obviously correct, and instant. Change `Toughness.points` and the whole
+derived set (Death Rating, Wound Threshold, Recovery, Physical Defense, any
+dependent talent) is recomputed from inputs.
+
+The `REF`-driven **dependency graph** in the original design is a performance
+optimization (recompute *only* affected downstream properties). It is **not**
+built yet and only earns its place if profiling ever shows recompute-all is too
+slow — unlikely at this scale. See §10.
 
 ### 5.3 Step / Dice system + roller  ← *dice rolling*
 `valueToStep(value)` → `stepToDice(step)` → `roll(expr)` with Earthdawn
@@ -215,8 +244,11 @@ This is an explicit requirement, so it's a first-class design concern:
 3. **Feature = module** — each capability (combat, magic, karma, thread items)
    is a self-contained engine+view pair, added without touching existing ones.
 4. **Lit as the UI layer** — chosen for its ~5–6KB runtime, standards-based Web
-   Components, and **no build step** (loads straight from a CDN via import maps,
-   so the "edit → push → live on Pages" workflow is preserved). Each view is a
+   Components, and **no build step**. Lit is **self-hosted** (`vendor/lit-*.js`,
+   a single self-contained bundle) and resolved via an import map, so the
+   "edit → push → live on Pages" workflow is preserved *and* there is no external
+   runtime dependency — a failed third-party fetch can no longer blank the app,
+   and it works offline (see §10). Each view is a
    self-contained Lit component; reactive properties auto-update the DOM when the
    engine reports a change, which is exactly what the attribute cascade needs.
    The engine stays pure and framework-agnostic, so Lit only ever touches the UI
@@ -251,19 +283,27 @@ just `character.json`.
     stats-view.js     # v1: display attributes/stats
     combat-view.js    # later
     magic-view.js     # later (lazy)
-  engine/
-    properties.js     # store + flatten/unflatten
-    resolver.js       # dependency graph + recompute
-    expr.js           # expression evaluator
-    dice.js           # step + dice + roller
-    actions.js        # action executor
-    dddice.js         # optional 3D dice adapter
+  engine/                    # pure, DOM-free, independently testable
+    derive.js                # attribute value/step, talent step, step→dice map
+    characteristics.js       # derived characteristics: table lookup + effects
+    dice.js                  # step + dice + exploding roller
+    characteristics.test.js  # node --test (see `npm test`)
+    # planned: expr.js (ref resolution), actions.js (action executor),
+    #          dddice.js (optional 3D dice adapter)
   data/
-    character.json    # Chakka
+    character.json    # Chakka (inputs only)
   rules/
-    steps.json talents.json disciplines.json races.json …
-  tools/
-    import-xlsx.mjs   # one-off: convert Chakka-v7.13.xlsx → character.json + rules/*.json
+    steps.json attributes.json characteristics.json talents.json
+    disciplines.json skills.json races.json …             # hand-curated
+  vendor/
+    lit-3.2.1.js         # self-hosted Lit bundle (no external runtime dep)
+    README.md            # provenance + how to refresh/upgrade
+  docs/
+    EFFECT-TAXONOMY.md   # controlled vocabulary for rule effects
+    UI-GUIDELINES.md     # locked UI/UX contract
+  CLAUDE.md              # tiered working agreement (protected-surface control)
+  tools/archive/
+    import-xlsx.mjs   # ARCHIVED bootstrap importer (provenance only; not run)
   ARCHITECTURE.md
 ```
 
@@ -271,18 +311,23 @@ just `character.json`.
 
 ## 9. Delivery phases
 
-- **Phase 0 — Importer.** Script that reads `Chakka-v7.13.xlsx` and emits
-  `character.json` + `rules/*.json`. Gives real data to build against and a
-  repeatable path if the sheet changes.
+- **Phase 0 — Importer.** *(Complete, now archived.)* A one-off script read
+  `Chakka-v7.13.xlsx` and emitted `character.json` + `rules/*.json` to bootstrap
+  real data. Those JSON files are now the source of truth and are hand-maintained
+  per `docs/EFFECT-TAXONOMY.md`; the importer lives in `tools/archive/` for
+  provenance and is no longer run.
 - **Phase 1 — Read-only stat display.** `index.html` + store + `stats-view`.
   Loads `character.json`, shows attributes/values/steps, health, karma,
   disciplines. *Hostable on GitHub Pages immediately.*
 - **Phase 2 — Editing + persistence.** Edit inputs; localStorage + file
   export/import.
-- **Phase 3 — Engine: cascade.** `expr.js` + `resolver.js`. Editing an
-  attribute recomputes derived values live. Steps shown from the engine.
-- **Phase 4 — Dice.** `dice.js` roller; click a step to roll (exploding dice);
-  roll log. Optional dddice adapter.
+- **Phase 3 — Engine: cascade.** *(In progress.)* Derived characteristics from
+  `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). First
+  vertical slice landed: **Physical Defense** end-to-end (table base + discipline
+  effect), verified against the rulebook in `characteristics.test.js`. Remaining
+  characteristics (other defenses, health ratings, carry) repeat the pattern.
+- **Phase 4 — Dice.** *(Landed early, ahead of Phase 3.)* `dice.js` exploding-dice
+  roller with a result modal is wired. Optional dddice adapter still later.
 - **Phase 5 — Actions & talents.** `actions.js`; talents/attacks become
   clickable actions driven entirely by data.
 - **Phase 6+** — Magic, thread items, karma management, combat tracker — each a
@@ -292,9 +337,18 @@ just `character.json`.
 
 ## 10. Decisions
 
-- **Tech stack — DECIDED: Lit.** Web Components, ~5–6KB runtime, no build step
-  (CDN + import maps), reactive properties for the cascade UI. Engine remains
-  framework-agnostic; Lit only touches the UI layer. See §6.4.
+- **Tech stack — DECIDED: Lit.** Web Components, ~5–6KB runtime, no build step,
+  reactive properties for the cascade UI. Engine remains framework-agnostic; Lit
+  only touches the UI layer. See §6.4.
+- **Lit hosting — DECIDED: self-hosted, was CDN.** Originally loaded from
+  `esm.sh` via import map; that made every cold page load depend on a third party
+  being reachable, and a failed/slow fetch rendered the whole app as a blank
+  (dark) screen with no fallback. Now vendored as a single self-contained bundle
+  in `vendor/` (see `vendor/README.md` for source + refresh steps) and resolved
+  by a **relative** import-map entry so it works at both `/` and `/dev/`. Keeps
+  the no-build ethos, removes the blank-screen failure mode, works offline, and
+  is deterministic/reproducible. Trade-off accepted: a ~16KB vendored file in the
+  repo and a manual re-fetch to upgrade Lit (rare, since the version is pinned).
 - **Persistence — DECIDED: localStorage + file export/import.** Auto-save to the
   browser plus download/upload of `character.json`. No secrets, works offline.
   GitHub-API sync remains a clean later add-on since state is just
@@ -306,4 +360,19 @@ just `character.json`.
 - **Scope — DECIDED: single character (Chakka).** Data layout and UI target one
   character for now; the `character.json` structure stays clean enough to
   generalize to multi-character later without a rewrite.
+- **Cascade — DECIDED: recompute-all, not a dependency graph.** For one
+  character, a pure `derive(inputs) → derived` that recomputes everything is
+  simple and instant; the `REF` dependency graph is a later optimization only if
+  profiling demands it. See §5.2.
+- **Derived characteristics — DECIDED: table as data, logic as code.** Ship the
+  ED4 Characteristics Table verbatim as `rules/characteristics.json` (it *is* a
+  rulebook table, and Carrying Capacity has no formula); keep attribute→
+  characteristic mapping, +Circle, and effect application in
+  `engine/characteristics.js`. See §4.2, §5.
+- **Modifiers — DECIDED: embedded `effects` arrays, not a central `rules.json`.**
+  Each ability/item/spell carries its own effects per
+  [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md); the engine gathers and
+  applies them. Only always-on, non-`gmDiscretion` effects auto-apply.
+- **Testing — DECIDED: `node --test`, zero deps.** Engine modules ship `*.test.js`
+  run by `npm test` (Node's built-in runner), preserving the no-build ethos.
 ```

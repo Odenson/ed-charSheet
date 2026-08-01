@@ -37,17 +37,41 @@ production, just served from a subpath.
 
 ## Promoting dev → main (release to production)
 
-Promotion is a pull request:
+Promotion is a **squash** pull request, so `main` gets exactly one commit per
+release. Because the individual dev commits are collapsed, the changelog is
+**authored, not generated** — finalize it as the first step of every release.
 
-```bash
-# from an up-to-date dev branch
-gh pr create --base main --head dev --title "Release: <summary>" --body "..."
-# review, then:
-gh pr merge --merge
+**1. Finalize the changelog** (`data/changelog.json` — the in-app "What's new").
+Move everything under `unreleased.changes` into a **new `releases` entry** at the
+top, with a bumped [SemVer](https://semver.org) version and today's date, and
+empty out `unreleased`:
+
+```jsonc
+"unreleased": { "changes": [] },
+"releases": [
+  { "version": "1.1.0", "date": "2026-08-15", "changes": [ /* moved from unreleased */ ] },
+  { "version": "1.0.0", "date": "2026-08-01", "changes": [ /* … */ ] }
+]
 ```
 
+SemVer at a glance: **major** = breaking/removed, **minor** = new features,
+**patch** = fixes only. Commit this on `dev` before opening the PR.
+
+**2. Open and squash-merge the release PR:**
+
+```bash
+# from an up-to-date dev branch (changelog already finalized & committed)
+gh pr create --base main --head dev --title "Release v1.1.0: <summary>" --body "..."
+# review, then squash so main keeps one commit per release:
+gh pr merge --squash
+```
+
+**Keep the squash commit message = the changelog entry.** Paste the release's
+changes into the PR/squash body so `main`'s git log and the in-app changelog tell
+the same story and never drift.
+
 Merging into `main` triggers the workflow and updates the **production** site.
-(You can also open/merge the PR from the GitHub web UI.)
+(You can also open/merge the PR from the GitHub web UI — pick **Squash and merge**.)
 
 ## Notes
 

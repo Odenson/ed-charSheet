@@ -5,6 +5,7 @@
 // the reactive cascade come in later phases.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
+import { makeCharacteristics, defense, DEFENSE_ATTRIBUTE } from './engine/characteristics.js';
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
@@ -18,13 +19,24 @@ async function loadJSON(path) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export async function loadCharacterModel() {
-  const [character, steps, talentCatalog] = await Promise.all([
+  const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
+    loadJSON('./rules/disciplines.json'),
+    loadJSON('./rules/races.json'),
+    loadJSON('./rules/characteristics.json'),
   ]);
 
+  // talents.json is now { schema, …, talents: { name: {…} } }.
+  const talentCatalog = talentsFile.talents ?? talentsFile;
+  const discByName = Object.fromEntries((disciplinesFile.disciplines ?? []).map((d) => [d.name, d]));
   const diceForStep = makeDiceForStep(steps);
+  const stepByNumber = Object.fromEntries(steps.map((s) => [s.step, s])); // for the dice roller
+
+  // Racial special abilities for the character's race.
+  const raceEntry = (racesFile.races ?? []).find((r) => r.name === character.meta?.race);
+  const racialAbilities = (raceEntry?.abilities ?? []).map((a) => ({ name: a.name, summary: a.summary }));
 
   // Attributes -> value/step/dice, preserving the canonical order.
   const order = ['Dexterity', 'Strength', 'Toughness', 'Perception', 'Willpower', 'Charisma'];
@@ -39,11 +51,11 @@ export async function loadCharacterModel() {
       return { name, value, step, dice: diceForStep(step), ...a };
     });
 
-  // Disciplines -> talents with derived step/dice where an attribute link exists.
-  const disciplines = (character.disciplines ?? []).map((d) => ({
-    name: d.name,
-    circle: d.circle,
-    talents: (d.talents ?? []).map((t) => {
+  // Disciplines -> talents with derived step/dice, plus reference detail
+  // (durability, half-magic, artisan skills, per-circle abilities) from rules.
+  const disciplines = (character.disciplines ?? []).map((d) => {
+    const ref = discByName[d.name] ?? {};
+    const talents = (d.talents ?? []).map((t) => {
       const cat = talentCatalog[t.name] || {};
       const attribute = cat.attribute || null;
       const aStep = attribute ? attrStepByName[attribute] : undefined;
@@ -56,16 +68,53 @@ export async function loadCharacterModel() {
         step,
         dice: step != null ? diceForStep(step) : '',
       };
-    }),
-  }));
+    });
+    // Discipline abilities granted at circles up to the character's current circle.
+    const abilities = (ref.circles ?? [])
+      .filter((c) => c.circle <= d.circle)
+      .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, type: e.type, summary: e.summary })))
+      .filter((a) => a.summary);
+    return {
+      name: d.name,
+      circle: d.circle,
+      durability: ref.durability ?? null,
+      halfMagic: ref.halfMagic?.summary ?? null,
+      artisanSkills: ref.artisanSkills ?? [],
+      talents,
+      abilities,
+    };
+  });
+
+  // Derived characteristics (Phase 3). The engine reads the ED4 Characteristics
+  // Table and layers taxonomy `effects` on top. Only always-on effects auto-apply.
+  // Sources the engine currently knows about: race + discipline circles reached.
+  // Items / threads / spells join this list in later slices.
+  const lookupChar = makeCharacteristics(characteristicsFile);
+  const activeEffects = [
+    ...(raceEntry?.abilities ?? []).flatMap((a) => a.effects ?? []),
+    ...(character.disciplines ?? []).flatMap((d) =>
+      ((discByName[d.name] ?? {}).circles ?? [])
+        .filter((c) => c.circle <= d.circle)
+        .flatMap((c) => c.effects ?? []),
+    ),
+  ];
+  const attrVal = (name) => attributeValue(character.attributes?.[name]);
+  const characteristics = {
+    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
+    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
+    socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
+  };
 
   return {
     meta: character.meta ?? {},
     attributes,
     resources: character.resources ?? {},
     disciplines,
+    racialAbilities,
+    characteristics,
+    stepByNumber,
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],
-    extraTraits: character.extraTraits ?? [],
+    traits: character.traits ?? [],
   };
 }

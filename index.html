@@ -12,15 +12,17 @@
         min-height: 100vh;
       }
     </style>
-    <!-- Lit via CDN + import map (no build step). Pinned for reproducibility. -->
+    <!-- Lit self-hosted (no build step, no external runtime dependency).
+         Bundle + provenance in vendor/. Relative path so it resolves at both
+         "/" and the "/dev/" subpath (see WORKFLOW.md). -->
     <script type="importmap">
       {
         "imports": {
-          "lit": "https://esm.sh/lit@3.2.1",
-          "lit/": "https://esm.sh/lit@3.2.1/"
+          "lit": "./vendor/lit-3.2.1.js"
         }
       }
     </script>
+    <link rel="modulepreload" href="./vendor/lit-3.2.1.js" />
   </head>
   <body>
     <ed-app></ed-app>

@@ -1,9 +1,21 @@
 #!/usr/bin/env node
+// ============================================================================
+// ARCHIVED — DO NOT RUN.  Kept for reference / provenance only.
+//
+// This bootstrapped the initial data from Chakka-v7.13.xlsx. The JSON files it
+// produced (data/character.json, rules/*.json) are now the SOURCE OF TRUTH and
+// are hand-maintained per docs/EFFECT-TAXONOMY.md. Re-running this would OVERWRITE
+// those hand enrichments, so it has been removed from package.json and its
+// dependency (SheetJS/xlsx) uninstalled. To run it again you would need to
+// `npm i -D xlsx` and invoke it directly with node.
+//
+// It remains useful as a record of HOW the data was derived (the Step table,
+// value/step/talent-step rules, and the talent->attribute parsing).
+// ============================================================================
+//
 // Phase 0 importer: Chakka-v7.13.xlsx  ->  data/character.json + rules/*.json
 //
-// This is a one-off DEV tool. It is not shipped to GitHub Pages.
-// It reads the source spreadsheet (the "source of truth") and emits the clean
-// JSON the web app consumes. Re-run with:  npm run import
+// It reads the source spreadsheet and emits the clean JSON the web app consumes.
 //
 // Design notes:
 //  - character.json holds INPUTS only (base/points/increases, ranks, resources).
@@ -236,18 +248,8 @@ function buildAttributesRules() {
 }
 
 // =====================================================================
-// rules/races.json / rules/skills.json  (catalogs)
+// rules/skills.json  (catalog)
 // =====================================================================
-function buildRaces() {
-  const ed = S('EDTables');
-  const races = [];
-  for (let row = 2; row <= 40; row++) {
-    const r = str(ed, `AY${row}`);
-    if (r) races.push(r);
-  }
-  return races;
-}
-
 function buildSkillCatalog() {
   const ed = S('EDTables');
   const out = [];
@@ -486,7 +488,8 @@ if (existsSync(resolve(ROOT, 'data/character.json')) && !FORCE) {
 }
 writeJSON('rules/steps.json', steps);
 writeJSON('rules/attributes.json', buildAttributesRules());
-writeJSON('rules/races.json', buildRaces());
+// rules/races.json is hand-curated from the rulebooks (mechanics distilled), not
+// generated from the xlsx — the importer must NOT overwrite it. See rules/races.json.
 writeJSON('rules/skills.json', buildSkillCatalog());
 writeJSON('rules/disciplineTalents.json', buildDisciplineTalents());
 writeJSON('rules/talents.json', talentCatalog); // mechanics only (committed)

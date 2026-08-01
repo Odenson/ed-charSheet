@@ -8,8 +8,10 @@ It starts as a simple stat display and grows into a small rules engine, modelled
 on a long-running spreadsheet version of the character that had most of the game
 logic already built in.
 
-> **Status:** early development. Phase 0 (data importer) is complete; the web UI
-> is next. See the [roadmap](#roadmap).
+> **Status:** early development. Data is imported and hand-curated. The read-only
+> sheet and exploding-dice roller are live; the rules engine is underway (Phase 3
+> — derived characteristics). See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the
+> roadmap.
 
 ## How it works
 
@@ -18,13 +20,17 @@ testable layers:
 
 - **Data** — `data/character.json` holds *inputs only* (attributes, ranks,
   resources); `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
-  table, talent mechanics, disciplines, skills, races).
-- **Engine** (pure, framework-free) — an expression evaluator, a
-  dependency-graph resolver (so editing one attribute cascades to everything
-  derived from it), a Step→Dice roller with exploding dice, and an action
-  executor for talents/attacks.
-- **UI** — thin [Lit](https://lit.dev) Web Components; no build step (loaded via
-  CDN + import maps), so the page stays small and features load on demand.
+  table, the Characteristics Table, talent mechanics, disciplines, skills, races).
+  Modifiers live as `effects` arrays on the abilities/items that grant them, in a
+  controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
+- **Engine** (pure, framework-free, testable) — derives characteristics from the
+  Characteristics Table plus the taxonomy effects, recomputing everything from
+  inputs so editing one attribute cascades to all derived values; plus a Step→Dice
+  roller with exploding dice. Run the tests with `npm test` (no dependencies).
+- **UI** — thin [Lit](https://lit.dev) Web Components; no build step. Lit is
+  self-hosted (`vendor/`) and resolved via an import map, so the page stays small,
+  features load on demand, and there's **no external runtime dependency** (works
+  offline; no CDN outage can blank the app).
 
 Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
@@ -32,28 +38,72 @@ Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ```
 data/            character.json (the character's inputs)
-rules/           steps, attributes, talents (mechanics), disciplines, skills, races
-tools/           import-xlsx.mjs — dev-only importer (spreadsheet -> JSON)
-engine/          rules engine (added from Phase 3)
+rules/           steps, attributes, characteristics, talents, disciplines, skills, races
+docs/            EFFECT-TAXONOMY.md (effect vocabulary), UI-GUIDELINES.md (UI/UX contract)
+engine/          pure rules engine + *.test.js (derive, characteristics, dice)
 ui/              Lit components (added from Phase 1)
+vendor/          self-hosted Lit bundle (+ provenance) — no external runtime dep
+tools/archive/   import-xlsx.mjs — archived data-bootstrap importer (not run)
 ARCHITECTURE.md  architecture and phased delivery plan
+CLAUDE.md        working agreement — protected surfaces & change tiers
 ```
 
 ## Development
 
-The web app itself is static — no build required to run it. The only tooling is
-the **importer**, a one-off script that regenerates the JSON data from the source
-spreadsheet.
+The app is fully static — **no build and no dependencies to run it**. The JSON in
+`data/` and `rules/` is the source of truth and is hand-maintained per
+[docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md).
+
+The data was originally bootstrapped from a spreadsheet by
+`tools/archive/import-xlsx.mjs`, which is now **archived** (kept for provenance,
+not run — see its header).
+
+### Running locally
+
+The app must be served over **HTTP** — opening `index.html` as a `file://` URL
+won't work, because ES modules and `fetch()` of the JSON data are blocked on the
+`file://` origin. Serve the project root with any static server; two options:
+
+**Python** (no install needed on macOS/Linux):
 
 ```bash
-npm install          # installs the importer's dev dependency (SheetJS)
-npm run import       # reads the local .xlsx -> data/character.json + rules/*.json
+python3 -m http.server 8000
 ```
 
-Running the app locally (once the UI lands) is just serving the folder, e.g.:
+**Node** (`npx`, downloads on first use):
 
 ```bash
-npx http-server .
+npx http-server . -p 8000
+```
+
+Then open <http://localhost:8000> in a browser.
+
+### Stopping the app
+
+If the server is running in the **foreground**, stop it with `Ctrl+C` in that
+terminal.
+
+If you started it in the **background** (ran with a trailing `&`), stop it by
+port:
+
+```bash
+# macOS / Linux — kill whatever is serving port 8000
+kill "$(lsof -ti tcp:8000)"
+```
+
+Or, if you know how it was launched, match the command:
+
+```bash
+pkill -f "http.server 8000"     # the Python server above
+pkill -f "http-server"          # the npx/Node server above
+```
+
+### Tests
+
+The engine ships pure, dependency-free tests (Node's built-in runner):
+
+```bash
+npm test
 ```
 
 ### Deployment
