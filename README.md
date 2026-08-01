@@ -78,6 +78,25 @@ npx http-server . -p 8000
 
 Then open <http://localhost:8000> in a browser.
 
+#### Simulating the dev instance locally
+
+Some UI is gated to the **dev** deployment (e.g. the `DEV` pill). The app decides
+it is "dev" purely by the **URL path containing `/dev/`** — there is no env var,
+hostname, or query flag. Because all asset and `fetch()` paths are relative, you
+can reproduce the real `/dev/` instance locally without changing any code:
+
+```bash
+ln -s . dev              # one-time: self-referential symlink (add to .gitignore)
+python3 -m http.server 8000
+```
+
+- <http://localhost:8000/> — production-like (no DEV pill, dev-only UI off)
+- <http://localhost:8000/dev/> — dev instance (`isDev` true, dev-only UI on)
+
+Don't hardcode `isDev` or add a `?dev` flag: "the `DEV` pill shows only on the
+`/dev/` instance" is a Tier-1 rule in [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md).
+The symlink faithfully mirrors the deployed `/dev/` URL without touching that logic.
+
 ### Stopping the app
 
 If the server is running in the **foreground**, stop it with `Ctrl+C` in that

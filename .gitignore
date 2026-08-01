@@ -15,3 +15,7 @@ rulebook extracts/
 # Node
 node_modules/
 npm-debug.log*
+
+# Local-only self-referential symlink for simulating the /dev/ instance
+# (see README → "Simulating the dev instance locally"). Never committed.
+/dev
