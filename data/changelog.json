@@ -5,6 +5,7 @@
     "changes": [
       { "type": "added", "text": "Edit mode: use the Edit toggle (top-right, by the theme switch) to make editable parts of the sheet interactive without cluttering the read view. First up — the character's details (description, age, sex, height, weight, skin tone, background); click the name block to edit. Changes are saved in your browser." },
       { "type": "changed", "text": "Info (ⓘ) icons now stay hidden until you hover what they annotate — the character name and each Special Feature — revealing on approach and always shown on touch, keeping the read view clean." },
+      { "type": "fixed", "text": "Closing a details popover with Escape now behaves like clicking away — the ⓘ icon hides again instead of lingering with a focus outline." },
       { "type": "added", "text": "Combat panel is now live: Initiative (Dexterity step, less armour), Knockdown (Strength step), and Karma (maximum from race and Circle), each rollable." },
       { "type": "added", "text": "Rolls can optionally spend Karma (+D6) on tests your race or Discipline permits, showing the granting Discipline and any condition." },
       { "type": "changed", "text": "Value tooltips now name the exact source of each modifier (e.g. \"Arc 4\", \"Net 2\") instead of a generic \"discipline\"." },

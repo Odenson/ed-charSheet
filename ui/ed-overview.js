@@ -210,7 +210,13 @@ export class EdOverview extends LitElement {
   }
 
   _openModal(title, body) { this._modal = { title, body }; }
-  _closeModal() { this._modal = null; }
+  _closeModal() {
+    // Drop keyboard focus from the trigger (the ⓘ button) so an Escape close ends
+    // the same way a mouse close does. Otherwise the ⓘ keeps :focus-visible (the
+    // blue ring) and stays hover-revealed after the modal is gone.
+    this.renderRoot.activeElement?.blur();
+    this._modal = null;
+  }
 
   // Modal body listing all character metadata (any field added to meta shows up).
   _metaBody() {
