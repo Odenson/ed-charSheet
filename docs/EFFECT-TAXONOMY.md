@@ -192,6 +192,15 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 `carryingCapacity`, `close-combat`, `ranged-combat`, `vs-horrors`, `adept-only`,
 `unarmed`.
 
+**Engine auto-apply rule (as of Phase 3).** When computing a static value
+(a rating, a derived characteristic), the engine folds in **only** effects that
+are `condition: "always"` *and* not `gmDiscretion`. Situational, `on-success`,
+triggered, and GM-discretion effects are **surfaced** to the player/GM but never
+silently baked into a number. A `measure` mismatch is also a guard: a
+`rating`-measure modifier applies to a static rating, not to a step or result.
+This is engine *behavior*, not a vocabulary change — the fields above are
+unchanged, so this remains taxonomy **v1**.
+
 ---
 
 ## 7. `stacking` — how multiples on the same target combine
@@ -266,8 +275,11 @@ lives, but may be stated explicitly.
 ## 11. Open questions (v1 review)
 
 1. `measure` granularity — is `value`/`step`/`result`/`rating` the right split?
+   *(Phase 3 leans keep: the engine already uses `measure` as an apply-time guard.)*
 2. `operation: set` as the model for "base that other bonuses add to" (Natural
-   Armor), or introduce an explicit `base` semantic?
+   Armor), or introduce an explicit `base` semantic? *(Expected to be forced by
+   the armour/health slice — likely the first real taxonomy vN decision.)*
 3. `type` naming — single kebab-case dispatch key (current), or a two-axis
-   `op` + `domain` split?
-4. `scope` — free text now, or lock a controlled enum immediately?
+   `op` + `domain` split? *(Phase 3 leans keep the single dispatch key.)*
+4. `scope` — free text now, or lock a controlled enum immediately? *(Still open;
+   free text until enough real scopes accumulate to lock an enum.)*

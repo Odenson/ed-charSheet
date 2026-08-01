@@ -8,8 +8,9 @@ It starts as a simple stat display and grows into a small rules engine, modelled
 on a long-running spreadsheet version of the character that had most of the game
 logic already built in.
 
-> **Status:** early development. Data is imported and hand-curated; Phase 1
-> (read-only sheet) is live. See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the
+> **Status:** early development. Data is imported and hand-curated. The read-only
+> sheet and exploding-dice roller are live; the rules engine is underway (Phase 3
+> — derived characteristics). See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the
 > roadmap.
 
 ## How it works
@@ -19,11 +20,13 @@ testable layers:
 
 - **Data** — `data/character.json` holds *inputs only* (attributes, ranks,
   resources); `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
-  table, talent mechanics, disciplines, skills, races).
-- **Engine** (pure, framework-free) — an expression evaluator, a
-  dependency-graph resolver (so editing one attribute cascades to everything
-  derived from it), a Step→Dice roller with exploding dice, and an action
-  executor for talents/attacks.
+  table, the Characteristics Table, talent mechanics, disciplines, skills, races).
+  Modifiers live as `effects` arrays on the abilities/items that grant them, in a
+  controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
+- **Engine** (pure, framework-free, testable) — derives characteristics from the
+  Characteristics Table plus the taxonomy effects, recomputing everything from
+  inputs so editing one attribute cascades to all derived values; plus a Step→Dice
+  roller with exploding dice. Run the tests with `npm test` (no dependencies).
 - **UI** — thin [Lit](https://lit.dev) Web Components; no build step (loaded via
   CDN + import maps), so the page stays small and features load on demand.
 
@@ -33,12 +36,13 @@ Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ```
 data/            character.json (the character's inputs)
-rules/           steps, attributes, talents (mechanics), disciplines, skills, races
-docs/            EFFECT-TAXONOMY.md — vocabulary for rule effects
-engine/          rules engine (added from Phase 3)
+rules/           steps, attributes, characteristics, talents, disciplines, skills, races
+docs/            EFFECT-TAXONOMY.md (effect vocabulary), UI-GUIDELINES.md (UI/UX contract)
+engine/          pure rules engine + *.test.js (derive, characteristics, dice)
 ui/              Lit components (added from Phase 1)
 tools/archive/   import-xlsx.mjs — archived data-bootstrap importer (not run)
 ARCHITECTURE.md  architecture and phased delivery plan
+CLAUDE.md        working agreement — protected surfaces & change tiers
 ```
 
 ## Development
