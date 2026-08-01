@@ -283,3 +283,8 @@ lives, but may be stated explicitly.
    `op` + `domain` split? *(Phase 3 leans keep the single dispatch key.)*
 4. `scope` — free text now, or lock a controlled enum immediately? *(Still open;
    free text until enough real scopes accumulate to lock an enum.)*
+5. `Knockdown` — a Strength-step combat test the engine now derives and displays
+   (like `Initiative`), but it is **not yet** in the `characteristic` vocabulary
+   (§3). Base derivation needs no vocabulary entry, so it is supported today; add
+   `Knockdown` to §3 when the first effect modifies it — a **Tier-2** change
+   (bump + migrate). Deferred until that effect exists.

@@ -322,10 +322,13 @@ just `character.json`.
 - **Phase 2 — Editing + persistence.** Edit inputs; localStorage + file
   export/import.
 - **Phase 3 — Engine: cascade.** *(In progress.)* Derived characteristics from
-  `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). First
-  vertical slice landed: **Physical Defense** end-to-end (table base + discipline
-  effect), verified against the rulebook in `characteristics.test.js`. Remaining
-  characteristics (other defenses, health ratings, carry) repeat the pattern.
+  `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). Landed:
+  all three **Defences** (Physical/Mystic/Social, table base + discipline effects)
+  and the **Combat** steps — **Initiative** (Dexterity step − armour), **Knockdown**
+  (Strength step), and **Karma** (max = karmaModifier × Circle; D6 die) — with the
+  combat steps wired to the dice roller. All verified against the rulebook in
+  `characteristics.test.js`. Remaining (health ratings, carry, armour) repeat the
+  pattern; armour/health will force the first `operation: set` taxonomy decision.
 - **Phase 4 — Dice.** *(Landed early, ahead of Phase 3.)* `dice.js` exploding-dice
   roller with a result modal is wired. Optional dddice adapter still later.
 - **Phase 5 — Actions & talents.** `actions.js`; talents/attacks become

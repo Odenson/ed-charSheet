@@ -5,7 +5,15 @@
 // the reactive cascade come in later phases.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
-import { makeCharacteristics, defense, DEFENSE_ATTRIBUTE } from './engine/characteristics.js';
+import {
+  makeCharacteristics,
+  defense,
+  DEFENSE_ATTRIBUTE,
+  initiative,
+  knockdown,
+  maxKarma,
+  KARMA_STEP,
+} from './engine/characteristics.js';
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
@@ -99,10 +107,27 @@ export async function loadCharacterModel() {
     ),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
+  // Combat steps come from the governing attribute's Step (already derived above).
+  const dexStep = attrStepByName.Dexterity;
+  const strStep = attrStepByName.Strength;
+  // Karma scales with the character's highest Discipline Circle.
+  const highestCircle = Math.max(0, ...(character.disciplines ?? []).map((d) => d.circle ?? 0));
+  const karmaMod = raceEntry?.karmaModifier ?? null;
+
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
     mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
     socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
+    initiative: initiative(dexStep, activeEffects),
+    knockdown: knockdown(strStep, activeEffects),
+    karma:
+      karmaMod != null
+        ? {
+            max: maxKarma(karmaMod, highestCircle),
+            available: character.resources?.karma?.available ?? null,
+            step: KARMA_STEP,
+          }
+        : null,
   };
 
   return {

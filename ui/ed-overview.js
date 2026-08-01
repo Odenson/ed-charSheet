@@ -95,6 +95,26 @@ export class EdOverview extends LitElement {
       : `Base ${c.base}`;
     return html`<span class="val" title=${title}>${c.value}</span>`;
   }
+
+  // A rollable combat step (Initiative, Knockdown): shows the engine-derived Step
+  // and enables its roll button; falls back to the placeholder pill + disabled roll.
+  _combatStep(key, label) {
+    const c = this.model?.characteristics?.[key];
+    if (!c || c.value == null) return html`${this._pend()}${this._rollBtn(label, null)}`;
+    const mods = (c.modifiers ?? []).length
+      ? ' ' + c.modifiers.map((m) => `${m.operation === 'subtract' ? '−' : '+'}${m.value}`).join(' ')
+      : '';
+    const title = `Step ${c.value} (base ${c.base}${mods})`;
+    return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value)}`;
+  }
+
+  // Karma: available points (max in the tooltip); the roll button rolls the D6 Karma die.
+  _karma(label) {
+    const k = this.model?.characteristics?.karma;
+    if (!k) return html`${this._pend()}${this._rollBtn(label, null)}`;
+    const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma · die D6`;
+    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step)}`;
+  }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
   // Disabled when there's no step yet (e.g. engine-derived combat stats).
   _rollBtn(label, step) {
@@ -298,9 +318,9 @@ export class EdOverview extends LitElement {
             <div class="stack" style="justify-content: flex-start">
               <div class="blk">
                 <h4>Combat</h4>
-                <div class="line"><span>Initiative</span><span class="rl">${this._pend()}${this._rollBtn('Initiative', null)}</span></div>
-                <div class="line"><span>Knockdown</span><span class="rl">${this._pend()}${this._rollBtn('Knockdown', null)}</span></div>
-                <div class="line"><span>Karma</span><span class="rl">${this._pend()}${this._rollBtn('Karma', null)}</span></div>
+                <div class="line"><span>Initiative</span><span class="rl">${this._combatStep('initiative', 'Initiative')}</span></div>
+                <div class="line"><span>Knockdown</span><span class="rl">${this._combatStep('knockdown', 'Knockdown')}</span></div>
+                <div class="line"><span>Karma</span><span class="rl">${this._karma('Karma')}</span></div>
               </div>
               ${this._specialFeatures()}
             </div>

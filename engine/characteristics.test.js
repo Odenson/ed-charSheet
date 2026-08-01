@@ -5,7 +5,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { makeCharacteristics, defense, DEFENSE_ATTRIBUTE, applyModifiers } from './characteristics.js';
+import {
+  makeCharacteristics,
+  defense,
+  DEFENSE_ATTRIBUTE,
+  applyModifiers,
+  initiative,
+  knockdown,
+  maxKarma,
+  KARMA_STEP,
+} from './characteristics.js';
 
 // Build a defense-modifier effect targeting one kind of defense.
 const defEffect = (name, value, extra = {}) => ({
@@ -90,6 +99,47 @@ test('Chakka: Social Defense = 8 (CHA 13 base 8, no effects)', () => {
 
 test('values above the table clamp to the last row', () => {
   assert.equal(lookup(99).defense, lookup(30).defense);
+});
+
+test('Chakka: Initiative = Dexterity step 8 (no armour, no applicable effect)', () => {
+  const init = initiative(8, []);
+  assert.equal(init.base, 8);
+  assert.equal(init.value, 8);
+  assert.equal(init.modifiers.length, 0);
+});
+
+test('Initiative applies a step-adding characteristic-modifier (e.g. Archer C7)', () => {
+  const eff = [
+    {
+      type: 'characteristic-modifier',
+      target: { domain: 'characteristic', name: 'Initiative' },
+      operation: 'add',
+      value: 1,
+      measure: 'step',
+      condition: 'always',
+      source: 'discipline',
+    },
+  ];
+  assert.equal(initiative(8, eff).value, 9);
+  // A Knockdown effect must not leak into Initiative.
+  const kd = [{ ...eff[0], target: { domain: 'characteristic', name: 'Knockdown' } }];
+  assert.equal(initiative(8, kd).value, 8);
+});
+
+test('Chakka: Knockdown = Strength step 8', () => {
+  const kd = knockdown(8, []);
+  assert.equal(kd.base, 8);
+  assert.equal(kd.value, 8);
+});
+
+test('Chakka: Max Karma = karmaModifier 5 × highest Circle 4 = 20; die is D6 (step 4)', () => {
+  assert.equal(maxKarma(5, 4), 20);
+  assert.equal(KARMA_STEP, 4);
+});
+
+test('maxKarma guards missing inputs', () => {
+  assert.equal(maxKarma(null, 4), null);
+  assert.equal(maxKarma(5, undefined), null);
 });
 
 test('applyModifiers folds operations in order', () => {
