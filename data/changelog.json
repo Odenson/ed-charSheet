@@ -1,0 +1,23 @@
+{
+  "schema": "ed-changelog/1",
+  "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
+  "unreleased": {
+    "changes": []
+  },
+  "releases": [
+    {
+      "version": "1.0.0",
+      "date": "2026-08-01",
+      "changes": [
+        { "type": "added", "text": "Tabbed character sheet: Overview, Disciplines, Spells, Gear, and Notes." },
+        { "type": "added", "text": "Overview dashboard — attributes, defences, armour, health, movement, and combat at a glance." },
+        { "type": "added", "text": "Special Features panel showing racial abilities and their linked traits." },
+        { "type": "added", "text": "Exploding-dice roller with a result modal for rollable stats." },
+        { "type": "added", "text": "Rules engine: Physical, Mystic, and Social Defence derived from attributes plus racial and discipline effects." },
+        { "type": "added", "text": "Light and dark theme toggle, with the choice remembered." },
+        { "type": "added", "text": "Character details modal with portrait, background, and vitals." },
+        { "type": "changed", "text": "Self-hosted the UI framework so the app loads reliably and works offline." }
+      ]
+    }
+  ]
+}

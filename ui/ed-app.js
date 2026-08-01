@@ -4,6 +4,7 @@ import { loadCharacterModel } from '../store.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-roll-modal.js';
+import './ed-changelog.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -160,7 +161,7 @@ export class EdApp extends LitElement {
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}
-      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4</footer>
+      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog></footer>
     `;
   }
 }
