@@ -10,6 +10,7 @@ export class EdOverview extends LitElement {
   static properties = {
     model: { attribute: false },
     _modal: { state: true },
+    _lightbox: { state: true },
   };
 
   static styles = css`
@@ -33,6 +34,9 @@ export class EdOverview extends LitElement {
     .portrait { flex: 1; min-height: 160px; margin-top: 8px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; }
     .portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .portrait .ph { color: var(--muted); font-size: 2rem; }
+    /* Mobile-only avatar in the header (desktop uses the large .portrait). */
+    .avatar { display: none; flex: none; width: 52px; height: 52px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; }
+    .lightbox-img { max-width: 92vw; max-height: 88vh; border-radius: 12px; object-fit: contain; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
     .right { display: flex; flex-direction: column; gap: 8px; }
     .blk { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
     .blk h4 { margin: 0 0 6px; font-size: 0.62rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -65,9 +69,15 @@ export class EdOverview extends LitElement {
     .mtlabel { font-weight: 500; color: light-dark(#111418, #f0f3f7); margin-bottom: 0.25rem; }
     .mtsummary { color: var(--accent); margin-bottom: 0.3rem; }
     .mtdesc { line-height: 1.5; }
+    .meta-dl { margin: 0; }
+    .meta-item { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .meta-item:last-child { border-bottom: none; }
+    .meta-item dt { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .meta-item dd { margin: 2px 0 0; font-size: 0.88rem; line-height: 1.45; color: light-dark(#111418, #f0f3f7); }
     @media (max-width: 720px) {
       .grid { grid-template-columns: 1fr; }
-      .portrait { min-height: 220px; }
+      .portrait { display: none; }
+      .avatar { display: block; }
     }
   `;
 
@@ -91,7 +101,9 @@ export class EdOverview extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._onKeydown = (e) => {
-      if (e.key === 'Escape' && this._modal) this._closeModal();
+      if (e.key !== 'Escape') return;
+      if (this._modal) this._closeModal();
+      if (this._lightbox) this._lightbox = false;
     };
     document.addEventListener('keydown', this._onKeydown);
   }
@@ -103,6 +115,21 @@ export class EdOverview extends LitElement {
 
   _openModal(title, body) { this._modal = { title, body }; }
   _closeModal() { this._modal = null; }
+
+  // Modal body listing all character metadata (any field added to meta shows up).
+  _metaBody() {
+    const meta = this.model?.meta ?? {};
+    const HIDE = new Set(['name', 'portrait', 'sourceSheetVersion']);
+    const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+    const entries = Object.entries(meta).filter(([k, v]) => !HIDE.has(k) && v != null && v !== '');
+    return html`
+      <dl class="meta-dl">
+        ${entries.map(
+          ([k, v]) => html`<div class="meta-item"><dt>${humanize(k)}</dt><dd>${v}</dd></div>`,
+        )}
+      </dl>
+    `;
+  }
 
   // Character-specific traits related to a given ability (e.g. Gahad triggers).
   // A trait links via relatedTo: { type: 'ability', name }.
@@ -184,8 +211,18 @@ export class EdOverview extends LitElement {
       <div class="grid">
         <div class="hero">
           <div class="head">
-            <div>
-              <div class="name">${meta.name ?? 'Unnamed'}</div>
+            ${portrait
+              ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @click=${() => (this._lightbox = true)} />`
+              : ''}
+            <div style="flex: 1">
+              <div class="name">
+                ${meta.name ?? 'Unnamed'}<button
+                  class="info"
+                  title="Character details"
+                  aria-label="Character details"
+                  @click=${() => this._openModal(meta.name ?? 'Character details', this._metaBody())}
+                >ⓘ</button>
+              </div>
               <div class="meta">${metaLine}</div>
             </div>
             <div class="discs">
@@ -269,6 +306,11 @@ export class EdOverview extends LitElement {
               </div>
             </div>
           `
+        : ''}
+      ${this._lightbox && portrait
+        ? html`<div class="overlay" @click=${() => (this._lightbox = false)}>
+            <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />
+          </div>`
         : ''}
     `;
   }
