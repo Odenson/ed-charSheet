@@ -82,6 +82,19 @@ export class EdOverview extends LitElement {
   `;
 
   _pend() { return html`<span class="pend">—</span>`; }
+
+  // Render an engine-derived characteristic as a real number, or fall back to the
+  // placeholder pill if the engine hasn't computed it (UI-GUIDELINES §5: never a
+  // fabricated number). Hovering shows how the value was built (base + modifiers).
+  _char(key) {
+    const c = this.model?.characteristics?.[key];
+    if (!c || c.value == null) return this._pend();
+    const sign = (op) => (op === 'subtract' ? '−' : op === 'add' ? '+' : `${op} `);
+    const title = (c.modifiers ?? []).length
+      ? `Base ${c.base}` + c.modifiers.map((m) => ` ${sign(m.operation)}${m.value}${m.source ? ` (${m.source})` : ''}`).join('')
+      : `Base ${c.base}`;
+    return html`<span class="val" title=${title}>${c.value}</span>`;
+  }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
   // Disabled when there's no step yet (e.g. engine-derived combat stats).
   _rollBtn(label, step) {
@@ -260,7 +273,7 @@ export class EdOverview extends LitElement {
             <div class="stack">
               <div class="blk">
                 <h4>Defences</h4>
-                <div class="line"><span>Physical</span>${this._pend()}</div>
+                <div class="line"><span>Physical</span>${this._char('physicalDefense')}</div>
                 <div class="line"><span>Mystic</span>${this._pend()}</div>
                 <div class="line"><span>Social</span>${this._pend()}</div>
               </div>

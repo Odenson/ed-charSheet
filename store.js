@@ -5,6 +5,7 @@
 // the reactive cascade come in later phases.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
+import { makeCharacteristics, physicalDefense } from './engine/characteristics.js';
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
@@ -18,12 +19,13 @@ async function loadJSON(path) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export async function loadCharacterModel() {
-  const [character, steps, talentsFile, disciplinesFile, racesFile] = await Promise.all([
+  const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),
     loadJSON('./rules/races.json'),
+    loadJSON('./rules/characteristics.json'),
   ]);
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
@@ -83,12 +85,31 @@ export async function loadCharacterModel() {
     };
   });
 
+  // Derived characteristics (Phase 3). The engine reads the ED4 Characteristics
+  // Table and layers taxonomy `effects` on top. Only always-on effects auto-apply.
+  // Sources the engine currently knows about: race + discipline circles reached.
+  // Items / threads / spells join this list in later slices.
+  const lookupChar = makeCharacteristics(characteristicsFile);
+  const activeEffects = [
+    ...(raceEntry?.abilities ?? []).flatMap((a) => a.effects ?? []),
+    ...(character.disciplines ?? []).flatMap((d) =>
+      ((discByName[d.name] ?? {}).circles ?? [])
+        .filter((c) => c.circle <= d.circle)
+        .flatMap((c) => c.effects ?? []),
+    ),
+  ];
+  const dexValue = attributeValue(character.attributes?.Dexterity);
+  const characteristics = {
+    physicalDefense: physicalDefense(dexValue, activeEffects, lookupChar),
+  };
+
   return {
     meta: character.meta ?? {},
     attributes,
     resources: character.resources ?? {},
     disciplines,
     racialAbilities,
+    characteristics,
     stepByNumber,
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],

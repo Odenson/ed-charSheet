@@ -4,5 +4,8 @@
   "description": "Earthdawn character sheet — static, GitHub-Pages-hosted viewer and rules engine",
   "type": "module",
   "license": "GPL-3.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
 }
