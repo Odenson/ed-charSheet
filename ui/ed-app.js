@@ -1,6 +1,7 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, deriveModel, saveMetaEdits } from '../store.js';
+import { isFileSaveSupported, restoreFileHandle, saveToFile } from '../store-file.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-roll-modal.js';
@@ -23,6 +24,10 @@ export class EdApp extends LitElement {
     _dark: { state: true },
     _roll: { state: true },
     _editMode: { state: true },
+    _fileName: { state: true },
+    _fileDirty: { state: true },
+    _fileBusy: { state: true },
+    _fileError: { state: true },
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -30,6 +35,9 @@ export class EdApp extends LitElement {
   // flows back down). Not reactive state — _model is the render trigger.
   _character = null;
   _rules = null;
+  // Whether this browser can write a user-picked file (Chromium only). Fixed for
+  // the session, so a plain field — not reactive state.
+  _fileSupported = isFileSaveSupported();
 
   static styles = css`
     :host {
@@ -56,23 +64,35 @@ export class EdApp extends LitElement {
     }
     .tab[aria-selected='true'] { color: light-dark(#111418, #f0f3f7); border-bottom-color: var(--accent, #b26a00); }
     .tab .ico { font-size: 0.8rem; opacity: 0.8; }
-    .edit-btn {
-      margin-left: auto; display: flex; align-items: center; gap: 5px;
-      padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 0.8rem;
-      background: none; border: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
-      color: var(--muted, #6b7280); cursor: pointer; line-height: 1;
-    }
-    .edit-btn:hover { color: light-dark(#111418, #f0f3f7); }
-    .edit-btn.active {
-      background: var(--accent, #b26a00); border-color: var(--accent, #b26a00); color: #fff;
-    }
-    .theme-btn {
-      margin-left: 6px; width: 28px; height: 28px; border-radius: 50%;
+    /* Edit / Save / Theme: uniform round icon-only buttons. */
+    .icon-btn {
+      position: relative; width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       background: none; border: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
       color: var(--muted, #6b7280); cursor: pointer; font-size: 0.9rem; line-height: 1;
     }
-    .theme-btn:hover { color: light-dark(#111418, #f0f3f7); }
+    .icon-btn + .icon-btn { margin-left: 6px; }
+    .icon-btn:hover { color: light-dark(#111418, #f0f3f7); }
+    .icon-btn[disabled] { opacity: 0.5; cursor: default; }
+    .ico-svg { width: 15px; height: 15px; display: block; }
+    .icon-btn.edit { margin-left: auto; }
+    .icon-btn.edit.active {
+      background: var(--accent, #b26a00); border-color: var(--accent, #b26a00); color: #fff;
+    }
+    /* Accent dot: edits in the web store not yet flushed to the file. */
+    .icon-btn.save.dirty::after {
+      content: ''; position: absolute; top: -2px; right: -2px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent, #b26a00);
+      border: 1.5px solid light-dark(#f4f5f7, #12151b);
+    }
+    .file-toast {
+      position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
+      z-index: 2200; max-width: 90vw;
+      padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.8rem;
+      background: light-dark(#fff, #232833); color: #c0392b;
+      border: 1px solid #c0392b; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    }
     .status { padding: 2rem 0; color: var(--muted, #667); font-weight: 500; }
     .status.error { color: #c0392b; }
     .stub { text-align: center; color: var(--muted, #889); padding: 3rem 0; font-size: 0.9rem; }
@@ -99,6 +119,12 @@ export class EdApp extends LitElement {
     // affordances); flip this on to reveal editable regions. Not persisted —
     // the sheet always opens in read mode.
     this._editMode = false;
+    // File persistence (Chromium): the connected file's name, whether the web
+    // store has unsaved-to-file edits, and transient save state.
+    this._fileName = null;
+    this._fileDirty = false;
+    this._fileBusy = false;
+    this._fileError = null;
     // Theme: honour a saved preference, else follow the system setting.
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -130,13 +156,46 @@ export class EdApp extends LitElement {
     } catch (e) {
       this._error = String(e);
     }
+    // Reconnect a previously-picked file (name only; write permission is
+    // re-requested lazily on the next Save). Never blocks the character load.
+    if (this._fileSupported) {
+      const f = await restoreFileHandle();
+      if (f) this._fileName = f.name;
+    }
   }
 
   _editMeta(patch) {
     if (!this._character || !patch) return;
     this._character = { ...this._character, meta: { ...this._character.meta, ...patch } };
-    saveMetaEdits(patch);
+    saveMetaEdits(patch); // web store: always-on, instant, no permissions
+    // The file (if connected) is now behind the web store until the next Save.
+    this._fileDirty = true;
     this._model = deriveModel(this._character, this._rules);
+  }
+
+  // Dual-write the merged, inputs-only character to the connected file (picking
+  // one on first use). The web store already holds these edits, so afterwards
+  // memory ↔ web store ↔ file are identical. Cancelling the picker is a no-op.
+  async _saveFile() {
+    if (!this._character || this._fileBusy) return;
+    this._fileBusy = true;
+    this._fileError = null;
+    try {
+      const { name } = await saveToFile(this._character);
+      this._fileName = name;
+      this._fileDirty = false;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return; // user dismissed the picker
+      this._fileError = e?.message ? String(e.message) : String(e);
+    } finally {
+      this._fileBusy = false;
+    }
+  }
+
+  _saveTitle() {
+    if (this._fileBusy) return 'Saving…';
+    if (this._fileName) return this._fileDirty ? `Save changes to ${this._fileName}` : `Saved to ${this._fileName}`;
+    return 'Save to a character file…';
   }
 
   _applyTheme() {
@@ -188,14 +247,28 @@ export class EdApp extends LitElement {
           `,
         )}
         <button
-          class="edit-btn ${this._editMode ? 'active' : ''}"
+          class="icon-btn edit ${this._editMode ? 'active' : ''}"
           role="switch"
           aria-checked=${this._editMode}
           @click=${() => (this._editMode = !this._editMode)}
           title=${this._editMode ? 'Finish editing' : 'Edit character details'}
-        ><span aria-hidden="true">✎</span>${this._editMode ? 'Done' : 'Edit'}</button>
+          aria-label=${this._editMode ? 'Finish editing' : 'Edit character details'}
+        ><span aria-hidden="true">✎</span></button>
+        ${this._editMode && this._fileSupported
+          ? html`<button
+              class="icon-btn save ${this._fileDirty ? 'dirty' : ''}"
+              @click=${this._saveFile}
+              ?disabled=${this._fileBusy}
+              title=${this._saveTitle()}
+              aria-label=${this._saveTitle()}
+            ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
+                <circle cx="12" cy="14" r="2" />
+                <path d="M14 4v4h-6v-4" />
+              </svg></button>`
+          : ''}
         <button
-          class="theme-btn"
+          class="icon-btn theme"
           @click=${this._toggleTheme}
           title=${this._dark ? 'Switch to light mode' : 'Switch to dark mode'}
           aria-label=${this._dark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -211,6 +284,11 @@ export class EdApp extends LitElement {
           ></ed-roll-modal>`
         : ''}
       <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog></footer>
+      ${this._fileError
+        ? html`<div class="file-toast" role="alert" @click=${() => (this._fileError = null)}>
+            Couldn't save the file: ${this._fileError}
+          </div>`
+        : ''}
     `;
   }
 }

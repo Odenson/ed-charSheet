@@ -3,12 +3,12 @@
   "meta": {
     "name": "Chakka",
     "race": "Ork",
-    "description": "Ork Power, with no privilege and a whole lot of fuckin' rage.",
+    "description": "Ork Power, with no privilege, and a whole lot of fuckin' rage.",
     "portrait": "data/chakka.jpg",
-    "age": 17,
+    "age": 18,
     "weight": "120 kg",
     "sex": "Male",
-    "height": "6'8",
+    "height": "6'10",
     "skinTone": "Light Grey",
     "background": "Chakka drew his first breath in a kaer that was meant to keep its people safe — until slavers cracked it open and dragged them into the light. Torn from his family before he was old enough to hold their faces in memory, he was shackled aboard a Theran airship and sold into slavery. For two years he laboured under a Theran dwarf, swallowing his rage and biding his time. When fate finally left the door to freedom unguarded, Chakka threw himself through it with everything he had — and he has never once looked back.",
     "sourceSheetVersion": "7.13.2"
@@ -305,7 +305,10 @@
     {
       "name": "Gahad trigger",
       "type": "trigger",
-      "relatedTo": { "type": "ability", "name": "Gahad" },
+      "relatedTo": {
+        "type": "ability",
+        "name": "Gahad"
+      },
       "summary": "Dwarves in amour carrying whips",
       "description": "Comes from the Dwarf that had Chakka captured for two years on the airship. The slaver was very proud of the whip, and even more happy when he used it on the larger Orks."
     }
