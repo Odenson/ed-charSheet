@@ -2,15 +2,17 @@
 // and the Defences/Armour/Movement/Health/Combat panels. Fit-to-viewport,
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
 export class EdOverview extends LitElement {
   static properties = {
     model: { attribute: false },
+    editMode: { attribute: false },
     _modal: { state: true },
     _lightbox: { state: true },
+    _edit: { state: true },
   };
 
   static styles = css`
@@ -21,11 +23,20 @@ export class EdOverview extends LitElement {
       --muted: light-dark(#5a6472, #93a0b3);
       --accent: light-dark(#7a3e12, #d9944e);
       --accent-bg: light-dark(#f6e9dc, #3a2a17);
+      /* Karma semantic colour (Sage) — distinct from the amber general accent. */
+      --karma: light-dark(#3d6b4a, #82c39a);
+      --karma-bg: light-dark(#e7f0ea, #223029);
       display: block;
     }
     .grid { display: grid; grid-template-columns: 250px 1fr; gap: 12px; align-items: stretch; }
     .hero { display: flex; flex-direction: column; }
     .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .details { flex: 1; border-radius: 6px; }
+    /* Edit mode: the details block (name/meta) and the blurb become click-to-edit
+       regions. A faint dashed outline signals "editable"; it brightens on hover/
+       focus. Outline never reflows, so read-mode layout is untouched. */
+    .editable { cursor: pointer; outline: 1px dashed var(--border); outline-offset: 3px; transition: outline-color 0.15s ease, background 0.15s ease; }
+    .editable:hover, .editable:focus-visible { outline-color: var(--accent); background: var(--accent-bg); }
     .name { font-size: 1.25rem; font-weight: 500; line-height: 1.1; }
     .meta { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
     .discs { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
@@ -47,6 +58,8 @@ export class EdOverview extends LitElement {
     .acell .av { font-size: 1rem; font-weight: 500; line-height: 1; }
     .acell .asd { font-size: 0.62rem; color: var(--muted); }
     .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; flex: none; padding: 0; }
+    .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
+    .kmark { color: var(--karma); }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
     .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1; }
     .stack { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
@@ -58,7 +71,14 @@ export class EdOverview extends LitElement {
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
     .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
     .ftag.race { background: var(--accent-bg); color: var(--accent); }
-    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; }
+    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
+    /* Universal hover-reveal: ANY info icon stays hidden until you hover (or
+       keyboard-focus) the element it sits in, so it never clutters the read view.
+       The icon is placed as a child of the label it annotates, so hovering that
+       label reveals it. Touch has no hover, so icons are always shown there
+       (UI-GUIDELINES: mobile must work). */
+    *:hover > .info, *:focus-within > .info, .info:focus-visible { opacity: 1; }
+    @media (hover: none) { .info { opacity: 1; } }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); border-radius: 12px; max-width: 32rem; max-height: 80vh; overflow: auto; padding: 1rem 1.25rem; }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
@@ -83,30 +103,93 @@ export class EdOverview extends LitElement {
 
   _pend() { return html`<span class="pend">—</span>`; }
 
+  // Wrap content as a click-to-edit region. Only interactive in edit mode; in
+  // read mode it's an inert container (no outline, no focus, no handler effect),
+  // so the read view stays clean. Opens the details form (Enter/Space too).
+  _editRegion(cls, content) {
+    const on = this.editMode;
+    return html`<div
+      class="${cls}${on ? ' editable' : ''}"
+      role=${on ? 'button' : nothing}
+      tabindex=${on ? '0' : nothing}
+      aria-label=${on ? 'Edit character details' : nothing}
+      title=${on ? 'Edit character details' : nothing}
+      @click=${() => { if (this.editMode) this._edit = true; }}
+      @keydown=${(e) => {
+        if (this.editMode && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this._edit = true; }
+      }}
+    >${content}</div>`;
+  }
+
+  // Label a modifier by its exact source: an abbreviated discipline + circle
+  // ("Arc 4", "Net 2" — matching the Special Features tags) or a race name, so
+  // two same-value bonuses from different disciplines are distinguishable.
+  _modLabel(m) {
+    const o = m.origin;
+    if (o?.kind === 'discipline') return `${o.name.slice(0, 3)} ${o.circle}`;
+    if (o?.kind === 'race') return o.name ?? 'race';
+    return m.source ?? '';
+  }
+
+  // The " +1 (Arc 4) +1 (Net 2)" fragment shared by every value tooltip.
+  _modSummary(modifiers) {
+    return (modifiers ?? [])
+      .map((m) => {
+        const sign = m.operation === 'subtract' ? '−' : m.operation === 'add' ? '+' : `${m.operation} `;
+        const label = this._modLabel(m);
+        return ` ${sign}${m.value}${label ? ` (${label})` : ''}`;
+      })
+      .join('');
+  }
+
   // Render an engine-derived characteristic as a real number, or fall back to the
   // placeholder pill if the engine hasn't computed it (UI-GUIDELINES §5: never a
   // fabricated number). Hovering shows how the value was built (base + modifiers).
   _char(key) {
     const c = this.model?.characteristics?.[key];
     if (!c || c.value == null) return this._pend();
-    const sign = (op) => (op === 'subtract' ? '−' : op === 'add' ? '+' : `${op} `);
-    const title = (c.modifiers ?? []).length
-      ? `Base ${c.base}` + c.modifiers.map((m) => ` ${sign(m.operation)}${m.value}${m.source ? ` (${m.source})` : ''}`).join('')
-      : `Base ${c.base}`;
+    const title = `Base ${c.base}${this._modSummary(c.modifiers)}`;
     return html`<span class="val" title=${title}>${c.value}</span>`;
   }
+
+  // A rollable combat step (Initiative, Knockdown): shows the engine-derived Step
+  // and enables its roll button; falls back to the placeholder pill + disabled roll.
+  _combatStep(key, label) {
+    const c = this.model?.characteristics?.[key];
+    if (!c || c.value == null) return html`${this._pend()}${this._rollBtn(label, null)}`;
+    const title = `Step ${c.value} (base ${c.base}${this._modSummary(c.modifiers)})`;
+    return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma)}`;
+  }
+
+  // Karma: available points (max in the tooltip); the roll button rolls the D6 Karma die.
+  _karma(label) {
+    const k = this.model?.characteristics?.karma;
+    if (!k) return html`${this._pend()}${this._rollBtn(label, null)}`;
+    const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma · die D6`;
+    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step, null, true)}`;
+  }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
-  // Disabled when there's no step yet (e.g. engine-derived combat stats).
-  _rollBtn(label, step) {
+  // Disabled when there's no step yet (e.g. engine-derived combat stats). If the
+  // test is karma-eligible (`karma` grants present), passes a karma context so the
+  // roll modal can offer an optional +D6 Karma die.
+  _rollBtn(label, step, karma, km = false) {
     const disabled = step == null;
+    const karmaCtx =
+      karma?.grants?.length
+        ? {
+            grants: karma.grants,
+            available: this.model?.characteristics?.karma?.available ?? null,
+            step: this.model?.characteristics?.karma?.step ?? null,
+          }
+        : null;
     return html`<button
-      class="roll"
+      class="roll ${km ? 'km' : ''}"
       ?disabled=${disabled}
-      title=${disabled ? 'Step not yet available' : `Roll ${label}`}
+      title=${disabled ? 'Step not yet available' : `Roll ${label}${karmaCtx ? ' (Karma available)' : ''}`}
       aria-label="Roll ${label}"
       @click=${(e) => {
         e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step }, bubbles: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step, karma: karmaCtx }, bubbles: true, composed: true }));
       }}
     >⚄</button>`;
   }
@@ -127,7 +210,13 @@ export class EdOverview extends LitElement {
   }
 
   _openModal(title, body) { this._modal = { title, body }; }
-  _closeModal() { this._modal = null; }
+  _closeModal() {
+    // Drop keyboard focus from the trigger (the ⓘ button) so an Escape close ends
+    // the same way a mouse close does. Otherwise the ⓘ keeps :focus-visible (the
+    // blue ring) and stays hover-revealed after the modal is gone.
+    this.renderRoot.activeElement?.blur();
+    this._modal = null;
+  }
 
   // Modal body listing all character metadata (any field added to meta shows up).
   _metaBody() {
@@ -187,7 +276,7 @@ export class EdOverview extends LitElement {
     const discAbilities = (m.disciplines ?? []).flatMap((d) =>
       (d.abilities ?? [])
         .filter((ab) => !STAT_INCREASE.has(ab.type))
-        .map((ab) => ({ tag: `${d.name.slice(0, 3)} ${ab.circle}`, summary: ab.summary })),
+        .map((ab) => ({ tag: `${d.name.slice(0, 3)} ${ab.circle}`, summary: ab.summary, type: ab.type })),
     );
     if (!racial.length && !discAbilities.length) return html``;
     return html`
@@ -206,7 +295,7 @@ export class EdOverview extends LitElement {
           `,
         )}
         ${discAbilities.map(
-          (a) => html`<div class="feat"><span class="ftag">${a.tag}</span><span class="txt">${a.summary}</span></div>`,
+          (a) => html`<div class="feat"><span class="ftag">${a.tag}</span><span class="txt">${a.type === 'grant-karma-use' ? html`<span class="kmark" title="Karma use">✦</span> ` : ''}${a.summary}</span></div>`,
         )}
       </div>
     `;
@@ -227,22 +316,30 @@ export class EdOverview extends LitElement {
             ${portrait
               ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @click=${() => (this._lightbox = true)} />`
               : ''}
-            <div style="flex: 1">
-              <div class="name">
-                ${meta.name ?? 'Unnamed'}<button
-                  class="info"
-                  title="Character details"
-                  aria-label="Character details"
-                  @click=${() => this._openModal(meta.name ?? 'Character details', this._metaBody())}
-                >ⓘ</button>
-              </div>
-              <div class="meta">${metaLine}</div>
-            </div>
+            ${this._editRegion(
+              'details',
+              html`
+                <div class="name">
+                  ${meta.name ?? 'Unnamed'}${this.editMode
+                    ? nothing
+                    : html`<button
+                        class="info"
+                        title="Character details"
+                        aria-label="Character details"
+                        @click=${(e) => {
+                          e.stopPropagation();
+                          this._openModal(meta.name ?? 'Character details', this._metaBody());
+                        }}
+                      >ⓘ</button>`}
+                </div>
+                <div class="meta">${metaLine}</div>
+              `,
+            )}
             <div class="discs">
               ${(m.disciplines ?? []).map((d) => html`<span class="dtile">${d.name} ${d.circle}</span>`)}
             </div>
           </div>
-          ${meta.description ? html`<div class="blurb">${meta.description}</div>` : ''}
+          ${meta.description ? this._editRegion('blurb', meta.description) : ''}
           <div class="portrait">
             ${portrait
               ? html`<img src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />`
@@ -261,7 +358,7 @@ export class EdOverview extends LitElement {
                     <div class="r">
                       <span class="av">${a.value}</span>
                       <span class="asd">s${a.step} ${a.dice}</span>
-                      ${this._rollBtn(a.name, a.step)}
+                      ${this._rollBtn(a.name, a.step, a.karma)}
                     </div>
                   </div>
                 `,
@@ -298,9 +395,9 @@ export class EdOverview extends LitElement {
             <div class="stack" style="justify-content: flex-start">
               <div class="blk">
                 <h4>Combat</h4>
-                <div class="line"><span>Initiative</span><span class="rl">${this._pend()}${this._rollBtn('Initiative', null)}</span></div>
-                <div class="line"><span>Knockdown</span><span class="rl">${this._pend()}${this._rollBtn('Knockdown', null)}</span></div>
-                <div class="line"><span>Karma</span><span class="rl">${this._pend()}${this._rollBtn('Karma', null)}</span></div>
+                <div class="line"><span>Initiative</span><span class="rl">${this._combatStep('initiative', 'Initiative')}</span></div>
+                <div class="line"><span>Knockdown</span><span class="rl">${this._combatStep('knockdown', 'Knockdown')}</span></div>
+                <div class="line"><span>Karma</span><span class="rl">${this._karma('Karma')}</span></div>
               </div>
               ${this._specialFeatures()}
             </div>
@@ -324,6 +421,9 @@ export class EdOverview extends LitElement {
         ? html`<div class="overlay" @click=${() => (this._lightbox = false)}>
             <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />
           </div>`
+        : ''}
+      ${this._edit
+        ? html`<ed-edit-meta .meta=${meta} @close=${() => (this._edit = false)}></ed-edit-meta>`
         : ''}
     `;
   }

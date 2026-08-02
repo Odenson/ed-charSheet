@@ -258,18 +258,86 @@ This is an explicit requirement, so it's a first-class design concern:
 
 ## 7. Persistence (no backend)
 
-Options, roughly in order of how far v1 should go:
+Two layers ship today, written **together** on Save so they never drift.
+
+### 7.1 Web store — always on (`store.js`)
+localStorage key `ed-character-edits` holds an **edits overlay**: only the
+inputs the player changed (`{ meta: { … } }`), never a whole snapshot. At load
+the overlay is merged onto the freshly-fetched `data/character.json`, which stays
+the source of truth for everything untouched. Instant, no permissions, survives
+refresh, works on every browser and offline. "Store only inputs, never derived"
+holds — the overlay carries raw inputs only.
+
+### 7.2 File save — File System Access (`store-file.js`, Chromium)
+An in-app **Save** (the floppy-outline button, shown in edit mode) writes the
+character to a real file the player picks — their durable, committable backup.
+
+- **Pick once, reconnect after.** `showSaveFilePicker()` returns a
+  `FileSystemFileHandle`; we persist it in **IndexedDB** (`db: ed-file`, store
+  `handles`, key `character`) so later sessions reconnect to the same file by
+  name. localStorage can't hold a handle; IndexedDB can.
+- **One permission click across restarts.** Within a session, saves are silent
+  after the first grant. After a full browser restart the browser re-asks for
+  write access once (a single click — *not* re-picking the file); a security
+  guarantee we can't bypass.
+- **Chromium-only, feature-detected.** Gated on `window.showSaveFilePicker`, not
+  on host — so Save appears on the live site *and* locally in Chrome/Edge. On
+  Firefox/Safari the button is hidden and the web store alone persists (a
+  download-based export could be the fallback there later).
+- **Dual-write, kept in sync.** Save serializes the **full merged, inputs-only**
+  character (`schema: "ed-character/1"`, `JSON.stringify(…, 2) + '\n'`) to *both*
+  the file and the web store, so afterwards memory ↔ web store ↔ file are
+  identical. The overlay is **not** cleared — it stays the resilient working copy,
+  and the two can't disagree as long as every edit flows through the app. A small
+  dot on the Save button shows when the web store is ahead of the file.
+- **The commit gap.** The file is a local artifact; carrying a change into the
+  *next* session (or to production) is still a manual `git commit && git push` —
+  deliberately, so the app needs no secrets and no backend.
+- **Formatting note.** Serializing normalizes JSON to 2-space, so hand-compacted
+  single-line objects in `character.json` re-expand on the first save
+  (semantically identical and valid — just a one-time diff). Pre-normalizing the
+  file once removes that churn.
+
+### 7.3 Future Save targets (not built)
+State is *just* `character.json`, so each of these is an additive Save target,
+not a rewrite:
 
 | Strategy | How | Pros | Cons |
 |----------|-----|------|------|
-| **localStorage** | auto-save state in the browser | zero setup, instant | single device/browser |
-| **File export/import** | download/upload `character.json` | portable, git-friendly, backups | manual |
-| **GitHub as store** | commit `character.json` via GitHub API + a Personal Access Token | versioned, syncs across devices | needs a token; care with secrets |
-| **URL state** | share/bookmark encoded state | shareable snapshots | size-limited |
+| **GitHub as store** (see §7.4) | commit `character.json` via the GitHub API + a Personal Access Token | no manual commit; syncs across devices; versioned | needs a token; secret handling |
+| **File export/import** | download/upload `character.json` | portable, works everywhere | manual round-trip |
+| **URL state** | encode a snapshot in the link | shareable | size-limited |
 
-Recommended v1: **localStorage + file export/import** (works offline, no
-secrets). The GitHub-API option is a clean later add-on because state is already
-just `character.json`.
+### 7.4 Future: save directly to GitHub — what it could look like
+Today's local-file save still leans on a manual commit/push. A GitHub target
+closes that loop: **Save** commits `data/character.json` straight to the repo and
+Pages redeploys — genuinely "real" saving from any device, including the live
+site, with no local checkout in the loop.
+
+Sketch of the flow (all client-side; still no backend of ours):
+
+1. **Auth (once).** The player supplies a **fine-grained Personal Access Token**
+   scoped to *this repo only*, with **Contents: read/write**. Handling: never
+   persisted in plain localStorage — prefer session-only in memory (re-entered
+   per session) or the most narrowly-scoped token the player accepts. The app
+   asks the *player* for it; it is a credential the tooling never fills in on
+   their behalf.
+2. **Read current SHA.**
+   `GET /repos/{owner}/{repo}/contents/data/character.json?ref=dev` → the file's
+   blob `sha` (the contents API needs it to update a file in place).
+3. **Write.** `PUT …/contents/data/character.json` with
+   `{ message, content: base64(json), sha, branch: "dev" }` — one commit on
+   `dev`; the deploy workflow (WORKFLOW.md) rebuilds `/dev/`.
+4. **Feedback.** Surface the commit URL; on a `409` (the `sha` moved) re-read and
+   retry.
+
+This reuses the exact **dual-write** shape from §7.2 — the picker/handle is
+simply swapped for "token + repo path," and the serialized bytes are identical
+(inputs-only `character.json`). Trade-offs: a token in the browser is a real
+exposure (mitigated by least-privilege + session-only storage), and it adds a
+network dependency the local-file path doesn't have. Because it is purely an
+alternate Save target, it can land opt-in without disturbing the web-store +
+local-file model.
 
 ---
 
@@ -319,13 +387,19 @@ just `character.json`.
 - **Phase 1 — Read-only stat display.** `index.html` + store + `stats-view`.
   Loads `character.json`, shows attributes/values/steps, health, karma,
   disciplines. *Hostable on GitHub Pages immediately.*
-- **Phase 2 — Editing + persistence.** Edit inputs; localStorage + file
-  export/import.
+- **Phase 2 — Editing + persistence.** *(Persistence landed; editing rolling out
+  per section.)* Edit inputs (meta first); a web-store overlay in localStorage
+  plus a File System Access **Save** to a player-picked `character.json`,
+  dual-written and kept in sync (§7.1–7.2). GitHub-direct commit is sketched as a
+  future Save target (§7.4).
 - **Phase 3 — Engine: cascade.** *(In progress.)* Derived characteristics from
-  `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). First
-  vertical slice landed: **Physical Defense** end-to-end (table base + discipline
-  effect), verified against the rulebook in `characteristics.test.js`. Remaining
-  characteristics (other defenses, health ratings, carry) repeat the pattern.
+  `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). Landed:
+  all three **Defences** (Physical/Mystic/Social, table base + discipline effects)
+  and the **Combat** steps — **Initiative** (Dexterity step − armour), **Knockdown**
+  (Strength step), and **Karma** (max = karmaModifier × Circle; D6 die) — with the
+  combat steps wired to the dice roller. All verified against the rulebook in
+  `characteristics.test.js`. Remaining (health ratings, carry, armour) repeat the
+  pattern; armour/health will force the first `operation: set` taxonomy decision.
 - **Phase 4 — Dice.** *(Landed early, ahead of Phase 3.)* `dice.js` exploding-dice
   roller with a result modal is wired. Optional dddice adapter still later.
 - **Phase 5 — Actions & talents.** `actions.js`; talents/attacks become
@@ -349,10 +423,13 @@ just `character.json`.
   the no-build ethos, removes the blank-screen failure mode, works offline, and
   is deterministic/reproducible. Trade-off accepted: a ~16KB vendored file in the
   repo and a manual re-fetch to upgrade Lit (rare, since the version is pinned).
-- **Persistence — DECIDED: localStorage + file export/import.** Auto-save to the
-  browser plus download/upload of `character.json`. No secrets, works offline.
-  GitHub-API sync remains a clean later add-on since state is just
-  `character.json`. See §7.
+- **Persistence — DECIDED: web-store overlay + direct file save, dual-written.**
+  A localStorage edits overlay (always on, every browser) plus a File System
+  Access **Save** to a player-picked `character.json` (Chromium), written
+  *together* so file ↔ web store stay in sync — the overlay is kept, not cleared.
+  The file handle is remembered in IndexedDB so it reconnects across sessions.
+  GitHub-direct commit remains a clean later Save target since state is just
+  `character.json`. See §7 (and §7.4 for the GitHub sketch).
 - **Rules fidelity — DECIDED: core rules first, flag house rules.** During the
   Phase 0 import, port standard Earthdawn rules and **flag any custom/house-rule
   formulas** found in the sheet for confirmation before porting them. Faster path

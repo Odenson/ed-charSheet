@@ -71,6 +71,7 @@ export function applyModifiers(base, effects, match) {
       value: e.value,
       operation: e.operation,
       source: e.source ?? null,
+      origin: e.origin ?? null,
       summary: e.summary ?? null,
     });
   }
@@ -108,4 +109,83 @@ export function defense(kind, attributeValue, effects, lookup) {
     e.target?.name === kind &&
     (e.measure ?? 'rating') === 'rating';
   return applyModifiers(row.defense, effects, match);
+}
+
+// --- Combat characteristics (step-based; rolled, not static ratings) ----------
+
+/**
+ * A step-based characteristic (Initiative, Knockdown): a base attribute Step
+ * plus any always-on characteristic-modifier effects that add/subtract steps to
+ * it. Returns { base, value, modifiers } where `value` is the final Step.
+ *
+ * @param {'Initiative'|'Knockdown'} name  the characteristic being modified
+ * @param {number} baseStep  the governing attribute's Step
+ * @param {Array<object>} effects  active effects from race/discipline/items/…
+ */
+export function stepCharacteristic(name, baseStep, effects) {
+  if (typeof baseStep !== 'number') return null;
+  const match = (e) =>
+    e.type === 'characteristic-modifier' &&
+    e.target?.domain === 'characteristic' &&
+    e.target?.name === name &&
+    (e.measure ?? 'step') === 'step';
+  return applyModifiers(baseStep, effects, match);
+}
+
+/**
+ * Initiative Step = Dexterity Step − armour penalty (armour arrives with
+ * equipment), plus any step-adding Initiative effects. (PG, Creating a Character:
+ * "The Initiative Step is equal to the character's Dexterity Step, minus any
+ * modifiers for armor.")
+ */
+export function initiative(dexterityStep, effects) {
+  return stepCharacteristic('Initiative', dexterityStep, effects);
+}
+
+/**
+ * Knockdown Step = Strength Step (Knockdown tests are Strength-based). No effect
+ * targets Knockdown yet; when one does, add "Knockdown" to the EFFECT-TAXONOMY
+ * `characteristic` vocabulary (a Tier-2 change). Base computation needs no
+ * taxonomy entry, so it is supported now.
+ */
+export function knockdown(strengthStep, effects) {
+  return stepCharacteristic('Knockdown', strengthStep, effects);
+}
+
+// The Karma die is an extra D6 = Step 4 (may grow later via effects/grants).
+export const KARMA_STEP = 4;
+
+/**
+ * Karma-use permissions for a test. An adept may spend a Karma Point (an extra
+ * exploding D6) only on tests their race/Discipline grants via `grant-karma-use`
+ * effects. Scoped grants ("sight-based", "vs Horrors") are contextual, so they
+ * are surfaced with their scope rather than auto-decided. (Talent tests are
+ * karma-eligible by the core rule, applied where talents roll.)
+ *
+ * @param {string} testName  e.g. 'Initiative', 'Perception', 'Damage'
+ * @param {Array<object>} effects  active effects (each may carry an `origin`)
+ * @returns {{grants: Array<{scope:string|null, via:object|null, summary:string|null}>}|null}
+ */
+export function karmaUse(testName, effects) {
+  const grants = (effects ?? [])
+    .filter(
+      (e) =>
+        e.type === 'grant-karma-use' &&
+        e.target?.domain === 'test' &&
+        e.target?.name === testName,
+    )
+    .map((e) => ({ scope: e.scope ?? null, via: e.origin ?? null, summary: e.summary ?? null }));
+  return grants.length ? { grants } : null;
+}
+
+/**
+ * Maximum Karma = race Karma Modifier × Circle (+ leftover attribute points,
+ * which we do not track). For a multi-Discipline adept, `circle` is the highest
+ * Discipline Circle. (PG, Creating a Character.)
+ *
+ * @returns {number|null}
+ */
+export function maxKarma(karmaModifier, circle) {
+  if (typeof karmaModifier !== 'number' || typeof circle !== 'number') return null;
+  return karmaModifier * circle;
 }
