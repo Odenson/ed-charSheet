@@ -5,7 +5,9 @@
     "changes": [
       { "type": "added", "text": "Armour is now calculated on the Overview: Physical Armour from the armour you wear, and Mystic Armour from your Willpower plus any protective gear." },
       { "type": "added", "text": "Equipment tab is live. In edit mode, add armour and shields from the rulebook catalogue and equip or unequip them; equipped gear automatically feeds your Armour, Defences, and Initiative. Saved in your browser." },
-      { "type": "changed", "text": "Shields now correctly raise your Physical or Mystic Defence and apply their Initiative penalty, rather than adding to Armour — matching the rules." }
+      { "type": "changed", "text": "Shields now correctly raise your Physical or Mystic Defence and apply their Initiative penalty, rather than adding to Armour — matching the rules." },
+      { "type": "added", "text": "Health ratings are now calculated on the Overview: Unconsciousness and Death Ratings from Toughness, including the Durability bonus and (for Death) your Circle, plus your Recovery Tests per day." },
+      { "type": "added", "text": "Carry / Lift now shows your Carrying Capacity from Strength. The Overview is now fully calculated — every derived stat is filled in." }
     ]
   },
   "releases": [

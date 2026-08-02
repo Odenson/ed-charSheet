@@ -12,6 +12,11 @@ import {
   DEFENSE_ATTRIBUTE,
   physicalArmor,
   mysticArmor,
+  adeptHealthEffects,
+  unconsciousnessRating,
+  deathRating,
+  recoveryTests,
+  carryingCapacity,
   initiative,
   knockdown,
   maxKarma,
@@ -209,12 +214,30 @@ export function deriveModel(character, rules) {
   const highestCircle = Math.max(0, ...(character.disciplines ?? []).map((d) => d.circle ?? 0));
   const karmaMod = raceEntry?.karmaModifier ?? null;
 
+  // Health ratings (Toughness). Death/Unconsciousness gain the adept bonuses
+  // (Durability × rank, and +Circle on Death) — the engine synthesizes those as
+  // effects from these per-Discipline inputs: the Discipline's Durability value
+  // paired with the rank of its Durability talent (a value with no ranks in the
+  // talent contributes nothing). Folded alongside any always-on health effects.
+  const healthDisciplines = (character.disciplines ?? []).map((d) => ({
+    name: d.name,
+    circle: d.circle ?? 0,
+    durability: (discByName[d.name] ?? {}).durability ?? 0,
+    durabilityRank: (d.talents ?? []).find((t) => t.name === 'Durability')?.rank ?? 0,
+  }));
+  const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
+  const touVal = attrVal('Toughness');
+
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
     mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
     socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
     physicalArmor: physicalArmor(activeEffects),
     mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),
+    unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
+    death: deathRating(touVal, healthEffects, lookupChar),
+    recoveries: recoveryTests(touVal, healthEffects, lookupChar),
+    carryingCapacity: carryingCapacity(attrVal('Strength'), activeEffects, lookupChar),
     initiative: initiative(dexStep, activeEffects),
     knockdown: knockdown(strStep, activeEffects),
     karma:

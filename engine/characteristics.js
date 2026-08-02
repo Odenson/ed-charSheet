@@ -174,6 +174,139 @@ export function mysticArmor(willpowerValue, effects, lookup) {
   return armor('Mystic', row.mysticArmor, effects);
 }
 
+// --- Health ratings (Toughness-driven, plus adept bonuses) --------------------
+
+// Toughness drives every health rating (Unconsciousness, Death, Recovery Tests).
+export const HEALTH_ATTRIBUTE = 'Toughness';
+
+/**
+ * Synthesize the adept health bonuses as `characteristic-modifier` effects, so
+ * they fold through the same applier as every other modifier (and surface in
+ * value tooltips) instead of being special-cased inside the rating functions.
+ *
+ * Two rulebook bonuses (PG, Health Ratings & Durability):
+ *  - **Durability** — at each rank the adept permanently adds their Discipline's
+ *    Durability value to BOTH the Unconsciousness and Death Ratings. The total is
+ *    `durability × rank`, summed over each Discipline that actually has the
+ *    Durability talent (a Discipline's `durability` value alone does nothing
+ *    without ranks in the talent).
+ *  - **Circle** — the Death Rating (only) also gains the adept's Circle. A
+ *    multi-Discipline adept uses the single **highest** Circle.
+ *
+ * @param {Array<{name:string, circle:number, durability:number, durabilityRank:number}>} disciplines
+ * @returns {Array<object>} synthesized characteristic-modifier effects
+ */
+export function adeptHealthEffects(disciplines) {
+  const effects = [];
+  let highestCircle = 0;
+  for (const d of disciplines ?? []) {
+    highestCircle = Math.max(highestCircle, d.circle ?? 0);
+    const bonus = (d.durability ?? 0) * (d.durabilityRank ?? 0);
+    if (bonus <= 0) continue;
+    for (const name of ['UnconsciousnessRating', 'DeathRating']) {
+      effects.push({
+        type: 'characteristic-modifier',
+        target: { domain: 'characteristic', name },
+        operation: 'add',
+        value: bonus,
+        measure: 'rating',
+        condition: 'always',
+        source: 'talent',
+        origin: { kind: 'discipline', name: d.name, circle: d.circle },
+        summary: `Durability ${d.durability} × rank ${d.durabilityRank}`,
+      });
+    }
+  }
+  if (highestCircle > 0) {
+    effects.push({
+      type: 'characteristic-modifier',
+      target: { domain: 'characteristic', name: 'DeathRating' },
+      operation: 'add',
+      value: highestCircle,
+      measure: 'rating',
+      condition: 'always',
+      source: 'Circle',
+      summary: `+${highestCircle} from Circle`,
+    });
+  }
+  return effects;
+}
+
+/**
+ * Fold always-on `characteristic-modifier` effects (adept bonuses + any future
+ * item/spell health boosts) onto a table base for a named health rating.
+ */
+function healthRating(name, base, effects) {
+  const match = (e) =>
+    e.type === 'characteristic-modifier' &&
+    e.target?.domain === 'characteristic' &&
+    e.target?.name === name &&
+    (e.measure ?? 'rating') === 'rating';
+  return applyModifiers(base, effects, match);
+}
+
+/**
+ * Unconsciousness Rating = 2 × Toughness value (the table `uncon` column) plus
+ * Durability. (PG, Health Ratings.)
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ */
+export function unconsciousnessRating(toughnessValue, effects, lookup) {
+  const row = lookup(toughnessValue);
+  if (!row || typeof row.uncon !== 'number') return null;
+  return healthRating('UnconsciousnessRating', row.uncon, effects);
+}
+
+/**
+ * Death Rating = Unconsciousness + Toughness Step (the table `death` column) plus
+ * Durability plus the adept's highest Circle. (PG, Health Ratings.)
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ */
+export function deathRating(toughnessValue, effects, lookup) {
+  const row = lookup(toughnessValue);
+  if (!row || typeof row.death !== 'number') return null;
+  return healthRating('DeathRating', row.death, effects);
+}
+
+/**
+ * Recovery Tests per day (the table `recovery` column), from Toughness. No adept
+ * bonus in the core rules; effects can still adjust it (taxonomy `RecoveryTests`).
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ */
+export function recoveryTests(toughnessValue, effects, lookup) {
+  const row = lookup(toughnessValue);
+  if (!row || typeof row.recovery !== 'number') return null;
+  return healthRating('RecoveryTests', row.recovery, effects);
+}
+
+// --- Carrying Capacity (Strength-driven) --------------------------------------
+
+// Strength drives Carrying Capacity.
+export const CARRY_ATTRIBUTE = 'Strength';
+
+/**
+ * Carrying Capacity in pounds = the Strength row's `carry` column, plus any
+ * always-on CarryingCapacity effects. This is the table's one non-linear column
+ * (no closed formula), which is why the whole table ships as data. A single value
+ * covers both carrying and lifting. (PG, Carrying Capacity: "carry or lift
+ * weight… the number of pounds a character may carry without penalty.")
+ *
+ * Note: the Dwarf *Strong Back* pattern (+Strength for carrying only) is a
+ * situational, gmDiscretion effect, so it does not auto-apply here — it is
+ * surfaced separately rather than baked into the displayed number.
+ *
+ * @returns {{base,value,modifiers}|null} null if Strength is off the table.
+ */
+export function carryingCapacity(strengthValue, effects, lookup) {
+  const row = lookup(strengthValue);
+  if (!row || typeof row.carry !== 'number') return null;
+  const match = (e) =>
+    e.type === 'characteristic-modifier' &&
+    e.target?.domain === 'characteristic' &&
+    e.target?.name === 'CarryingCapacity' &&
+    (e.measure ?? 'rating') === 'rating';
+  return applyModifiers(row.carry, effects, match);
+}
+
 // --- Combat characteristics (step-based; rolled, not static ratings) ----------
 
 /**

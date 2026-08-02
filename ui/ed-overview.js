@@ -382,14 +382,14 @@ export class EdOverview extends LitElement {
               <div class="blk">
                 <h4>Health</h4>
                 <div class="line"><span>Damage</span><span class="val">${h.damage ?? 0}</span></div>
-                <div class="line"><span>Unconscious</span>${this._pend()}</div>
-                <div class="line"><span>Death</span>${this._pend()}</div>
+                <div class="line"><span>Unconscious</span>${this._char('unconsciousness')}</div>
+                <div class="line"><span>Death</span>${this._char('death')}</div>
                 <div class="line"><span>Wounds</span><span class="val">${h.wounds ?? 0}</span></div>
-                <div class="line"><span>Recoveries</span>${this._pend()}</div>
+                <div class="line"><span>Recoveries</span>${this._char('recoveries')}</div>
               </div>
               <div class="blk">
                 <h4>Movement</h4>
-                <div class="line"><span>Carry / Lift</span>${this._pend()}</div>
+                <div class="line"><span>Carry / Lift</span>${this._char('carryingCapacity')}</div>
               </div>
             </div>
             <div class="stack" style="justify-content: flex-start">
