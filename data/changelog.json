@@ -2,18 +2,23 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": [
-      { "type": "added", "text": "Save to a character file: while editing, a Save button writes your changes to a character.json file you pick once and reconnect to thereafter. It saves to both the file and your browser, so they stay in sync — commit the file to keep changes for next time. A dot on the button shows when the file is behind your latest edits. (Chrome/Edge; other browsers keep saving to the browser only.)" },
-      { "type": "added", "text": "Edit mode: use the Edit toggle (top-right, by the theme switch) to make editable parts of the sheet interactive without cluttering the read view. First up — the character's details (description, age, sex, height, weight, skin tone, background); click the name block to edit. Changes are saved in your browser." },
-      { "type": "changed", "text": "Info (ⓘ) icons now stay hidden until you hover what they annotate — the character name and each Special Feature — revealing on approach and always shown on touch, keeping the read view clean." },
-      { "type": "fixed", "text": "Closing a details popover with Escape now behaves like clicking away — the ⓘ icon hides again instead of lingering with a focus outline." },
-      { "type": "added", "text": "Combat panel is now live: Initiative (Dexterity step, less armour), Knockdown (Strength step), and Karma (maximum from race and Circle), each rollable." },
-      { "type": "added", "text": "Rolls can optionally spend Karma (+D6) on tests your race or Discipline permits, showing the granting Discipline and any condition." },
-      { "type": "changed", "text": "Value tooltips now name the exact source of each modifier (e.g. \"Arc 4\", \"Net 2\") instead of a generic \"discipline\"." },
-      { "type": "changed", "text": "Karma indicators now use a distinct green, keeping amber as the general accent." }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.1.0",
+      "date": "2026-08-02",
+      "changes": [
+        { "type": "added", "text": "Save to a character file: while editing, a Save button writes your changes to a character.json file you pick once and reconnect to thereafter. It saves to both the file and your browser, so they stay in sync — commit the file to keep changes for next time. A dot on the button shows when the file is behind your latest edits. (Chrome/Edge; other browsers keep saving to the browser only.)" },
+        { "type": "added", "text": "Edit mode: use the Edit toggle (top-right, by the theme switch) to make editable parts of the sheet interactive without cluttering the read view. First up — the character's details (description, age, sex, height, weight, skin tone, background); click the name block to edit. Changes are saved in your browser." },
+        { "type": "changed", "text": "Info (ⓘ) icons now stay hidden until you hover what they annotate — the character name and each Special Feature — revealing on approach and always shown on touch, keeping the read view clean." },
+        { "type": "fixed", "text": "Closing a details popover with Escape now behaves like clicking away — the ⓘ icon hides again instead of lingering with a focus outline." },
+        { "type": "added", "text": "Combat panel is now live: Initiative (Dexterity step, less armour), Knockdown (Strength step), and Karma (maximum from race and Circle), each rollable." },
+        { "type": "added", "text": "Rolls can optionally spend Karma (+D6) on tests your race or Discipline permits, showing the granting Discipline and any condition." },
+        { "type": "changed", "text": "Value tooltips now name the exact source of each modifier (e.g. \"Arc 4\", \"Net 2\") instead of a generic \"discipline\"." },
+        { "type": "changed", "text": "Karma indicators now use a distinct green, keeping amber as the general accent." }
+      ]
+    },
     {
       "version": "1.0.0",
       "date": "2026-08-01",
