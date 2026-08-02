@@ -1,9 +1,10 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, deriveModel, saveMetaEdits } from '../store.js';
+import { loadCharacter, deriveModel, saveMetaEdits, saveItemEdits } from '../store.js';
 import { isFileSaveSupported, restoreFileHandle, saveToFile } from '../store-file.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
+import './ed-equipment.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-edit-meta.js';
@@ -148,6 +149,7 @@ export class EdApp extends LitElement {
     // A view edited character inputs. Apply the patch, persist the overlay, and
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
+    this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     try {
       const { character, rules } = await loadCharacter();
       this._character = character;
@@ -169,6 +171,17 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, meta: { ...this._character.meta, ...patch } };
     saveMetaEdits(patch); // web store: always-on, instant, no permissions
     // The file (if connected) is now behind the web store until the next Save.
+    this._fileDirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view changed the character's item list. Same flow as meta: replace the
+  // inputs, persist the overlay, mark the file dirty, and re-derive so armour /
+  // defences / initiative recompute from the equipped items (data flows down).
+  _editItems(items) {
+    if (!this._character || !Array.isArray(items)) return;
+    this._character = { ...this._character, items };
+    saveItemEdits(items);
     this._fileDirty = true;
     this._model = deriveModel(this._character, this._rules);
   }
@@ -219,7 +232,7 @@ export class EdApp extends LitElement {
       case 'spells':
         return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
       case 'equipment':
-        return html`<div class="stub"><span class="big">⚔</span>Equipment — weapons, armour, thread items, kit. Coming soon.</div>`;
+        return html`<ed-equipment .model=${m} .editMode=${this._editMode}></ed-equipment>`;
       case 'notes':
         return html`<div class="stub"><span class="big">❋</span>Notes — a running history of the character. Coming soon.</div>`;
       default:

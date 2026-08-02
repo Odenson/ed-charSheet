@@ -1,0 +1,202 @@
+{
+  "schema": "ed-items/1",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v1)",
+  "source": "Earthdawn 4E Player's Guide — Armor & Shields tables (Armor and Shields, p.411). The reference CATALOG: each entry's mechanics live in an `effects` array in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does racial/discipline effects. A character owns items by name (data/character.json `items: [{ name, equipped }]`) — the numbers are reference, not per-character input.",
+  "notes": {
+    "armor": "Worn armor confers Physical/Mystic Armor (damage reducers) via `armor-modifier` effects, and its Initiative penalty via a `characteristic-modifier` on Initiative (measure: step). `living` marks elemental 'living' armor (the only kind an obsidiman may wear atop Natural Armor; PG p.48). `ref` holds display-only stats (cost/weight/availability).",
+    "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference."
+  },
+  "items": {
+    "Padded Cloth": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 10, "weight": "5 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 1" }
+      ]
+    },
+    "Leather": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 15, "weight": "15 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 3" }
+      ]
+    },
+    "Padded Leather": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 30, "weight": "20 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 4" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 2" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+      ]
+    },
+    "Hardened Leather": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 40, "weight": "20 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 5" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 1" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+      ]
+    },
+    "Hide Armor": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 50, "weight": "25 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 5" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 1" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+      ]
+    },
+    "Ring Mail": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 300, "weight": "40 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 6" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+      ]
+    },
+    "Chain Mail": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 180, "weight": "40 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 7" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 3, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 3" }
+      ]
+    },
+    "Plate Armor": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 2500, "weight": "60 lb", "availability": "unusual" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 9, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 9" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 4, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 4" }
+      ]
+    },
+    "Wyvern Skin": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 2000, "weight": "50 lb", "availability": "rare" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 8, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 8" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 1" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 3, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 3" }
+      ]
+    },
+    "Espara Cloak": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 200, "weight": "10 lb", "availability": "rare" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 3" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" }
+      ]
+    },
+    "Obsidiman Skin": {
+      "kind": "armor", "living": false,
+      "ref": { "cost": 100, "weight": "5 lb", "availability": "average" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 2" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 2" }
+      ]
+    },
+    "Fernweave": {
+      "kind": "armor", "living": true,
+      "ref": { "cost": 125, "weight": "15 lb", "availability": "unusual" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 2" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" }
+      ]
+    },
+    "Blood Pebble": {
+      "kind": "armor", "living": true,
+      "ref": { "cost": 300, "weight": "—", "availability": "rare" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 5" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+      ]
+    },
+    "Crystal Ringlet": {
+      "kind": "armor", "living": true,
+      "ref": { "cost": 500, "weight": "45 lb", "availability": "rare" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 4" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 4" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+      ]
+    },
+    "Living Crystal": {
+      "kind": "armor", "living": true,
+      "ref": { "cost": 1100, "weight": "—", "availability": "rare" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 6" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+      ]
+    },
+    "Crystal Plate": {
+      "kind": "armor", "living": true,
+      "ref": { "cost": 12000, "weight": "90 lb", "availability": "rare" },
+      "effects": [
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 7" },
+        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 7 (while enchantment is maintained)" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 5, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 5" }
+      ]
+    },
+    "Buckler": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 5, "weight": "3 lb", "availability": "average", "shatterThreshold": 17 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Physical Defense" }
+      ]
+    },
+    "Crystal Buckler": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 50, "weight": "5 lb", "availability": "rare", "shatterThreshold": 17 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Physical Defense" },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Mystic Defense" }
+      ]
+    },
+    "Footman's Shield": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 15, "weight": "10 lb", "availability": "average", "shatterThreshold": 19 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Physical Defense" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+      ]
+    },
+    "Rider's Shield": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 20, "weight": "8 lb", "availability": "average", "shatterThreshold": 19 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Physical Defense" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+      ]
+    },
+    "Ferndask Shield": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 22, "weight": "5 lb", "availability": "unusual", "shatterThreshold": 16 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Physical Defense" },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Mystic Defense" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+      ]
+    },
+    "Body Shield": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 50, "weight": "15 lb", "availability": "unusual", "shatterThreshold": 21 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "+3 Physical Defense" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+      ]
+    },
+    "Crystal Raider Shield": {
+      "kind": "shield", "living": false,
+      "ref": { "cost": 150, "weight": "15 lb", "availability": "rare", "shatterThreshold": 18 },
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Physical Defense" },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Mystic Defense" },
+        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+      ]
+    }
+  }
+}

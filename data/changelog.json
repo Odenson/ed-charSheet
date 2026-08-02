@@ -2,7 +2,11 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      { "type": "added", "text": "Armour is now calculated on the Overview: Physical Armour from the armour you wear, and Mystic Armour from your Willpower plus any protective gear." },
+      { "type": "added", "text": "Equipment tab is live. In edit mode, add armour and shields from the rulebook catalogue and equip or unequip them; equipped gear automatically feeds your Armour, Defences, and Initiative. Saved in your browser." },
+      { "type": "changed", "text": "Shields now correctly raise your Physical or Mystic Defence and apply their Initiative penalty, rather than adding to Armour — matching the rules." }
+    ]
   },
   "releases": [
     {

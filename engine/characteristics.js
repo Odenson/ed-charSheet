@@ -54,27 +54,38 @@ function autoApplies(effect) {
  * `ref`-valued effects are skipped here (they arrive with the dependency work
  * in a later slice); only numeric `value`s apply for now.
  *
+ * **Fold order (the `set`-as-base rule).** `set` establishes the base a value
+ * grows from (EFFECT-TAXONOMY §4: "override target to value (acts as a
+ * base/floor)"), so all `set` effects are applied *first* — regardless of their
+ * position in the array — and only then do `add`/`subtract`/… layer on top.
+ * This is what makes obsidiman Natural Armor (`set` 3) a floor that worn
+ * "living" armor adds onto, independent of the order the sources were gathered.
+ * With no `set` in play (the common case — defenses, mystic-armor table base)
+ * the behaviour is unchanged: additive ops fold in array order.
+ *
  * @param {number} base
  * @param {Array<object>} effects  candidate effects from all active sources
  * @param {(e:object)=>boolean} match  which effects target this characteristic
  * @returns {{base:number, value:number, modifiers:Array<object>}}
  */
 export function applyModifiers(base, effects, match) {
+  const applicable = (effects ?? []).filter(
+    (e) => match(e) && autoApplies(e) && OPS[e.operation] && typeof e.value === 'number',
+  );
+  // Pass 1: `set` effects establish the base (later `set` overrides earlier).
+  // Pass 2: everything else folds onto that base, in array order.
+  const sets = applicable.filter((e) => e.operation === 'set');
+  const rest = applicable.filter((e) => e.operation !== 'set');
   let value = base;
-  const modifiers = [];
-  for (const e of effects ?? []) {
-    if (!match(e) || !autoApplies(e)) continue;
-    const op = OPS[e.operation];
-    if (!op || typeof e.value !== 'number') continue;
-    value = op(value, e.value);
-    modifiers.push({
-      value: e.value,
-      operation: e.operation,
-      source: e.source ?? null,
-      origin: e.origin ?? null,
-      summary: e.summary ?? null,
-    });
-  }
+  for (const e of sets) value = OPS.set(value, e.value);
+  for (const e of rest) value = OPS[e.operation](value, e.value);
+  const modifiers = [...sets, ...rest].map((e) => ({
+    value: e.value,
+    operation: e.operation,
+    source: e.source ?? null,
+    origin: e.origin ?? null,
+    summary: e.summary ?? null,
+  }));
   return { base, value, modifiers };
 }
 
@@ -109,6 +120,58 @@ export function defense(kind, attributeValue, effects, lookup) {
     e.target?.name === kind &&
     (e.measure ?? 'rating') === 'rating';
   return applyModifiers(row.defense, effects, match);
+}
+
+// --- Armor ratings (damage reducers, not target numbers) ----------------------
+
+/**
+ * An Armor rating reduces incoming damage of its kind (Physical Armor reduces
+ * physical damage; Mystic Armor reduces mystic damage). Unlike a Defense, an
+ * armor rating is *not* on the Characteristics Table — the `base` is supplied by
+ * the caller (§ below), and worn armor / racial Natural Armor arrive as
+ * `armor-modifier` effects. There is **no Social Armor** (EFFECT-TAXONOMY §3).
+ *
+ * @param {'Physical'|'Mystic'} kind
+ * @param {number} base  the starting rating before worn armor (see helpers)
+ * @param {Array<object>} effects  active effects from race/items/…
+ * @returns {{base:number, value:number, modifiers:Array<object>}}
+ */
+export function armor(kind, base, effects) {
+  const match = (e) =>
+    e.type === 'armor-modifier' &&
+    e.target?.domain === 'armor' &&
+    e.target?.name === kind &&
+    (e.measure ?? 'rating') === 'rating';
+  return applyModifiers(base, effects, match);
+}
+
+/**
+ * Physical Armor = 0 by default (it is not attribute-based), plus worn armor and
+ * any racial Natural Armor, which arrive as `armor-modifier` effects. Obsidiman
+ * Natural Armor is a `set` effect, so it establishes the base that "living"
+ * armor adds onto (see applyModifiers' fold order). (PG, Armor Ratings.)
+ *
+ * @param {Array<object>} effects  active effects (race + equipped items)
+ */
+export function physicalArmor(effects) {
+  return armor('Physical', 0, effects);
+}
+
+/**
+ * Mystic Armor = the natural rating from the character's Willpower value (the
+ * Mystic Armor Table, shipped as the `mysticArmor` column of the Characteristics
+ * Table) plus any equipment/racial bonuses. (PG, Armor Ratings.)
+ *
+ * @param {number} willpowerValue  Willpower attribute value
+ * @param {Array<object>} effects  active effects (race + equipped items)
+ * @param {(value:number)=>object|undefined} lookup  from makeCharacteristics()
+ * @returns {{base:number, value:number, modifiers:Array<object>}|null} null if
+ *          the value is off the table (renders as a placeholder pill upstream)
+ */
+export function mysticArmor(willpowerValue, effects, lookup) {
+  const row = lookup(willpowerValue);
+  if (!row || typeof row.mysticArmor !== 'number') return null;
+  return armor('Mystic', row.mysticArmor, effects);
 }
 
 // --- Combat characteristics (step-based; rolled, not static ratings) ----------

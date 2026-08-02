@@ -10,12 +10,27 @@ import {
   defense,
   DEFENSE_ATTRIBUTE,
   applyModifiers,
+  armor,
+  physicalArmor,
+  mysticArmor,
   initiative,
   knockdown,
   maxKarma,
   KARMA_STEP,
   karmaUse,
 } from './characteristics.js';
+
+// Build an armor-modifier effect (worn armor / racial Natural Armor).
+const armEffect = (name, value, extra = {}) => ({
+  type: 'armor-modifier',
+  target: { domain: 'armor', name },
+  operation: 'add',
+  value,
+  measure: 'rating',
+  condition: 'always',
+  source: 'item',
+  ...extra,
+});
 
 // Build a defense-modifier effect targeting one kind of defense.
 const defEffect = (name, value, extra = {}) => ({
@@ -100,6 +115,56 @@ test('Chakka: Social Defense = 8 (CHA 13 base 8, no effects)', () => {
 
 test('values above the table clamp to the last row', () => {
   assert.equal(lookup(99).defense, lookup(30).defense);
+});
+
+// --- Armor ratings ------------------------------------------------------------
+
+test('Mystic Armor Table column matches the Player\'s Guide (floor(WIL/5))', () => {
+  assert.equal(lookup(4).mysticArmor, 0);
+  assert.equal(lookup(5).mysticArmor, 1);
+  assert.equal(lookup(9).mysticArmor, 1);
+  assert.equal(lookup(13).mysticArmor, 2); // Chakka's WIL value
+  assert.equal(lookup(20).mysticArmor, 4);
+  assert.equal(lookup(30).mysticArmor, 6);
+});
+
+test('Chakka: Physical Armor = 0 with no armour worn', () => {
+  const pa = physicalArmor([]);
+  assert.equal(pa.base, 0);
+  assert.equal(pa.value, 0);
+  assert.equal(pa.modifiers.length, 0);
+});
+
+test('Hardened Leather: Physical Armor 0 + 5 = 5', () => {
+  const pa = physicalArmor([armEffect('Physical', 5)]);
+  assert.equal(pa.value, 5);
+  assert.equal(pa.modifiers.length, 1);
+});
+
+test('Chakka: Mystic Armor = table 2 (WIL 13) + worn bonuses', () => {
+  assert.equal(mysticArmor(13, [], lookup).value, 2); // natural, no gear
+  assert.equal(mysticArmor(13, [armEffect('Mystic', 1)], lookup).value, 3); // + Hardened Leather
+});
+
+test('armor picks only its own kind; shields (defence) never leak in', () => {
+  const effects = [
+    armEffect('Physical', 5),
+    armEffect('Mystic', 1),
+    // A shield raises DEFENCE, not armor — must be ignored by armor().
+    { type: 'defense-modifier', target: { domain: 'defense', name: 'Physical' }, operation: 'add', value: 2, measure: 'rating', condition: 'always' },
+  ];
+  assert.equal(armor('Physical', 0, effects).value, 5);
+  assert.equal(armor('Mystic', 2, effects).value, 3);
+});
+
+test('set-as-base: obsidiman Natural Armor (set 3) is a floor living armour adds onto', () => {
+  const natural = armEffect('Physical', 3, { operation: 'set', source: 'race' });
+  const living = armEffect('Physical', 6, { source: 'item' }); // e.g. Living Crystal
+  // Order-independent: `set` establishes the base before the `add` folds on.
+  assert.equal(physicalArmor([natural, living]).value, 9);
+  assert.equal(physicalArmor([living, natural]).value, 9);
+  // Natural armour alone is just the base.
+  assert.equal(physicalArmor([natural]).value, 3);
 });
 
 test('Chakka: Initiative = Dexterity step 8 (no armour, no applicable effect)', () => {
