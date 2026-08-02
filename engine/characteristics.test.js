@@ -10,12 +10,32 @@ import {
   defense,
   DEFENSE_ATTRIBUTE,
   applyModifiers,
+  armor,
+  physicalArmor,
+  mysticArmor,
+  adeptHealthEffects,
+  unconsciousnessRating,
+  deathRating,
+  recoveryTests,
+  carryingCapacity,
   initiative,
   knockdown,
   maxKarma,
   KARMA_STEP,
   karmaUse,
 } from './characteristics.js';
+
+// Build an armor-modifier effect (worn armor / racial Natural Armor).
+const armEffect = (name, value, extra = {}) => ({
+  type: 'armor-modifier',
+  target: { domain: 'armor', name },
+  operation: 'add',
+  value,
+  measure: 'rating',
+  condition: 'always',
+  source: 'item',
+  ...extra,
+});
 
 // Build a defense-modifier effect targeting one kind of defense.
 const defEffect = (name, value, extra = {}) => ({
@@ -100,6 +120,126 @@ test('Chakka: Social Defense = 8 (CHA 13 base 8, no effects)', () => {
 
 test('values above the table clamp to the last row', () => {
   assert.equal(lookup(99).defense, lookup(30).defense);
+});
+
+// --- Armor ratings ------------------------------------------------------------
+
+test('Mystic Armor Table column matches the Player\'s Guide (floor(WIL/5))', () => {
+  assert.equal(lookup(4).mysticArmor, 0);
+  assert.equal(lookup(5).mysticArmor, 1);
+  assert.equal(lookup(9).mysticArmor, 1);
+  assert.equal(lookup(13).mysticArmor, 2); // Chakka's WIL value
+  assert.equal(lookup(20).mysticArmor, 4);
+  assert.equal(lookup(30).mysticArmor, 6);
+});
+
+test('Chakka: Physical Armor = 0 with no armour worn', () => {
+  const pa = physicalArmor([]);
+  assert.equal(pa.base, 0);
+  assert.equal(pa.value, 0);
+  assert.equal(pa.modifiers.length, 0);
+});
+
+test('Hardened Leather: Physical Armor 0 + 5 = 5', () => {
+  const pa = physicalArmor([armEffect('Physical', 5)]);
+  assert.equal(pa.value, 5);
+  assert.equal(pa.modifiers.length, 1);
+});
+
+test('Chakka: Mystic Armor = table 2 (WIL 13) + worn bonuses', () => {
+  assert.equal(mysticArmor(13, [], lookup).value, 2); // natural, no gear
+  assert.equal(mysticArmor(13, [armEffect('Mystic', 1)], lookup).value, 3); // + Hardened Leather
+});
+
+test('armor picks only its own kind; shields (defence) never leak in', () => {
+  const effects = [
+    armEffect('Physical', 5),
+    armEffect('Mystic', 1),
+    // A shield raises DEFENCE, not armor — must be ignored by armor().
+    { type: 'defense-modifier', target: { domain: 'defense', name: 'Physical' }, operation: 'add', value: 2, measure: 'rating', condition: 'always' },
+  ];
+  assert.equal(armor('Physical', 0, effects).value, 5);
+  assert.equal(armor('Mystic', 2, effects).value, 3);
+});
+
+test('set-as-base: obsidiman Natural Armor (set 3) is a floor living armour adds onto', () => {
+  const natural = armEffect('Physical', 3, { operation: 'set', source: 'race' });
+  const living = armEffect('Physical', 6, { source: 'item' }); // e.g. Living Crystal
+  // Order-independent: `set` establishes the base before the `add` folds on.
+  assert.equal(physicalArmor([natural, living]).value, 9);
+  assert.equal(physicalArmor([living, natural]).value, 9);
+  // Natural armour alone is just the base.
+  assert.equal(physicalArmor([natural]).value, 3);
+});
+
+// --- Health ratings -----------------------------------------------------------
+
+test('table health columns match the rulebook (uncon = 2×value, death = uncon+step)', () => {
+  const r = lookup(17); // Chakka's Toughness value
+  assert.equal(r.uncon, 34); // 2 × 17
+  assert.equal(r.death, 41); // uncon 34 + step 7
+  assert.equal(r.recovery, 3);
+});
+
+test('adeptHealthEffects: Durability × rank on both ratings, +Circle on Death only', () => {
+  // Chakka: Archer C4 with Durability value 5 at rank 5 (+25); Nethermancer C3
+  // with Durability value 3 but NO Durability talent (rank 0 → contributes 0).
+  const eff = adeptHealthEffects([
+    { name: 'Archer', circle: 4, durability: 5, durabilityRank: 5 },
+    { name: 'Nethermancer', circle: 3, durability: 3, durabilityRank: 0 },
+  ]);
+  const sum = (name) =>
+    eff.filter((e) => e.target.name === name).reduce((n, e) => n + e.value, 0);
+  assert.equal(sum('UnconsciousnessRating'), 25); // Durability only
+  assert.equal(sum('DeathRating'), 25 + 4); // Durability + highest Circle (4)
+});
+
+test('Chakka: Unconsciousness = 59 (table 34 + Durability 25)', () => {
+  const eff = adeptHealthEffects([{ name: 'Archer', circle: 4, durability: 5, durabilityRank: 5 }]);
+  const u = unconsciousnessRating(17, eff, lookup);
+  assert.equal(u.base, 34);
+  assert.equal(u.value, 59);
+});
+
+test('Chakka: Death = 70 (table 41 + Durability 25 + Circle 4)', () => {
+  const eff = adeptHealthEffects([{ name: 'Archer', circle: 4, durability: 5, durabilityRank: 5 }]);
+  const d = deathRating(17, eff, lookup);
+  assert.equal(d.base, 41);
+  assert.equal(d.value, 70);
+});
+
+test('Chakka: Recovery Tests = 3 (table, no adept bonus)', () => {
+  assert.equal(recoveryTests(17, [], lookup).value, 3);
+});
+
+test('a non-adept (no Durability, no Circle) gets the raw table ratings', () => {
+  const eff = adeptHealthEffects([]); // e.g. someone with no Disciplines
+  assert.equal(eff.length, 0);
+  assert.equal(unconsciousnessRating(17, eff, lookup).value, 34);
+  assert.equal(deathRating(17, eff, lookup).value, 41);
+});
+
+test('health ratings clamp: Toughness above the table uses the last row', () => {
+  assert.equal(deathRating(99, [], lookup).base, lookup(30).death);
+});
+
+// --- Carrying Capacity --------------------------------------------------------
+
+test('Chakka: Carrying Capacity = 255 lb (Strength value 20, table carry column)', () => {
+  const c = carryingCapacity(20, [], lookup);
+  assert.equal(c.base, 255);
+  assert.equal(c.value, 255);
+  assert.equal(c.lift, 509); // lift without a test = 2 × carry − 1
+});
+
+test('CarryingCapacity folds an always-on characteristic-modifier; clamps off-table', () => {
+  const eff = [
+    { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'CarryingCapacity' }, operation: 'add', value: 20, measure: 'rating', condition: 'always' },
+    // A Movement effect must not leak into Carrying Capacity.
+    { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'Movement' }, operation: 'add', value: 5, measure: 'rating', condition: 'always' },
+  ];
+  assert.equal(carryingCapacity(20, eff, lookup).value, 275);
+  assert.equal(carryingCapacity(99, [], lookup).base, lookup(30).carry); // clamp
 });
 
 test('Chakka: Initiative = Dexterity step 8 (no armour, no applicable effect)', () => {

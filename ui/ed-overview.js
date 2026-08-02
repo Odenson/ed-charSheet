@@ -152,6 +152,15 @@ export class EdOverview extends LitElement {
     return html`<span class="val" title=${title}>${c.value}</span>`;
   }
 
+  // Carry / Lift: the carrying capacity, and the most that can be lifted without a
+  // Strength test (2× carry − 1). Both are engine-derived; the view only renders.
+  _carryLift() {
+    const c = this.model?.characteristics?.carryingCapacity;
+    if (!c || c.value == null) return this._pend();
+    const title = `Carry ${c.value} lb (base ${c.base}${this._modSummary(c.modifiers)}); lift up to ${c.lift} lb without a test (2× carry − 1)`;
+    return html`<span class="val" title=${title}>${c.value} / ${c.lift}</span>`;
+  }
+
   // A rollable combat step (Initiative, Knockdown): shows the engine-derived Step
   // and enables its roll button; falls back to the placeholder pill + disabled roll.
   _combatStep(key, label) {
@@ -376,20 +385,20 @@ export class EdOverview extends LitElement {
               </div>
               <div class="blk">
                 <h4>Armour</h4>
-                <div class="line"><span>Physical</span>${this._pend()}</div>
-                <div class="line"><span>Mystic</span>${this._pend()}</div>
+                <div class="line"><span>Physical</span>${this._char('physicalArmor')}</div>
+                <div class="line"><span>Mystic</span>${this._char('mysticArmor')}</div>
               </div>
               <div class="blk">
                 <h4>Health</h4>
                 <div class="line"><span>Damage</span><span class="val">${h.damage ?? 0}</span></div>
-                <div class="line"><span>Unconscious</span>${this._pend()}</div>
-                <div class="line"><span>Death</span>${this._pend()}</div>
+                <div class="line"><span>Unconscious</span>${this._char('unconsciousness')}</div>
+                <div class="line"><span>Death</span>${this._char('death')}</div>
                 <div class="line"><span>Wounds</span><span class="val">${h.wounds ?? 0}</span></div>
-                <div class="line"><span>Recoveries</span>${this._pend()}</div>
+                <div class="line"><span>Recoveries</span>${this._char('recoveries')}</div>
               </div>
               <div class="blk">
                 <h4>Movement</h4>
-                <div class="line"><span>Carry / Lift</span>${this._pend()}</div>
+                <div class="line"><span>Carry / Lift</span>${this._carryLift()}</div>
               </div>
             </div>
             <div class="stack" style="justify-content: flex-start">

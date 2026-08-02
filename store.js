@@ -10,6 +10,13 @@ import {
   makeCharacteristics,
   defense,
   DEFENSE_ATTRIBUTE,
+  physicalArmor,
+  mysticArmor,
+  adeptHealthEffects,
+  unconsciousnessRating,
+  deathRating,
+  recoveryTests,
+  carryingCapacity,
   initiative,
   knockdown,
   maxKarma,
@@ -48,10 +55,26 @@ export function saveMetaEdits(patch) {
   return edits;
 }
 
+/**
+ * Persist the character's item list to the edits overlay. Items are pure inputs
+ * — a name (referencing rules/items.json) plus per-instance state like
+ * `equipped` — so the whole array is stored as-is; the reference stats stay in
+ * the catalog. "Store only inputs, never derived" holds.
+ */
+export function saveItemEdits(items) {
+  const edits = loadEdits();
+  edits.items = items;
+  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  return edits;
+}
+
 /** Apply the saved edits overlay onto a freshly-fetched character. */
 function applyEdits(character, edits) {
-  if (!edits || !edits.meta) return character;
-  return { ...character, meta: { ...(character.meta || {}), ...edits.meta } };
+  if (!edits) return character;
+  let next = character;
+  if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
+  if (edits.items) next = { ...next, items: edits.items };
+  return next;
 }
 
 /**
@@ -61,15 +84,16 @@ function applyEdits(character, edits) {
  * the model without re-fetching.
  */
 export async function loadCharacter() {
-  const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile] = await Promise.all([
+  const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
     loadJSON('./data/character.json'),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),
     loadJSON('./rules/races.json'),
     loadJSON('./rules/characteristics.json'),
+    loadJSON('./rules/items.json'),
   ]);
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile };
   return { character: applyEdits(character, loadEdits()), rules };
 }
 
@@ -78,7 +102,7 @@ export async function loadCharacter() {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -142,6 +166,28 @@ export function deriveModel(character, rules) {
   // Sources the engine currently knows about: race + discipline circles reached.
   // Items / threads / spells join this list in later slices.
   const lookupChar = makeCharacteristics(characteristicsFile);
+
+  // Equipment (Phase 3, armour slice). The character owns items by name; their
+  // mechanics live in the rules/items.json catalog as taxonomy `effects`. Resolve
+  // each owned item against the catalog for display, and gather the effects of
+  // *equipped* items so they fold onto armour/defence/initiative exactly like
+  // racial and discipline effects. Unknown names degrade gracefully (kept, but
+  // contribute nothing) so a typo or a future custom item never breaks the sheet.
+  const itemCatalog = itemsFile?.items ?? {};
+  const items = (character.items ?? []).map((owned) => {
+    const ref = itemCatalog[owned.name] ?? null;
+    const equipped = owned.equipped !== false; // default to equipped
+    return {
+      name: owned.name,
+      equipped,
+      known: ref != null,
+      kind: ref?.kind ?? owned.kind ?? 'item',
+      living: ref?.living ?? false,
+      ref: ref?.ref ?? {},
+      effects: ref?.effects ?? owned.effects ?? [],
+    };
+  });
+
   // Each effect carries an `origin` so a modifier can name its exact source
   // (e.g. distinguish an Archer bonus from a Nethermancer one in a tooltip).
   const activeEffects = [
@@ -155,6 +201,10 @@ export function deriveModel(character, rules) {
           (c.effects ?? []).map((e) => ({ ...e, origin: { kind: 'discipline', name: d.name, circle: c.circle } })),
         ),
     ),
+    // Only equipped items contribute — unequipping is just dropping the effects.
+    ...items
+      .filter((it) => it.equipped)
+      .flatMap((it) => it.effects.map((e) => ({ ...e, origin: { kind: 'item', name: it.name } }))),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -164,10 +214,30 @@ export function deriveModel(character, rules) {
   const highestCircle = Math.max(0, ...(character.disciplines ?? []).map((d) => d.circle ?? 0));
   const karmaMod = raceEntry?.karmaModifier ?? null;
 
+  // Health ratings (Toughness). Death/Unconsciousness gain the adept bonuses
+  // (Durability × rank, and +Circle on Death) — the engine synthesizes those as
+  // effects from these per-Discipline inputs: the Discipline's Durability value
+  // paired with the rank of its Durability talent (a value with no ranks in the
+  // talent contributes nothing). Folded alongside any always-on health effects.
+  const healthDisciplines = (character.disciplines ?? []).map((d) => ({
+    name: d.name,
+    circle: d.circle ?? 0,
+    durability: (discByName[d.name] ?? {}).durability ?? 0,
+    durabilityRank: (d.talents ?? []).find((t) => t.name === 'Durability')?.rank ?? 0,
+  }));
+  const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
+  const touVal = attrVal('Toughness');
+
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
     mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
     socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
+    physicalArmor: physicalArmor(activeEffects),
+    mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),
+    unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
+    death: deathRating(touVal, healthEffects, lookupChar),
+    recoveries: recoveryTests(touVal, healthEffects, lookupChar),
+    carryingCapacity: carryingCapacity(attrVal('Strength'), activeEffects, lookupChar),
     initiative: initiative(dexStep, activeEffects),
     knockdown: knockdown(strStep, activeEffects),
     karma:
@@ -198,6 +268,8 @@ export function deriveModel(character, rules) {
     racialAbilities,
     characteristics,
     stepByNumber,
+    items,
+    itemCatalog,
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],
     traits: character.traits ?? [],
