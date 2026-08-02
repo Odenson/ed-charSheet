@@ -294,7 +294,12 @@ export const CARRY_ATTRIBUTE = 'Strength';
  * situational, gmDiscretion effect, so it does not auto-apply here — it is
  * surfaced separately rather than baked into the displayed number.
  *
- * @returns {{base,value,modifiers}|null} null if Strength is off the table.
+ * **Lift** is a derived companion: a character can lift more than they can carry,
+ * and only needs a Strength test to lift *more than double* their Carrying
+ * Capacity — so the most they can lift without a test is `2 × carry − 1`. It is
+ * returned as `lift` alongside the carrying `value`.
+ *
+ * @returns {{base,value,lift,modifiers}|null} null if Strength is off the table.
  */
 export function carryingCapacity(strengthValue, effects, lookup) {
   const row = lookup(strengthValue);
@@ -304,7 +309,8 @@ export function carryingCapacity(strengthValue, effects, lookup) {
     e.target?.domain === 'characteristic' &&
     e.target?.name === 'CarryingCapacity' &&
     (e.measure ?? 'rating') === 'rating';
-  return applyModifiers(row.carry, effects, match);
+  const result = applyModifiers(row.carry, effects, match);
+  return { ...result, lift: result.value * 2 - 1 };
 }
 
 // --- Combat characteristics (step-based; rolled, not static ratings) ----------

@@ -229,6 +229,7 @@ test('Chakka: Carrying Capacity = 255 lb (Strength value 20, table carry column)
   const c = carryingCapacity(20, [], lookup);
   assert.equal(c.base, 255);
   assert.equal(c.value, 255);
+  assert.equal(c.lift, 509); // lift without a test = 2 × carry − 1
 });
 
 test('CarryingCapacity folds an always-on characteristic-modifier; clamps off-table', () => {
