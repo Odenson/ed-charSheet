@@ -2,7 +2,11 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      { "type": "added", "text": "You can now spend Karma (+D6) when rolling a talent on the Disciplines tab. Talents are Karma-eligible by default, matching the core rule (Versatility-learned talents being the exception)." },
+      { "type": "changed", "text": "The Disciplines panel now sizes its Durability, Half-magic, and Artisan boxes to fit their content, giving the Half-magic description room to breathe." },
+      { "type": "added", "text": "The talent list now marks which talents are required for your Discipline (a filled dot) versus ones you chose as Talent Options (a hollow dot), with a legend." }
+    ]
   },
   "releases": [
     {

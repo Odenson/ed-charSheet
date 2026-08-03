@@ -38,6 +38,16 @@ export class EdDisciplines extends LitElement {
     .trow { display: grid; grid-template-columns: 1fr 44px 108px 84px 24px; gap: 8px; align-items: center; font-size: 0.8rem; padding: 5px 0; border-bottom: 1px solid var(--border); }
     .trow:last-child { border-bottom: none; }
     .trow.h { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; }
+    /* Required (Discipline) vs optional (chosen Talent Option): a filled dot marks
+       required, a hollow dot + muted text marks optional. */
+    .tname { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+    .thpad { padding-left: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .dot.req { background: var(--accent); }
+    .dot.opt { background: transparent; border: 1.5px solid var(--muted); box-sizing: border-box; }
+    .trow.opt .tname, .trow.opt .num, .trow.opt .sd { color: var(--muted); }
+    .legend { display: flex; gap: 16px; align-items: center; margin: 0 0 6px; font-size: 0.62rem; color: var(--muted); }
+    .legend .li { display: inline-flex; align-items: center; gap: 6px; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .sd { font-size: 0.72rem; color: var(--muted); }
     .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; padding: 0; }
@@ -82,8 +92,12 @@ export class EdDisciplines extends LitElement {
         ${meta.map((m) => html`<div class="mcell ${m.cls}"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`)}
       </div>
 
+      <div class="legend">
+        <span class="li"><span class="dot req"></span>Discipline talent · required</span>
+        <span class="li"><span class="dot opt"></span>Talent option · chosen</span>
+      </div>
       <div class="card">
-        <div class="trow h"><span>Talent</span><span class="num">Rank</span><span>Step</span><span class="action">Action</span><span></span></div>
+        <div class="trow h"><span class="thpad">Talent</span><span class="num">Rank</span><span>Step</span><span class="action">Action</span><span></span></div>
         ${d.talents.map((t) => {
           // Karma context for the roll modal: talents are Karma-eligible by
           // default, so t.karma carries the grant. Pull the pool's amount/die
@@ -96,8 +110,14 @@ export class EdDisciplines extends LitElement {
               }
             : null;
           return html`
-            <div class="trow">
-              <span>${t.name}</span>
+            <div class="trow ${t.required ? '' : 'opt'}">
+              <span class="tname"
+                ><span
+                  class="dot ${t.required ? 'req' : 'opt'}"
+                  title=${t.required ? 'Discipline talent (required)' : 'Talent option (chosen)'}
+                ></span
+                >${t.name}</span
+              >
               <span class="num">${t.rank}</span>
               <span class="sd">${t.step != null ? `${t.step} · ${t.dice}` : '—'}</span>
               <span class="action sd">${t.action ?? ''}</span>

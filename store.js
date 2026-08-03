@@ -25,6 +25,10 @@ import {
   talentKarmaUse,
 } from './engine/characteristics.js';
 
+// Talents every adept receives automatically at First Circle, regardless of
+// Discipline — so they count as "required" (Discipline) talents, not options.
+const UNIVERSAL_TALENTS = new Set(['Durability', 'Karma Ritual']);
+
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
   const res = await fetch(path);
@@ -132,6 +136,15 @@ export function deriveModel(character, rules) {
   // (durability, half-magic, artisan skills, per-circle abilities) from rules.
   const disciplines = (character.disciplines ?? []).map((d) => {
     const ref = discByName[d.name] ?? {};
+    // "Required" (Discipline) talents = every talent the Discipline grants at any
+    // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
+    // Ritual which every adept receives automatically. Anything else the character
+    // knows here was a chosen Talent Option (optional). Data-driven from
+    // disciplines.json; no separate flag on the character's talents.
+    const requiredTalents = new Set([
+      ...UNIVERSAL_TALENTS,
+      ...(ref.circles ?? []).flatMap((c) => [...(c.talents ?? []), ...(c.freeTalents ?? [])]),
+    ]);
     const talents = (d.talents ?? []).map((t) => {
       const cat = talentCatalog[t.name] || {};
       const attribute = cat.attribute || null;
@@ -149,6 +162,7 @@ export function deriveModel(character, rules) {
         step,
         dice: step != null ? diceForStep(step) : '',
         karma,
+        required: requiredTalents.has(t.name),
       };
     });
     // Discipline abilities granted at circles up to the character's current circle.
