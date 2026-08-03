@@ -5,6 +5,7 @@
   "notes": [
     "460 talents catalogued. Mechanics (name/action/attribute) for all; strain/skillUse/tier/summary/effects fully authored for Chakka's 24 talents so far — the rest are enriched incrementally.",
     "Talent step = attribute step + rank (attribute-less talents like Durability/True Shot use rank only).",
+    "Karma: every talent test is Karma-eligible BY DEFAULT (core rule; the engine handles this, so eligible talents carry no flag). Set \"karma\": false only on a talent that 'notes otherwise'. Versatility-learned talents can never use Karma either, but that is per-character (a \"viaVersatility\": true flag on the character's talent entry), not a property of the talent itself.",
     "Effects follow docs/EFFECT-TAXONOMY.md; action outcomes use condition:on-success (+ perSuccess where they scale)."
   ],
   "talents": {

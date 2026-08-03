@@ -381,6 +381,28 @@ export function karmaUse(testName, effects) {
 }
 
 /**
+ * Talent tests are Karma-eligible **by default** — the core rule (PG, Karma:
+ * "Unless noted otherwise, spending a Karma Point on a talent allows the adept to
+ * roll an additional D6"). This is universal, not Discipline-specific, so it lives
+ * as engine logic rather than a per-talent grant. Returns the same grant shape as
+ * `karmaUse` (so rollables treat it identically), or `null` when a talent opts out:
+ *
+ *  - `talent.karma === false` — a talent that "notes otherwise" (data flag in
+ *    rules/talents.json; the rare exception).
+ *  - `talent.viaVersatility === true` — Versatility-learned talents can *never*
+ *    have Karma spent on them (PG, Versatility), a per-character instance flag.
+ *
+ * @param {{karma?:boolean, viaVersatility?:boolean}|null} talent
+ * @returns {{grants: Array<{scope:null, via:null, summary:string}>}|null}
+ */
+export function talentKarmaUse(talent) {
+  if (!talent) return null;
+  if (talent.karma === false) return null;
+  if (talent.viaVersatility) return null;
+  return { grants: [{ scope: null, via: null, summary: 'Talent — Karma may be spent on the test (core rule).' }] };
+}
+
+/**
  * Maximum Karma = race Karma Modifier × Circle (+ leftover attribute points,
  * which we do not track). For a multi-Discipline adept, `circle` is the highest
  * Discipline Circle. (PG, Creating a Character.)

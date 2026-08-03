@@ -22,6 +22,7 @@ import {
   maxKarma,
   KARMA_STEP,
   karmaUse,
+  talentKarmaUse,
 } from './engine/characteristics.js';
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
@@ -136,6 +137,10 @@ export function deriveModel(character, rules) {
       const attribute = cat.attribute || null;
       const aStep = attribute ? attrStepByName[attribute] : undefined;
       const step = attribute != null && aStep != null ? talentStep(aStep, t.rank) : null;
+      // Talent tests are Karma-eligible by default (core rule); only rollable
+      // talents (those with a step) carry a karma context. The talent catalog may
+      // opt out (`karma: false`), as may a Versatility-learned instance.
+      const karma = step != null ? talentKarmaUse({ karma: cat.karma, viaVersatility: t.viaVersatility }) : null;
       return {
         name: t.name,
         rank: t.rank,
@@ -143,6 +148,7 @@ export function deriveModel(character, rules) {
         action: cat.action || null,
         step,
         dice: step != null ? diceForStep(step) : '',
+        karma,
       };
     });
     // Discipline abilities granted at circles up to the character's current circle.

@@ -24,8 +24,13 @@ export class EdDisciplines extends LitElement {
     .seg button { border: none; background: none; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
     .seg button[aria-pressed='true'] { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); }
     .circle { font-size: 0.72rem; padding: 2px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
-    .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin-bottom: 12px; }
+    /* Durability fits its label, Half-magic grows into the freed space, Artisan
+       keeps its natural content width. */
+    .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
     .mcell { background: var(--bg-card); border-radius: 8px; padding: 6px 9px; }
+    .mcell.dur { flex: 0 0 auto; }
+    .mcell.half { flex: 1 1 200px; min-width: 0; }
+    .mcell.art { flex: 0 0 auto; }
     .mcell .k { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .mcell .v { font-size: 0.8rem; margin-top: 1px; }
     .card { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
@@ -43,6 +48,8 @@ export class EdDisciplines extends LitElement {
     @media (max-width: 620px) {
       .trow { grid-template-columns: 1fr 40px 96px 22px; }
       .trow .action { display: none; }
+      .meta { flex-direction: column; }
+      .mcell.dur, .mcell.half, .mcell.art { flex: 1 1 auto; }
     }
   `;
 
@@ -56,9 +63,9 @@ export class EdDisciplines extends LitElement {
     if (!list.length) return html`<p>No disciplines.</p>`;
     const d = list[Math.min(this._sel, list.length - 1)];
     const meta = [
-      d.durability != null ? ['Durability', d.durability] : null,
-      d.halfMagic ? ['Half-magic', d.halfMagic] : null,
-      d.artisanSkills?.length ? ['Artisan', d.artisanSkills.join(' · ')] : null,
+      d.durability != null ? { k: 'Durability', v: d.durability, cls: 'dur' } : null,
+      d.halfMagic ? { k: 'Half-magic', v: d.halfMagic, cls: 'half' } : null,
+      d.artisanSkills?.length ? { k: 'Artisan', v: d.artisanSkills.join(' · '), cls: 'art' } : null,
     ].filter(Boolean);
 
     return html`
@@ -72,13 +79,23 @@ export class EdDisciplines extends LitElement {
       </div>
 
       <div class="meta">
-        ${meta.map(([k, v]) => html`<div class="mcell"><div class="k">${k}</div><div class="v">${v}</div></div>`)}
+        ${meta.map((m) => html`<div class="mcell ${m.cls}"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`)}
       </div>
 
       <div class="card">
         <div class="trow h"><span>Talent</span><span class="num">Rank</span><span>Step</span><span class="action">Action</span><span></span></div>
-        ${d.talents.map(
-          (t) => html`
+        ${d.talents.map((t) => {
+          // Karma context for the roll modal: talents are Karma-eligible by
+          // default, so t.karma carries the grant. Pull the pool's amount/die
+          // step from the derived Karma characteristic, exactly like the Overview.
+          const karmaCtx = t.karma?.grants?.length
+            ? {
+                grants: t.karma.grants,
+                available: this.model?.characteristics?.karma?.available ?? null,
+                step: this.model?.characteristics?.karma?.step ?? null,
+              }
+            : null;
+          return html`
             <div class="trow">
               <span>${t.name}</span>
               <span class="num">${t.rank}</span>
@@ -87,16 +104,16 @@ export class EdDisciplines extends LitElement {
               <button
                 class="roll"
                 ?disabled=${t.step == null}
-                title=${t.step == null ? 'No step to roll' : `Roll ${t.name}`}
+                title=${t.step == null ? 'No step to roll' : `Roll ${t.name}${karmaCtx ? ' (Karma available)' : ''}`}
                 aria-label="Roll ${t.name}"
                 @click=${() =>
                   this.dispatchEvent(
-                    new CustomEvent('ed-roll', { detail: { label: t.name, step: t.step }, bubbles: true, composed: true }),
+                    new CustomEvent('ed-roll', { detail: { label: t.name, step: t.step, karma: karmaCtx }, bubbles: true, composed: true }),
                   )}
               >⚄</button>
             </div>
-          `,
-        )}
+          `;
+        })}
       </div>
 
       ${d.abilities?.length
