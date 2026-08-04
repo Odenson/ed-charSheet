@@ -23,6 +23,7 @@ import {
   maxKarma,
   KARMA_STEP,
   karmaUse,
+  talentKarmaUse,
 } from './characteristics.js';
 
 // Build an armor-modifier effect (worn armor / racial Natural Armor).
@@ -293,6 +294,15 @@ test('karmaUse finds grant-karma-use permissions by test name, with scope', () =
   assert.equal(karmaUse('Initiative', effects).grants[0].via.name, 'Archer');
   assert.equal(karmaUse('Perception', effects).grants[0].scope, 'sight-based');
   assert.equal(karmaUse('Strength', effects), null); // no grant → not karma-eligible
+});
+
+test('talentKarmaUse: talents are Karma-eligible by default, with opt-outs', () => {
+  assert.ok(talentKarmaUse({}).grants.length); // default: eligible
+  assert.equal(talentKarmaUse({}).grants[0].scope, null); // unscoped (always allowed)
+  assert.ok(talentKarmaUse({ karma: true }).grants.length);
+  assert.equal(talentKarmaUse({ karma: false }), null); // talent "notes otherwise"
+  assert.equal(talentKarmaUse({ viaVersatility: true }), null); // Versatility-learned: never
+  assert.equal(talentKarmaUse(null), null);
 });
 
 test('applyModifiers folds operations in order', () => {

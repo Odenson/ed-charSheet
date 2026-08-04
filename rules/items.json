@@ -1,201 +1,4229 @@
 {
-  "schema": "ed-items/1",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v1)",
-  "source": "Earthdawn 4E Player's Guide — Armor & Shields tables (Armor and Shields, p.411). The reference CATALOG: each entry's mechanics live in an `effects` array in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does racial/discipline effects. A character owns items by name (data/character.json `items: [{ name, equipped }]`) — the numbers are reference, not per-character input.",
+  "schema": "ed-items/2",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "source": "Earthdawn 4E Player's Guide — the Weapons, Armor & Shields, Magical Equipment, and Adventuring Equipment tables (Weapons p.406-410; Armor and Shields p.411-415; Magical Equipment p.415-423; Adventuring Equipment p.423-426; tables on pp.433-439). The reference CATALOG: each entry's mechanics live in an `effects` array in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does racial/discipline effects. A character owns items by name (data/character.json `items: [{ name, equipped }]`) — the numbers are reference, not per-character input.",
   "notes": {
     "armor": "Worn armor confers Physical/Mystic Armor (damage reducers) via `armor-modifier` effects, and its Initiative penalty via a `characteristic-modifier` on Initiative (measure: step). `living` marks elemental 'living' armor (the only kind an obsidiman may wear atop Natural Armor; PG p.48). `ref` holds display-only stats (cost/weight/availability).",
-    "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference."
+    "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference.",
+    "weapon": "Weapons carry an `attack-modifier` on the attack's Damage step (target `attack`/`Damage`, `operation: add`, measure: step). Every category — melee, missile, and thrown — adds its Damage Step to the Strength-step base (EFFECT-TAXONOMY v3 §4.1; the base is the engine default, not stored here). STR/DEX minima, size, ranges, and entangle details are display-only in `ref`. Ammo rows from the missile table are separate `ammunition` entries.",
+    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note`, and the Alchemy-crafting EDN is display-only in `ref`.",
+    "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers; `edn` (Alchemy crafting difficulty) is display-only in `ref`.",
+    "magic-item": "Common magic items: numeric, always-relevant mechanics are typed effects; one-shot, non-numeric, or activated properties are `note` effects.",
+    "gear": "Adventuring gear is mostly display-only (`effects: []`); kits record their contents in a `note`, and items with a specific game rule (e.g. Healing Kit +1 Recovery, chain/rope break tests) carry that rule as an effect."
   },
   "items": {
     "Padded Cloth": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 10, "weight": "5 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 10,
+        "weight": "5 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 1" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 1"
+        }
       ]
     },
     "Leather": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 15, "weight": "15 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 15,
+        "weight": "15 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 3" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 3"
+        }
       ]
     },
     "Padded Leather": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 30, "weight": "20 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 30,
+        "weight": "20 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 4" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 2" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 4"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 2"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 1"
+        }
       ]
     },
     "Hardened Leather": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 40, "weight": "20 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 40,
+        "weight": "20 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 5" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 1" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 5"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 1"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 2"
+        }
       ]
     },
     "Hide Armor": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 50, "weight": "25 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 50,
+        "weight": "25 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 5" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 1" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 5"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 1"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 1"
+        }
       ]
     },
     "Ring Mail": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 300, "weight": "40 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 300,
+        "weight": "40 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 6" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 6"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 2"
+        }
       ]
     },
     "Chain Mail": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 180, "weight": "40 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 180,
+        "weight": "40 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 7" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 3, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 3" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 7,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 7"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 3"
+        }
       ]
     },
     "Plate Armor": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 2500, "weight": "60 lb", "availability": "unusual" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 2500,
+        "weight": "60 lb",
+        "availability": "unusual"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 9, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 9" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 4, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 4" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 9,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 9"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 4"
+        }
       ]
     },
     "Wyvern Skin": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 2000, "weight": "50 lb", "availability": "rare" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 2000,
+        "weight": "50 lb",
+        "availability": "rare"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 8, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 8" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 1" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 3, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 3" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 8"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 1"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 3"
+        }
       ]
     },
     "Espara Cloak": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 200, "weight": "10 lb", "availability": "rare" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 200,
+        "weight": "10 lb",
+        "availability": "rare"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 3" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 3"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 3"
+        }
       ]
     },
     "Obsidiman Skin": {
-      "kind": "armor", "living": false,
-      "ref": { "cost": 100, "weight": "5 lb", "availability": "average" },
+      "kind": "armor",
+      "living": false,
+      "ref": {
+        "cost": 100,
+        "weight": "5 lb",
+        "availability": "average"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 2" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 2" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 2"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 2"
+        }
       ]
     },
     "Fernweave": {
-      "kind": "armor", "living": true,
-      "ref": { "cost": 125, "weight": "15 lb", "availability": "unusual" },
+      "kind": "armor",
+      "living": true,
+      "ref": {
+        "cost": 125,
+        "weight": "15 lb",
+        "availability": "unusual"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 2" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 2"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 3"
+        }
       ]
     },
     "Blood Pebble": {
-      "kind": "armor", "living": true,
-      "ref": { "cost": 300, "weight": "—", "availability": "rare" },
+      "kind": "armor",
+      "living": true,
+      "ref": {
+        "cost": 300,
+        "weight": "—",
+        "availability": "rare"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 5" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 5"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 3"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 1"
+        }
       ]
     },
     "Crystal Ringlet": {
-      "kind": "armor", "living": true,
-      "ref": { "cost": 500, "weight": "45 lb", "availability": "rare" },
+      "kind": "armor",
+      "living": true,
+      "ref": {
+        "cost": 500,
+        "weight": "45 lb",
+        "availability": "rare"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 4" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 4" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 4"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 4"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 2"
+        }
       ]
     },
     "Living Crystal": {
-      "kind": "armor", "living": true,
-      "ref": { "cost": 1100, "weight": "—", "availability": "rare" },
+      "kind": "armor",
+      "living": true,
+      "ref": {
+        "cost": 1100,
+        "weight": "—",
+        "availability": "rare"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 6" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 3" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 6"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 3"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 2"
+        }
       ]
     },
     "Crystal Plate": {
-      "kind": "armor", "living": true,
-      "ref": { "cost": 12000, "weight": "90 lb", "availability": "rare" },
+      "kind": "armor",
+      "living": true,
+      "ref": {
+        "cost": 12000,
+        "weight": "90 lb",
+        "availability": "rare"
+      },
       "effects": [
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "source": "item", "summary": "Physical Armor 7" },
-        { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "source": "item", "summary": "Mystic Armor 7 (while enchantment is maintained)" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 5, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 5" }
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 7,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Physical Armor 7"
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 7,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "Mystic Armor 7 (while enchantment is maintained)"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 5"
+        }
       ]
     },
     "Buckler": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 5, "weight": "3 lb", "availability": "average", "shatterThreshold": 17 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 5,
+        "weight": "3 lb",
+        "availability": "average",
+        "shatterThreshold": 17
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Physical Defense" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+1 Physical Defense"
+        }
       ]
     },
     "Crystal Buckler": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 50, "weight": "5 lb", "availability": "rare", "shatterThreshold": 17 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 50,
+        "weight": "5 lb",
+        "availability": "rare",
+        "shatterThreshold": 17
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Physical Defense" },
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Mystic Defense" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+1 Physical Defense"
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+1 Mystic Defense"
+        }
       ]
     },
     "Footman's Shield": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 15, "weight": "10 lb", "availability": "average", "shatterThreshold": 19 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 15,
+        "weight": "10 lb",
+        "availability": "average",
+        "shatterThreshold": 19
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Physical Defense" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+2 Physical Defense"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 1"
+        }
       ]
     },
     "Rider's Shield": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 20, "weight": "8 lb", "availability": "average", "shatterThreshold": 19 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 20,
+        "weight": "8 lb",
+        "availability": "average",
+        "shatterThreshold": 19
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Physical Defense" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+2 Physical Defense"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 1"
+        }
       ]
     },
     "Ferndask Shield": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 22, "weight": "5 lb", "availability": "unusual", "shatterThreshold": 16 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 22,
+        "weight": "5 lb",
+        "availability": "unusual",
+        "shatterThreshold": 16
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "source": "item", "summary": "+1 Physical Defense" },
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Mystic Defense" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 1" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+1 Physical Defense"
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+2 Mystic Defense"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 1"
+        }
       ]
     },
     "Body Shield": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 50, "weight": "15 lb", "availability": "unusual", "shatterThreshold": 21 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 50,
+        "weight": "15 lb",
+        "availability": "unusual",
+        "shatterThreshold": 21
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "item", "summary": "+3 Physical Defense" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+3 Physical Defense"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 2"
+        }
       ]
     },
     "Crystal Raider Shield": {
-      "kind": "shield", "living": false,
-      "ref": { "cost": 150, "weight": "15 lb", "availability": "rare", "shatterThreshold": 18 },
+      "kind": "shield",
+      "living": false,
+      "ref": {
+        "cost": 150,
+        "weight": "15 lb",
+        "availability": "rare",
+        "shatterThreshold": 18
+      },
       "effects": [
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Physical Defense" },
-        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "item", "summary": "+2 Mystic Defense" },
-        { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "source": "item", "summary": "Initiative penalty 2" }
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+2 Physical Defense"
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "always",
+          "source": "item",
+          "summary": "+2 Mystic Defense"
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "Initiative"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Initiative penalty 2"
+        }
+      ]
+    },
+    "Battle Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 35,
+        "weight": "6 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 13,
+        "size": 5,
+        "damageStep": 7
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 7,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 7."
+        }
+      ]
+    },
+    "Blowgun": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 2,
+        "weight": "10 oz",
+        "availability": "unusual",
+        "category": "missile",
+        "strMin": 3,
+        "size": 1,
+        "damageStep": 1,
+        "shortRange": "2-8",
+        "longRange": "9-16"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 1."
+        }
+      ]
+    },
+    "Bola": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 10,
+        "weight": "2 lb",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 6,
+        "dexMin": 9,
+        "size": 2,
+        "damageStep": 3,
+        "shortRange": "2-12",
+        "longRange": "13-24",
+        "entangle": {
+          "difficulty": 9
+        }
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 3."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Entangling weapon: after inflicting damage, may also entangle the target (Entangling Difficulty 9)."
+        }
+      ]
+    },
+    "Broadsword": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 25,
+        "weight": "4 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 12,
+        "size": 3,
+        "damageStep": 5
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 5."
+        }
+      ]
+    },
+    "Club": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 2,
+        "weight": "3 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 7,
+        "size": 2,
+        "damageStep": 3
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 3."
+        }
+      ]
+    },
+    "Dagger": {
+      "kind": "weapon",
+      "ref": {
+        "cost": "8 cp",
+        "weight": "1 lb",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 4,
+        "size": 1,
+        "damageStep": 2,
+        "shortRange": "2-10",
+        "longRange": "11-20"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 2."
+        }
+      ]
+    },
+    "Dart": {
+      "kind": "weapon",
+      "ref": {
+        "cost": "3 cp",
+        "weight": "8 oz",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 4,
+        "size": 1,
+        "damageStep": 1,
+        "shortRange": "2-18",
+        "longRange": "19-36"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 1."
+        }
+      ]
+    },
+    "Dwarf Sword": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 6,
+        "weight": "2 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 12,
+        "size": 2,
+        "damageStep": 4
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Elven Warbow": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 200,
+        "weight": "4 lb",
+        "availability": "rare",
+        "category": "missile",
+        "strMin": 12,
+        "dexMin": 15,
+        "size": 5,
+        "damageStep": 5,
+        "shortRange": "2-48",
+        "longRange": "49-96"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 5."
+        }
+      ]
+    },
+    "Flail": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 35,
+        "weight": "5 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 10,
+        "dexMin": 7,
+        "size": 3,
+        "damageStep": 5
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 5."
+        }
+      ]
+    },
+    "Flight Dagger": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 25,
+        "weight": "12 oz",
+        "availability": "unusual",
+        "category": "throwing",
+        "strMin": 4,
+        "size": 1,
+        "damageStep": 2,
+        "shortRange": "2-20",
+        "longRange": "21-40"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 2."
+        }
+      ]
+    },
+    "Hand Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "3 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 8,
+        "size": 2,
+        "damageStep": 4
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Hawk Hatchet": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 75,
+        "weight": "2 lb",
+        "availability": "unusual",
+        "category": "throwing",
+        "strMin": 8,
+        "size": 3,
+        "damageStep": 4,
+        "shortRange": "2-24",
+        "longRange": "25-48"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 4."
+        }
+      ]
+    },
+    "Knife": {
+      "kind": "weapon",
+      "ref": {
+        "cost": "3 cp",
+        "weight": "10 oz",
+        "availability": "everyday",
+        "category": "throwing",
+        "strMin": 3,
+        "size": 1,
+        "damageStep": 1,
+        "shortRange": "2-8",
+        "longRange": "9-16"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 1."
+        }
+      ]
+    },
+    "Lance": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 150,
+        "weight": "10 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 14,
+        "size": 6,
+        "damageStep": 6
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 6."
+        }
+      ]
+    },
+    "Light Crossbow": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 50,
+        "weight": "5 lb",
+        "availability": "average",
+        "category": "missile",
+        "strMin": 9,
+        "size": 3,
+        "damageStep": 4,
+        "shortRange": "2-32",
+        "longRange": "33-64"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 4."
+        }
+      ]
+    },
+    "Long Spear": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "7 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 13,
+        "size": 5,
+        "damageStep": 5
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 5."
+        }
+      ]
+    },
+    "Longbow": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 60,
+        "weight": "4 lb",
+        "availability": "average",
+        "category": "missile",
+        "strMin": 11,
+        "dexMin": 13,
+        "size": 5,
+        "damageStep": 4,
+        "shortRange": "2-40",
+        "longRange": "41-80"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 4."
+        }
+      ]
+    },
+    "Mace": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 20,
+        "weight": "5 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 13,
+        "size": 3,
+        "damageStep": 4
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Medium Crossbow": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 100,
+        "weight": "7 lb",
+        "availability": "unusual",
+        "category": "missile",
+        "strMin": 12,
+        "size": 4,
+        "damageStep": 5,
+        "shortRange": "2-40",
+        "longRange": "41-80"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 5."
+        }
+      ]
+    },
+    "Net": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "5 lb",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": "4-8",
+        "dexMin": 9,
+        "size": "3-6",
+        "shortRange": "2-6",
+        "longRange": "7-12",
+        "entangle": {
+          "difficulty": 12
+        }
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Entangling weapon (Entangling Difficulty 12)."
+        }
+      ]
+    },
+    "Pole Arm": {
+      "kind": "weapon",
+      "ref": {
+        "cost": "100-175",
+        "weight": "8-10 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 14,
+        "size": 5,
+        "damageStep": 7
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 7,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 7."
+        }
+      ]
+    },
+    "Pole Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 150,
+        "weight": "10 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 16,
+        "size": 6,
+        "damageStep": 8
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 8."
+        }
+      ]
+    },
+    "Quarterstaff": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 5,
+        "weight": "4 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 6,
+        "dexMin": 7,
+        "size": 5,
+        "damageStep": 4
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Sap": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 3,
+        "weight": "2 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 3,
+        "dexMin": 7,
+        "size": 1,
+        "damageStep": 1
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 1."
+        }
+      ]
+    },
+    "Scythan Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 20,
+        "weight": "4 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 12,
+        "size": 3,
+        "damageStep": 5
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 5."
+        }
+      ]
+    },
+    "Short Sword": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 16,
+        "weight": "3 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 8,
+        "size": 2,
+        "damageStep": 4
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Shortbow": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "3 lb",
+        "availability": "average",
+        "category": "missile",
+        "strMin": 8,
+        "size": 3,
+        "damageStep": 3,
+        "shortRange": "2-30",
+        "longRange": "31-60"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 3."
+        }
+      ]
+    },
+    "Sling": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 3,
+        "weight": "1 lb",
+        "availability": "average",
+        "category": "missile",
+        "strMin": 5,
+        "size": 2,
+        "damageStep": 2,
+        "shortRange": "2-20",
+        "longRange": "21-40"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 2."
+        }
+      ]
+    },
+    "Spear": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 9,
+        "weight": "3 lb",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 9,
+        "size": 3,
+        "damageStep": 4,
+        "shortRange": "2-10",
+        "longRange": "11-20"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 4."
+        }
+      ]
+    },
+    "Spiked Mace": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 40,
+        "weight": "7 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 13,
+        "size": 4,
+        "damageStep": 6
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 6."
+        }
+      ]
+    },
+    "Throwing Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 25,
+        "weight": "2 lb",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 7,
+        "size": 3,
+        "damageStep": 3,
+        "shortRange": "2-12",
+        "longRange": "13-24"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 3."
+        }
+      ]
+    },
+    "Throwing Dagger": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 2,
+        "weight": "12 oz",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 4,
+        "size": 1,
+        "damageStep": 2,
+        "shortRange": "2-16",
+        "longRange": "17-32"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 2."
+        }
+      ]
+    },
+    "Trispear": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 25,
+        "weight": "4 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 11,
+        "size": 4,
+        "damageStep": 5
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 5."
+        }
+      ]
+    },
+    "Troll Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 45,
+        "weight": "8 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 17,
+        "size": 6,
+        "damageStep": 8
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 8."
+        }
+      ]
+    },
+    "Troll Sling": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "4 lb",
+        "availability": "average",
+        "category": "missile",
+        "strMin": 10,
+        "size": 4,
+        "damageStep": 4,
+        "shortRange": "2-30",
+        "longRange": "31-60"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 4."
+        }
+      ]
+    },
+    "Troll Sword": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 50,
+        "weight": "6 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 13,
+        "size": 4,
+        "damageStep": 6
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 6."
+        }
+      ]
+    },
+    "Two-Handed Sword": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 125,
+        "weight": "7 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 15,
+        "size": 6,
+        "damageStep": 8
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 8."
+        }
+      ]
+    },
+    "Warhammer": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 95,
+        "weight": "8 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 15,
+        "size": 5,
+        "damageStep": 7
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 7,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 7."
+        }
+      ]
+    },
+    "Whip": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 10,
+        "weight": "2 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 7,
+        "dexMin": 7,
+        "size": 3,
+        "damageStep": 3,
+        "entangle": {
+          "difficulty": 9
+        }
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 3."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Entangling weapon: may entangle an opponent up to 3 yards away (Entangling Difficulty 9)."
+        }
+      ]
+    },
+    "Windling Bows": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 25,
+        "weight": "14 oz",
+        "availability": "average",
+        "category": "missile",
+        "strMin": 5,
+        "size": 2,
+        "damageStep": 3,
+        "shortRange": "2-24",
+        "longRange": "25-48"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Missile damage: Strength step + 3."
+        }
+      ]
+    },
+    "Windling Net": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "12 oz",
+        "availability": "average",
+        "category": "throwing",
+        "strMin": 3,
+        "dexMin": 9,
+        "size": 2,
+        "shortRange": "2-6",
+        "longRange": "7-12",
+        "entangle": {
+          "difficulty": 12
+        }
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Entangling weapon; captures creatures windling-size and smaller (Entangling Difficulty 12)."
+        }
+      ]
+    },
+    "Windling Pole Arm": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 55,
+        "weight": "2 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 7,
+        "size": 2,
+        "damageStep": 4
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Windling Spear": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 25,
+        "weight": "8 oz",
+        "availability": "unusual",
+        "category": "throwing",
+        "strMin": 4,
+        "size": 1,
+        "damageStep": 2,
+        "shortRange": "2-8",
+        "longRange": "9-16"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Thrown damage: Strength step + 2."
+        }
+      ]
+    },
+    "Windling Sword": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 45,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "category": "melee",
+        "strMin": 6,
+        "size": 1,
+        "damageStep": 3
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 3."
+        }
+      ]
+    },
+    "15 Light Bolts": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 15,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "15 Medium Bolts": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 20,
+        "weight": "4 lb",
+        "availability": "unusual"
+      },
+      "effects": []
+    },
+    "20 Longbow Arrows": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 10,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "20 Shortbow Arrows": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 5,
+        "weight": "2 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "20 Warbow Arrows": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 25,
+        "weight": "4 lb",
+        "availability": "rare"
+      },
+      "effects": []
+    },
+    "20 Windling Arrows": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 5,
+        "weight": "8 oz",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Box of 10 needles": {
+      "kind": "ammunition",
+      "ref": {
+        "cost": 1,
+        "weight": "8 oz",
+        "availability": "unusual"
+      },
+      "effects": []
+    },
+    "Absorb Blow": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 100,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 10
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "scope": "on activation",
+          "source": "item",
+          "summary": "Absorbs the first 12 Damage Points inflicted on the character, then the charm is destroyed. Cannot be used if Surprised or Blindsided."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant causes 2 Blood Magic Damage that cannot be healed until the charm is used or destroyed."
+        }
+      ]
+    },
+    "Astral-Sensitive Eye": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 325,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 14
+      },
+      "effects": [
+        {
+          "type": "grant-ability",
+          "target": {
+            "domain": "ability",
+            "name": "Astral Sight"
+          },
+          "operation": "set",
+          "value": 0,
+          "measure": "rank",
+          "condition": "always",
+          "source": "item",
+          "note": "as if possessing the talent",
+          "summary": "Sees into astral space as if possessing the Astral Sight talent."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Astral Sensing"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "uses Perception step",
+          "source": "item",
+          "summary": "+1 to Astral Sensing tests (using Perception step)."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Astral Sight"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "if the character knows the Astral Sight talent",
+          "source": "item",
+          "summary": "+1 to Astral Sight tests if the talent is known."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Takes 1 Strain each time the eye is used. Implant destroys the eye and causes 2 permanent damage that can never be healed; the charm can never be removed."
+        }
+      ]
+    },
+    "Bone Charm": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 175,
+        "weight": "1 lb",
+        "availability": "rare",
+        "edn": 11
+      },
+      "effects": [
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "RecoveryTests"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "count",
+          "condition": "always",
+          "source": "item",
+          "summary": "+1 Recovery test."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant causes 1 Blood Magic Damage that cannot be healed while the charm is worn."
+        }
+      ]
+    },
+    "Darksight Eye": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 200,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 9
+      },
+      "effects": [
+        {
+          "type": "sense",
+          "target": {
+            "domain": "sense",
+            "name": "LowLightVision"
+          },
+          "condition": "always",
+          "source": "item",
+          "summary": "Sees in the dark as if possessing Low Light Vision."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "No benefit if the character already has Low Light Vision. Implant destroys the eye and causes 2 permanent damage that can never be healed; the charm can never be removed."
+        }
+      ]
+    },
+    "Death Cheat": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 450,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 12
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Recovery"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "upon the character's death",
+          "source": "item",
+          "summary": "Upon death, allows a Recovery test with a +6 bonus (or a bonus Step 6 Recovery test if none remain); if the result brings damage below Death Rating the character lives. Used once, then inert."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant causes 3 Blood Magic Damage that cannot be healed until the charm is used."
+        }
+      ]
+    },
+    "Desperate Blow": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 275,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 10
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "on activation; chosen by the character",
+          "source": "item",
+          "summary": "+6 to an Attack test on activation."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "on activation; chosen by the character",
+          "source": "item",
+          "summary": "+6 to a Damage test on activation."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "May be recharged after use (requires healing the implant damage first). Implant causes 3 Blood Magic Damage."
+        }
+      ]
+    },
+    "Desperate Spell": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 300,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 11
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Spellcasting"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "on activation; chosen by the character",
+          "source": "item",
+          "summary": "+6 to a Spellcasting test on activation."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Effect"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "on activation; chosen by the character",
+          "source": "item",
+          "summary": "+6 to a spell Effect test on activation."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "May be recharged after use (requires healing the implant damage first). Implant causes 3 Blood Magic Damage."
+        }
+      ]
+    },
+    "Garlen Stone": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 250,
+        "weight": "1 lb",
+        "availability": "rare",
+        "edn": 13
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "scope": "for 2 Strain",
+          "source": "item",
+          "summary": "For 2 Strain, may spend one available Recovery test to heal a Wound instead of healing Damage Points. Cannot be used again until all Wounds and Damage are healed, and never twice in the same day."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Swallowing causes 4 permanent damage that can never be healed; the stone cannot be removed."
+        }
+      ]
+    },
+    "Horn Needle": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 450,
+        "weight": "1 lb",
+        "availability": "rare",
+        "edn": 12
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Toughness"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "Toughness-based tests to resist poison or disease",
+          "source": "item",
+          "summary": "+3 to Toughness-based tests while resisting poison or disease."
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "when resisting poison or disease",
+          "source": "item",
+          "summary": "+3 Mystic Defense against poison and disease."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Costs 2 Strain per use. Implant causes 3 Blood Magic Damage."
+        }
+      ]
+    },
+    "Horror Fend": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 500,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 13
+      },
+      "effects": [
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "vs Horrors and Horror constructs; 1 Strain per round",
+          "source": "item",
+          "summary": "+3 Physical Defense against Horrors and Horror constructs."
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "vs Horrors and Horror constructs; 1 Strain per round",
+          "source": "item",
+          "summary": "+3 Mystic Defense against Horrors and Horror constructs."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Costs 1 Strain per round while in use; the charm falls inert when not used and may be reattached (requires healing the implant damage first). Implant causes 3 Blood Magic Damage."
+        }
+      ]
+    },
+    "Initiative Booster": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 600,
+        "weight": "1 lb",
+        "availability": "rare",
+        "edn": 15
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Initiative"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "per point of Strain taken, declared before the test",
+          "source": "item",
+          "summary": "+1 to the Initiative test for each point of Strain taken (declared before the test)."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant causes 4 Blood Magic Damage."
+        }
+      ]
+    },
+    "Strength Booster": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 300,
+        "weight": "1 lb",
+        "availability": "rare",
+        "edn": 11
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Strength"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "per 2 Strain taken; not Damage tests",
+          "source": "item",
+          "summary": "+1 to Strength tests for every 2 Strain taken. Cannot augment Damage tests."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant causes 2 Blood Magic Damage."
+        }
+      ]
+    },
+    "Targeting Eye": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 450,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 12
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "next ranged combat Attack test; 1 Strain",
+          "source": "item",
+          "summary": "+2 to the next ranged combat Attack test (1 Strain). May be used multiple times per round."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant destroys the eye and causes 2 permanent damage that can never be healed; the charm can never be removed."
+        }
+      ]
+    },
+    "Wound Balance": {
+      "kind": "blood-charm",
+      "ref": {
+        "cost": 200,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 12
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Knockdown"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "Knockdown test; 1 Strain",
+          "source": "item",
+          "summary": "+3 to a Knockdown test (1 Strain)."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Implant causes 3 Blood Magic Damage."
+        }
+      ]
+    },
+    "Booster Potion": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 50,
+        "weight": "2 lb",
+        "availability": "unusual",
+        "edn": 7
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Recovery"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "next Recovery test within 24 hours",
+          "source": "item",
+          "summary": "+8 to the next Recovery test made within 24 hours."
+        }
+      ]
+    },
+    "Cure Disease Potion": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 500,
+        "weight": "2 lb",
+        "availability": "rare",
+        "edn": 11
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Action"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "tests to resist disease, for 24 hours",
+          "source": "item",
+          "summary": "+5 to any tests made to resist the effects of a disease for 24 hours."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Grants a new Resistance test against a disease already contracted."
+        }
+      ]
+    },
+    "Halt Illness Potion": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 100,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 8
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "scope": "8 hours",
+          "source": "item",
+          "summary": "Stops a disease's progression for 8 hours; effects caused before ingestion remain in effect."
+        }
+      ]
+    },
+    "Healing Potion": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 300,
+        "weight": "2 lb",
+        "availability": "rare",
+        "edn": 12
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Recovery"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "next Recovery test within 24 hours",
+          "source": "item",
+          "summary": "+8 to the next Recovery test made within 24 hours."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Automatically heals 1 Wound. If no Recovery tests remain, may make an immediate Step 8 Recovery test instead."
+        }
+      ]
+    },
+    "Kelia's Antidote": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 125,
+        "weight": "2 lb",
+        "availability": "rare",
+        "edn": 8
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "scope": "8 hours",
+          "source": "item",
+          "summary": "Neutralizes the effects of poison for 8 hours; effects caused before ingestion remain."
+        }
+      ]
+    },
+    "Kelix's Poultice": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 50,
+        "weight": "1 lb",
+        "availability": "unusual",
+        "edn": 7
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Action"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "tests to resist poison",
+          "source": "item",
+          "summary": "+5 to any tests made to resist the effects of poison."
+        },
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Grants a new Resistance test. The bonus is +3 instead of +5 if no wound exists to apply the poultice to."
+        }
+      ]
+    },
+    "Last Chance Salve": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 600,
+        "weight": "1 lb",
+        "availability": "very Rare",
+        "edn": 13
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "scope": "on a dead character",
+          "source": "item",
+          "summary": "Revives a character dead for no more hours than the higher of their Toughness or Willpower step: the character may take all remaining Recovery tests (or a bonus one if none remain); if damage drops below Death Rating the character returns to life. Multiple salves may be applied, but only one is effective in any hour."
+        }
+      ]
+    },
+    "Salve of Closure": {
+      "kind": "healing-aid",
+      "ref": {
+        "cost": 200,
+        "weight": "1 lb",
+        "availability": "rare",
+        "edn": 10
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "scope": "on application; costs 1 Recovery test",
+          "source": "item",
+          "summary": "Automatically heals any Wound it is applied to, costing one Recovery test (no effect if none remain)."
+        }
+      ]
+    },
+    "Bedroll of Comfort": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 340,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Magically changes temperature to keep the user comfortable while sleeping."
+        }
+      ]
+    },
+    "Boots, Dry": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 250,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Repels outside moisture to keep the wearer's feet dry."
+        }
+      ]
+    },
+    "Boots, Huntsman": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 700,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Keeps the wearer's feet warm and dry and lets him walk an additional five miles each day."
+        }
+      ]
+    },
+    "Cleaning Broom": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 25,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Captures all loose dust and dirt with which it comes in contact; a command word dumps the collected dust."
+        }
+      ]
+    },
+    "Cloak, Dwarf Winternight": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 275,
+        "weight": "2 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "vs cold damage from spells, ice weapons, or other cold sources",
+          "source": "item",
+          "summary": "+2 Physical Armor against cold damage."
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "vs cold damage from spells, ice weapons, or other cold sources",
+          "source": "item",
+          "summary": "+2 Mystic Armor against cold damage."
+        }
+      ]
+    },
+    "Cloak, Everclean": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 275,
+        "weight": "1 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Repels dirt and oils, staying clean for extended periods."
+        }
+      ]
+    },
+    "Cloak, Warm": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 300,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Keeps the wearer warm when outdoor temperatures drop."
+        }
+      ]
+    },
+    "Divining Rod": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 75,
+        "weight": "1 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Wilderness Survival"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "tests to locate water",
+          "source": "item",
+          "summary": "+3 to Wilderness Survival tests to locate water."
+        }
+      ]
+    },
+    "Elfweave Robe": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 80,
+        "weight": "2 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Fine, delicate garments that never seem to wear or grow old."
+        }
+      ]
+    },
+    "Fire Starter": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 100,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Short wand that produces a small flame at one end on a spoken command word."
+        }
+      ]
+    },
+    "Firefly Chalk (per stick)": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 12,
+        "weight": "Neg.",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Writes glowing script readable in all lighting conditions; more than five words provides low-light illumination."
+        }
+      ]
+    },
+    "Heat Stone": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 100,
+        "weight": "3 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Provides steady heat like a burning coal for about a year."
+        }
+      ]
+    },
+    "Hot Pot": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 100,
+        "weight": "8 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Ceramic cooking pot woven with True Fire; heats without fire (command word), but temperature cannot be regulated."
+        }
+      ]
+    },
+    "Light Quartz Weapon": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 100,
+        "weight": "1 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Weapon with a light quartz crystal in the hilt, used as a light source (about half as effective as a standard light quartz); the enchantment must be renewed annually."
+        }
+      ]
+    },
+    "Light Quartz, Large": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 200,
+        "weight": "20 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Magical light source, dimmed or turned on and off by command; the enchantment must be renewed annually."
+        }
+      ]
+    },
+    "Light Quartz, Medium": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 125,
+        "weight": "6 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Magical light source, dimmed or turned on and off by command; the enchantment must be renewed annually."
+        }
+      ]
+    },
+    "Light Quartz, Small": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 75,
+        "weight": "2 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Magical light source, dimmed or turned on and off by command; the enchantment must be renewed annually."
+        }
+      ]
+    },
+    "Message Stone": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 300,
+        "weight": "2 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Captures sound within its crystalline structure and releases it on command."
+        }
+      ]
+    },
+    "Message Stone (warded)": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 600,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "As a message stone, with wards protecting the message against tampering."
+        }
+      ]
+    },
+    "One-Size Hat": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 35,
+        "weight": "1 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Minor magic makes the hat fit any head perfectly; any race, including obsidimen and t'skrang, can wear it."
+        }
+      ]
+    },
+    "Orichalcum Container": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": "5,000",
+        "weight": "1 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Small container that holds up to twenty kernels of a True Element."
+        }
+      ]
+    },
+    "Pot of Grumbah, Large": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 200,
+        "weight": "5 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Airtight and cold; triples the time the contents remain fresh before decaying."
+        }
+      ]
+    },
+    "Pot of Grumbah, Small": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 75,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Airtight and cold; triples the time the contents remain fresh before decaying."
+        }
+      ]
+    },
+    "Pure Water Pot": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 150,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Casts the Purify Water spell (Spellcasting/Effect Step 8/2D6) on any liquid placed in it."
+        }
+      ]
+    },
+    "Quiet Fingers Gloves": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 140,
+        "weight": "1 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "+1 to the Difficulty Number for Perception tests to detect the wearer while picking a lock or pocket; works only while actively using the hands."
+        }
+      ]
+    },
+    "Quiet Pouch": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 65,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Silencing illusions woven into the fabric prevent noise from emerging (e.g. the jingling of coins)."
+        }
+      ]
+    },
+    "Season Lamp": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 350,
+        "weight": "NA",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Woven with True Air and fire; alternately warms or cools the room to a constant temperature regardless of the weather outside."
+        }
+      ]
+    },
+    "Traveler's Mug": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 350,
+        "weight": "1 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "Fills once per day with cool fresh water on command."
+        }
+      ]
+    },
+    "Upandal's Blessings": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 275,
+        "weight": "3 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "situational",
+          "source": "item",
+          "summary": "On a failed Craftsman or Artisan test, may immediately erase the mistake and make a second test. Crafting magical items requires a Craftsman/Artisan test vs the item's Mystic Defense."
+        }
+      ]
+    },
+    "Wind Instrument": {
+      "kind": "magic-item",
+      "ref": {
+        "cost": 250,
+        "weight": "2 lb",
+        "availability": "rare"
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Emotion Song"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "if the musician possesses the talent or skill",
+          "source": "item",
+          "summary": "+1 to Emotion Song tests."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Action"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "tests to determine how well he plays the instrument",
+          "source": "item",
+          "summary": "+1 to other Action tests made to determine how well he plays."
+        }
+      ]
+    },
+    "Adventuring Kit": {
+      "kind": "gear",
+      "ref": {
+        "cost": 15,
+        "weight": "14 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Backpack, bedroll, flint and steel, torch, waterskin, and large sack."
+        }
+      ]
+    },
+    "Adventuring Kit (with tent)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 40,
+        "weight": "34 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Backpack, bedroll, flint and steel, torch, waterskin, large sack, and tent."
+        }
+      ]
+    },
+    "Alchemist's Kit": {
+      "kind": "gear",
+      "ref": {
+        "cost": 500,
+        "weight": "15 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Alchemy"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "Alchemy tests",
+          "source": "item",
+          "summary": "-3 to Alchemy tests."
+        }
+      ]
+    },
+    "Alchemist's Shop": {
+      "kind": "gear",
+      "ref": {
+        "cost": 2000,
+        "weight": "NA",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Complete alchemy lab (glassware, mortars, jars, burners, crucibles); not portable."
+        }
+      ]
+    },
+    "Artisan Tools: Carving": {
+      "kind": "gear",
+      "ref": {
+        "cost": 15,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Artisan Tools: Embroidery/Sewing": {
+      "kind": "gear",
+      "ref": {
+        "cost": 25,
+        "weight": "1 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Artisan Tools: Forge": {
+      "kind": "gear",
+      "ref": {
+        "cost": 100,
+        "weight": "20 lb",
+        "availability": "unusual"
+      },
+      "effects": []
+    },
+    "Artisan Tools: Painting": {
+      "kind": "gear",
+      "ref": {
+        "cost": 45,
+        "weight": "2 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Artisan Tools: Sculpting": {
+      "kind": "gear",
+      "ref": {
+        "cost": 30,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Backpack": {
+      "kind": "gear",
+      "ref": {
+        "cost": 5,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Standard backpack holds approximately 50 pounds of goods."
+        }
+      ]
+    },
+    "Bedroll": {
+      "kind": "gear",
+      "ref": {
+        "cost": 5,
+        "weight": "4 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Belt Pouch": {
+      "kind": "gear",
+      "ref": {
+        "cost": "8 cp",
+        "weight": "1 lb",
+        "availability": "everyday"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Typically holds approximately 5 pounds of goods."
+        }
+      ]
+    },
+    "Blanket": {
+      "kind": "gear",
+      "ref": {
+        "cost": "15 cp",
+        "weight": "2 lb",
+        "availability": "everyday"
+      },
+      "effects": []
+    },
+    "Candle": {
+      "kind": "gear",
+      "ref": {
+        "cost": "3 cp",
+        "weight": "4 oz",
+        "availability": "everyday"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Illuminates a 3-yard radius."
+        }
+      ]
+    },
+    "Chalk (5 pieces)": {
+      "kind": "gear",
+      "ref": {
+        "cost": "3 cp",
+        "weight": "4 oz",
+        "availability": "everyday"
+      },
+      "effects": []
+    },
+    "Climbing Kit": {
+      "kind": "gear",
+      "ref": {
+        "cost": 36,
+        "weight": "19 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Rope (20 ft), light chain (10 ft), 2 pitons, and a grappling hook."
+        }
+      ]
+    },
+    "Craftsman Tools": {
+      "kind": "gear",
+      "ref": {
+        "cost": 25,
+        "weight": "5 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Required to use the Craftsman skill."
+        }
+      ]
+    },
+    "Disguise Kit": {
+      "kind": "gear",
+      "ref": {
+        "cost": 50,
+        "weight": "6 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Essential for using the Disguise skill."
+        }
+      ]
+    },
+    "Fishing Kit": {
+      "kind": "gear",
+      "ref": {
+        "cost": 20,
+        "weight": "14 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "10 fish hooks, fishing net, fishing rod, and bait jar; used with the Wilderness Survival skill."
+        }
+      ]
+    },
+    "Fishing Net (30 sq ft)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 15,
+        "weight": "10 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Flint and Steel": {
+      "kind": "gear",
+      "ref": {
+        "cost": 1,
+        "weight": "8 oz",
+        "availability": "everyday"
+      },
+      "effects": []
+    },
+    "Grappling Hook": {
+      "kind": "gear",
+      "ref": {
+        "cost": 10,
+        "weight": "5 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "May be thrown with a Throwing Weapons test (DN usually 7); requires the Called Shot combat option to hit the intended location."
+        }
+      ]
+    },
+    "Healing Kit: Basic (3 applications)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 75,
+        "weight": "5 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Recovery"
+          },
+          "operation": "add",
+          "value": 1,
+          "measure": "result",
+          "condition": "situational",
+          "scope": "next Recovery test after at least 10 minutes of treatment",
+          "source": "item",
+          "summary": "+1 to the next Recovery test after at least ten minutes of treatment."
+        },
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Contains enough supplies for three applications."
+        }
+      ]
+    },
+    "Healing Kit: Refill (3 applications)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 50,
+        "weight": "Neg.",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Refill of three applications for a healing kit; requires the basic components to be useful."
+        }
+      ]
+    },
+    "Heavy Chain (10ft)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 50,
+        "weight": "9 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Binding/climbing chain; a bound character breaks free with a successful Strength (14) test. Obsidimen and trolls require the heavy version when climbing."
+        }
+      ]
+    },
+    "Iron Pot": {
+      "kind": "gear",
+      "ref": {
+        "cost": 20,
+        "weight": "8 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Lantern: Bullseye": {
+      "kind": "gear",
+      "ref": {
+        "cost": 27,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Focuses light into a 2-yard-wide beam that extends to 20 yards."
+        }
+      ]
+    },
+    "Lantern: Hooded": {
+      "kind": "gear",
+      "ref": {
+        "cost": 9,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Illuminates a 10-yard-radius area."
+        }
+      ]
+    },
+    "Lantern: Light Quartz": {
+      "kind": "gear",
+      "ref": {
+        "cost": 85,
+        "weight": "5 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Provides illumination equivalent to a hooded lantern."
+        }
+      ]
+    },
+    "Light Chain (10ft)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 10,
+        "weight": "6 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Binding/climbing chain; a bound character breaks free with a successful Strength (11) test."
+        }
+      ]
+    },
+    "Map or Scroll Case": {
+      "kind": "gear",
+      "ref": {
+        "cost": "8 cp",
+        "weight": "1 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Musical Instrument: Drum": {
+      "kind": "gear",
+      "ref": {
+        "cost": 7,
+        "weight": "5 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Musical Instrument: Flute": {
+      "kind": "gear",
+      "ref": {
+        "cost": 2,
+        "weight": "2 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Musical Instrument: Horn": {
+      "kind": "gear",
+      "ref": {
+        "cost": 70,
+        "weight": "7 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Musical Instrument: Lute": {
+      "kind": "gear",
+      "ref": {
+        "cost": 25,
+        "weight": "6 lb",
+        "availability": "unusual"
+      },
+      "effects": []
+    },
+    "Musical Instrument: Whistle": {
+      "kind": "gear",
+      "ref": {
+        "cost": "2 cp",
+        "weight": "1 lb",
+        "availability": "everyday"
+      },
+      "effects": []
+    },
+    "Navigation Charts": {
+      "kind": "gear",
+      "ref": {
+        "cost": 15,
+        "weight": "2 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Map and scroll case with a basic star chart; required to use the Navigation talent."
+        }
+      ]
+    },
+    "Oil Flask": {
+      "kind": "gear",
+      "ref": {
+        "cost": 6,
+        "weight": "1 lb",
+        "availability": "everyday"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Holds enough oil to fuel a lantern for eight hours."
+        }
+      ]
+    },
+    "Paper/Parchment (sheet)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 1,
+        "weight": "Neg.",
+        "availability": "unusual"
+      },
+      "effects": []
+    },
+    "Physician's Kit: Basic (3 applications)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 50,
+        "weight": "3 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Required to use the Physician skill; can be used three times before its consumable supplies are exhausted."
+        }
+      ]
+    },
+    "Physician's Kit: Refill (3 applications)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 25,
+        "weight": "1 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Refill of three applications for a physician's kit; requires the tools from the basic kit to be useful."
+        }
+      ]
+    },
+    "Quill Pen": {
+      "kind": "gear",
+      "ref": {
+        "cost": 1,
+        "weight": "Neg.",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Quiver": {
+      "kind": "gear",
+      "ref": {
+        "cost": 2,
+        "weight": "2 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Typical quiver holds 40 arrows or 30 bolts."
+        }
+      ]
+    },
+    "Rope (per yard)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 3,
+        "weight": "1 lb",
+        "availability": "average"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Binding/climbing rope; a bound character breaks free with a successful Strength (8) test."
+        }
+      ]
+    },
+    "Sack": {
+      "kind": "gear",
+      "ref": {
+        "cost": 2,
+        "weight": "2 lb",
+        "availability": "everyday"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Holds approximately 30 pounds of goods."
+        }
+      ]
+    },
+    "Tent": {
+      "kind": "gear",
+      "ref": {
+        "cost": 30,
+        "weight": "20 lb",
+        "availability": "average"
+      },
+      "effects": []
+    },
+    "Thieves' Picks and Tools": {
+      "kind": "gear",
+      "ref": {
+        "cost": 100,
+        "weight": "1 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Required to use the Lock Picking skill."
+        }
+      ]
+    },
+    "Torch": {
+      "kind": "gear",
+      "ref": {
+        "cost": "5 cp",
+        "weight": "1 lb",
+        "availability": "everyday"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Illuminates a 10-yard radius; unlit may be used as an improvised club; a lit torch may set flammable targets alight."
+        }
+      ]
+    },
+    "Water or Wine Skin": {
+      "kind": "gear",
+      "ref": {
+        "cost": 2,
+        "weight": "4 lb",
+        "availability": "everyday"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "A typical skin holds enough water for one day (the weight shown is for a full skin)."
+        }
+      ]
+    },
+    "Whetstone": {
+      "kind": "gear",
+      "ref": {
+        "cost": "2 cp",
+        "weight": "1 lb",
+        "availability": "everyday"
+      },
+      "effects": []
+    },
+    "Writing Ink (per vial)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 10,
+        "weight": "8 oz",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Each vial holds enough ink for eight to ten pages."
+        }
+      ]
+    },
+    "Writing Kit": {
+      "kind": "gear",
+      "ref": {
+        "cost": 23,
+        "weight": "2 lb",
+        "availability": "unusual"
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Quill pen, writing ink, 10 sheets of parchment or paper, 2 candles, and 10 pieces of chalk."
+        }
       ]
     }
   }

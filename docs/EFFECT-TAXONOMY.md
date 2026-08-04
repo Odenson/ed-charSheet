@@ -1,4 +1,4 @@
-# Effect Taxonomy — v1
+# Effect Taxonomy — v3
 
 A controlled vocabulary for **effects**: the structured, machine-applicable
 modifiers and grants that races, talents, skills, items, spells, and conditions
@@ -11,7 +11,7 @@ the `Target | Characteristic | Property` addressing model, the operation words
 (`ADD, MINUS, MULTIPLY, DIVIDE, DEFAULT, MIN, MAX, REF`), and the trigger
 comparisons (`GE, GR, LS, LE, EQ, NE`). One language, end to end.
 
-> Status: **v1, under review.** Field names and vocabularies may change. When they
+> Status: **v3, under review.** Field names and vocabularies may change. When they
 > do, bump the version and migrate the data files that reference it
 > (`rules/*.json` `schema` fields).
 
@@ -72,6 +72,7 @@ Small on purpose. Each maps to one way the engine applies the effect.
 | `defense-modifier` | adjusts a defense | `defense` |
 | `characteristic-modifier` | adjusts a **derived** characteristic | `characteristic` |
 | `armor-modifier` | adjusts armor | `armor` |
+| `attack-modifier` | adjusts an **attack's** step or result (weapon / natural-attack damage step, to-hit step) | `attack` |
 | `test-modifier` | adjusts a specific test (roll) | `test` |
 | `grant-ability` | gives a talent / skill / knack | `ability` |
 | `grant-attack` | gives a natural attack | `attack` |
@@ -80,6 +81,15 @@ Small on purpose. Each maps to one way the engine applies the effect.
 | `enable-option` | unlocks a combat / action option | `option` |
 | `grant-karma-use` | grants permission to spend Karma on a category of test | `test` |
 | `note` | records a non-numeric / roleplay effect (no dispatch) | — |
+
+`attack-modifier` is the attack-surface counterpart of `armor-modifier` and
+`defense-modifier`: a weapon's Damage step, a natural attack's damage, or a
+future to-hit bonus all target the `attack` domain so the combat resolver can
+gather them in one dispatch — exactly as armor/defense resolution does today.
+Natural attacks pair a `grant-attack` (which *names* the attack) with
+`attack-modifier` effects (which adjust it). `test-modifier` stays for generic
+roll bonuses that are not attack-specific (a +1 to all `Action` tests, a skill
+modifier).
 
 `grant-karma-use` mirrors the source spreadsheet's `…UseKarma` flags: a Discipline
 circle grants the adept the right to spend a Karma Point on a class of test (e.g.
@@ -109,7 +119,7 @@ A path object, echoing `Target | Characteristic | Property`:
 | `armor` | `Physical` `Mystic` — **no Social Armor** |
 | `resource` | `Karma` `Legend` `Strain` `Recoveries` |
 | `ability` | a talent / skill / knack name |
-| `attack` | `tail` `horns` `claws` `bite` … |
+| `attack` | `Damage` `Attack` \| natural attacks (`tail` `horns` `claws` `bite` …) |
 | `test` | `Action` `Attack` `Damage` `Effect` `Initiative` \| a named ability |
 | `sense` | `HeatSight` `LowLightVision` `AstralSight` |
 | `option` | a combat/action option, e.g. `TailAttack` |
@@ -122,6 +132,18 @@ label. The human-readable name is `{name} {Domain}` — so `{domain:"defense",
 name:"Physical"}` displays as "Physical Defense" and `{domain:"armor",
 name:"Physical"}` as "Physical Armor". The `domain` is what distinguishes them;
 the two lists are maintained independently (they are *not* a shared axis).
+
+**Attack vs test.** The `attack` and `test` domains overlap on `Damage`/`Attack`
+on purpose, but they are different axes:
+- `attack/Damage` is the **attack's damage step** (what `attack-modifier` and
+  `grant-attack` touch); `attack/Attack` is the to-hit test of an attack.
+- `test/Damage` is the **Damage test as a roll category** — what
+  `grant-karma-use` permits ("spend Karma on Damage tests") and what generic
+  `test-modifier`s adjust.
+- The `attack` domain's generic `Damage`/`Attack` names coexist with the
+  natural-attack appendage names (`tail`, `horns`, …); `type` disambiguates
+  them (`grant-attack`/`tail` names an attack; `attack-modifier`/`Damage`
+  adjusts one).
 
 **Defense vs armor.** These are separate domains with overlapping `name` values:
 - `defense` has three variants — `Physical`, `Mystic`, `Social`. A defense value
@@ -148,6 +170,54 @@ Mirrors the spreadsheet's reserved words.
 | `min` | MIN | take the lower of target, value |
 | `max` | MAX | take the higher of target, value |
 | `ref` | REF | `value` is pulled from another target-path, e.g. `"value": { "ref": "attribute|Strength|Step" }` |
+
+### 4.1 Damage base — the `set`-as-base pattern (v3)
+
+A Damage (or Effect) test resolves as **base + modifiers**, and `operation: set`
+on `attack/Damage` is how the base is declared. This is the contract the engine
+uses to gather weapon *and* spell damage through one code path:
+
+- **Weapon attacks** base on the attacker's **Strength step** — a *universal
+  rule*, not per-item data. It lives as the engine's default (mirroring how
+  `Initiative = Dexterity step` and `Knockdown = Strength step` are engine logic
+  with no taxonomy entry). A weapon entry therefore carries only its own
+  `add` (the weapon's Damage Step), e.g. the Medium Crossbow's `add 5` — it has
+  **no** `set`. *Missile and thrown weapons are not exceptions:* they add their
+  Damage Step to Strength exactly like melee (PG, Damage test; the Silar crossbow
+  example is STR 5 + crossbow 5 = Step 10).
+- **Spell attacks** have a **per-spell base** (usually Willpower, sometimes
+  another attribute or the spell's own step) — this is *input data* that must
+  live in the spell file. A spell declares its base with a `set` effect whose
+  `value` is a `ref` to the governing step, then stacks its `add` modifiers on
+  top. *No universal "spell → Willpower" default:* talent substitution (e.g.
+  Flame Arrow replacing Strength with its own step) and non-Willpower spells
+  break it, which is exactly why the base must be explicit for spells.
+- **Substitution talents** (Flame Arrow, Crushing Blow, Surprise Strike, …) are
+  `set` on the base — they override the default, same as any `set`.
+
+**Resolution order.** All `set` effects on a target establish the base first
+(later `set` overrides earlier), then `add`/`subtract`/… fold on top — matching
+the fold order `engine/characteristics.js` already implements for armor/defense
+(`applyModifiers`, pass 1 then pass 2). With no `set` in play (the common weapon
+case) the behavior is unchanged: the engine default base plus `add`s.
+
+```jsonc
+// Weapon — no base declared; the engine default (Strength step) applies.
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "add", "value": 5, "measure": "step",
+  "condition": "always", "source": "item" }
+
+// Spell — `set` declares the base (Willpower step), `add` stacks on top.
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "set", "value": { "ref": "attribute|Willpower|Step" },
+  "measure": "step", "condition": "always", "source": "spell" }
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "add", "value": 8, "measure": "step",
+  "condition": "always", "source": "spell" }
+```
 
 ---
 
@@ -198,8 +268,10 @@ are `condition: "always"` *and* not `gmDiscretion`. Situational, `on-success`,
 triggered, and GM-discretion effects are **surfaced** to the player/GM but never
 silently baked into a number. A `measure` mismatch is also a guard: a
 `rating`-measure modifier applies to a static rating, not to a step or result.
-This is engine *behavior*, not a vocabulary change — the fields above are
-unchanged, so this remains taxonomy **v1**.
+This is engine *behavior*, not a vocabulary change. (v2 added the
+`attack-modifier` type and the `attack` domain's generic `Damage`/`Attack`
+names; v3 documented the `set`-as-base damage contract in §4.1. The auto-apply
+rule is unchanged.)
 
 ---
 
@@ -268,17 +340,39 @@ lives, but may be stated explicitly.
   "operation": "add", "value": { "ref": "ability|Avoid Blow|Rank" },
   "measure": "step", "condition": "always", "source": "talent",
   "summary": "Avoid Blow test = Dexterity step + rank." }
+
+// Battle Axe — melee weapon: damage = Strength step + 7
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "add", "value": 7, "measure": "step",
+  "condition": "always", "source": "item",
+  "summary": "Melee damage: Strength step + 7." }
+
+// Spirit Bolt (simulated spell) — base declared by `set`, damage by `add`.
+// Resolves to Willpower step + 8, using the same fold as the Battle Axe above.
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "set", "value": { "ref": "attribute|Willpower|Step" },
+  "measure": "step", "condition": "always", "source": "spell",
+  "summary": "Effect test = Willpower step + spell's damage step." }
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "add", "value": 8, "measure": "step",
+  "condition": "always", "source": "spell",
+  "summary": "Spirit Bolt damage: Willpower step + 8." }
 ```
 
 ---
 
-## 11. Open questions (v1 review)
+## 11. Open questions (v3 review)
 
 1. `measure` granularity — is `value`/`step`/`result`/`rating` the right split?
    *(Phase 3 leans keep: the engine already uses `measure` as an apply-time guard.)*
-2. `operation: set` as the model for "base that other bonuses add to" (Natural
-   Armor), or introduce an explicit `base` semantic? *(Expected to be forced by
-   the armour/health slice — likely the first real taxonomy vN decision.)*
+2. ~~`operation: set` as the model for "base that other bonuses add to" (Natural
+   Armor), or introduce an explicit `base` semantic?~~ **Resolved (v3).** `set`
+   **is** the base semantic (§4.1); no separate `base` field. Weapon damage uses
+   the engine's universal Strength-step default (no `set`); spells and
+   substitution talents declare their base with `set`.
 3. `type` naming — single kebab-case dispatch key (current), or a two-axis
    `op` + `domain` split? *(Phase 3 leans keep the single dispatch key.)*
 4. `scope` — free text now, or lock a controlled enum immediately? *(Still open;
@@ -288,3 +382,11 @@ lives, but may be stated explicitly.
    (§3). Base derivation needs no vocabulary entry, so it is supported today; add
    `Knockdown` to §3 when the first effect modifies it — a **Tier-2** change
    (bump + migrate). Deferred until that effect exists.
+6. `attack-modifier` scope (added v2) — currently only weapon *damage* uses it.
+   The to-hit bonuses (talent `test-modifier`/`{test, Attack}` like Mystic Aim)
+   stay in the `test` domain for now; if combat resolution lands, decide whether
+   `{attack, Attack}` becomes their home in a later migration. Weapon damage
+   keeps `operation: add` for all categories — missile/thrown are **not** flat
+   steps independent of Strength; they add their Damage Step to Strength like
+   melee, so they keep `add` and take the engine's Strength default (§4.1). Only
+   spells and substitution talents carry an explicit `set` base.

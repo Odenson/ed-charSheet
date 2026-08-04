@@ -73,6 +73,28 @@ the same story and never drift.
 Merging into `main` triggers the workflow and updates the **production** site.
 (You can also open/merge the PR from the GitHub web UI — pick **Squash and merge**.)
 
+**3. Sync `main` back into `dev` — do this immediately after every merge.**
+
+```bash
+git switch dev
+git merge origin/main --no-edit   # brings the squash commit into dev's history
+git push
+```
+
+This step is **not optional** — skipping it is what causes the "conflicts on
+every release PR" problem. A squash merge puts a **brand-new commit** on `main`
+that `dev` never receives; `dev` keeps its own commits for the same release. Left
+alone, the two branches fork and their common ancestor freezes at an old release,
+so `data/changelog.json` (which changes every release) shows up as a conflict each
+time — two independent edits to the same lines with no shared base.
+
+Right after the squash merge, `dev` and `main` are content-identical, so this
+merge-back is trivial and conflict-free; its only job is to **advance the common
+ancestor** to the release just cut, so the *next* release PR diffs cleanly. If a
+release PR ever does conflict (e.g. this step was missed), resolve with `dev` as
+the source of truth: `git merge -s ours origin/main` on `dev` keeps dev's tree
+entirely while reconnecting the histories, then push.
+
 ## Notes
 
 - **Relative paths only.** Because the dev instance lives under `/dev/`, all

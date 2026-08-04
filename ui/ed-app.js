@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, deriveModel, saveMetaEdits, saveItemEdits } from '../store.js';
+import { loadCharacter, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits } from '../store.js';
 import { isFileSaveSupported, restoreFileHandle, saveToFile } from '../store-file.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
@@ -150,6 +150,7 @@ export class EdApp extends LitElement {
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
+    this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     try {
       const { character, rules } = await loadCharacter();
       this._character = character;
@@ -182,6 +183,17 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(items)) return;
     this._character = { ...this._character, items };
     saveItemEdits(items);
+    this._fileDirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view changed the character's wealth (coin counts / gems). Same inputs-only
+  // flow: replace the wealth input, persist the overlay, mark the file dirty, and
+  // re-derive so the totals recompute (data flows down).
+  _editWealth(wealth) {
+    if (!this._character || !wealth) return;
+    this._character = { ...this._character, wealth };
+    saveWealthEdits(wealth);
     this._fileDirty = true;
     this._model = deriveModel(this._character, this._rules);
   }

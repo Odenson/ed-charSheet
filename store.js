@@ -6,6 +6,7 @@
 // from inputs (data flows back down). Derived values are never stored.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
+import { deriveWealth } from './engine/wealth.js';
 import {
   makeCharacteristics,
   defense,
@@ -22,7 +23,12 @@ import {
   maxKarma,
   KARMA_STEP,
   karmaUse,
+  talentKarmaUse,
 } from './engine/characteristics.js';
+
+// Talents every adept receives automatically at First Circle, regardless of
+// Discipline — so they count as "required" (Discipline) talents, not options.
+const UNIVERSAL_TALENTS = new Set(['Durability', 'Karma Ritual']);
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
@@ -68,12 +74,26 @@ export function saveItemEdits(items) {
   return edits;
 }
 
+/**
+ * Persist the character's wealth to the edits overlay. Wealth is pure input —
+ * coin counts and gems ({ name, valueSilver, qty }) — so it's stored as-is; the
+ * per-coin silver value, running total, and gem resale are derived at render
+ * time (deriveWealth), never stored. "Store only inputs, never derived" holds.
+ */
+export function saveWealthEdits(wealth) {
+  const edits = loadEdits();
+  edits.wealth = wealth;
+  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  return edits;
+}
+
 /** Apply the saved edits overlay onto a freshly-fetched character. */
 function applyEdits(character, edits) {
   if (!edits) return character;
   let next = character;
   if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
   if (edits.items) next = { ...next, items: edits.items };
+  if (edits.wealth) next = { ...next, wealth: edits.wealth };
   return next;
 }
 
@@ -131,11 +151,24 @@ export function deriveModel(character, rules) {
   // (durability, half-magic, artisan skills, per-circle abilities) from rules.
   const disciplines = (character.disciplines ?? []).map((d) => {
     const ref = discByName[d.name] ?? {};
+    // "Required" (Discipline) talents = every talent the Discipline grants at any
+    // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
+    // Ritual which every adept receives automatically. Anything else the character
+    // knows here was a chosen Talent Option (optional). Data-driven from
+    // disciplines.json; no separate flag on the character's talents.
+    const requiredTalents = new Set([
+      ...UNIVERSAL_TALENTS,
+      ...(ref.circles ?? []).flatMap((c) => [...(c.talents ?? []), ...(c.freeTalents ?? [])]),
+    ]);
     const talents = (d.talents ?? []).map((t) => {
       const cat = talentCatalog[t.name] || {};
       const attribute = cat.attribute || null;
       const aStep = attribute ? attrStepByName[attribute] : undefined;
       const step = attribute != null && aStep != null ? talentStep(aStep, t.rank) : null;
+      // Talent tests are Karma-eligible by default (core rule); only rollable
+      // talents (those with a step) carry a karma context. The talent catalog may
+      // opt out (`karma: false`), as may a Versatility-learned instance.
+      const karma = step != null ? talentKarmaUse({ karma: cat.karma, viaVersatility: t.viaVersatility }) : null;
       return {
         name: t.name,
         rank: t.rank,
@@ -143,6 +176,21 @@ export function deriveModel(character, rules) {
         action: cat.action || null,
         step,
         dice: step != null ? diceForStep(step) : '',
+        karma,
+        required: requiredTalents.has(t.name),
+        // Terse one-line effect for the Effect column, and the paraphrased detail
+        // the info modal shows. `documented` is false for talents not yet enriched
+        // (the modal then shows only the basics we have).
+        brief: cat.brief || null,
+        detail: {
+          summary: cat.summary || null,
+          versus: cat.versus || null,
+          strain: cat.strain ?? null,
+          tier: cat.tier || t.tier || null,
+          skillUse: cat.skillUse || null,
+          notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
+          documented: !!cat.summary,
+        },
       };
     });
     // Discipline abilities granted at circles up to the character's current circle.
@@ -270,6 +318,9 @@ export function deriveModel(character, rules) {
     stepByNumber,
     items,
     itemCatalog,
+    // Wealth: pass the stored inputs through the pure deriver so the view gets
+    // coin/gem silver values, the running total and the resale hint (all derived).
+    wealth: deriveWealth(character.wealth ?? {}),
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],
     traits: character.traits ?? [],
