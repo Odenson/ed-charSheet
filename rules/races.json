@@ -1,7 +1,7 @@
 {
   "schema": "ed-races/2",
   "source": "Earthdawn 4E Player's Guide — Namegiver races. Mechanics distilled into structured data; no verbatim rulebook prose. Ability 'summary' fields are original concise wording of the game effect.",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v1)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "attributeOrder": ["Dexterity", "Strength", "Toughness", "Perception", "Willpower", "Charisma"],
   "races": [
     {

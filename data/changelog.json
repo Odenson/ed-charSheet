@@ -5,7 +5,9 @@
     "changes": [
       { "type": "added", "text": "You can now spend Karma (+D6) when rolling a talent on the Disciplines tab. Talents are Karma-eligible by default, matching the core rule (Versatility-learned talents being the exception)." },
       { "type": "changed", "text": "The Disciplines panel now sizes its Durability, Half-magic, and Artisan boxes to fit their content, giving the Half-magic description room to breathe." },
-      { "type": "added", "text": "The talent list now marks which talents are required for your Discipline (a filled dot) versus ones you chose as Talent Options (a hollow dot), with a legend." }
+      { "type": "added", "text": "The talent list now marks which talents are required for your Discipline (a filled dot) versus ones you chose as Talent Options (a hollow dot), with a legend." },
+      { "type": "added", "text": "Talents now show a one-line summary of what they do, and each has an info button (the required/optional circle) that opens plain-language details — action, strain, what it tests against, and the effect. Hidden effect column folds away on mobile, where the details are a tap away." },
+      { "type": "added", "text": "The Equipment catalogue is much bigger: all rulebook weapons (melee, missile, and throwing), ammunition, common magic items, blood charms, healing aids, and adventuring gear are now in the add-item list. Weapon damage steps, entangle rules, and one-shot bonuses show as effect chips." }
     ]
   },
   "releases": [

@@ -163,6 +163,19 @@ export function deriveModel(character, rules) {
         dice: step != null ? diceForStep(step) : '',
         karma,
         required: requiredTalents.has(t.name),
+        // Terse one-line effect for the Effect column, and the paraphrased detail
+        // the info modal shows. `documented` is false for talents not yet enriched
+        // (the modal then shows only the basics we have).
+        brief: cat.brief || null,
+        detail: {
+          summary: cat.summary || null,
+          versus: cat.versus || null,
+          strain: cat.strain ?? null,
+          tier: cat.tier || t.tier || null,
+          skillUse: cat.skillUse || null,
+          notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
+          documented: !!cat.summary,
+        },
       };
     });
     // Discipline abilities granted at circles up to the character's current circle.

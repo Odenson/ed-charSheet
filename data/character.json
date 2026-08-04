@@ -312,5 +312,23 @@
       "summary": "Dwarves in amour carrying whips",
       "description": "Comes from the Dwarf that had Chakka captured for two years on the airship. The slaver was very proud of the whip, and even more happy when he used it on the larger Orks."
     }
+  ],
+  "items": [
+    {
+      "name": "Spear",
+      "equipped": true
+    },
+    {
+      "name": "Hardened Leather",
+      "equipped": true
+    },
+    {
+      "name": "Medium Crossbow",
+      "equipped": true
+    },
+    {
+      "name": "Broadsword",
+      "equipped": true
+    }
   ]
 }
