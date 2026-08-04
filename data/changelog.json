@@ -3,6 +3,10 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "changes": [
+      { "type": "changed", "text": "The Equipment tab is redesigned: your gear is grouped into Weapons & Armour, Gear, and Charms & Consumables across two columns, with cleaner rows. Click any item to open a details card showing its cost, weight, availability, and effect." },
+      { "type": "added", "text": "Each item has a single Equipped / Stored toggle — Equipped gear is on your character and feeds Armour, Defences, and Initiative; Stored gear is owned but set aside. Add items with a searchable picker that filters the whole catalogue as you type." },
+      { "type": "added", "text": "Magical items now glow wherever they sit — magic items, blood charms, and healing aids are highlighted in every section, not just their own." },
+      { "type": "added", "text": "New Wealth section: record every Earthdawn coin (copper, silver, gold, and the elemental earth, water, air, fire, and orichalcum coins) plus your gems and precious stones valued in silver. It totals your worth in silver and estimates gem resale (70–80%). Saved in your browser." },
       { "type": "added", "text": "You can now spend Karma (+D6) when rolling a talent on the Disciplines tab. Talents are Karma-eligible by default, matching the core rule (Versatility-learned talents being the exception)." },
       { "type": "changed", "text": "The Disciplines panel now sizes its Durability, Half-magic, and Artisan boxes to fit their content, giving the Half-magic description room to breathe." },
       { "type": "added", "text": "The talent list now marks which talents are required for your Discipline (a filled dot) versus ones you chose as Talent Options (a hollow dot), with a legend." },

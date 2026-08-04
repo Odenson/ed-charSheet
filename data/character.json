@@ -330,5 +330,18 @@
       "name": "Broadsword",
       "equipped": true
     }
-  ]
+  ],
+  "wealth": {
+    "coins": {
+      "copper": 0,
+      "silver": 0,
+      "gold": 0,
+      "earth": 0,
+      "water": 0,
+      "air": 0,
+      "fire": 0,
+      "orichalcum": 0
+    },
+    "gems": []
+  }
 }

@@ -6,6 +6,7 @@
 // from inputs (data flows back down). Derived values are never stored.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
+import { deriveWealth } from './engine/wealth.js';
 import {
   makeCharacteristics,
   defense,
@@ -73,12 +74,26 @@ export function saveItemEdits(items) {
   return edits;
 }
 
+/**
+ * Persist the character's wealth to the edits overlay. Wealth is pure input —
+ * coin counts and gems ({ name, valueSilver, qty }) — so it's stored as-is; the
+ * per-coin silver value, running total, and gem resale are derived at render
+ * time (deriveWealth), never stored. "Store only inputs, never derived" holds.
+ */
+export function saveWealthEdits(wealth) {
+  const edits = loadEdits();
+  edits.wealth = wealth;
+  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  return edits;
+}
+
 /** Apply the saved edits overlay onto a freshly-fetched character. */
 function applyEdits(character, edits) {
   if (!edits) return character;
   let next = character;
   if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
   if (edits.items) next = { ...next, items: edits.items };
+  if (edits.wealth) next = { ...next, wealth: edits.wealth };
   return next;
 }
 
@@ -303,6 +318,9 @@ export function deriveModel(character, rules) {
     stepByNumber,
     items,
     itemCatalog,
+    // Wealth: pass the stored inputs through the pure deriver so the view gets
+    // coin/gem silver values, the running total and the resale hint (all derived).
+    wealth: deriveWealth(character.wealth ?? {}),
     skills: character.skills ?? [],
     knacks: character.knacks ?? [],
     traits: character.traits ?? [],
