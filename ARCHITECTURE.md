@@ -70,7 +70,9 @@ new talents/spells becomes adding **data**, not code.
 
 ## 2. Design goals & constraints
 
-1. **Static hosting only** (GitHub Pages) — no server, no build step required to run.
+1. **Static hosting only** (GitHub Pages) — no server, no build step required to
+   run. (One explicitly sanctioned exception: the opt-in serverless save
+   endpoint, §7.5.)
 2. **Small initial page** — v1 just displays stats.
 3. **Scales without bloat** — new talents/spells/rules are data files; new
    *behaviours* are small engine modules loaded on demand.
@@ -304,7 +306,8 @@ not a rewrite:
 
 | Strategy | How | Pros | Cons |
 |----------|-----|------|------|
-| **GitHub as store** (see §7.4) | commit `character.json` via the GitHub API + a Personal Access Token | no manual commit; syncs across devices; versioned | needs a token; secret handling |
+| **GitHub as store** (see §7.4) | commit `character.json` via the GitHub API, an OAuth device-flow token (fallback: fine-grained PAT) | no manual commit; syncs across devices; versioned | token held in browser memory for the session |
+| **Serverless write endpoint** (see §7.5) | a small Cloudflare Worker / Deno Deploy function commits for the app | no token in the browser; same GitHub loop | **breaks the no-backend rule — the one sanctioned exception** |
 | **File export/import** | download/upload `character.json` | portable, works everywhere | manual round-trip |
 | **URL state** | encode a snapshot in the link | shareable | size-limited |
 
@@ -316,12 +319,16 @@ site, with no local checkout in the loop.
 
 Sketch of the flow (all client-side; still no backend of ours):
 
-1. **Auth (once).** The player supplies a **fine-grained Personal Access Token**
-   scoped to *this repo only*, with **Contents: read/write**. Handling: never
-   persisted in plain localStorage — prefer session-only in memory (re-entered
-   per session) or the most narrowly-scoped token the player accepts. The app
-   asks the *player* for it; it is a credential the tooling never fills in on
-   their behalf.
+1. **Auth (once).** Prefer GitHub's **OAuth device flow**: Save shows a code and
+   `github.com/login/device` link; the player approves in their browser, and the
+   app receives a session token scoped to *this repo only* (`Contents:
+   read/write`). The token lives **in memory for the session only** — never
+   written to localStorage or IndexedDB, so it dies on tab close and can't leak
+   out of the session. Fallback for players who prefer not to use OAuth: a
+   **fine-grained Personal Access Token** scoped to *this repo only* with
+   `Contents: read/write`, entered per session and likewise held in memory only.
+   Either way the app asks the *player* for it — it is a credential the tooling
+   never fills in on their behalf.
 2. **Read current SHA.**
    `GET /repos/{owner}/{repo}/contents/data/character.json?ref=dev` → the file's
    blob `sha` (the contents API needs it to update a file in place).
@@ -332,12 +339,41 @@ Sketch of the flow (all client-side; still no backend of ours):
    retry.
 
 This reuses the exact **dual-write** shape from §7.2 — the picker/handle is
-simply swapped for "token + repo path," and the serialized bytes are identical
-(inputs-only `character.json`). Trade-offs: a token in the browser is a real
-exposure (mitigated by least-privilege + session-only storage), and it adds a
-network dependency the local-file path doesn't have. Because it is purely an
-alternate Save target, it can land opt-in without disturbing the web-store +
-local-file model.
+simply swapped for "device-flow token + repo path," and the serialized bytes are
+identical (inputs-only `character.json`). Trade-offs: a token in the browser is
+a real exposure (mitigated by least-privilege + session-only memory), and it
+adds a network dependency the local-file path doesn't have. Because it is purely
+an alternate Save target, it can land opt-in without disturbing the web-store +
+local-file model. (For players who'd rather the credential never touch the page,
+§7.5 documents the one serverless alternative.)
+
+### 7.5 Future: serverless save endpoint — the one sanctioned backend exception
+
+The §7.4 flow keeps the credential in the browser (session-only in memory).
+For players who want the token to never enter the page at all, the one
+sanctioned alternative is a **tiny write endpoint** that commits on the app's
+behalf:
+
+1. **Host.** A single Cloudflare Worker (or Deno Deploy / Vercel function) — one
+   file, free tier, no database, nothing to operate.
+2. **Secret.** The GitHub token lives in the platform's secret store server-side,
+   never in the browser; the worker scopes it to this repo only (`Contents:
+   read/write`).
+3. **Flow.** The app `POST`s the same merged, inputs-only character to the
+   worker's one endpoint (`/save`); the worker does the GET-SHA → PUT-commit to
+   `dev`, and the existing deploy workflow rebuilds `/dev/` exactly as in §7.4.
+   Feedback and `409` retry behave the same.
+
+This is the **only** documented exception to the "no backend, no external
+runtime dependency" constraint (ARCHITECTURE §2, goal 1). It is deliberate,
+opt-in, and additive: the web-store + local-file model stays the default and the
+only offline path, and the rest of the app keeps working with no network
+dependency. Trade-offs: server-save requires connectivity (offline editing still
+works locally), and one third-party hop is a small new surface — mitigated
+because the worker holds no data, just a scoped token and a commit call. Because
+it is purely an alternate Save target, it can land opt-in without disturbing the
+web-store + local-file model, and it ships *instead of* §7.4's in-browser token
+for players who want that — never in addition to it.
 
 ---
 
@@ -391,7 +427,7 @@ local-file model.
   per section.)* Edit inputs (meta first); a web-store overlay in localStorage
   plus a File System Access **Save** to a player-picked `character.json`,
   dual-written and kept in sync (§7.1–7.2). GitHub-direct commit is sketched as a
-  future Save target (§7.4).
+  future Save target (§7.4–7.5).
 - **Phase 3 — Engine: cascade.** *(In progress.)* Derived characteristics from
   `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). Landed:
   all three **Defences** (Physical/Mystic/Social, table base + discipline effects)
@@ -429,7 +465,14 @@ local-file model.
   *together* so file ↔ web store stay in sync — the overlay is kept, not cleared.
   The file handle is remembered in IndexedDB so it reconnects across sessions.
   GitHub-direct commit remains a clean later Save target since state is just
-  `character.json`. See §7 (and §7.4 for the GitHub sketch).
+  `character.json`, and will use the OAuth device flow (session token in memory;
+  fine-grained PAT as fallback). See §7 (and §7.4 for the GitHub sketch).
+- **Serverless exception — documented, not built: the one sanctioned
+  no-backend exception.** A tiny Cloudflare Worker / Deno Deploy endpoint can act
+  as the GitHub save target so the token never touches the browser (§7.5). It is
+  the only documented exception to "no backend, no external runtime dependency"
+  (ARCHITECTURE §2, goal 1), is opt-in, and ships *instead of* the §7.4 in-browser
+  token for players who want that — never in addition to it.
 - **Rules fidelity — DECIDED: core rules first, flag house rules.** During the
   Phase 0 import, port standard Earthdawn rules and **flag any custom/house-rule
   formulas** found in the sheet for confirmation before porting them. Faster path
