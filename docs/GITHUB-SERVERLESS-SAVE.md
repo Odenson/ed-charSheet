@@ -283,18 +283,32 @@ export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveK
 Wiring rules, matching the existing Save behaviour:
 - **Same bytes.** It serializes with the identical routine the file save uses
   (merged, inputs-only). The web store is still written on Save as well — the
-  overlay remains the resilient working copy, exactly as in §7.2.
+  overlay stays the resilient working copy *until the commit confirms* (see
+  "Reconcile the overlay" below).
 - **Opt-in and feature-detected.** Hidden/disabled until the player enables it
   in Settings; disabled cleanly when offline or when the endpoint is unreachable.
 - **Feedback.** Surfaces the commit URL after success; a visible error on
   failure (the 409 case is already resolved server-side, so the client has no
   retry logic).
+- **Reconcile the overlay on success.** After a confirmed commit the branch holds
+  those exact inputs, so the localStorage edits overlay for the saved categories
+  (`meta` / `items` / `wealth`) is now redundant **and** will mask the branch on
+  the next load — including edits made from another device. On success, clear the
+  reconciled keys from the overlay so the (cache-busted) branch read becomes the
+  source of truth. **Trade-off:** if a later branch read is unreachable and falls
+  back to the deployed bundle, that device shows bundle-age data until the branch
+  is reachable again — acceptable versus permanently masking saves. This is the
+  exact failure a direct, out-of-band branch edit exposed in testing: a stale
+  `meta.name` left in the overlay hid the branch's updated name, with no error
+  (the live fetch succeeded; `applyEdits` merged the stale name on top).
 
 **Reading the saved character.** The flip side of not rebuilding lives in
 `store.js`: on the Pages site it fetches `data/character.json` live from the
-`character-data` branch (raw.githubusercontent.com), falling back to the deployed
-copy; locally it keeps reading the working copy. `/` and `/dev/` read the same
-branch, so both environments show the same character.
+`character-data` branch (raw.githubusercontent.com) with a per-load cache-buster
+(`?t=${Date.now()}`) so raw's ~5-minute edge TTL can't serve a stale copy — a
+fresh save is read immediately — falling back to the deployed copy; locally it
+keeps reading the working copy. `/` and `/dev/` read the same branch, so both
+environments show the same character.
 
 ### 4.6 Testing
 

@@ -57,10 +57,13 @@ function characterDataUrl() {
 }
 
 async function loadCharacterData() {
-  const live = characterDataUrl();
-  if (live === './data/character.json') return loadJSON(live);
+  const base = characterDataUrl();
+  if (base === './data/character.json') return loadJSON(base);
   try {
-    return await loadJSON(live);
+    // Cache-bust the raw CDN (~5-min edge TTL): without a unique query the edge
+    // may serve a stale copy, so a fresh serverless save wouldn't show up until
+    // the TTL lapsed. A per-load timestamp forces a cache miss and a fresh read.
+    return await loadJSON(`${base}?t=${Date.now()}`);
   } catch {
     // No save on the data branch yet (or raw is unreachable): fall back to the
     // deployed copy rather than failing the whole app.
