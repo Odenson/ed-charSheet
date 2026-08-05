@@ -468,7 +468,7 @@ export class EdEquipment extends LitElement {
       ref.size != null ? { v: `Size ${ref.size}` } : null,
       ref.range ? { v: `Range ${ref.range}` } : null,
       ref.shatterThreshold != null ? { v: `Shatter ${ref.shatterThreshold}` } : null,
-      ref.edn != null ? { v: `Alchemy DN ${ref.edn}` } : null,
+      ref.craftingDifficultyNumber != null ? { v: `Craft DN ${ref.craftingDifficultyNumber}` } : null,
     ].filter(Boolean);
     const effects = it.known ? (it.effects ?? []).filter((e) => e.summary) : [];
     const always = (e) => (e.condition ?? 'always') !== 'situational';

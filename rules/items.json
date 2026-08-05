@@ -6,8 +6,8 @@
     "armor": "Worn armor confers Physical/Mystic Armor (damage reducers) via `armor-modifier` effects, and its Initiative penalty via a `characteristic-modifier` on Initiative (measure: step). `living` marks elemental 'living' armor (the only kind an obsidiman may wear atop Natural Armor; PG p.48). `ref` holds display-only stats (cost/weight/availability).",
     "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference.",
     "weapon": "Weapons carry an `attack-modifier` on the attack's Damage step (target `attack`/`Damage`, `operation: add`, measure: step). Every category — melee, missile, and thrown — adds its Damage Step to the Strength-step base (EFFECT-TAXONOMY v3 §4.1; the base is the engine default, not stored here). STR/DEX minima, size, ranges, and entangle details are display-only in `ref`. Ammo rows from the missile table are separate `ammunition` entries.",
-    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note` and is also captured as numeric `characteristic-modifier` effects (operation: subtract, measure: rating, `condition`: situational, `scope`: implanted) on the Death and Unconsciousness ratings, and the Alchemy-crafting EDN is display-only in `ref`.",
-    "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers; `edn` (Alchemy crafting difficulty) is display-only in `ref`.",
+    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note` and is also captured as numeric `characteristic-modifier` effects (operation: subtract, measure: rating, `condition`: situational, `scope`: implanted) on the Death and Unconsciousness ratings, and the Alchemy crafting difficulty (the rulebook's EDN) is display-only in `ref` as `craftingDifficultyNumber`.",
+    "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers; `craftingDifficultyNumber` (the Alchemy crafting difficulty, the rulebook's EDN) is display-only in `ref`.",
     "magic-item": "Common magic items: numeric, always-relevant mechanics are typed effects; one-shot, non-numeric, or activated properties are `note` effects.",
     "gear": "Adventuring gear is mostly display-only (`effects: []`); kits record their contents in a `note`, and items with a specific game rule (e.g. Healing Kit +1 Recovery, chain/rope break tests) carry that rule as an effect.",
     "presentation": "PRESENTATION LAYER ONLY. Optional `presentation` object holds display strings for the UI and is never read by the engine — it carries no game mechanics. `shortEffect` is a 3-4 word label shown in the Equipment tile's right-hand space for note-type items; the authoritative rule always lives in `effects` (and its full `summary`). Items with a numeric effect derive their tile label in the view instead, so they carry no `shortEffect`."
@@ -2311,7 +2311,7 @@
         "cost": 100,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 10
+        "craftingDifficultyNumber": 10
       },
       "effects": [
         {
@@ -2366,7 +2366,7 @@
         "cost": 325,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 14
+        "craftingDifficultyNumber": 14
       },
       "effects": [
         {
@@ -2453,7 +2453,7 @@
         "cost": 175,
         "weight": "1 lb",
         "availability": "rare",
-        "edn": 11
+        "craftingDifficultyNumber": 11
       },
       "effects": [
         {
@@ -2514,7 +2514,7 @@
         "cost": 200,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 9
+        "craftingDifficultyNumber": 9
       },
       "effects": [
         {
@@ -2572,7 +2572,7 @@
         "cost": 450,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 12
+        "craftingDifficultyNumber": 12
       },
       "effects": [
         {
@@ -2631,7 +2631,7 @@
         "cost": 275,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 10
+        "craftingDifficultyNumber": 10
       },
       "effects": [
         {
@@ -2704,7 +2704,7 @@
         "cost": 300,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 11
+        "craftingDifficultyNumber": 11
       },
       "effects": [
         {
@@ -2777,7 +2777,7 @@
         "cost": 250,
         "weight": "1 lb",
         "availability": "rare",
-        "edn": 13
+        "craftingDifficultyNumber": 13
       },
       "effects": [
         {
@@ -2832,7 +2832,7 @@
         "cost": 450,
         "weight": "1 lb",
         "availability": "rare",
-        "edn": 12
+        "craftingDifficultyNumber": 12
       },
       "effects": [
         {
@@ -2905,7 +2905,7 @@
         "cost": 500,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 13
+        "craftingDifficultyNumber": 13
       },
       "effects": [
         {
@@ -2978,7 +2978,7 @@
         "cost": 600,
         "weight": "1 lb",
         "availability": "rare",
-        "edn": 15
+        "craftingDifficultyNumber": 15
       },
       "effects": [
         {
@@ -3037,7 +3037,7 @@
         "cost": 300,
         "weight": "1 lb",
         "availability": "rare",
-        "edn": 11
+        "craftingDifficultyNumber": 11
       },
       "effects": [
         {
@@ -3096,7 +3096,7 @@
         "cost": 450,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 12
+        "craftingDifficultyNumber": 12
       },
       "effects": [
         {
@@ -3155,7 +3155,7 @@
         "cost": 200,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 12
+        "craftingDifficultyNumber": 12
       },
       "effects": [
         {
@@ -3214,7 +3214,7 @@
         "cost": 50,
         "weight": "2 lb",
         "availability": "unusual",
-        "edn": 7
+        "craftingDifficultyNumber": 7
       },
       "effects": [
         {
@@ -3239,7 +3239,7 @@
         "cost": 500,
         "weight": "2 lb",
         "availability": "rare",
-        "edn": 11
+        "craftingDifficultyNumber": 11
       },
       "effects": [
         {
@@ -3270,7 +3270,7 @@
         "cost": 100,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 8
+        "craftingDifficultyNumber": 8
       },
       "effects": [
         {
@@ -3291,7 +3291,7 @@
         "cost": 300,
         "weight": "2 lb",
         "availability": "rare",
-        "edn": 12
+        "craftingDifficultyNumber": 12
       },
       "effects": [
         {
@@ -3322,7 +3322,7 @@
         "cost": 125,
         "weight": "2 lb",
         "availability": "rare",
-        "edn": 8
+        "craftingDifficultyNumber": 8
       },
       "effects": [
         {
@@ -3343,7 +3343,7 @@
         "cost": 50,
         "weight": "1 lb",
         "availability": "unusual",
-        "edn": 7
+        "craftingDifficultyNumber": 7
       },
       "effects": [
         {
@@ -3374,7 +3374,7 @@
         "cost": 600,
         "weight": "1 lb",
         "availability": "very Rare",
-        "edn": 13
+        "craftingDifficultyNumber": 13
       },
       "effects": [
         {
@@ -3395,7 +3395,7 @@
         "cost": 200,
         "weight": "1 lb",
         "availability": "rare",
-        "edn": 10
+        "craftingDifficultyNumber": 10
       },
       "effects": [
         {
