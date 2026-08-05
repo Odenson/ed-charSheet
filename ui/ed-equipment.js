@@ -57,6 +57,31 @@ const tileEffect = (it) => {
   return short ? { text: short } : deriveTileEffect(it?.effects);
 };
 
+// Modal presentation-only formatters. The detail modal renders four zones in a
+// fixed order for every item — base-ref chips · main-effect chips · white notes ·
+// green situational — so items read consistently. None of this computes a game
+// value; it only formats effect/ref data the engine already resolved.
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const prettyName = (n) => (n ?? '').replace(/([a-z])([A-Z])/g, '$1 $2');
+const EFFECT_SUFFIX = { 'armor-modifier': 'Armour', 'defense-modifier': 'Defence', 'attack-modifier': '', 'test-modifier': 'Test', 'characteristic-modifier': '' };
+// A short `Label ±N` chip for an always-on numeric modifier (the item's main effect).
+const modifierChip = (e) => {
+  const val = (e.operation === 'subtract' ? '−' : '+') + Math.abs(e.value);
+  const suffix = EFFECT_SUFFIX[e.type] ?? '';
+  const name = prettyName(e.target?.name);
+  return { v: `${suffix ? `${name} ${suffix}` : name} ${val}`.trim() };
+};
+// Collapse the blood-charm implant Blood Magic Damage (equal `scope: implanted`
+// modifiers on both ratings) into a single situational line instead of one per
+// rating; other situational effects pass through as their own summary.
+const mergeImplant = (arr) => {
+  const impl = arr.filter((e) => e.scope === 'implanted');
+  const rest = arr.filter((e) => e.scope !== 'implanted').map((e) => ({ summary: e.summary }));
+  if (!impl.length) return rest;
+  const mag = Math.abs(impl[0].value ?? 0);
+  return [...rest, { summary: `Blood Magic Damage while implanted: Unconsciousness & Death Rating −${mag}.` }];
+};
+
 export class EdEquipment extends LitElement {
   static properties = {
     model: { attribute: false },
@@ -429,20 +454,30 @@ export class EdEquipment extends LitElement {
   _detailModal(it) {
     const mg = isMagic(it);
     const ref = it.ref ?? {};
-    const chips = [
+    // ① Base-ref chips — fixed order, each labelled, shown only when present.
+    // (Magic is marked by the ✦ star, not a chip; damageStep is covered by the
+    // Damage main-effect chip below, so neither is repeated here.)
+    const baseChips = [
       { v: subLine(it) },
-      mg ? { c: 'mag', v: 'Magical' } : null,
       it.living ? { v: 'Living' } : null,
-      ref.category && it.kind !== 'weapon' ? { v: ref.category } : null,
-      costText(ref) ? { v: costText(ref) } : null,
-      ref.weight ? { v: ref.weight } : null,
-      ref.availability ? { v: ref.availability } : null,
+      ref.category && it.kind !== 'weapon' ? { v: cap(ref.category) } : null,
+      costText(ref) ? { v: `Cost ${costText(ref)}` } : null,
+      ref.weight ? { v: `Weight ${ref.weight}` } : null,
+      ref.availability ? { v: `Availability ${ref.availability}` } : null,
+      ref.strMin != null ? { v: `STR min ${ref.strMin}` } : null,
+      ref.size != null ? { v: `Size ${ref.size}` } : null,
       ref.range ? { v: `Range ${ref.range}` } : null,
-      ref.damageStep != null ? { c: 'effc', v: `Damage step ${ref.damageStep}` } : null,
+      ref.shatterThreshold != null ? { v: `Shatter ${ref.shatterThreshold}` } : null,
+      ref.edn != null ? { v: `Alchemy DN ${ref.edn}` } : null,
     ].filter(Boolean);
     const effects = it.known ? (it.effects ?? []).filter((e) => e.summary) : [];
-    const texts = effects.filter((e) => e.condition !== 'situational' && e.type !== 'note');
-    const notes = effects.filter((e) => e.condition === 'situational' || e.type === 'note');
+    const always = (e) => (e.condition ?? 'always') !== 'situational';
+    // ② Main-effect chips — always-on numeric modifiers as short `Label ±N`.
+    const mainChips = effects.filter((e) => e.type !== 'note' && always(e) && typeof e.value === 'number').map(modifierChip);
+    // ③ White notes — every `note`, plus any always-on non-numeric rule.
+    const notes = effects.filter((e) => e.type === 'note' || (always(e) && typeof e.value !== 'number'));
+    // ④ Green situational — conditional non-note mechanics; implant lines merged.
+    const situational = mergeImplant(effects.filter((e) => e.type !== 'note' && !always(e)));
     return html`
       <div class="overlay" @click=${() => (this._modal = null)}>
         <div class="modal ${mg ? 'magic' : ''}" role="dialog" aria-modal="true" aria-label=${it.name} @click=${(e) => e.stopPropagation()}>
@@ -450,13 +485,18 @@ export class EdEquipment extends LitElement {
             <span class="mtitle">${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${it.name}</span>
             <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
           </div>
-          <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
-          ${it.known
-            ? texts.length
-              ? texts.map((e) => html`<div class="mtext">${e.summary}</div>`)
-              : notes.length ? nothing : html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`
-            : html`<div class="mtext" style="color: var(--muted)">Not in the catalog — contributes nothing to the sheet.</div>`}
-          ${notes.map((e) => html`<div class="mnote">${e.summary}</div>`)}
+          <div class="mchips">
+            ${baseChips.map((c) => html`<span class="chip">${c.v}</span>`)}
+            ${mainChips.map((c) => html`<span class="chip effc">${c.v}</span>`)}
+          </div>
+          ${!it.known
+            ? html`<div class="mtext" style="color: var(--muted)">Not in the catalog — contributes nothing to the sheet.</div>`
+            : notes.length || situational.length
+              ? html`
+                  ${notes.map((e) => html`<div class="mtext">${e.summary}</div>`)}
+                  ${situational.map((e) => html`<div class="mnote">${e.summary}</div>`)}
+                `
+              : mainChips.length ? nothing : html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`}
           ${this.editMode
             ? html`<div class="mact">
                 <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}>${it.equipped ? 'Equipped' : 'Stored'}</button>
