@@ -93,7 +93,7 @@ export class EdEquipment extends LitElement {
     this._coinMenu = false;
     this._shownCoins = new Set();
     this._onKeydown = (e) => {
-      if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._modal = null; }
+      if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
     };
   }
 
@@ -105,6 +105,14 @@ export class EdEquipment extends LitElement {
   disconnectedCallback() {
     document.removeEventListener('keydown', this._onKeydown);
     super.disconnectedCallback();
+  }
+
+  // Drop keyboard focus from the trigger tile so an Escape close ends the same way a
+  // mouse close does — otherwise the item button keeps :focus-visible (accent outline)
+  // after the modal is gone. Matches ed-overview's _closeModal.
+  _closeModal() {
+    this.renderRoot.activeElement?.blur();
+    this._modal = null;
   }
 
   updated(changed) {
@@ -234,7 +242,9 @@ export class EdEquipment extends LitElement {
     .chip.effc { color: var(--accent); background: var(--accent-bg); border-color: transparent; }
     .chip.mag { color: var(--arcane); background: var(--arcane-bg); border-color: transparent; }
     .mtext { font-size: 0.82rem; line-height: 1.5; margin: 6px 0; }
-    .mnote { font-size: 0.76rem; color: var(--karma); background: var(--karma-bg); border-radius: 6px; padding: 6px 9px; margin-top: 8px; }
+    /* Flavour description (layer 1) reads as italic lore; the effect paragraph
+       (layer 2, .mtext) carries the rules in plain text. */
+    .mdesc { font-size: 0.82rem; line-height: 1.5; margin: 6px 0; font-style: italic; color: var(--muted); }
     .mact { display: flex; align-items: center; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .mact .spacer { flex: 1; }
 
@@ -463,12 +473,13 @@ export class EdEquipment extends LitElement {
     const effects = it.known ? (it.effects ?? []).filter((e) => e.summary) : [];
     const always = (e) => (e.condition ?? 'always') !== 'situational';
     // ② Main-effect chips — always-on numeric modifiers as a short `Label ±N`
-    // quick-read; their full summary still appears in the lines below.
+    // quick-read; their full wording also lands in the summary paragraph below.
     const mainChips = effects.filter((e) => e.type !== 'note' && always(e) && typeof e.value === 'number').map(modifierChip);
-    // ③ White lines — notes and every always-on rule, each shown in full so no
-    // detail is missed. ④ Green lines — every situational (context-dependent) rule.
-    const alwaysLines = effects.filter((e) => e.type === 'note' || always(e));
-    const situationalLines = effects.filter((e) => e.type !== 'note' && !always(e));
+    // Two paragraphs after the chips: (1) the item's flavour description, (2) every
+    // effect summary accumulated into one paragraph. Each summary is defensively
+    // terminated so authored punctuation gaps don't run sentences together.
+    const description = ref.description ?? null;
+    const effectText = effects.map((e) => e.summary.trim()).map((s) => (/[.!?]$/.test(s) ? s : `${s}.`)).join(' ');
     return html`
       <div class="overlay" @click=${() => (this._modal = null)}>
         <div class="modal ${mg ? 'magic' : ''}" role="dialog" aria-modal="true" aria-label=${it.name} @click=${(e) => e.stopPropagation()}>
@@ -482,12 +493,13 @@ export class EdEquipment extends LitElement {
           </div>
           ${!it.known
             ? html`<div class="mtext" style="color: var(--muted)">Not in the catalog — contributes nothing to the sheet.</div>`
-            : alwaysLines.length || situationalLines.length
-              ? html`
-                  ${alwaysLines.map((e) => html`<div class="mtext">${e.summary}</div>`)}
-                  ${situationalLines.map((e) => html`<div class="mnote">${e.summary}</div>`)}
-                `
-              : mainChips.length ? nothing : html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`}
+            : html`
+                ${description ? html`<p class="mdesc">${description}</p>` : ''}
+                ${effectText ? html`<p class="mtext">${effectText}</p>` : ''}
+                ${!description && !effectText && !mainChips.length
+                  ? html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`
+                  : ''}
+              `}
           ${this.editMode
             ? html`<div class="mact">
                 <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}>${it.equipped ? 'Equipped' : 'Stored'}</button>

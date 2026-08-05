@@ -19,7 +19,8 @@
       "ref": {
         "cost": 10,
         "weight": "5 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Made of layers of cotton stitched tightly together, this simple armour provides basic protection"
       },
       "effects": [
         {
@@ -33,7 +34,7 @@
           "measure": "rating",
           "condition": "always",
           "source": "item",
-          "summary": "Physical Armor 1"
+          "summary": "Adds Physical Armor of 1"
         }
       ]
     },
@@ -43,7 +44,8 @@
       "ref": {
         "cost": 15,
         "weight": "15 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Layered soft leather that protects the body while leaving the joints free."
       },
       "effects": [
         {
@@ -67,7 +69,8 @@
       "ref": {
         "cost": 30,
         "weight": "20 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Padded cloth backed with a covering of leather armour."
       },
       "effects": [
         {
@@ -117,7 +120,8 @@
       "ref": {
         "cost": 40,
         "weight": "20 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Leather boiled and waxed hard for sturdier protection."
       },
       "effects": [
         {
@@ -131,7 +135,7 @@
           "measure": "rating",
           "condition": "always",
           "source": "item",
-          "summary": "Physical Armor 5"
+          "summary": "Adds Physical Armor of 5."
         },
         {
           "type": "armor-modifier",
@@ -144,7 +148,7 @@
           "measure": "rating",
           "condition": "always",
           "source": "item",
-          "summary": "Mystic Armor 1"
+          "summary": "Adds a Mystic Armor of 1"
         },
         {
           "type": "characteristic-modifier",
@@ -157,7 +161,7 @@
           "measure": "step",
           "condition": "always",
           "source": "item",
-          "summary": "Initiative penalty 2"
+          "summary": "Imposes an Initiative penalty of 2."
         }
       ]
     },
@@ -167,7 +171,8 @@
       "ref": {
         "cost": 50,
         "weight": "25 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Tanned animal hides sewn onto leather, often keeping the beast's head as a helm."
       },
       "effects": [
         {
@@ -217,7 +222,8 @@
       "ref": {
         "cost": 300,
         "weight": "40 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Leather reinforced with riveted metal rings to turn blows."
       },
       "effects": [
         {
@@ -254,7 +260,8 @@
       "ref": {
         "cost": 180,
         "weight": "40 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Interlocking metal rings — flexible, but heavy and slow to move in."
       },
       "effects": [
         {
@@ -291,7 +298,8 @@
       "ref": {
         "cost": 2500,
         "weight": "60 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Fitted steel plates over chain mail, the heaviest and most cumbersome protection."
       },
       "effects": [
         {
@@ -328,7 +336,8 @@
       "ref": {
         "cost": 2000,
         "weight": "50 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Wyvern hide fortified with True Water to keep its natural resilience."
       },
       "effects": [
         {
@@ -378,7 +387,8 @@
       "ref": {
         "cost": 200,
         "weight": "10 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A cloak of blue espagra scales — light protection that passes for courtly dress."
       },
       "effects": [
         {
@@ -415,7 +425,8 @@
       "ref": {
         "cost": 100,
         "weight": "5 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Armour flayed from a slain obsidiman; wearing it invites loathing and attack."
       },
       "effects": [
         {
@@ -452,7 +463,8 @@
       "ref": {
         "cost": 125,
         "weight": "15 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Living armour woven from forest vines that must be watered every few days."
       },
       "effects": [
         {
@@ -489,7 +501,8 @@
       "ref": {
         "cost": 300,
         "weight": "—",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Living elemental stones set into the skin, powered by the wearer's blood."
       },
       "effects": [
         {
@@ -539,7 +552,8 @@
       "ref": {
         "cost": 500,
         "weight": "45 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Interlocking rings of living crystal, its enchantment renewed each year."
       },
       "effects": [
         {
@@ -589,7 +603,8 @@
       "ref": {
         "cost": 1100,
         "weight": "—",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Crystal columns grown through the body from the wearer's own blood magic."
       },
       "effects": [
         {
@@ -639,7 +654,8 @@
       "ref": {
         "cost": 12000,
         "weight": "90 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Plate armour grown from living crystal rather than forged from metal."
       },
       "effects": [
         {
@@ -690,7 +706,8 @@
         "cost": 5,
         "weight": "3 lb",
         "availability": "average",
-        "shatterThreshold": 17
+        "shatterThreshold": 17,
+        "description": "A small forearm shield that still lets the wearer draw a bow."
       },
       "effects": [
         {
@@ -715,7 +732,8 @@
         "cost": 50,
         "weight": "5 lb",
         "availability": "rare",
-        "shatterThreshold": 17
+        "shatterThreshold": 17,
+        "description": "A living-crystal buckler favoured by crystal raiders; renewed yearly."
       },
       "effects": [
         {
@@ -753,7 +771,8 @@
         "cost": 15,
         "weight": "10 lb",
         "availability": "average",
-        "shatterThreshold": 19
+        "shatterThreshold": 19,
+        "description": "A metal-rimmed wooden shield guarding much of the upper body."
       },
       "effects": [
         {
@@ -791,7 +810,8 @@
         "cost": 20,
         "weight": "8 lb",
         "availability": "average",
-        "shatterThreshold": 19
+        "shatterThreshold": 19,
+        "description": "A footman's shield shaped to protect a mounted rider."
       },
       "effects": [
         {
@@ -829,7 +849,8 @@
         "cost": 22,
         "weight": "5 lb",
         "availability": "unusual",
-        "shatterThreshold": 16
+        "shatterThreshold": 16,
+        "description": "A living buckler of woven vines that must be watered every few days."
       },
       "effects": [
         {
@@ -880,7 +901,8 @@
         "cost": 50,
         "weight": "15 lb",
         "availability": "unusual",
-        "shatterThreshold": 21
+        "shatterThreshold": 21,
+        "description": "A tall, metal-clad shield covering the wearer from neck to shins."
       },
       "effects": [
         {
@@ -918,7 +940,8 @@
         "cost": 150,
         "weight": "15 lb",
         "availability": "rare",
-        "shatterThreshold": 18
+        "shatterThreshold": 18,
+        "description": "A living-crystal shield set in a wood or metal frame; renewed yearly."
       },
       "effects": [
         {
@@ -971,7 +994,8 @@
         "category": "melee",
         "strMin": 13,
         "size": 5,
-        "damageStep": 7
+        "damageStep": 7,
+        "description": "A dwarf-army axe with a bell-shaped blade on a long haft."
       },
       "effects": [
         {
@@ -1000,7 +1024,8 @@
         "size": 1,
         "damageStep": 1,
         "shortRange": "2-8",
-        "longRange": "9-16"
+        "longRange": "9-16",
+        "description": "A hollow tube that fires small needles, sometimes tipped with poison."
       },
       "effects": [
         {
@@ -1033,7 +1058,8 @@
         "longRange": "13-24",
         "entangle": {
           "difficulty": 9
-        }
+        },
+        "description": "Weighted cords thrown to strike and entangle a target."
       },
       "effects": [
         {
@@ -1066,7 +1092,8 @@
         "category": "melee",
         "strMin": 12,
         "size": 3,
-        "damageStep": 5
+        "damageStep": 5,
+        "description": "A blade about three feet long, curved or straight, single- or double-edged."
       },
       "effects": [
         {
@@ -1093,7 +1120,8 @@
         "category": "melee",
         "strMin": 7,
         "size": 2,
-        "damageStep": 3
+        "damageStep": 3,
+        "description": "A simple heavy length of hard wood or stone."
       },
       "effects": [
         {
@@ -1122,7 +1150,8 @@
         "size": 1,
         "damageStep": 2,
         "shortRange": "2-10",
-        "longRange": "11-20"
+        "longRange": "11-20",
+        "description": "A short blade up to a foot long, equally at home thrown."
       },
       "effects": [
         {
@@ -1151,7 +1180,8 @@
         "size": 1,
         "damageStep": 1,
         "shortRange": "2-18",
-        "longRange": "19-36"
+        "longRange": "19-36",
+        "description": "A small balanced throwing spike, sometimes dipped in poison."
       },
       "effects": [
         {
@@ -1178,7 +1208,8 @@
         "category": "melee",
         "strMin": 12,
         "size": 2,
-        "damageStep": 4
+        "damageStep": 4,
+        "description": "A short, wide, curved dwarf blade favoured by merchants."
       },
       "effects": [
         {
@@ -1208,7 +1239,8 @@
         "size": 5,
         "damageStep": 5,
         "shortRange": "2-48",
-        "longRange": "49-96"
+        "longRange": "49-96",
+        "description": "A three-wood elven bow more powerful than a longbow."
       },
       "effects": [
         {
@@ -1236,7 +1268,8 @@
         "strMin": 10,
         "dexMin": 7,
         "size": 3,
-        "damageStep": 5
+        "damageStep": 5,
+        "description": "A handle linked by chain to a spiked ball or rod."
       },
       "effects": [
         {
@@ -1265,7 +1298,8 @@
         "size": 1,
         "damageStep": 2,
         "shortRange": "2-20",
-        "longRange": "21-40"
+        "longRange": "21-40",
+        "description": "A throwing dagger alloyed with True Air for extra lift and range."
       },
       "effects": [
         {
@@ -1292,7 +1326,8 @@
         "category": "melee",
         "strMin": 8,
         "size": 2,
-        "damageStep": 4
+        "damageStep": 4,
+        "description": "A small, easy-to-use one-handed chopping axe."
       },
       "effects": [
         {
@@ -1321,7 +1356,8 @@
         "size": 3,
         "damageStep": 4,
         "shortRange": "2-24",
-        "longRange": "25-48"
+        "longRange": "25-48",
+        "description": "A Z-shaped throwing axe whose wing-blades lend it lift."
       },
       "effects": [
         {
@@ -1350,7 +1386,8 @@
         "size": 1,
         "damageStep": 1,
         "shortRange": "2-8",
-        "longRange": "9-16"
+        "longRange": "9-16",
+        "description": "A small cutting blade up to six inches, also thrown."
       },
       "effects": [
         {
@@ -1377,7 +1414,8 @@
         "category": "melee",
         "strMin": 14,
         "size": 6,
-        "damageStep": 6
+        "damageStep": 6,
+        "description": "A long mounted shaft braced to the rider's armour or saddle."
       },
       "effects": [
         {
@@ -1406,7 +1444,8 @@
         "size": 3,
         "damageStep": 4,
         "shortRange": "2-32",
-        "longRange": "33-64"
+        "longRange": "33-64",
+        "description": "A small, concealable crossbow firing short bolts."
       },
       "effects": [
         {
@@ -1433,7 +1472,8 @@
         "category": "melee",
         "strMin": 13,
         "size": 5,
-        "damageStep": 5
+        "damageStep": 5,
+        "description": "A two-handed spear five to eight feet long."
       },
       "effects": [
         {
@@ -1463,7 +1503,8 @@
         "size": 5,
         "damageStep": 4,
         "shortRange": "2-40",
-        "longRange": "41-80"
+        "longRange": "41-80",
+        "description": "A tall bow that sends long arrows to distant targets."
       },
       "effects": [
         {
@@ -1490,7 +1531,8 @@
         "category": "melee",
         "strMin": 13,
         "size": 3,
-        "damageStep": 4
+        "damageStep": 4,
+        "description": "A club reinforced with a shaped metal head."
       },
       "effects": [
         {
@@ -1519,7 +1561,8 @@
         "size": 4,
         "damageStep": 5,
         "shortRange": "2-40",
-        "longRange": "41-80"
+        "longRange": "41-80",
+        "description": "A larger crossbow firing twelve-inch bolts."
       },
       "effects": [
         {
@@ -1533,7 +1576,7 @@
           "measure": "step",
           "condition": "always",
           "source": "item",
-          "summary": "Missile damage: Strength step + 5."
+          "summary": "Deals Missile damage of Strength step + 5."
         }
       ]
     },
@@ -1551,7 +1594,8 @@
         "longRange": "7-12",
         "entangle": {
           "difficulty": 12
-        }
+        },
+        "description": "A thrown net used to entangle an opponent."
       },
       "effects": [
         {
@@ -1574,7 +1618,8 @@
         "category": "melee",
         "strMin": 14,
         "size": 5,
-        "damageStep": 7
+        "damageStep": 7,
+        "description": "A long hafted weapon tipped with a blade, hook, or point."
       },
       "effects": [
         {
@@ -1601,7 +1646,8 @@
         "category": "melee",
         "strMin": 16,
         "size": 6,
-        "damageStep": 8
+        "damageStep": 8,
+        "description": "A huge, heavy two-handed axe on a long haft."
       },
       "effects": [
         {
@@ -1629,7 +1675,8 @@
         "strMin": 6,
         "dexMin": 7,
         "size": 5,
-        "damageStep": 4
+        "damageStep": 4,
+        "description": "A hardwood pole; adds +1 Physical Defence in Defensive Stance."
       },
       "effects": [
         {
@@ -1657,7 +1704,8 @@
         "strMin": 3,
         "dexMin": 7,
         "size": 1,
-        "damageStep": 1
+        "damageStep": 1,
+        "description": "A leather pouch of pellets meant to knock a foe senseless."
       },
       "effects": [
         {
@@ -1684,7 +1732,8 @@
         "category": "melee",
         "strMin": 12,
         "size": 3,
-        "damageStep": 5
+        "damageStep": 5,
+        "description": "A one-handed dwarf axe (the mareka) whose back can hammer or hook."
       },
       "effects": [
         {
@@ -1711,7 +1760,8 @@
         "category": "melee",
         "strMin": 8,
         "size": 2,
-        "damageStep": 4
+        "damageStep": 4,
+        "description": "A two-to-three-foot blade, some hilted so windlings can wield it."
       },
       "effects": [
         {
@@ -1740,7 +1790,8 @@
         "size": 3,
         "damageStep": 3,
         "shortRange": "2-30",
-        "longRange": "31-60"
+        "longRange": "31-60",
+        "description": "A bow under four feet firing short feather-fletched arrows."
       },
       "effects": [
         {
@@ -1769,7 +1820,8 @@
         "size": 2,
         "damageStep": 2,
         "shortRange": "2-20",
-        "longRange": "21-40"
+        "longRange": "21-40",
+        "description": "A leather strap that flings stones or small shot."
       },
       "effects": [
         {
@@ -1798,7 +1850,8 @@
         "size": 3,
         "damageStep": 4,
         "shortRange": "2-10",
-        "longRange": "11-20"
+        "longRange": "11-20",
+        "description": "A short throwing-or-thrusting spear, often paired with a shield."
       },
       "effects": [
         {
@@ -1825,7 +1878,8 @@
         "category": "melee",
         "strMin": 13,
         "size": 4,
-        "damageStep": 6
+        "damageStep": 6,
+        "description": "A large mace crowned with a spiked metal head."
       },
       "effects": [
         {
@@ -1854,7 +1908,8 @@
         "size": 3,
         "damageStep": 3,
         "shortRange": "2-12",
-        "longRange": "13-24"
+        "longRange": "13-24",
+        "description": "A hand-axe balanced specifically for throwing."
       },
       "effects": [
         {
@@ -1883,7 +1938,8 @@
         "size": 1,
         "damageStep": 2,
         "shortRange": "2-16",
-        "longRange": "17-32"
+        "longRange": "17-32",
+        "description": "A flat, thin dagger balanced for throwing."
       },
       "effects": [
         {
@@ -1910,7 +1966,8 @@
         "category": "melee",
         "strMin": 11,
         "size": 4,
-        "damageStep": 5
+        "damageStep": 5,
+        "description": "A three-pointed pole arm favoured by t'skrang fishers."
       },
       "effects": [
         {
@@ -1937,7 +1994,8 @@
         "category": "melee",
         "strMin": 17,
         "size": 6,
-        "damageStep": 8
+        "damageStep": 8,
+        "description": "A troll-sized battle-axe from the highland clans."
       },
       "effects": [
         {
@@ -1966,7 +2024,8 @@
         "size": 4,
         "damageStep": 4,
         "shortRange": "2-30",
-        "longRange": "31-60"
+        "longRange": "31-60",
+        "description": "A staff-mounted sling; trolls and obsidimen wield it one-handed."
       },
       "effects": [
         {
@@ -1993,7 +2052,8 @@
         "category": "melee",
         "strMin": 13,
         "size": 4,
-        "damageStep": 6
+        "damageStep": 6,
+        "description": "A four-foot troll blade balanced for one exceptionally strong hand."
       },
       "effects": [
         {
@@ -2020,7 +2080,8 @@
         "category": "melee",
         "strMin": 15,
         "size": 6,
-        "damageStep": 8
+        "damageStep": 8,
+        "description": "The largest blade of all, over six feet and wielded in both hands."
       },
       "effects": [
         {
@@ -2047,7 +2108,8 @@
         "category": "melee",
         "strMin": 15,
         "size": 5,
-        "damageStep": 7
+        "damageStep": 7,
+        "description": "A spiked metal hammer, near-impossible to redirect mid-swing."
       },
       "effects": [
         {
@@ -2078,7 +2140,8 @@
         "damageStep": 3,
         "entangle": {
           "difficulty": 9
-        }
+        },
+        "description": "A braided leather whip that both strikes and entangles at range."
       },
       "effects": [
         {
@@ -2113,7 +2176,8 @@
         "size": 2,
         "damageStep": 3,
         "shortRange": "2-24",
-        "longRange": "25-48"
+        "longRange": "25-48",
+        "description": "A tiny bow made for windlings, firing short arrows."
       },
       "effects": [
         {
@@ -2145,7 +2209,8 @@
         "longRange": "7-12",
         "entangle": {
           "difficulty": 12
-        }
+        },
+        "description": "A pocket net for catching windling-sized creatures."
       },
       "effects": [
         {
@@ -2168,7 +2233,8 @@
         "category": "melee",
         "strMin": 7,
         "size": 2,
-        "damageStep": 4
+        "damageStep": 4,
+        "description": "An overlong windling spear for striking foes far below or above."
       },
       "effects": [
         {
@@ -2197,7 +2263,8 @@
         "size": 1,
         "damageStep": 2,
         "shortRange": "2-8",
-        "longRange": "9-16"
+        "longRange": "9-16",
+        "description": "A two-foot windling spear, balanced to throw even in flight."
       },
       "effects": [
         {
@@ -2224,7 +2291,8 @@
         "category": "melee",
         "strMin": 6,
         "size": 1,
-        "damageStep": 3
+        "damageStep": 3,
+        "description": "A dagger-like windling blade; larger races wield it poorly (−3)."
       },
       "effects": [
         {
@@ -2247,7 +2315,8 @@
       "ref": {
         "cost": 15,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Short, thick bolts fired from a light crossbow."
       },
       "effects": []
     },
@@ -2256,7 +2325,8 @@
       "ref": {
         "cost": 20,
         "weight": "4 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Twelve-inch bolts fired from a medium crossbow."
       },
       "effects": []
     },
@@ -2265,7 +2335,8 @@
       "ref": {
         "cost": 10,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Long, feather-fletched arrows for a longbow."
       },
       "effects": []
     },
@@ -2274,7 +2345,8 @@
       "ref": {
         "cost": 5,
         "weight": "2 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Short feather-fletched arrows for a shortbow."
       },
       "effects": []
     },
@@ -2283,7 +2355,8 @@
       "ref": {
         "cost": 25,
         "weight": "4 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Thick, heavy arrows made for the elven warbow."
       },
       "effects": []
     },
@@ -2292,7 +2365,8 @@
       "ref": {
         "cost": 5,
         "weight": "8 oz",
-        "availability": "average"
+        "availability": "average",
+        "description": "Tiny arrows sized for a windling bow."
       },
       "effects": []
     },
@@ -2301,7 +2375,8 @@
       "ref": {
         "cost": 1,
         "weight": "8 oz",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Small metal needles fired from a blowgun, sometimes poisoned."
       },
       "effects": []
     },
@@ -2311,7 +2386,8 @@
         "cost": 100,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 10
+        "craftingDifficultyNumber": 10,
+        "description": "A quartz, veined with red from the character’s own blood when implanted."
       },
       "effects": [
         {
@@ -2366,7 +2442,8 @@
         "cost": 325,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 14
+        "craftingDifficultyNumber": 14,
+        "description": "An amber eye-charm and gel worm that replaces an eye to grant astral sight."
       },
       "effects": [
         {
@@ -2453,7 +2530,8 @@
         "cost": 175,
         "weight": "1 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 11
+        "craftingDifficultyNumber": 11,
+        "description": "A valorous enemy's bone pinned into the skin to borrow their strength."
       },
       "effects": [
         {
@@ -2514,7 +2592,8 @@
         "cost": 200,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 9
+        "craftingDifficultyNumber": 9,
+        "description": "A living-crystal eye-charm that lets the wearer see in the dark."
       },
       "effects": [
         {
@@ -2572,7 +2651,8 @@
         "cost": 450,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 12
+        "craftingDifficultyNumber": 12,
+        "description": "A blood-marked turquoise charm granting one desperate Recovery test at the point of death."
       },
       "effects": [
         {
@@ -2631,7 +2711,8 @@
         "cost": 275,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 10
+        "craftingDifficultyNumber": 10,
+        "description": "A blood-fed steel-and-quartz charm that grants a burst of attack or damage."
       },
       "effects": [
         {
@@ -2704,7 +2785,8 @@
         "cost": 300,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 11
+        "craftingDifficultyNumber": 11,
+        "description": "A silver-and-pearl charm that grants a burst of spellcasting or spell effect."
       },
       "effects": [
         {
@@ -2777,7 +2859,8 @@
         "cost": 250,
         "weight": "1 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 13
+        "craftingDifficultyNumber": 13,
+        "description": "A hairy swallowed pebble, made only by questors of Garlen, that heals Wounds."
       },
       "effects": [
         {
@@ -2832,7 +2915,8 @@
         "cost": 450,
         "weight": "1 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 12
+        "craftingDifficultyNumber": 12,
+        "description": "A carved horn needle implanted to resist poison and disease."
       },
       "effects": [
         {
@@ -2905,7 +2989,8 @@
         "cost": 500,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 13
+        "craftingDifficultyNumber": 13,
+        "description": "A gold-and-silver charm set around True Earth that wards off Horrors."
       },
       "effects": [
         {
@@ -2978,7 +3063,8 @@
         "cost": 600,
         "weight": "1 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 15
+        "craftingDifficultyNumber": 15,
+        "description": "Ruby crystal that darkens with blood, trading Strain for quicker reactions."
       },
       "effects": [
         {
@@ -3037,7 +3123,8 @@
         "cost": 300,
         "weight": "1 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 11
+        "craftingDifficultyNumber": 11,
+        "description": "Clear crystal that reddens with blood, trading Strain for greater Strength."
       },
       "effects": [
         {
@@ -3096,7 +3183,8 @@
         "cost": 450,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 12
+        "craftingDifficultyNumber": 12,
+        "description": "A quartz eye-charm that sharpens a ranged attack for a point of Strain."
       },
       "effects": [
         {
@@ -3155,7 +3243,8 @@
         "cost": 200,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 12
+        "craftingDifficultyNumber": 12,
+        "description": "Amber crystal that steadies the wearer against being knocked down."
       },
       "effects": [
         {
@@ -3214,7 +3303,8 @@
         "cost": 50,
         "weight": "2 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 7
+        "craftingDifficultyNumber": 7,
+        "description": "A potion that boosts the next Recovery test with a +8 bonus."
       },
       "effects": [
         {
@@ -3239,7 +3329,8 @@
         "cost": 500,
         "weight": "2 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 11
+        "craftingDifficultyNumber": 11,
+        "description": "A potion granting a fresh Resistance test against a disease."
       },
       "effects": [
         {
@@ -3270,7 +3361,8 @@
         "cost": 100,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 8
+        "craftingDifficultyNumber": 8,
+        "description": "A potion that halts a disease's progress for eight hours."
       },
       "effects": [
         {
@@ -3291,7 +3383,8 @@
         "cost": 300,
         "weight": "2 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 12
+        "craftingDifficultyNumber": 12,
+        "description": "A potion that heals a Wound and boosts the next Recovery test."
       },
       "effects": [
         {
@@ -3322,7 +3415,8 @@
         "cost": 125,
         "weight": "2 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 8
+        "craftingDifficultyNumber": 8,
+        "description": "A draught that neutralises poison for eight hours."
       },
       "effects": [
         {
@@ -3343,7 +3437,8 @@
         "cost": 50,
         "weight": "1 lb",
         "availability": "unusual",
-        "craftingDifficultyNumber": 7
+        "craftingDifficultyNumber": 7,
+        "description": "A poultice granting a fresh Resistance test to shake off poison."
       },
       "effects": [
         {
@@ -3374,7 +3469,8 @@
         "cost": 600,
         "weight": "1 lb",
         "availability": "very Rare",
-        "craftingDifficultyNumber": 13
+        "craftingDifficultyNumber": 13,
+        "description": "A salve that can revive a character dead only a short while."
       },
       "effects": [
         {
@@ -3395,7 +3491,8 @@
         "cost": 200,
         "weight": "1 lb",
         "availability": "rare",
-        "craftingDifficultyNumber": 10
+        "craftingDifficultyNumber": 10,
+        "description": "A salve that heals a Wound at the cost of a Recovery test."
       },
       "effects": [
         {
@@ -3415,7 +3512,8 @@
       "ref": {
         "cost": 340,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "An enchanted bedroll that shifts temperature to keep the sleeper comfortable."
       },
       "effects": [
         {
@@ -3434,7 +3532,8 @@
       "ref": {
         "cost": 250,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Leather boots woven with True Water to keep the wearer's feet dry."
       },
       "effects": [
         {
@@ -3453,7 +3552,8 @@
       "ref": {
         "cost": 700,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Enchanted boots that keep feet warm and dry and ease a long day's travel."
       },
       "effects": [
         {
@@ -3472,7 +3572,8 @@
       "ref": {
         "cost": 25,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A magic whisk broom that gathers dust to be dumped on command."
       },
       "effects": [
         {
@@ -3491,7 +3592,8 @@
       "ref": {
         "cost": 275,
         "weight": "2 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A waterproof cloak whose ribbed lining warms with a rub; +2 Armour against cold."
       },
       "effects": [
         {
@@ -3529,7 +3631,8 @@
       "ref": {
         "cost": 275,
         "weight": "1 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A cloak woven to repel dirt and stains for months at a time."
       },
       "effects": [
         {
@@ -3548,7 +3651,8 @@
       "ref": {
         "cost": 300,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A woollen cloak that warms its wearer when the cold sets in."
       },
       "effects": [
         {
@@ -3567,7 +3671,8 @@
       "ref": {
         "cost": 75,
         "weight": "1 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "An enchanted forked rod that helps locate water (+3 Wilderness Survival)."
       },
       "effects": [
         {
@@ -3591,7 +3696,8 @@
       "ref": {
         "cost": 80,
         "weight": "2 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "An exquisitely woven elven robe that never sits right on an ork or dwarf."
       },
       "effects": [
         {
@@ -3610,7 +3716,8 @@
       "ref": {
         "cost": 100,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A short wand that makes a small flame on command to start fires."
       },
       "effects": [
         {
@@ -3629,7 +3736,8 @@
       "ref": {
         "cost": 12,
         "weight": "Neg.",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Chalk that writes in a soft glow readable under any light."
       },
       "effects": [
         {
@@ -3648,7 +3756,8 @@
       "ref": {
         "cost": 100,
         "weight": "3 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A True-Earth-and-Fire stone that glows red-hot for about a year."
       },
       "effects": [
         {
@@ -3667,7 +3776,8 @@
       "ref": {
         "cost": 100,
         "weight": "8 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A ceramic pot woven with True Fire that cooks without a flame."
       },
       "effects": [
         {
@@ -3686,7 +3796,8 @@
       "ref": {
         "cost": 100,
         "weight": "1 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A weapon with a small light-quartz set in the hilt to serve as a lamp."
       },
       "effects": [
         {
@@ -3706,7 +3817,8 @@
         "cost": 200,
         "weight": "20 lb",
         "availability": "rare",
-        "range": "30 yards"
+        "range": "30 yards",
+        "description": "A large enchanted crystal that glows on command; the enchantment is renewed yearly."
       },
       "effects": [
         {
@@ -3726,7 +3838,8 @@
         "cost": 125,
         "weight": "6 lb",
         "availability": "unusual",
-        "range": "20 yards"
+        "range": "20 yards",
+        "description": "A medium enchanted crystal that glows on command; the enchantment is renewed yearly."
       },
       "effects": [
         {
@@ -3746,7 +3859,8 @@
         "cost": 75,
         "weight": "2 lb",
         "availability": "unusual",
-        "range": "10 yards"
+        "range": "10 yards",
+        "description": "A small enchanted crystal that glows on command; the enchantment is renewed yearly."
       },
       "effects": [
         {
@@ -3765,7 +3879,8 @@
       "ref": {
         "cost": 300,
         "weight": "2 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A living crystal that records and replays a spoken message."
       },
       "effects": [
         {
@@ -3784,7 +3899,8 @@
       "ref": {
         "cost": 600,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A message stone warded to guard its message against tampering."
       },
       "effects": [
         {
@@ -3803,7 +3919,8 @@
       "ref": {
         "cost": 35,
         "weight": "1 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A hat charmed to fit any head, of any race."
       },
       "effects": [
         {
@@ -3822,7 +3939,8 @@
       "ref": {
         "cost": "5,000",
         "weight": "1 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A runed box that safely holds up to twenty kernels of a True Element."
       },
       "effects": [
         {
@@ -3841,7 +3959,8 @@
       "ref": {
         "cost": 200,
         "weight": "5 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A large airtight iron pot that keeps its contents cold and fresh far longer."
       },
       "effects": [
         {
@@ -3860,7 +3979,8 @@
       "ref": {
         "cost": 75,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A small airtight iron pot that keeps its contents cold and fresh far longer."
       },
       "effects": [
         {
@@ -3879,7 +3999,8 @@
       "ref": {
         "cost": 150,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A pot enchanted to purify any liquid poured into it."
       },
       "effects": [
         {
@@ -3898,7 +4019,8 @@
       "ref": {
         "cost": 140,
         "weight": "1 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Gloves that muffle a thief's handiwork, raising the Difficulty to notice it."
       },
       "effects": [
         {
@@ -3917,7 +4039,8 @@
       "ref": {
         "cost": 65,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A pouch woven with silence to hide the jingle of coins."
       },
       "effects": [
         {
@@ -3936,7 +4059,8 @@
       "ref": {
         "cost": 350,
         "weight": "NA",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A hanging lamp that keeps a room at a steady temperature."
       },
       "effects": [
         {
@@ -3955,7 +4079,8 @@
       "ref": {
         "cost": 350,
         "weight": "1 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "A steel mug that refills with cool, fresh water once a day."
       },
       "effects": [
         {
@@ -3974,7 +4099,8 @@
       "ref": {
         "cost": 275,
         "weight": "3 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "Combined artisan tools that let a crafter undo a mistake made moments before."
       },
       "effects": [
         {
@@ -3993,7 +4119,8 @@
       "ref": {
         "cost": 250,
         "weight": "2 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "description": "An instrument woven with True Air for a clearer, effortless sound (+1 to play)."
       },
       "effects": [
         {
@@ -4031,7 +4158,8 @@
       "ref": {
         "cost": 15,
         "weight": "14 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A basic bundle of camp gear for life on the road."
       },
       "effects": [
         {
@@ -4050,7 +4178,8 @@
       "ref": {
         "cost": 40,
         "weight": "34 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A basic bundle of camp gear packed with a tent."
       },
       "effects": [
         {
@@ -4069,7 +4198,8 @@
       "ref": {
         "cost": 500,
         "weight": "15 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Portable tools and reagents for practising Alchemy in the field."
       },
       "effects": [
         {
@@ -4093,7 +4223,8 @@
       "ref": {
         "cost": 2000,
         "weight": "NA",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A full workshop of alchemical apparatus and supplies."
       },
       "effects": [
         {
@@ -4112,7 +4243,8 @@
       "ref": {
         "cost": 15,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Knives and gouges for a carving artisan."
       },
       "effects": []
     },
@@ -4121,7 +4253,8 @@
       "ref": {
         "cost": 25,
         "weight": "1 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Needles and thread for an embroidery or sewing artisan."
       },
       "effects": []
     },
@@ -4130,7 +4263,8 @@
       "ref": {
         "cost": 100,
         "weight": "20 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A smith's forge tools for a metalworking artisan."
       },
       "effects": []
     },
@@ -4139,7 +4273,8 @@
       "ref": {
         "cost": 45,
         "weight": "2 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Brushes and pigments for a painting artisan."
       },
       "effects": []
     },
@@ -4148,7 +4283,8 @@
       "ref": {
         "cost": 30,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Chisels and tools for a sculpting artisan."
       },
       "effects": []
     },
@@ -4157,7 +4293,8 @@
       "ref": {
         "cost": 5,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A sturdy pack that carries roughly fifty pounds of goods."
       },
       "effects": [
         {
@@ -4176,7 +4313,8 @@
       "ref": {
         "cost": 5,
         "weight": "4 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A rolled sleeping mat and blanket for camp."
       },
       "effects": []
     },
@@ -4185,7 +4323,8 @@
       "ref": {
         "cost": "8 cp",
         "weight": "1 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A small pouch worn at the belt for coins and oddments."
       },
       "effects": [
         {
@@ -4204,7 +4343,8 @@
       "ref": {
         "cost": "15 cp",
         "weight": "2 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A woven blanket for warmth on the trail."
       },
       "effects": []
     },
@@ -4213,7 +4353,8 @@
       "ref": {
         "cost": "3 cp",
         "weight": "4 oz",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A wax candle giving a small, steady light."
       },
       "effects": [
         {
@@ -4232,7 +4373,8 @@
       "ref": {
         "cost": "3 cp",
         "weight": "4 oz",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "Five sticks of chalk for marking trails or leaving notes."
       },
       "effects": []
     },
@@ -4241,7 +4383,8 @@
       "ref": {
         "cost": 36,
         "weight": "19 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Rope, spikes, and gear for scaling heights."
       },
       "effects": [
         {
@@ -4260,7 +4403,8 @@
       "ref": {
         "cost": 25,
         "weight": "5 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A general set of tools for a working craftsman."
       },
       "effects": [
         {
@@ -4279,7 +4423,8 @@
       "ref": {
         "cost": 50,
         "weight": "6 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Paints, wigs, and props for changing one's appearance."
       },
       "effects": [
         {
@@ -4298,7 +4443,8 @@
       "ref": {
         "cost": 20,
         "weight": "14 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Line, hooks, and tackle for catching fish."
       },
       "effects": [
         {
@@ -4317,7 +4463,8 @@
       "ref": {
         "cost": 15,
         "weight": "10 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A wide net for catching fish."
       },
       "effects": []
     },
@@ -4326,7 +4473,8 @@
       "ref": {
         "cost": 1,
         "weight": "8 oz",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "Flint and steel for striking a fire."
       },
       "effects": []
     },
@@ -4335,7 +4483,8 @@
       "ref": {
         "cost": 10,
         "weight": "5 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A many-pronged hook for anchoring a climbing rope."
       },
       "effects": [
         {
@@ -4354,7 +4503,8 @@
       "ref": {
         "cost": 75,
         "weight": "5 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Bandages and salves for tending wounds, good for three uses."
       },
       "effects": [
         {
@@ -4384,7 +4534,8 @@
       "ref": {
         "cost": 50,
         "weight": "Neg.",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A refill of bandages and salves, good for three uses."
       },
       "effects": [
         {
@@ -4403,7 +4554,8 @@
       "ref": {
         "cost": 50,
         "weight": "9 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Ten feet of heavy iron chain."
       },
       "effects": [
         {
@@ -4422,7 +4574,8 @@
       "ref": {
         "cost": 20,
         "weight": "8 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A sturdy iron cooking pot."
       },
       "effects": []
     },
@@ -4431,7 +4584,8 @@
       "ref": {
         "cost": 27,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A lantern with a lens that throws a focused beam."
       },
       "effects": [
         {
@@ -4450,7 +4604,8 @@
       "ref": {
         "cost": 9,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A shuttered lantern whose light can be quickly hidden."
       },
       "effects": [
         {
@@ -4469,7 +4624,8 @@
       "ref": {
         "cost": 85,
         "weight": "5 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A lantern lit by an enchanted light-quartz crystal."
       },
       "effects": [
         {
@@ -4488,7 +4644,8 @@
       "ref": {
         "cost": 10,
         "weight": "6 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Ten feet of light chain."
       },
       "effects": [
         {
@@ -4507,7 +4664,8 @@
       "ref": {
         "cost": "8 cp",
         "weight": "1 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A tube for protecting maps and scrolls."
       },
       "effects": []
     },
@@ -4516,7 +4674,8 @@
       "ref": {
         "cost": 7,
         "weight": "5 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A hand drum for music and signalling."
       },
       "effects": []
     },
@@ -4525,7 +4684,8 @@
       "ref": {
         "cost": 2,
         "weight": "2 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A simple wooden flute."
       },
       "effects": []
     },
@@ -4534,7 +4694,8 @@
       "ref": {
         "cost": 70,
         "weight": "7 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A horn for music or signalling."
       },
       "effects": []
     },
@@ -4543,7 +4704,8 @@
       "ref": {
         "cost": 25,
         "weight": "6 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A stringed lute for a travelling musician."
       },
       "effects": []
     },
@@ -4552,7 +4714,8 @@
       "ref": {
         "cost": "2 cp",
         "weight": "1 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A small whistle for tunes or signals."
       },
       "effects": []
     },
@@ -4561,7 +4724,8 @@
       "ref": {
         "cost": 15,
         "weight": "2 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Charts for plotting a course by land or water."
       },
       "effects": [
         {
@@ -4580,7 +4744,8 @@
       "ref": {
         "cost": 6,
         "weight": "1 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A flask of lamp oil, also useful as a firebomb."
       },
       "effects": [
         {
@@ -4599,7 +4764,8 @@
       "ref": {
         "cost": 1,
         "weight": "Neg.",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A sheet of paper or parchment for writing."
       },
       "effects": []
     },
@@ -4608,7 +4774,8 @@
       "ref": {
         "cost": 50,
         "weight": "3 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Surgical tools and supplies for a physician, good for three uses."
       },
       "effects": [
         {
@@ -4627,7 +4794,8 @@
       "ref": {
         "cost": 25,
         "weight": "1 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A refill of a physician's supplies, good for three uses."
       },
       "effects": [
         {
@@ -4646,7 +4814,8 @@
       "ref": {
         "cost": 1,
         "weight": "Neg.",
-        "availability": "average"
+        "availability": "average",
+        "description": "A trimmed feather pen for writing."
       },
       "effects": []
     },
@@ -4655,7 +4824,8 @@
       "ref": {
         "cost": 2,
         "weight": "2 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A leather case holding about forty arrows or thirty bolts."
       },
       "effects": [
         {
@@ -4674,7 +4844,8 @@
       "ref": {
         "cost": 3,
         "weight": "1 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "Strong rope, sold by the yard."
       },
       "effects": [
         {
@@ -4693,7 +4864,8 @@
       "ref": {
         "cost": 2,
         "weight": "2 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A plain cloth sack for hauling goods."
       },
       "effects": [
         {
@@ -4712,7 +4884,8 @@
       "ref": {
         "cost": 30,
         "weight": "20 lb",
-        "availability": "average"
+        "availability": "average",
+        "description": "A canvas tent for shelter on the road."
       },
       "effects": []
     },
@@ -4721,7 +4894,8 @@
       "ref": {
         "cost": 100,
         "weight": "1 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Lockpicks and fine tools for defeating locks and traps."
       },
       "effects": [
         {
@@ -4740,7 +4914,8 @@
       "ref": {
         "cost": "5 cp",
         "weight": "1 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A pitch-soaked torch for light."
       },
       "effects": [
         {
@@ -4759,7 +4934,8 @@
       "ref": {
         "cost": 2,
         "weight": "4 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A skin holding about a day's water or wine."
       },
       "effects": [
         {
@@ -4778,7 +4954,8 @@
       "ref": {
         "cost": "2 cp",
         "weight": "1 lb",
-        "availability": "everyday"
+        "availability": "everyday",
+        "description": "A stone for keeping a blade's edge keen."
       },
       "effects": []
     },
@@ -4787,7 +4964,8 @@
       "ref": {
         "cost": 10,
         "weight": "8 oz",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "A vial of writing ink."
       },
       "effects": [
         {
@@ -4806,7 +4984,8 @@
       "ref": {
         "cost": 23,
         "weight": "2 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "description": "Pen, ink, and paper for writing on the road."
       },
       "effects": [
         {
