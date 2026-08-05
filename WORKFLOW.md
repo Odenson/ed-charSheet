@@ -101,6 +101,12 @@ entirely while reconnecting the histories, then push.
   asset and `fetch` paths in the app must be relative (`./data/...`,
   `./engine/...`), never root-absolute (`/data/...`). This keeps the same build
   working at both the root and the subpath.
+- **Saves never rebuild the app.** The serverless save target commits
+  `data/character.json` to the dedicated `character-data` branch
+  (docs/GITHUB-SERVERLESS-SAVE.md). The deploy workflow listens to `main` and
+  `dev` only, so a save triggers no rebuild; the app reads the committed file
+  live on the Pages site (falling back to the deployed copy) and reads the
+  working copy locally. The `character-data` branch is never deployed.
 - **What gets deployed:** the static app (`index.html`, `ui/`, `engine/`,
   `data/`, `rules/`, assets). Excluded: `tools/`, `node_modules/`, `package*.json`,
   `*.xlsx`, and anything gitignored (source spreadsheet, rulebook extracts,

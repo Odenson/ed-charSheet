@@ -37,6 +37,37 @@ async function loadJSON(path) {
   return res.json();
 }
 
+// The character file is source info, not app code: a serverless save commits it
+// to the `character-data` branch, which the deploy workflow does not watch, so
+// a save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). On the
+// Pages site we read it LIVE from that branch so a save shows up immediately;
+// everywhere else (local dev, file://) we read the working copy in the bundle.
+const CHARACTER_OWNER = 'odenson';
+const CHARACTER_REPO = 'ed-charSheet';
+const CHARACTER_BRANCH = 'character-data';
+
+function onPages() {
+  return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
+}
+
+function characterDataUrl() {
+  return onPages()
+    ? `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/character.json`
+    : './data/character.json';
+}
+
+async function loadCharacterData() {
+  const live = characterDataUrl();
+  if (live === './data/character.json') return loadJSON(live);
+  try {
+    return await loadJSON(live);
+  } catch {
+    // No save on the data branch yet (or raw is unreachable): fall back to the
+    // deployed copy rather than failing the whole app.
+    return loadJSON('./data/character.json');
+  }
+}
+
 // --- Persistence (Phase 2) -------------------------------------------------
 // ARCHITECTURE §7/§10: localStorage now, file export/import later. We store an
 // *edits overlay* — only the inputs the player changed — not a whole character
@@ -105,7 +136,7 @@ function applyEdits(character, edits) {
  */
 export async function loadCharacter() {
   const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
-    loadJSON('./data/character.json'),
+    loadCharacterData(),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),

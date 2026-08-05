@@ -313,9 +313,10 @@ not a rewrite:
 
 ### 7.4 Future: save directly to GitHub — what it could look like
 Today's local-file save still leans on a manual commit/push. A GitHub target
-closes that loop: **Save** commits `data/character.json` straight to the repo and
-Pages redeploys — genuinely "real" saving from any device, including the live
-site, with no local checkout in the loop.
+closes that loop: **Save** commits `data/character.json` to a dedicated
+`character-data` branch and the app reads it live at runtime — genuinely "real"
+saving from any device, including the live site, with no local checkout in the
+loop and no Pages rebuild.
 
 Sketch of the flow (all client-side; still no backend of ours):
 
@@ -330,50 +331,47 @@ Sketch of the flow (all client-side; still no backend of ours):
    Either way the app asks the *player* for it — it is a credential the tooling
    never fills in on their behalf.
 2. **Read current SHA.**
-   `GET /repos/{owner}/{repo}/contents/data/character.json?ref=dev` → the file's
-   blob `sha` (the contents API needs it to update a file in place).
+   `GET /repos/{owner}/{repo}/contents/data/character.json?ref=character-data` →
+   the file's blob `sha` (the contents API needs it to update a file in place).
 3. **Write.** `PUT …/contents/data/character.json` with
-   `{ message, content: base64(json), sha, branch: "dev" }` — one commit on
-   `dev`; the deploy workflow (WORKFLOW.md) rebuilds `/dev/`.
+   `{ message, content: base64(json), sha, branch: "character-data" }` — one
+   commit on the data branch; the deploy workflow (WORKFLOW.md) watches `main`
+   and `dev` only, so a save never triggers a rebuild.
 4. **Feedback.** Surface the commit URL; on a `409` (the `sha` moved) re-read and
    retry.
+5. **Live read.** The app fetches `data/character.json` from the committed data
+   branch at runtime (`store.js`), so a save appears without rebuilding; locally
+   it keeps reading the working copy.
 
 This reuses the exact **dual-write** shape from §7.2 — the picker/handle is
 simply swapped for "device-flow token + repo path," and the serialized bytes are
 identical (inputs-only `character.json`). Trade-offs: a token in the browser is
-a real exposure (mitigated by least-privilege + session-only memory), and it
-adds a network dependency the local-file path doesn't have. Because it is purely
-an alternate Save target, it can land opt-in without disturbing the web-store +
+a real exposure (mitigated by least-privilege + session-only memory), it adds a
+network dependency the local-file path doesn't have, and the live read depends
+on the committed branch rather than a redeploy. Because it is purely an
+alternate Save target, it can land opt-in without disturbing the web-store +
 local-file model. (For players who'd rather the credential never touch the page,
 §7.5 documents the one serverless alternative.)
 
 ### 7.5 Future: serverless save endpoint — the one sanctioned backend exception
 
-The §7.4 flow keeps the credential in the browser (session-only in memory).
-For players who want the token to never enter the page at all, the one
-sanctioned alternative is a **tiny write endpoint** that commits on the app's
-behalf:
-
-1. **Host.** A single Cloudflare Worker (or Deno Deploy / Vercel function) — one
-   file, free tier, no database, nothing to operate.
-2. **Secret.** The GitHub token lives in the platform's secret store server-side,
-   never in the browser; the worker scopes it to this repo only (`Contents:
-   read/write`).
-3. **Flow.** The app `POST`s the same merged, inputs-only character to the
-   worker's one endpoint (`/save`); the worker does the GET-SHA → PUT-commit to
-   `dev`, and the existing deploy workflow rebuilds `/dev/` exactly as in §7.4.
-   Feedback and `409` retry behave the same.
+The §7.4 flow keeps the credential in the browser (session-only in memory). For
+players who want the token to never enter the page at all, the one sanctioned
+alternative is a tiny **write endpoint** that commits on the app's behalf: a
+single Cloudflare Worker / Deno Deploy function holds the repo-scoped GitHub
+token in the platform's secret store, and the app `POST`s the same merged,
+inputs-only character; the worker does the GET-SHA → PUT-commit to the dedicated
+`character-data` branch, and the app reads the committed file live at runtime —
+the deploy workflow (which watches `main` and `dev` only) is never triggered, so
+a save does not rebuild the app. Feedback and `409` retry behave the same.
 
 This is the **only** documented exception to the "no backend, no external
-runtime dependency" constraint (ARCHITECTURE §2, goal 1). It is deliberate,
-opt-in, and additive: the web-store + local-file model stays the default and the
-only offline path, and the rest of the app keeps working with no network
-dependency. Trade-offs: server-save requires connectivity (offline editing still
-works locally), and one third-party hop is a small new surface — mitigated
-because the worker holds no data, just a scoped token and a commit call. Because
-it is purely an alternate Save target, it can land opt-in without disturbing the
-web-store + local-file model, and it ships *instead of* §7.4's in-browser token
-for players who want that — never in addition to it.
+runtime dependency" constraint (§2, goal 1). It is deliberate, opt-in, and
+additive: the web-store + local-file model stays the default and the only
+offline path. It ships *instead of* §7.4's in-browser token for players who want
+that — never in addition to it. The full design — how it works, how it is built,
+and its effect on the existing app — is broken out in
+[docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md).
 
 ---
 
@@ -403,8 +401,9 @@ for players who want that — never in addition to it.
     lit-3.2.1.js         # self-hosted Lit bundle (no external runtime dep)
     README.md            # provenance + how to refresh/upgrade
   docs/
-    EFFECT-TAXONOMY.md   # controlled vocabulary for rule effects
-    UI-GUIDELINES.md     # locked UI/UX contract
+    EFFECT-TAXONOMY.md       # controlled vocabulary for rule effects
+    UI-GUIDELINES.md         # locked UI/UX contract
+    GITHUB-SERVERLESS-SAVE.md# serverless save feature design (§7.5)
   CLAUDE.md              # tiered working agreement (protected-surface control)
   tools/archive/
     import-xlsx.mjs   # ARCHIVED bootstrap importer (provenance only; not run)
@@ -472,7 +471,8 @@ for players who want that — never in addition to it.
   as the GitHub save target so the token never touches the browser (§7.5). It is
   the only documented exception to "no backend, no external runtime dependency"
   (ARCHITECTURE §2, goal 1), is opt-in, and ships *instead of* the §7.4 in-browser
-  token for players who want that — never in addition to it.
+  token for players who want that — never in addition to it. Full design, worker
+  sketch, and impact assessment: `docs/GITHUB-SERVERLESS-SAVE.md`.
 - **Rules fidelity — DECIDED: core rules first, flag house rules.** During the
   Phase 0 import, port standard Earthdawn rules and **flag any custom/house-rule
   formulas** found in the sheet for confirmation before porting them. Faster path
