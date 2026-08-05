@@ -8,7 +8,7 @@
       { "type": "changed", "text": "Magical items, blood charms, and healing aids are now marked with a ✦ star beside their name instead of a glowing border, decluttering both the tiles and the detail cards." },
       { "type": "changed", "text": "The item detail card now reads the same for every item: a labelled stat row (cost, weight, availability, and — newly shown — strength minimum, size, range, and crafting difficulty) followed by the item's main bonuses as chips, then plain-text notes, then any situational rules highlighted in green. No more guessing what a bare value means." },
       { "type": "added", "text": "Weapon detail cards now show the weapon's range, strength minimum, and size." },
-      { "type": "changed", "text": "Blood charm cards no longer repeat the implant's Blood Magic Damage three times — it now appears once as a note and once as a single combined Death and Unconsciousness Rating line." }
+      { "type": "changed", "text": "The item detail card now spells out every rule in full: alongside the quick bonus chips, each effect's complete description is listed — always-on rules in white, situational ones in green — so nothing is hidden behind a short label." }
     ]
   },
   "releases": [

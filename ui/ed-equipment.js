@@ -71,16 +71,6 @@ const modifierChip = (e) => {
   const name = prettyName(e.target?.name);
   return { v: `${suffix ? `${name} ${suffix}` : name} ${val}`.trim() };
 };
-// Collapse the blood-charm implant Blood Magic Damage (equal `scope: implanted`
-// modifiers on both ratings) into a single situational line instead of one per
-// rating; other situational effects pass through as their own summary.
-const mergeImplant = (arr) => {
-  const impl = arr.filter((e) => e.scope === 'implanted');
-  const rest = arr.filter((e) => e.scope !== 'implanted').map((e) => ({ summary: e.summary }));
-  if (!impl.length) return rest;
-  const mag = Math.abs(impl[0].value ?? 0);
-  return [...rest, { summary: `Blood Magic Damage while implanted: Unconsciousness & Death Rating −${mag}.` }];
-};
 
 export class EdEquipment extends LitElement {
   static properties = {
@@ -472,12 +462,13 @@ export class EdEquipment extends LitElement {
     ].filter(Boolean);
     const effects = it.known ? (it.effects ?? []).filter((e) => e.summary) : [];
     const always = (e) => (e.condition ?? 'always') !== 'situational';
-    // ② Main-effect chips — always-on numeric modifiers as short `Label ±N`.
+    // ② Main-effect chips — always-on numeric modifiers as a short `Label ±N`
+    // quick-read; their full summary still appears in the lines below.
     const mainChips = effects.filter((e) => e.type !== 'note' && always(e) && typeof e.value === 'number').map(modifierChip);
-    // ③ White notes — every `note`, plus any always-on non-numeric rule.
-    const notes = effects.filter((e) => e.type === 'note' || (always(e) && typeof e.value !== 'number'));
-    // ④ Green situational — conditional non-note mechanics; implant lines merged.
-    const situational = mergeImplant(effects.filter((e) => e.type !== 'note' && !always(e)));
+    // ③ White lines — notes and every always-on rule, each shown in full so no
+    // detail is missed. ④ Green lines — every situational (context-dependent) rule.
+    const alwaysLines = effects.filter((e) => e.type === 'note' || always(e));
+    const situationalLines = effects.filter((e) => e.type !== 'note' && !always(e));
     return html`
       <div class="overlay" @click=${() => (this._modal = null)}>
         <div class="modal ${mg ? 'magic' : ''}" role="dialog" aria-modal="true" aria-label=${it.name} @click=${(e) => e.stopPropagation()}>
@@ -491,10 +482,10 @@ export class EdEquipment extends LitElement {
           </div>
           ${!it.known
             ? html`<div class="mtext" style="color: var(--muted)">Not in the catalog — contributes nothing to the sheet.</div>`
-            : notes.length || situational.length
+            : alwaysLines.length || situationalLines.length
               ? html`
-                  ${notes.map((e) => html`<div class="mtext">${e.summary}</div>`)}
-                  ${situational.map((e) => html`<div class="mnote">${e.summary}</div>`)}
+                  ${alwaysLines.map((e) => html`<div class="mtext">${e.summary}</div>`)}
+                  ${situationalLines.map((e) => html`<div class="mnote">${e.summary}</div>`)}
                 `
               : mainChips.length ? nothing : html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`}
           ${this.editMode
