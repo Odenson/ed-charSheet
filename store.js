@@ -233,6 +233,9 @@ export function deriveModel(character, rules) {
       living: ref?.living ?? false,
       ref: ref?.ref ?? {},
       effects: ref?.effects ?? owned.effects ?? [],
+      // Display-only strings for the UI (never engine-read). See rules/items.json
+      // notes.presentation — carries the tile's curated `shortEffect` for note items.
+      presentation: ref?.presentation ?? {},
     };
   });
 

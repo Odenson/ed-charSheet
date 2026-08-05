@@ -39,6 +39,24 @@ const subLine = (it) => {
   return it.kind === 'weapon' && it.ref?.category ? `${base} · ${it.ref.category}` : base;
 };
 
+// Presentation-only: the equipped tile's one-line effect for the right-hand space.
+// A curated `presentation.shortEffect` (note items) wins; otherwise derive a
+// `Label +N` from the item's first numeric effect. This is display formatting of
+// data the modal already shows — no game value is computed here.
+const TILE_SUFFIX = { 'armor-modifier': 'Armour', 'defense-modifier': 'Defence', 'attack-modifier': '', 'test-modifier': 'Test' };
+const deriveTileEffect = (effects) => {
+  const e = (effects ?? []).find((x) => x.type in TILE_SUFFIX && typeof x.value === 'number');
+  if (!e) return null;
+  const val = (e.operation === 'subtract' ? '-' : '+') + Math.abs(e.value);
+  const name = e.target?.name ?? '';
+  const suffix = TILE_SUFFIX[e.type];
+  return { label: suffix ? `${name} ${suffix}` : name, val };
+};
+const tileEffect = (it) => {
+  const short = it?.presentation?.shortEffect;
+  return short ? { text: short } : deriveTileEffect(it?.effects);
+};
+
 export class EdEquipment extends LitElement {
   static properties = {
     model: { attribute: false },
@@ -128,7 +146,7 @@ export class EdEquipment extends LitElement {
     .item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 9px; background: var(--bg-chip); border: 1px solid var(--border); margin-bottom: 6px; }
     .item:last-child { margin-bottom: 0; }
     .item.stored { opacity: 0.6; }
-    .item.magic { border-color: var(--arcane-line); box-shadow: 0 0 0 1px var(--arcane-line), 0 2px 14px -6px var(--arcane); }
+    .item.compact { padding-top: 4px; padding-bottom: 4px; }
     .iteminfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--fg); }
     .iteminfo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
     .nm { font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -139,6 +157,10 @@ export class EdEquipment extends LitElement {
     .eq.on { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
     .eq:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .statechip { font-size: 0.62rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+    /* Quiet main-effect on the right of an equipped tile: notes read as plain muted
+       text; numeric effects emphasise the value. */
+    .quiet { font-size: 0.72rem; color: var(--muted); white-space: nowrap; flex: 0 0 auto; text-align: right; }
+    .quiet b { font-weight: 500; color: var(--accent); font-family: var(--mono); }
     .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.92rem; line-height: 1; padding: 2px 4px; border-radius: 6px; }
     .del:hover { color: var(--danger); }
     .del:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
@@ -186,12 +208,11 @@ export class EdEquipment extends LitElement {
     /* Detail modal — matches the Disciplines talent modal. */
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; max-width: 30rem; width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; }
-    .modal.magic { border-color: var(--arcane-line); box-shadow: 0 0 0 1px var(--arcane-line), var(--shadow); }
+    .modal.magic { box-shadow: var(--shadow); }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
     .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 500; }
     .modal.magic .mtitle { color: var(--arcane); }
-    .mbadge { width: 14px; height: 14px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 0.5rem; background: var(--accent); border: 1px solid var(--accent); color: var(--accent-bg); }
-    .mbadge.mag { background: var(--arcane); border-color: var(--arcane); color: var(--arcane-bg); }
+    .mtitle .star { color: var(--arcane); font-size: 0.76rem; }
     .mclose { background: none; border: none; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; }
     .mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .chip { font-size: 0.62rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
@@ -283,13 +304,22 @@ export class EdEquipment extends LitElement {
 
   _itemRow(it) {
     const mg = isMagic(it);
-    const cls = `item ${mg ? 'magic' : ''} ${it.equipped ? '' : 'stored'}`;
+    const stored = !it.equipped;
+    // Stored items sink to the bottom of their section and collapse to just the
+    // name — the type/effect detail is a click away in the modal.
+    const cls = `item ${mg ? 'magic' : ''} ${stored ? 'stored compact' : ''}`;
+    // The right-hand quiet effect shows on equipped tiles in read mode; edit mode
+    // gives that space to the toggle + remove instead.
+    const eff = !stored && !this.editMode ? tileEffect(it) : null;
     return html`
       <div class=${cls}>
         <button class="iteminfo" @click=${() => (this._modal = it.name)} title="View ${it.name} details">
           <span class="nm">${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${it.name}</span>
-          <span class="sub">${subLine(it)}</span>
+          ${stored ? nothing : html`<span class="sub">${subLine(it)}</span>`}
         </button>
+        ${eff
+          ? html`<span class="quiet">${eff.text != null ? eff.text : html`${eff.label} <b>${eff.val}</b>`}</span>`
+          : ''}
         ${this.editMode
           ? html`
               <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}
@@ -307,10 +337,12 @@ export class EdEquipment extends LitElement {
 
   _section(sec, items) {
     const rows = items.filter((it) => sec.kinds.includes(it.kind));
+    // Equipped items first (in their existing order), stored items last.
+    const ordered = [...rows.filter((it) => it.equipped), ...rows.filter((it) => !it.equipped)];
     return html`
       <div class="blk">
         <h4><span class="glyph">${sec.glyph}</span>${sec.title}<span class="ct">${rows.length}</span></h4>
-        ${rows.length ? rows.map((it) => this._itemRow(it)) : html`<div class="empty">— nothing here —</div>`}
+        ${ordered.length ? ordered.map((it) => this._itemRow(it)) : html`<div class="empty">— nothing here —</div>`}
       </div>
     `;
   }
@@ -405,6 +437,7 @@ export class EdEquipment extends LitElement {
       costText(ref) ? { v: costText(ref) } : null,
       ref.weight ? { v: ref.weight } : null,
       ref.availability ? { v: ref.availability } : null,
+      ref.range ? { v: `Range ${ref.range}` } : null,
       ref.damageStep != null ? { c: 'effc', v: `Damage step ${ref.damageStep}` } : null,
     ].filter(Boolean);
     const effects = it.known ? (it.effects ?? []).filter((e) => e.summary) : [];
@@ -414,7 +447,7 @@ export class EdEquipment extends LitElement {
       <div class="overlay" @click=${() => (this._modal = null)}>
         <div class="modal ${mg ? 'magic' : ''}" role="dialog" aria-modal="true" aria-label=${it.name} @click=${(e) => e.stopPropagation()}>
           <div class="mhead">
-            <span class="mtitle"><span class="mbadge ${mg ? 'mag' : ''}" aria-hidden="true">${mg ? '✦' : ''}</span>${it.name}</span>
+            <span class="mtitle">${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${it.name}</span>
             <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
           </div>
           <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>

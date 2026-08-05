@@ -316,7 +316,7 @@
   "items": [
     {
       "name": "Spear",
-      "equipped": true
+      "equipped": false
     },
     {
       "name": "Hardened Leather",
@@ -328,20 +328,81 @@
     },
     {
       "name": "Broadsword",
+      "equipped": false
+    },
+    {
+      "name": "Backpack",
+      "equipped": true
+    },
+    {
+      "name": "Adventuring Kit (with tent)",
+      "equipped": true
+    },
+    {
+      "name": "Light Quartz, Small",
+      "equipped": true
+    },
+    {
+      "name": "Absorb Blow",
+      "equipped": true
+    },
+    {
+      "name": "Death Cheat",
+      "equipped": true
+    },
+    {
+      "name": "Desperate Blow",
+      "equipped": true
+    },
+    {
+      "name": "Water or Wine Skin",
+      "equipped": true
+    },
+    {
+      "name": "Light Quartz, Large",
+      "equipped": true
+    },
+    {
+      "name": "Desperate Spell",
+      "equipped": true
+    },
+    {
+      "name": "Horror Fend",
       "equipped": true
     }
   ],
   "wealth": {
     "coins": {
-      "copper": 0,
-      "silver": 0,
-      "gold": 0,
+      "copper": 5,
+      "silver": 458,
+      "gold": 205,
       "earth": 0,
       "water": 0,
       "air": 0,
       "fire": 0,
       "orichalcum": 0
     },
-    "gems": []
+    "gems": [
+      {
+        "name": "Ruby",
+        "valueSilver": 1300,
+        "qty": 1
+      },
+      {
+        "name": "Gem",
+        "valueSilver": 50,
+        "qty": 2
+      },
+      {
+        "name": "Gem",
+        "valueSilver": 400,
+        "qty": 3
+      },
+      {
+        "name": "Silver Broach",
+        "valueSilver": 15,
+        "qty": 1
+      }
+    ]
   }
 }

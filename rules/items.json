@@ -6,10 +6,11 @@
     "armor": "Worn armor confers Physical/Mystic Armor (damage reducers) via `armor-modifier` effects, and its Initiative penalty via a `characteristic-modifier` on Initiative (measure: step). `living` marks elemental 'living' armor (the only kind an obsidiman may wear atop Natural Armor; PG p.48). `ref` holds display-only stats (cost/weight/availability).",
     "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference.",
     "weapon": "Weapons carry an `attack-modifier` on the attack's Damage step (target `attack`/`Damage`, `operation: add`, measure: step). Every category — melee, missile, and thrown — adds its Damage Step to the Strength-step base (EFFECT-TAXONOMY v3 §4.1; the base is the engine default, not stored here). STR/DEX minima, size, ranges, and entangle details are display-only in `ref`. Ammo rows from the missile table are separate `ammunition` entries.",
-    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note`, and the Alchemy-crafting EDN is display-only in `ref`.",
+    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note` and is also captured as numeric `characteristic-modifier` effects (operation: subtract, measure: rating, `condition`: situational, `scope`: implanted) on the Death and Unconsciousness ratings, and the Alchemy-crafting EDN is display-only in `ref`.",
     "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers; `edn` (Alchemy crafting difficulty) is display-only in `ref`.",
     "magic-item": "Common magic items: numeric, always-relevant mechanics are typed effects; one-shot, non-numeric, or activated properties are `note` effects.",
-    "gear": "Adventuring gear is mostly display-only (`effects: []`); kits record their contents in a `note`, and items with a specific game rule (e.g. Healing Kit +1 Recovery, chain/rope break tests) carry that rule as an effect."
+    "gear": "Adventuring gear is mostly display-only (`effects: []`); kits record their contents in a `note`, and items with a specific game rule (e.g. Healing Kit +1 Recovery, chain/rope break tests) carry that rule as an effect.",
+    "presentation": "PRESENTATION LAYER ONLY. Optional `presentation` object holds display strings for the UI and is never read by the engine — it carries no game mechanics. `shortEffect` is a 3-4 word label shown in the Equipment tile's right-hand space for note-type items; the authoritative rule always lives in `effects` (and its full `summary`). Items with a numeric effect derive their tile label in the view instead, so they carry no `shortEffect`."
   },
   "items": {
     "Padded Cloth": {
@@ -1559,7 +1560,10 @@
           "source": "item",
           "summary": "Entangling weapon (Entangling Difficulty 12)."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Entangles target"
+      }
     },
     "Pole Arm": {
       "kind": "weapon",
@@ -2150,7 +2154,10 @@
           "source": "item",
           "summary": "Entangling weapon; captures creatures windling-size and smaller (Entangling Difficulty 12)."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Entangles small targets"
+      }
     },
     "Windling Pole Arm": {
       "kind": "weapon",
@@ -2319,8 +2326,39 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant causes 2 Blood Magic Damage that cannot be healed until the charm is used or destroyed."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Absorbs 12 damage"
+      }
     },
     "Astral-Sensitive Eye": {
       "kind": "blood-charm",
@@ -2378,6 +2416,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Takes 1 Strain each time the eye is used. Implant destroys the eye and causes 2 permanent damage that can never be healed; the charm can never be removed."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
       ]
     },
@@ -2408,8 +2474,39 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant causes 1 Blood Magic Damage that cannot be healed while the charm is worn."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −1."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 1,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −1."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Recovery Test +1"
+      }
     },
     "Darksight Eye": {
       "kind": "blood-charm",
@@ -2435,8 +2532,39 @@
           "condition": "situational",
           "source": "item",
           "summary": "No benefit if the character already has Low Light Vision. Implant destroys the eye and causes 2 permanent damage that can never be healed; the charm can never be removed."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Grants Low-Light Vision"
+      }
     },
     "Death Cheat": {
       "kind": "blood-charm",
@@ -2466,6 +2594,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant causes 3 Blood Magic Damage that cannot be healed until the charm is used."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
       ]
     },
@@ -2511,6 +2667,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "May be recharged after use (requires healing the implant damage first). Implant causes 3 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
       ]
     },
@@ -2556,6 +2740,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "May be recharged after use (requires healing the implant damage first). Implant causes 3 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
       ]
     },
@@ -2580,8 +2792,39 @@
           "condition": "situational",
           "source": "item",
           "summary": "Swallowing causes 4 permanent damage that can never be healed; the stone cannot be removed."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 4,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −4."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 4,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −4."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Heals a Wound"
+      }
     },
     "Horn Needle": {
       "kind": "blood-charm",
@@ -2625,6 +2868,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Costs 2 Strain per use. Implant causes 3 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
       ]
     },
@@ -2670,6 +2941,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Costs 1 Strain per round while in use; the charm falls inert when not used and may be reattached (requires healing the implant damage first). Implant causes 3 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
       ]
     },
@@ -2701,6 +3000,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant causes 4 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 4,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −4."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 4,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −4."
         }
       ]
     },
@@ -2732,6 +3059,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant causes 2 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
       ]
     },
@@ -2763,6 +3118,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant destroys the eye and causes 2 permanent damage that can never be healed; the charm can never be removed."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
       ]
     },
@@ -2794,6 +3177,34 @@
           "condition": "situational",
           "source": "item",
           "summary": "Implant causes 3 Blood Magic Damage."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "UnconsciousnessRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
+        },
+        {
+          "type": "characteristic-modifier",
+          "target": {
+            "domain": "characteristic",
+            "name": "DeathRating"
+          },
+          "operation": "subtract",
+          "value": 3,
+          "measure": "rating",
+          "condition": "situational",
+          "scope": "implanted",
+          "source": "item",
+          "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
       ]
     },
@@ -2869,7 +3280,10 @@
           "source": "item",
           "summary": "Stops a disease's progression for 8 hours; effects caused before ingestion remain in effect."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Halts disease 8h"
+      }
     },
     "Healing Potion": {
       "kind": "healing-aid",
@@ -2918,7 +3332,10 @@
           "source": "item",
           "summary": "Neutralizes the effects of poison for 8 hours; effects caused before ingestion remain."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Neutralizes poison 8h"
+      }
     },
     "Kelix's Poultice": {
       "kind": "healing-aid",
@@ -2967,7 +3384,10 @@
           "source": "item",
           "summary": "Revives a character dead for no more hours than the higher of their Toughness or Willpower step: the character may take all remaining Recovery tests (or a bonus one if none remain); if damage drops below Death Rating the character returns to life. Multiple salves may be applied, but only one is effective in any hour."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Revives the recently dead"
+      }
     },
     "Salve of Closure": {
       "kind": "healing-aid",
@@ -2985,7 +3405,10 @@
           "source": "item",
           "summary": "Automatically heals any Wound it is applied to, costing one Recovery test (no effect if none remain)."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Heals a Wound"
+      }
     },
     "Bedroll of Comfort": {
       "kind": "magic-item",
@@ -3001,7 +3424,10 @@
           "source": "item",
           "summary": "Magically changes temperature to keep the user comfortable while sleeping."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Comfortable sleeping temperature"
+      }
     },
     "Boots, Dry": {
       "kind": "magic-item",
@@ -3017,7 +3443,10 @@
           "source": "item",
           "summary": "Repels outside moisture to keep the wearer's feet dry."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Keeps feet dry"
+      }
     },
     "Boots, Huntsman": {
       "kind": "magic-item",
@@ -3033,7 +3462,10 @@
           "source": "item",
           "summary": "Keeps the wearer's feet warm and dry and lets him walk an additional five miles each day."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Warm feet, farther travel"
+      }
     },
     "Cleaning Broom": {
       "kind": "magic-item",
@@ -3049,7 +3481,10 @@
           "source": "item",
           "summary": "Captures all loose dust and dirt with which it comes in contact; a command word dumps the collected dust."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Sweeps up dust"
+      }
     },
     "Cloak, Dwarf Winternight": {
       "kind": "magic-item",
@@ -3103,7 +3538,10 @@
           "source": "item",
           "summary": "Repels dirt and oils, staying clean for extended periods."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Repels dirt and oils"
+      }
     },
     "Cloak, Warm": {
       "kind": "magic-item",
@@ -3119,7 +3557,10 @@
           "source": "item",
           "summary": "Keeps the wearer warm when outdoor temperatures drop."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Keeps wearer warm"
+      }
     },
     "Divining Rod": {
       "kind": "magic-item",
@@ -3159,7 +3600,10 @@
           "source": "item",
           "summary": "Fine, delicate garments that never seem to wear or grow old."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Never wears out"
+      }
     },
     "Fire Starter": {
       "kind": "magic-item",
@@ -3175,7 +3619,10 @@
           "source": "item",
           "summary": "Short wand that produces a small flame at one end on a spoken command word."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Flame on command"
+      }
     },
     "Firefly Chalk (per stick)": {
       "kind": "magic-item",
@@ -3191,7 +3638,10 @@
           "source": "item",
           "summary": "Writes glowing script readable in all lighting conditions; more than five words provides low-light illumination."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Glowing script"
+      }
     },
     "Heat Stone": {
       "kind": "magic-item",
@@ -3207,7 +3657,10 @@
           "source": "item",
           "summary": "Provides steady heat like a burning coal for about a year."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Steady heat source"
+      }
     },
     "Hot Pot": {
       "kind": "magic-item",
@@ -3223,7 +3676,10 @@
           "source": "item",
           "summary": "Ceramic cooking pot woven with True Fire; heats without fire (command word), but temperature cannot be regulated."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Cooks without fire"
+      }
     },
     "Light Quartz Weapon": {
       "kind": "magic-item",
@@ -3239,14 +3695,18 @@
           "source": "item",
           "summary": "Weapon with a light quartz crystal in the hilt, used as a light source (about half as effective as a standard light quartz); the enchantment must be renewed annually."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Built-in light source"
+      }
     },
     "Light Quartz, Large": {
       "kind": "magic-item",
       "ref": {
         "cost": 200,
         "weight": "20 lb",
-        "availability": "rare"
+        "availability": "rare",
+        "range": "30 yards"
       },
       "effects": [
         {
@@ -3255,14 +3715,18 @@
           "source": "item",
           "summary": "Magical light source, dimmed or turned on and off by command; the enchantment must be renewed annually."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Magical light source"
+      }
     },
     "Light Quartz, Medium": {
       "kind": "magic-item",
       "ref": {
         "cost": 125,
         "weight": "6 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "range": "20 yards"
       },
       "effects": [
         {
@@ -3271,14 +3735,18 @@
           "source": "item",
           "summary": "Magical light source, dimmed or turned on and off by command; the enchantment must be renewed annually."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Magical light source"
+      }
     },
     "Light Quartz, Small": {
       "kind": "magic-item",
       "ref": {
         "cost": 75,
         "weight": "2 lb",
-        "availability": "unusual"
+        "availability": "unusual",
+        "range": "10 yards"
       },
       "effects": [
         {
@@ -3287,7 +3755,10 @@
           "source": "item",
           "summary": "Magical light source, dimmed or turned on and off by command; the enchantment must be renewed annually."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Magical light source"
+      }
     },
     "Message Stone": {
       "kind": "magic-item",
@@ -3303,7 +3774,10 @@
           "source": "item",
           "summary": "Captures sound within its crystalline structure and releases it on command."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Records spoken messages"
+      }
     },
     "Message Stone (warded)": {
       "kind": "magic-item",
@@ -3319,7 +3793,10 @@
           "source": "item",
           "summary": "As a message stone, with wards protecting the message against tampering."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Warded message stone"
+      }
     },
     "One-Size Hat": {
       "kind": "magic-item",
@@ -3335,7 +3812,10 @@
           "source": "item",
           "summary": "Minor magic makes the hat fit any head perfectly; any race, including obsidimen and t'skrang, can wear it."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Fits any head"
+      }
     },
     "Orichalcum Container": {
       "kind": "magic-item",
@@ -3351,7 +3831,10 @@
           "source": "item",
           "summary": "Small container that holds up to twenty kernels of a True Element."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Holds True Elements"
+      }
     },
     "Pot of Grumbah, Large": {
       "kind": "magic-item",
@@ -3367,7 +3850,10 @@
           "source": "item",
           "summary": "Airtight and cold; triples the time the contents remain fresh before decaying."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Keeps food fresh"
+      }
     },
     "Pot of Grumbah, Small": {
       "kind": "magic-item",
@@ -3383,7 +3869,10 @@
           "source": "item",
           "summary": "Airtight and cold; triples the time the contents remain fresh before decaying."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Keeps food fresh"
+      }
     },
     "Pure Water Pot": {
       "kind": "magic-item",
@@ -3399,7 +3888,10 @@
           "source": "item",
           "summary": "Casts the Purify Water spell (Spellcasting/Effect Step 8/2D6) on any liquid placed in it."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Purifies water"
+      }
     },
     "Quiet Fingers Gloves": {
       "kind": "magic-item",
@@ -3415,7 +3907,10 @@
           "source": "item",
           "summary": "+1 to the Difficulty Number for Perception tests to detect the wearer while picking a lock or pocket; works only while actively using the hands."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Harder to detect"
+      }
     },
     "Quiet Pouch": {
       "kind": "magic-item",
@@ -3431,7 +3926,10 @@
           "source": "item",
           "summary": "Silencing illusions woven into the fabric prevent noise from emerging (e.g. the jingling of coins)."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Silences contents"
+      }
     },
     "Season Lamp": {
       "kind": "magic-item",
@@ -3447,7 +3945,10 @@
           "source": "item",
           "summary": "Woven with True Air and fire; alternately warms or cools the room to a constant temperature regardless of the weather outside."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Heats or cools room"
+      }
     },
     "Traveler's Mug": {
       "kind": "magic-item",
@@ -3463,7 +3964,10 @@
           "source": "item",
           "summary": "Fills once per day with cool fresh water on command."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Daily fresh water"
+      }
     },
     "Upandal's Blessings": {
       "kind": "magic-item",
@@ -3479,7 +3983,10 @@
           "source": "item",
           "summary": "On a failed Craftsman or Artisan test, may immediately erase the mistake and make a second test. Crafting magical items requires a Craftsman/Artisan test vs the item's Mystic Defense."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Retry crafting mistakes"
+      }
     },
     "Wind Instrument": {
       "kind": "magic-item",
@@ -3533,7 +4040,10 @@
           "source": "item",
           "summary": "Backpack, bedroll, flint and steel, torch, waterskin, and large sack."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Basic camp kit"
+      }
     },
     "Adventuring Kit (with tent)": {
       "kind": "gear",
@@ -3549,7 +4059,10 @@
           "source": "item",
           "summary": "Backpack, bedroll, flint and steel, torch, waterskin, large sack, and tent."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Camp kit with tent"
+      }
     },
     "Alchemist's Kit": {
       "kind": "gear",
@@ -3589,7 +4102,10 @@
           "source": "item",
           "summary": "Complete alchemy lab (glassware, mortars, jars, burners, crucibles); not portable."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Full alchemy lab"
+      }
     },
     "Artisan Tools: Carving": {
       "kind": "gear",
@@ -3650,7 +4166,10 @@
           "source": "item",
           "summary": "Standard backpack holds approximately 50 pounds of goods."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Holds ~50 lb"
+      }
     },
     "Bedroll": {
       "kind": "gear",
@@ -3675,7 +4194,10 @@
           "source": "item",
           "summary": "Typically holds approximately 5 pounds of goods."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Holds ~5 lb"
+      }
     },
     "Blanket": {
       "kind": "gear",
@@ -3700,7 +4222,10 @@
           "source": "item",
           "summary": "Illuminates a 3-yard radius."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Lights 3-yard radius"
+      }
     },
     "Chalk (5 pieces)": {
       "kind": "gear",
@@ -3725,7 +4250,10 @@
           "source": "item",
           "summary": "Rope (20 ft), light chain (10 ft), 2 pitons, and a grappling hook."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Climbing gear set"
+      }
     },
     "Craftsman Tools": {
       "kind": "gear",
@@ -3741,7 +4269,10 @@
           "source": "item",
           "summary": "Required to use the Craftsman skill."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "For Craftsman skill"
+      }
     },
     "Disguise Kit": {
       "kind": "gear",
@@ -3757,7 +4288,10 @@
           "source": "item",
           "summary": "Essential for using the Disguise skill."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "For Disguise skill"
+      }
     },
     "Fishing Kit": {
       "kind": "gear",
@@ -3773,7 +4307,10 @@
           "source": "item",
           "summary": "10 fish hooks, fishing net, fishing rod, and bait jar; used with the Wilderness Survival skill."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "For fishing"
+      }
     },
     "Fishing Net (30 sq ft)": {
       "kind": "gear",
@@ -3807,7 +4344,10 @@
           "source": "item",
           "summary": "May be thrown with a Throwing Weapons test (DN usually 7); requires the Called Shot combat option to hit the intended location."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Thrown climbing hook"
+      }
     },
     "Healing Kit: Basic (3 applications)": {
       "kind": "gear",
@@ -3853,7 +4393,10 @@
           "source": "item",
           "summary": "Refill of three applications for a healing kit; requires the basic components to be useful."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Healing kit refill"
+      }
     },
     "Heavy Chain (10ft)": {
       "kind": "gear",
@@ -3869,7 +4412,10 @@
           "source": "item",
           "summary": "Binding/climbing chain; a bound character breaks free with a successful Strength (14) test. Obsidimen and trolls require the heavy version when climbing."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Heavy binding chain"
+      }
     },
     "Iron Pot": {
       "kind": "gear",
@@ -3894,7 +4440,10 @@
           "source": "item",
           "summary": "Focuses light into a 2-yard-wide beam that extends to 20 yards."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "20-yard light beam"
+      }
     },
     "Lantern: Hooded": {
       "kind": "gear",
@@ -3910,7 +4459,10 @@
           "source": "item",
           "summary": "Illuminates a 10-yard-radius area."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Lights 10-yard radius"
+      }
     },
     "Lantern: Light Quartz": {
       "kind": "gear",
@@ -3926,7 +4478,10 @@
           "source": "item",
           "summary": "Provides illumination equivalent to a hooded lantern."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Everburning lantern"
+      }
     },
     "Light Chain (10ft)": {
       "kind": "gear",
@@ -3942,7 +4497,10 @@
           "source": "item",
           "summary": "Binding/climbing chain; a bound character breaks free with a successful Strength (11) test."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Binding / climbing chain"
+      }
     },
     "Map or Scroll Case": {
       "kind": "gear",
@@ -4012,7 +4570,10 @@
           "source": "item",
           "summary": "Map and scroll case with a basic star chart; required to use the Navigation talent."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "For Navigation talent"
+      }
     },
     "Oil Flask": {
       "kind": "gear",
@@ -4028,7 +4589,10 @@
           "source": "item",
           "summary": "Holds enough oil to fuel a lantern for eight hours."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Lantern fuel (8h)"
+      }
     },
     "Paper/Parchment (sheet)": {
       "kind": "gear",
@@ -4053,7 +4617,10 @@
           "source": "item",
           "summary": "Required to use the Physician skill; can be used three times before its consumable supplies are exhausted."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "For Physician skill"
+      }
     },
     "Physician's Kit: Refill (3 applications)": {
       "kind": "gear",
@@ -4069,7 +4636,10 @@
           "source": "item",
           "summary": "Refill of three applications for a physician's kit; requires the tools from the basic kit to be useful."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Physician kit refill"
+      }
     },
     "Quill Pen": {
       "kind": "gear",
@@ -4094,7 +4664,10 @@
           "source": "item",
           "summary": "Typical quiver holds 40 arrows or 30 bolts."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Holds 40 arrows"
+      }
     },
     "Rope (per yard)": {
       "kind": "gear",
@@ -4110,7 +4683,10 @@
           "source": "item",
           "summary": "Binding/climbing rope; a bound character breaks free with a successful Strength (8) test."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Binding / climbing rope"
+      }
     },
     "Sack": {
       "kind": "gear",
@@ -4126,7 +4702,10 @@
           "source": "item",
           "summary": "Holds approximately 30 pounds of goods."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Holds ~30 lb"
+      }
     },
     "Tent": {
       "kind": "gear",
@@ -4151,7 +4730,10 @@
           "source": "item",
           "summary": "Required to use the Lock Picking skill."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "For Lock Picking"
+      }
     },
     "Torch": {
       "kind": "gear",
@@ -4167,7 +4749,10 @@
           "source": "item",
           "summary": "Illuminates a 10-yard radius; unlit may be used as an improvised club; a lit torch may set flammable targets alight."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Lights 10-yard radius"
+      }
     },
     "Water or Wine Skin": {
       "kind": "gear",
@@ -4183,7 +4768,10 @@
           "source": "item",
           "summary": "A typical skin holds enough water for one day (the weight shown is for a full skin)."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "One day of water"
+      }
     },
     "Whetstone": {
       "kind": "gear",
@@ -4208,7 +4796,10 @@
           "source": "item",
           "summary": "Each vial holds enough ink for eight to ten pages."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Ink for writing"
+      }
     },
     "Writing Kit": {
       "kind": "gear",
@@ -4224,7 +4815,10 @@
           "source": "item",
           "summary": "Quill pen, writing ink, 10 sheets of parchment or paper, 2 candles, and 10 pieces of chalk."
         }
-      ]
+      ],
+      "presentation": {
+        "shortEffect": "Writing supplies"
+      }
     }
   }
 }

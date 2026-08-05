@@ -2,7 +2,13 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      { "type": "changed", "text": "Equipment tiles are tidier: each equipped item now shows a quiet one-line effect on the right — a short label for special gear (e.g. \"Entangles target\") or its key bonus (e.g. \"Physical Armour +3\"), read straight from the item's rules. Click any item for the full details card." },
+      { "type": "changed", "text": "Stored items now sink to the bottom of their section and collapse to just their name, keeping your equipped gear front and centre." },
+      { "type": "changed", "text": "Magical items, blood charms, and healing aids are now marked with a ✦ star beside their name instead of a glowing border, decluttering both the tiles and the detail cards." },
+      { "type": "added", "text": "Weapon detail cards now show the weapon's range." },
+      { "type": "changed", "text": "Blood charm entries now record their implant Blood Magic Damage as structured Death and Unconsciousness Rating modifiers alongside the existing note. They stay situational, so they don't change your displayed ratings — they're there for reference." }
+    ]
   },
   "releases": [
     {
