@@ -221,11 +221,18 @@ retired. See ARCHITECTURE §7 and design §4.5.
 
 ### Phase 6 — End-to-end verification (YOU drive, CLAUDE checks)
 
-- [ ] **6.1** On the dev Pages site, enable "Save to GitHub", enter the SAVE_KEY,
-  edit a value, Save → expect a success + commit URL.
+> **Use the deployed dev site** (`https://odenson.github.io/dev/`), not localhost:
+> the worker's CORS allows the `odenson.github.io` origin only, so a real save
+> only works from `/` or `/dev/`. (`dev` was pushed 2026-08-06, commit `c2593e1`.)
+
+- [ ] **6.1** On the dev site, enter edit mode (✎) → click **Save** → the key
+  prompt appears → paste the SAVE_KEY → Save. Edit a value first so there's
+  something to commit. Expect a success toast + commit link.
 - [ ] **6.2** Reload → the edited value persists (read live from the branch) with
   the overlay reconciled (no stale mask).
-- [ ] **6.3** Wrong key → clean error, no commit.
+- [ ] **6.3** Wrong key → clean error toast, no commit; the next Save re-prompts.
+- [ ] **6.4** **Export** (download icon) → a `.json` copy downloads (works here and
+  in Firefox/Safari/mobile).
 
 ---
 
@@ -316,8 +323,8 @@ typed `SaveError`.
 | PAT created / expires | 2026-08-06 / ~2026-11-04 (90d — rotate before, §6) |
 | SAVE_KEY set | 2026-08-06 |
 | Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
-| App integration merged | _pending Phase 3_ |
-| Docs flipped to "shipped" | _pending Phase 5_ |
+| App integration merged | 2026-08-06 on `dev` (commit `c2593e1`) — pending Phase 6 sign-off |
+| Docs flipped to "shipped" | _pending Phase 5 (after dev sign-off)_ |
 
 ---
 
