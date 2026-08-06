@@ -6,6 +6,28 @@
   },
   "releases": [
     {
+      "version": "1.5.0",
+      "date": "2026-08-06",
+      "changes": [
+        { "type": "added", "text": "Save directly to GitHub: while editing, the Save button now commits your character to the cloud, so it syncs across your devices and the live site with no file to juggle. Enter your private save key once per session — it's kept only in memory and never stored. A dot on the Save button marks unsaved changes and clears once a save lands." },
+        { "type": "added", "text": "Export a copy: a one-click download of your character as a .json backup, now working in every browser — including Firefox, Safari, and mobile — replacing the old Chrome-only \"save to a file\" button." },
+        { "type": "changed", "text": "Your edits keep autosaving to your browser as you make them, so an interrupted or offline save never loses work; the GitHub save is the moment you publish that work to the cloud." },
+        { "type": "fixed", "text": "A save now shows up the moment you reload — the sheet reads your latest save straight from GitHub, instead of occasionally showing a few-minutes-stale copy right after saving." }
+      ]
+    },
+    {
+      "version": "1.4.0",
+      "date": "2026-08-05",
+      "changes": [
+        { "type": "changed", "text": "Equipment tiles are tidier: each equipped item shows a quiet one-line effect on the right — a short label for special gear (e.g. \"Entangles target\") or its key bonus (e.g. \"Physical Armour +5\"). Click any item to open its full detail card." },
+        { "type": "changed", "text": "Stored items now sink to the bottom of their section and collapse to just their name, keeping your equipped gear front and centre." },
+        { "type": "changed", "text": "Magical items, blood charms, and healing aids are marked with a ✦ star beside their name instead of a glowing border, decluttering both the tiles and the detail cards." },
+        { "type": "added", "text": "Every item now carries a short description drawn from the Earthdawn rulebooks, shown at the top of its detail card." },
+        { "type": "changed", "text": "The item detail card now reads the same for every item: a labelled stat row (cost, weight, availability, and — newly shown — strength minimum, size, range, and crafting difficulty), the item's key bonuses as chips, then the item's description and the full text of every rule it grants — so nothing is hidden behind a short label." },
+        { "type": "fixed", "text": "Closing an item's detail card with Escape no longer leaves a stray highlight on the tile you selected." }
+      ]
+    },
+    {
       "version": "1.3.0",
       "date": "2026-08-04",
       "changes": [

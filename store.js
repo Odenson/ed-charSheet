@@ -37,6 +37,51 @@ async function loadJSON(path) {
   return res.json();
 }
 
+// The character file is source info, not app code: a serverless save commits it
+// to the `character-data` branch, which the deploy workflow does not watch, so
+// a save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). On the
+// Pages site we read it LIVE from that branch so a save shows up immediately;
+// everywhere else (local dev, file://) we read the working copy in the bundle.
+const CHARACTER_OWNER = 'odenson';
+const CHARACTER_REPO = 'ed-charSheet';
+const CHARACTER_BRANCH = 'character-data';
+
+function onPages() {
+  return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
+}
+
+const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/character.json?ref=${CHARACTER_BRANCH}`;
+const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/character.json`;
+
+// On the Pages site, read the saved character live from the character-data
+// branch. Prefer the GitHub **contents API** (`Accept: raw`): it reads the git
+// database directly, so a just-saved commit is visible immediately. The raw CDN
+// keys its ~5-minute cache on the *path* — the `?t=` query doesn't reliably bust
+// it — so a save-then-reload can race a stale edge copy (the read-after-write
+// bug that Phase 6 surfaced). Fallbacks keep it never-worse-than-before: if the
+// API is unreachable or rate-limited (60/hr per IP, unauthenticated) fall back
+// to the raw CDN (cache-busted, eventually consistent), then to the deployed
+// bundle. CORS is open on both hosts; the browser sets the required User-Agent.
+async function loadCharacterData() {
+  if (!onPages()) return loadJSON('./data/character.json');
+  try {
+    const res = await fetch(CHARACTER_API_URL, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return await res.json(); // git-consistent: reflects the latest save
+  } catch {
+    /* network/CORS hiccup — fall through to the CDN */
+  }
+  try {
+    return await loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
+  } catch {
+    // No save on the data branch yet (or raw is unreachable): the deployed copy
+    // rather than failing the whole app.
+    return loadJSON('./data/character.json');
+  }
+}
+
 // --- Persistence (Phase 2) -------------------------------------------------
 // ARCHITECTURE §7/§10: localStorage now, file export/import later. We store an
 // *edits overlay* — only the inputs the player changed — not a whole character
@@ -87,6 +132,36 @@ export function saveWealthEdits(wealth) {
   return edits;
 }
 
+// The overlay categories a save persists to GitHub. Reconciliation and the
+// dirty indicator both reason over exactly these keys.
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth'];
+
+/**
+ * True when the overlay holds edits not yet committed to GitHub. Drives the
+ * Save button's unsaved indicator: any local edit sets a category; a successful
+ * save clears them (reconcileOverlay), so this reads false again. Survives a
+ * reload, so an edit made but never saved still shows as unsaved.
+ */
+export function hasPendingEdits() {
+  const edits = loadEdits();
+  return SAVED_CATEGORIES.some((k) => edits[k] != null);
+}
+
+/**
+ * After a confirmed GitHub save the branch holds these exact inputs, so the
+ * overlay's saved categories are now redundant — and would mask the branch on
+ * the next (cache-busted) load, including edits saved from another device
+ * (design §4.5). Clear them so the branch read becomes the source of truth.
+ * Call only on save success.
+ */
+export function reconcileOverlay(categories = SAVED_CATEGORIES) {
+  const edits = loadEdits();
+  for (const k of categories) delete edits[k];
+  if (Object.keys(edits).length) localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  else localStorage.removeItem(EDITS_KEY);
+  return edits;
+}
+
 /** Apply the saved edits overlay onto a freshly-fetched character. */
 function applyEdits(character, edits) {
   if (!edits) return character;
@@ -105,7 +180,7 @@ function applyEdits(character, edits) {
  */
 export async function loadCharacter() {
   const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
-    loadJSON('./data/character.json'),
+    loadCharacterData(),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),
@@ -233,6 +308,9 @@ export function deriveModel(character, rules) {
       living: ref?.living ?? false,
       ref: ref?.ref ?? {},
       effects: ref?.effects ?? owned.effects ?? [],
+      // Display-only strings for the UI (never engine-read). See rules/items.json
+      // notes.presentation — carries the tile's curated `shortEffect` for note items.
+      presentation: ref?.presentation ?? {},
     };
   });
 

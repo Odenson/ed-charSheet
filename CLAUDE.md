@@ -97,6 +97,7 @@ it for AI sessions; humans use the checklist below):
 | UI/UX rules | [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md) |
 | Effect vocabulary / schema of `effects` | [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md) |
 | Dev → prod deploy, relative-path rule | [WORKFLOW.md](WORKFLOW.md) |
+| Serverless save feature design | [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md) |
 
 If code and a doc disagree, that is a bug in one of them — resolve it explicitly,
 don't just follow the code.

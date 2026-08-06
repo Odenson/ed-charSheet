@@ -1,6 +1,8 @@
 # Claude Code local session/settings — but share project skills with the repo
 .claude/*
 !.claude/skills/
+# ...and the preview launch config (static dev server for the app)
+!.claude/launch.json
 
 # Source spreadsheet (local only — source of truth for the importer)
 Chakka-v7.13.xlsx
