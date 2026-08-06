@@ -50,23 +50,34 @@ function onPages() {
   return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
 }
 
-function characterDataUrl() {
-  return onPages()
-    ? `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/character.json`
-    : './data/character.json';
-}
+const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/character.json?ref=${CHARACTER_BRANCH}`;
+const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/character.json`;
 
+// On the Pages site, read the saved character live from the character-data
+// branch. Prefer the GitHub **contents API** (`Accept: raw`): it reads the git
+// database directly, so a just-saved commit is visible immediately. The raw CDN
+// keys its ~5-minute cache on the *path* — the `?t=` query doesn't reliably bust
+// it — so a save-then-reload can race a stale edge copy (the read-after-write
+// bug that Phase 6 surfaced). Fallbacks keep it never-worse-than-before: if the
+// API is unreachable or rate-limited (60/hr per IP, unauthenticated) fall back
+// to the raw CDN (cache-busted, eventually consistent), then to the deployed
+// bundle. CORS is open on both hosts; the browser sets the required User-Agent.
 async function loadCharacterData() {
-  const base = characterDataUrl();
-  if (base === './data/character.json') return loadJSON(base);
+  if (!onPages()) return loadJSON('./data/character.json');
   try {
-    // Cache-bust the raw CDN (~5-min edge TTL): without a unique query the edge
-    // may serve a stale copy, so a fresh serverless save wouldn't show up until
-    // the TTL lapsed. A per-load timestamp forces a cache miss and a fresh read.
-    return await loadJSON(`${base}?t=${Date.now()}`);
+    const res = await fetch(CHARACTER_API_URL, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return await res.json(); // git-consistent: reflects the latest save
   } catch {
-    // No save on the data branch yet (or raw is unreachable): fall back to the
-    // deployed copy rather than failing the whole app.
+    /* network/CORS hiccup — fall through to the CDN */
+  }
+  try {
+    return await loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
+  } catch {
+    // No save on the data branch yet (or raw is unreachable): the deployed copy
+    // rather than failing the whole app.
     return loadJSON('./data/character.json');
   }
 }

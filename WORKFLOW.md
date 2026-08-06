@@ -30,10 +30,12 @@ character file — committed by the serverless save target
 (docs/GITHUB-SERVERLESS-SAVE.md) on the app's behalf.
 
 Both environments **source the character detail from this one branch**: on the
-Pages site the app fetches `data/character.json` live from `character-data`
-(`raw.githubusercontent.com`, falling back to the deployed copy in the bundle);
-locally it reads the working copy. Because `/` and `/dev/` read the same branch,
-a save shows up identically in both — and a save never rebuilds either one.
+Pages site the app reads `data/character.json` live from `character-data` —
+preferring the GitHub contents API (git-consistent, so a fresh save shows up
+immediately), falling back to the raw CDN and then the deployed bundle
+(docs/GITHUB-SERVERLESS-SAVE.md §4.5); locally it reads the working copy. Because
+`/` and `/dev/` read the same branch, a save shows up identically in both — and a
+save never rebuilds either one.
 
 ## One-time setup (repo owner)
 

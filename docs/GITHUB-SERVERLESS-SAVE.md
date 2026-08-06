@@ -352,11 +352,18 @@ Wiring rules:
   (the live fetch succeeded; `applyEdits` merged the stale name on top).
 
 **Reading the saved character.** The flip side of not rebuilding lives in
-`store.js`: on the Pages site it fetches `data/character.json` live from the
-`character-data` branch (raw.githubusercontent.com) with a per-load cache-buster
-(`?t=${Date.now()}`) so raw's ~5-minute edge TTL can't serve a stale copy — a
-fresh save is read immediately — falling back to the deployed copy; locally it
-keeps reading the working copy. `/` and `/dev/` read the same branch, so both
+`store.js`: on the Pages site it reads `data/character.json` live from the
+`character-data` branch, **preferring the GitHub contents API**
+(`api.github.com/…/contents/data/character.json?ref=character-data` with
+`Accept: application/vnd.github.raw`). The API reads the git database directly,
+so a just-saved commit is visible **immediately** — the raw CDN is not reliable
+for read-after-write because it keys its ~5-minute cache on the path, and the
+`?t=` query does not dependably bust it, so a save-then-reload can race a stale
+edge copy (the bug Phase 6 surfaced). Fallbacks keep it never-worse: if the API
+is unreachable or rate-limited (60/hr per IP, unauthenticated — ample for one
+player, and the response is cached with `no-store`), it falls back to the raw
+CDN (cache-busted, eventually consistent), then to the deployed bundle. Locally
+it keeps reading the working copy. `/` and `/dev/` read the same branch, so both
 environments show the same character.
 
 ### 4.6 Testing
