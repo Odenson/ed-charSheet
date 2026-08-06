@@ -225,13 +225,18 @@ retired. See ARCHITECTURE §7 and design §4.5.
 > the worker's CORS allows the `odenson.github.io` origin only, so a real save
 > only works from `/` or `/dev/`. (`dev` was pushed 2026-08-06, commit `c2593e1`.)
 
-- [ ] **6.1** On the dev site, enter edit mode (✎) → click **Save** → the key
+- [✅] **6.1** On the dev site, enter edit mode (✎) → click **Save** → the key
   prompt appears → paste the SAVE_KEY → Save. Edit a value first so there's
   something to commit. Expect a success toast + commit link.
 - [ ] **6.2** Reload → the edited value persists (read live from the branch) with
   the overlay reconciled (no stale mask).
-- [ ] **6.3** Wrong key → clean error toast, no commit; the next Save re-prompts.
-- [ ] **6.4** **Export** (download icon) → a `.json` copy downloads (works here and
+  > ⚠️ **First run failed → fixed (commit `7e6b8ab`), re-test needed.** The reload
+  > showed the pre-save copy: the raw CDN keys its ~5-min cache on the path, so the
+  > `?t=` cache-buster didn't reliably force a fresh read and the reload raced a
+  > stale edge copy. `store.js` now reads via the git-consistent GitHub contents
+  > API (raw CDN → bundle as fallbacks). Re-run once the `dev` deploy lands.
+- [✅] **6.3** Wrong key → clean error toast, no commit; the next Save re-prompts.
+- [✅] **6.4** **Export** (download icon) → a `.json` copy downloads (works here and
   in Firefox/Safari/mobile).
 
 ---
