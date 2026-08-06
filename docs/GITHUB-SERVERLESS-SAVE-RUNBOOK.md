@@ -97,7 +97,7 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 
 ### Phase 1 — Provision (YOU)
 
-- [ ] **1.1 Create the fine-grained PAT.** GitHub → your avatar → **Settings** →
+- [x] **1.1 Create the fine-grained PAT.** GitHub → your avatar → **Settings** →
   **Developer settings** (bottom of the left nav) → **Personal access tokens** →
   **Fine-grained tokens** → **Generate new token**.
   - Token name: `ed-charSheet serverless save`
@@ -109,7 +109,7 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   - **Generate token**, copy the `github_pat_…` value somewhere temporary. You'll
     paste it into a Cloudflare secret in 2.3 and can then discard the copy.
 
-- [ ] **1.2 Generate the SAVE_KEY.**
+- [x] **1.2 Generate the SAVE_KEY.**
   ```bash
   openssl rand -hex 32
   ```
@@ -118,21 +118,28 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 
 ### Phase 2 — Worker
 
-- [ ] **2.1 [CLAUDE] Scaffold `tools/worker/`.** Claude adds `worker.js` (design
+- [x] **2.1 [CLAUDE] Scaffold `tools/worker/`.** Claude adds `worker.js` (design
   §4.2 handler, `SAVE_KEY` **required** per §2.1), `wrangler.toml` (§5.1 below),
   `package.json` (wrangler dev-dep), and `worker.test.js`. *No secrets, no deploy.*
+  ✅ Done — `worker.test.js` covers Phase 4 (§4.1) too; `node --test` green (15/15).
 
-- [ ] **2.0 [YOU] Cloudflare account.** If you don't have one, sign up free at
+- [x] **2.0 [YOU] Cloudflare account.** If you don't have one, sign up free at
   cloudflare.com. No credit card needed for Workers free tier.
 
-- [ ] **2.2 [YOU] Install wrangler + log in.**
+- [x] **2.2 [YOU] Install wrangler + log in.**
   ```bash
   cd tools/worker
   npm install
   npx wrangler login          # opens a browser to authorize Cloudflare
   ```
+  > **Expected:** `package.json` pins `wrangler ^4`. `npm install` reports a few
+  > `npm audit` vulnerabilities and two deprecation warnings — **all in wrangler's
+  > local dev toolchain** (`miniflare`/`undici`/`esbuild`), which never ships: the
+  > deployed worker is the single dependency-free `worker.js`. **Do not run
+  > `npm audit fix --force`** — it downgrades wrangler to v3 to satisfy the audit.
+  > The residual advisories are the current wrangler's transitive floor.
 
-- [ ] **2.3 [YOU] Set the two secrets.** Each prompts for the value — paste it
+- [X] **2.3 [YOU] Set the two secrets.** Each prompts for the value — paste it
   (input is hidden); nothing is written to disk.
   ```bash
   npx wrangler secret put GITHUB_TOKEN     # paste the PAT from 1.1
@@ -141,17 +148,20 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   (The four `GITHUB_OWNER/REPO/PATH/BRANCH` vars are already in `wrangler.toml`;
   no action needed.)
 
-- [ ] **2.4 [YOU] Deploy.**
+- [x] **2.4 [YOU] Deploy.**
   ```bash
   npx wrangler deploy
   ```
   On the **first** deploy Cloudflare may ask you to register a `*.workers.dev`
-  subdomain (one-time). Deploy prints the endpoint, e.g.
-  `https://ed-charsheet-save.<your-subdomain>.workers.dev`.
+  subdomain (one-time use `edsavechar`). Deploy prints the endpoint, e.g.
+  `https://ed-charsheet-save.edsavechar.workers.dev`.
 
-- [ ] **2.5 [YOU] Smoke-test.** From the repo root, with your values:
+- [x] **2.5 [YOU] Smoke-test.** Steps 2.2–2.4 leave you in `tools/worker`; the
+  `@data/character.json` path in (b) is **relative to the repo root**, so `cd`
+  back first (or point curl at `@../../data/character.json` instead).
   ```bash
-  WORKER="https://ed-charsheet-save.<your-subdomain>.workers.dev"
+  cd "$(git rev-parse --show-toplevel)"   # back to repo root — where data/ lives
+  WORKER="https://ed-charsheet-save.edsavechar.workers.dev"
   KEY="<your-save-key>"
 
   # (a) No key → expect HTTP 401
@@ -166,8 +176,8 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   Pass = (a) `401` unauthorized, (b) `200` with `commit.url`. If (b) fails, check
   the worker logs: `npx wrangler tail` while re-running the curl.
 
-- [ ] **2.6 [YOU] Record the URL.** Paste the `$WORKER` URL back to Claude for
-  Phase 3, and note it in §7 below.
+- [x] **2.6 [YOU] Record the URL.** `https://ed-charsheet-save.edsavechar.workers.dev`
+  — recorded in §7; this becomes the app's hardcoded `DEFAULT_ENDPOINT` in Phase 3.
 
 ### Phase 3 — App integration (CLAUDE)
 
@@ -184,9 +194,12 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 
 ### Phase 4 — Tests (CLAUDE)
 
-- [ ] **4.1** `node --test` on the worker (mocked GitHub `fetch`): missing/wrong
+- [x] **4.1** `node --test` on the worker (mocked GitHub `fetch`): missing/wrong
   key → 401; bad JSON / wrong schema / oversize → 400; happy path PUTs with the
   GET-returned `sha`; `409` → bounded retry → success.
+  ✅ Done in 2.1 — `worker.test.js` ships with the scaffold (15 tests, green). Also
+  covers unconfigured-key → 401, branch-creation, and non-409 → 502 mapping. The
+  missing/wrong-key cases exercise the constant-time `safeEqual` path (§5.2b).
 
 ### Phase 5 — Docs & status flip (CLAUDE)
 
@@ -212,7 +225,13 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 ```toml
 name = "ed-charsheet-save"
 main = "worker.js"
-compatibility_date = "2025-01-01"
+compatibility_date = "2026-08-06"
+
+[observability]
+enabled = true
+
+[observability.logs]
+head_sampling_rate = 1
 
 [vars]
 GITHUB_OWNER  = "odenson"
@@ -224,23 +243,37 @@ GITHUB_BRANCH = "character-data"
 Secrets (`GITHUB_TOKEN`, `SAVE_KEY`) are **not** in this file — they're set with
 `wrangler secret put` and stored in Cloudflare.
 
-### 5.2 The SAVE_KEY-required change vs the design sketch
+### 5.2 Deviations from the design sketch (both tighten security)
 
-The design §4.2 handler treats the key as optional:
+**(a) Key required, fail closed.** The design §4.2 handler treats the key as
+optional:
 
 ```js
 if (env.SAVE_KEY && request.headers.get("x-save-key") !== env.SAVE_KEY)  // optional
 ```
 
-This build makes it mandatory (fail closed):
+This build makes it mandatory — a missing/wrong key **or** an unconfigured
+`SAVE_KEY` is rejected `401`.
+
+**(b) Constant-time comparison.** The check does **not** compare the key with
+`!==` (a timing side-channel flagged by the Workers best-practices review); it
+hashes both sides to a fixed 32 bytes and compares in constant time (`safeEqual`,
+using only `crypto.subtle.digest` so it runs on the Workers runtime and under
+`node --test` alike). Absence of the header short-circuits — that fact is not
+itself secret:
 
 ```js
-if (!env.SAVE_KEY || request.headers.get("x-save-key") !== env.SAVE_KEY)  // required
+const providedKey = request.headers.get("x-save-key");
+if (!env.SAVE_KEY || providedKey === null || !(await safeEqual(providedKey, env.SAVE_KEY)))
   return json(cors, 401, { ok: false, error: { code: "unauthorized", message: "bad or missing save key" } });
 ```
 
 Everything else in the §4.2 handler (schema/size validation, env-pinned
-path/branch, GET-sha then PUT, bounded 409 retry, CORS) stays as written.
+path/branch, GET-sha then PUT, bounded 409 retry, CORS) stays as written. Two
+further additions from the same review, reflected in §5.1's `wrangler.toml`: a
+current `compatibility_date`, and `[observability]` enabled with structured
+`console.error` logging on upstream failures (so `wrangler tail` in §2.5 shows
+why a save failed).
 
 ### 5.3 App save target
 
@@ -268,12 +301,12 @@ typed `SaveError`.
 
 | Item | Value / date |
 |---|---|
-| Worker URL | _(from 2.4)_ |
-| PAT created / expires | _/_ |
-| SAVE_KEY set | _date_ |
-| Deployed | _date_ |
-| App integration merged | _date_ |
-| Docs flipped to "shipped" | _date_ |
+| Worker URL | `https://ed-charsheet-save.edsavechar.workers.dev` (POST `/save`) |
+| PAT created / expires | 2026-08-06 / ~2026-11-04 (90d — rotate before, §6) |
+| SAVE_KEY set | 2026-08-06 |
+| Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
+| App integration merged | _pending Phase 3_ |
+| Docs flipped to "shipped" | _pending Phase 5_ |
 
 ---
 
