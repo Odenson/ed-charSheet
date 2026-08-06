@@ -4294,7 +4294,7 @@
         "cost": 5,
         "weight": "3 lb",
         "availability": "average",
-        "description": "A sturdy pack that carries roughly fifty pounds of goods."
+        "description": "A sturdy pack that carries the purchased items."
       },
       "effects": [
         {

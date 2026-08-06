@@ -307,7 +307,7 @@ not a rewrite:
 | Strategy | How | Pros | Cons |
 |----------|-----|------|------|
 | **GitHub as store** (see §7.4) | commit `character.json` via the GitHub API, an OAuth device-flow token (fallback: fine-grained PAT) | no manual commit; syncs across devices; versioned | token held in browser memory for the session |
-| **Serverless write endpoint** (see §7.5) | a small Cloudflare Worker / Deno Deploy function commits for the app | no token in the browser; same GitHub loop | **breaks the no-backend rule — the one sanctioned exception** |
+| **Serverless write endpoint** (see §7.5) | a small Cloudflare Worker (decided host — see the feature doc) commits for the app | no token in the browser; same GitHub loop | **breaks the no-backend rule — the one sanctioned exception** |
 | **File export/import** | download/upload `character.json` | portable, works everywhere | manual round-trip |
 | **URL state** | encode a snapshot in the link | shareable | size-limited |
 
@@ -358,8 +358,10 @@ local-file model. (For players who'd rather the credential never touch the page,
 The §7.4 flow keeps the credential in the browser (session-only in memory). For
 players who want the token to never enter the page at all, the one sanctioned
 alternative is a tiny **write endpoint** that commits on the app's behalf: a
-single Cloudflare Worker / Deno Deploy function holds the repo-scoped GitHub
-token in the platform's secret store, and the app `POST`s the same merged,
+single Cloudflare Worker — the decided host (the comparison that settled it and
+the Deno Deploy / Vercel portability alternatives are recorded in
+docs/GITHUB-SERVERLESS-SAVE.md §4.1) — holds the repo-scoped GitHub token in the
+platform's secret store, and the app `POST`s the same merged,
 inputs-only character; the worker does the GET-SHA → PUT-commit to the dedicated
 `character-data` branch, and the app reads the committed file live at runtime —
 the deploy workflow (which watches `main` and `dev` only) is never triggered, so
@@ -467,7 +469,8 @@ and its effect on the existing app — is broken out in
   `character.json`, and will use the OAuth device flow (session token in memory;
   fine-grained PAT as fallback). See §7 (and §7.4 for the GitHub sketch).
 - **Serverless exception — documented, not built: the one sanctioned
-  no-backend exception.** A tiny Cloudflare Worker / Deno Deploy endpoint can act
+  no-backend exception.** A tiny Cloudflare Worker endpoint (the decided host;
+  see docs/GITHUB-SERVERLESS-SAVE.md §4.1) can act
   as the GitHub save target so the token never touches the browser (§7.5). It is
   the only documented exception to "no backend, no external runtime dependency"
   (ARCHITECTURE §2, goal 1), is opt-in, and ships *instead of* the §7.4 in-browser

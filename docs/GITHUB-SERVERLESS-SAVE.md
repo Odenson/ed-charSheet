@@ -13,9 +13,10 @@ app**.
 
 ## 1. What it is
 
-One tiny write endpoint — a single Cloudflare Worker (or Deno Deploy / Vercel
-function) — that commits `data/character.json` to the repo **on the app's
-behalf**, so the GitHub credential never enters the browser.
+One tiny write endpoint — a single Cloudflare Worker (the decided host, §4.1;
+Deno Deploy and a Vercel function are portability alternatives) — that commits
+`data/character.json` to the repo **on the app's behalf**, so the GitHub
+credential never enters the browser.
 
 The app keeps a Save action. Today it writes two places (web store + a
 player-picked file). With this feature it gains a third target: **Save to GitHub
@@ -60,14 +61,14 @@ the only offline path; this is strictly an additional option.
 
 ```
    Browser (the app)                    Worker (this feature)                  GitHub
-┌──────────────────────┐  POST /save   ┌──────────────────────────────┐   ┌────────────────┐
-│ Save action          │ ─────────────► │ 1. validate character        │   │ branch created │
-│ serialize the same   │  { character } │ 2. ensure the data branch    │──►│ read SHA       │
+┌──────────────────────┐   POST /save   ┌───────────────────────────────┐   ┌────────────────┐
+│ Save action          │ ─────────────► │ 1. validate character         │   │ branch created │
+│ serialize the same   │  { character } │ 2. ensure the data branch     │──►│ read SHA       │
 │ inputs-only JSON     │                │ 3. GET contents/character.json│──►│                │
 │ (identical to §7.2)  │                │    ?ref=character-data        │◄──│ commit         │
 │                      │ ◄───────────── │ 4. PUT contents/character.json│──►│ on the branch  │
 │ show commit URL /    │  200 {commit}  │    { base64, sha, branch }    │   └────────────────┘
-│ error (409 retried)  │                └──────────────────────────────┘
+│ error (409 retried)  │                └───────────────────────────────┘
 └──────────────────────┘
    No deploy, no rebuild: the deploy workflow (WORKFLOW.md) watches main and dev
    only. On its next load the Pages app fetches the character LIVE from the
@@ -120,13 +121,44 @@ used).
 
 ## 4. How it is built and implemented
 
-### 4.1 Host — Cloudflare Worker (default)
+### 4.1 Host — Cloudflare Worker (decided)
 
-A Cloudflare Worker is the stated default (ARCHITECTURE §7.5): one file, free
-tier, no database, nothing to operate, deployable in seconds with `wrangler`.
-Deno Deploy and a Vercel function are drop-in equivalents — same request shape,
-same handler, same env-var secrets. The choice does not leak into the app; the
-app only needs the endpoint URL.
+**Chosen: Cloudflare Workers.** This is a decision recorded for the record, not a
+default by habit; the comparison that settled it lives here so it can be
+revisited. (Figures as of mid-2026 — re-verify on the vendor pricing pages
+before relying on them.)
+
+| | Cloudflare Workers | Deno Deploy | Vercel Functions |
+|---|---|---|---|
+| Free tier | 100k requests/**day** (~3M/mo), 10 ms CPU/req, 128 MB mem, 50 subrequests/req | 1M requests/**month**, 100 GB egress, 50 ms CPU/req, ~15 h CPU/mo, 1 GiB KV | Hobby: ~100 GB/mo transfer, modest function invocations, **non-commercial** use only |
+| Paid floor | $5/mo (10M req + 30M CPU-ms incl.) | $20/mo (Pro) | $20/mo (Pro) |
+| Billing model | Requests + CPU-ms; I/O wait is free | Monthly request/egress allowances | "Fluid Compute" Active CPU + invocation; the most overage-surprise-prone of the three |
+| Secrets | `wrangler secret put` (encrypted) | Project env vars / secrets (dashboard) | Project env vars (settings) |
+| Deploy | `wrangler` CLI (or Git via Workers Builds) | Git push → auto-deploy, or `deployctl` CLI | `vercel` CLI or Git integration |
+| Our sketch (§4.2) | Drop-in (`export default { fetch }`, `btoa`, env) | Near drop-in (web-standard APIs) | Needs an `api/` route wrapper + `process.env` |
+| Fit | Edge network; strongest abuse protection; most stable vendor | Edge, but free-tier terms have shifted historically; smaller vendor | Framework-coupled (Next.js); zero synergy with a GitHub Pages app |
+
+What settles it for *this* endpoint — a stateless, occasional-use proxy (1
+inbound POST → 1–3 GitHub calls per save, most latency in the GitHub
+round-trip):
+
+- **Request volume is a non-factor.** Every free tier is orders of magnitude
+  larger than the feature needs; the comparison is about everything *else*.
+- **CPU caps don't bind.** The work is I/O-bound — waiting on GitHub's API is
+  free against Cloudflare's 10 ms CPU budget. 128 MB and 50 subrequests are
+  likewise ample.
+- **Cold starts don't matter.** A save is user-initiated; an occasional
+  ~100–500 ms cold start is imperceptible on all three.
+- **CORS is identical** — manual headers in the handler, same code on all three.
+
+Cloudflare wins on: the sketch drops in unchanged; the most generous *and* most
+stable free tier (100k requests/day, no credit card, no commercial-use clause);
+and the strongest built-in abuse protection for an endpoint that is intentionally
+open (§5). Deno Deploy is the close second (zero-CLI, push-to-deploy) if the
+constraint set ever changes; Vercel adds setup and billing complexity and shares
+no stack with the GitHub Pages app. The handler is written to the web-standard
+fetch surface, so both portability paths stay real. The choice does not leak
+into the app — the app only needs the endpoint URL.
 
 ### 4.2 Worker source
 
@@ -419,7 +451,7 @@ doc is live code; landing it is an owner decision.
 
 | Open decision | Default | Alternatives |
 |---|---|---|
-| Host | Cloudflare Worker | Deno Deploy, Vercel function |
+| Host | **Cloudflare Worker (decided, §4.1)** | Revisit only if the free tier or constraints change |
 | Endpoint auth | None (open, §5 blast-radius argument) | `SAVE_KEY` shared secret |
 | Worker repo | Same repo under `tools/` | Sibling private repo |
 | Endpoint URL in app | Hardcoded default | Overridable in Settings |

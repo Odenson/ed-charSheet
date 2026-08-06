@@ -12,6 +12,29 @@ A push to **either** branch rebuilds the whole site from the current state of
 **both** branches (`main` → root, `dev` → `/dev/`), so the two instances never
 drift apart.
 
+## The `character-data` branch — file store, not build input
+
+There is a third branch, **`character-data`**, that is deliberately **not part of
+the build**:
+
+| Branch | Role | Deployed |
+|--------|------|----------|
+| `main` | Production app | ✅ → root |
+| `dev` | Testing app | ✅ → `/dev/` |
+| `character-data` | File store for `data/character.json` | ❌ never deployed |
+
+The deploy workflow listens to `main` and `dev` only, so nothing committed to
+`character-data` ever triggers a rebuild or a Pages deployment. The branch exists
+for one reason: to hold the latest `data/character.json` — the inputs-only
+character file — committed by the serverless save target
+(docs/GITHUB-SERVERLESS-SAVE.md) on the app's behalf.
+
+Both environments **source the character detail from this one branch**: on the
+Pages site the app fetches `data/character.json` live from `character-data`
+(`raw.githubusercontent.com`, falling back to the deployed copy in the bundle);
+locally it reads the working copy. Because `/` and `/dev/` read the same branch,
+a save shows up identically in both — and a save never rebuilds either one.
+
 ## One-time setup (repo owner)
 
 Enable Pages with the Actions source — this only you can do:
@@ -102,11 +125,9 @@ entirely while reconnecting the histories, then push.
   `./engine/...`), never root-absolute (`/data/...`). This keeps the same build
   working at both the root and the subpath.
 - **Saves never rebuild the app.** The serverless save target commits
-  `data/character.json` to the dedicated `character-data` branch
-  (docs/GITHUB-SERVERLESS-SAVE.md). The deploy workflow listens to `main` and
-  `dev` only, so a save triggers no rebuild; the app reads the committed file
-  live on the Pages site (falling back to the deployed copy) and reads the
-  working copy locally. The `character-data` branch is never deployed.
+  `data/character.json` to the dedicated `character-data` branch — a file store,
+  not a build input (see "The `character-data` branch" above and
+  docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed.
 - **What gets deployed:** the static app (`index.html`, `ui/`, `engine/`,
   `data/`, `rules/`, assets). Excluded: `tools/`, `node_modules/`, `package*.json`,
   `*.xlsx`, and anything gitignored (source spreadsheet, rulebook extracts,
