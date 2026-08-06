@@ -5,9 +5,10 @@ A feature-design document for the write endpoint introduced in ARCHITECTURE.md
 built and implemented**, and **what (if anything) it changes in the existing
 app**.
 
-> Status: **documented, not built.** This is an opt-in design, not part of the
-> current codebase. It is the single documented exception to the project's
-> **"no backend, no external runtime dependency"** rule (ARCHITECTURE §2, goal 1).
+> Status: **shipped** (v1.5.0, 2026-08-06). The primary Save. It is the single
+> documented exception to the project's **"no backend, no external runtime
+> dependency"** rule (ARCHITECTURE §2, goal 1). This build **requires** the
+> `SAVE_KEY` (fail-closed) — see the runbook §2.1.
 
 ---
 
@@ -18,12 +19,12 @@ Deno Deploy and a Vercel function are portability alternatives) — that commits
 `data/character.json` to the repo **on the app's behalf**, so the GitHub
 credential never enters the browser.
 
-The app keeps a Save action. Today it writes two places (web store + a
-player-picked file). With this feature it gains a third target: **Save to GitHub
-(server)**. The app `POST`s the same bytes it would write to the file; the
-worker does the GitHub API round-trip to a dedicated **data branch**
-(`character-data`); the app reads the committed file live at runtime, so a save
-**never rebuilds or redeploys the app**.
+This is now the app's **one primary Save** (v1.5.0): the app `POST`s the merged,
+inputs-only character; the worker does the GitHub API round-trip to a dedicated
+**data branch** (`character-data`); the app reads the committed file live at
+runtime, so a save **never rebuilds or redeploys the app**. It sits over an
+always-on autosave overlay, with a portable Export for local backups (the earlier
+File System Access file save is retired — see ARCHITECTURE §7 and §4.5).
 
 ### 1.1 Relationship to the other GitHub save idea (§7.4)
 
@@ -402,12 +403,13 @@ server-side, plus honest limits:
   public surface is the write-abuse vector. Two mitigations:
   1. **Blast radius.** The worst a junk caller can do is a malformed or junk
      `character.json` commit on the `character-data` branch — the app's live read
-     shows a bad character, trivially recovered by a real save. This is why the
-     default is **no endpoint key**.
-  2. **Optional `SAVE_KEY`.** The repo owner distributes a shared key
-     out-of-band; players enter it in the app per session and it is held in
-     memory only (the same discipline §7.4 applies to its tokens). The GitHub
-     token still never reaches the browser.
+     shows a bad character, trivially recovered by a real save. This bounded blast
+     radius is why an open endpoint was even *considered* safe.
+  2. **`SAVE_KEY` — required as shipped (fail-closed).** This design floated the
+     key as optional, but the shipped build **requires** it: the worker rejects a
+     missing/wrong key, or an unconfigured one (runbook §2.1). Single-user sheet,
+     so the owner keeps one private key. Players enter it in the app per session,
+     held in memory only; the GitHub token still never reaches the browser.
 - **Public read is by design.** The data branch is public like the rest of the
   repo; unauthenticated reading is exactly what the app's live fetch needs.
 - **Rate limiting.** Free-tier Workers have basic request limits; a per-IP
@@ -468,18 +470,19 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
 
 ---
 
-## 7. Status & open decisions
+## 7. Status & resolved decisions
 
-**Status: documented, not built** (matches ARCHITECTURE §10). Nothing in this
-doc is live code; landing it is an owner decision.
+**Status: shipped** (v1.5.0, 2026-08-06; matches ARCHITECTURE §10). Worker live at
+`https://ed-charsheet-save.edsavechar.workers.dev`; app integration in `store-server.js`.
 
-| Open decision | Default | Alternatives |
-|---|---|---|
-| Host | **Cloudflare Worker (decided, §4.1)** | Revisit only if the free tier or constraints change |
-| Endpoint auth | None (open, §5 blast-radius argument) | `SAVE_KEY` shared secret |
-| Worker repo | Same repo under `tools/` | Sibling private repo |
-| Endpoint URL in app | Hardcoded default | Overridable in Settings |
-| Docs when built | Update this doc + ARCHITECTURE §7.5/§10 from "not built" to "shipped" | — |
+| Decision | Resolved as |
+|---|---|
+| Host | **Cloudflare Worker** (decided, §4.1) |
+| Endpoint auth | **`SAVE_KEY` required, fail-closed** (runbook §2.1) — not the optional default |
+| Worker repo | Same repo under `tools/worker/` |
+| Endpoint URL in app | Hardcoded default (Settings override deferred) |
+| Save model | One primary Save → GitHub, over the autosave overlay; Export = local download (§4.5) |
+| Read-after-write | App reads the branch via the git-consistent GitHub contents API (§4.5) |
 
 ---
 

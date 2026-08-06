@@ -2,14 +2,19 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": [
-      { "type": "added", "text": "Save directly to GitHub: while editing, the Save button now commits your character to the cloud, so it syncs across your devices and the live site with no file to juggle. Enter your private save key once per session — it's kept only in memory and never stored. A dot on the Save button marks unsaved changes and clears once a save lands." },
-      { "type": "added", "text": "Export a copy: a one-click download of your character as a .json backup, now working in every browser — including Firefox, Safari, and mobile — replacing the old Chrome-only \"save to a file\" button." },
-      { "type": "changed", "text": "Your edits keep autosaving to your browser as you make them, so an interrupted or offline save never loses work; the GitHub save is the moment you publish that work to the cloud." },
-      { "type": "fixed", "text": "A save now shows up the moment you reload — the sheet reads your latest save straight from GitHub, instead of occasionally showing a few-minutes-stale copy right after saving." }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.5.0",
+      "date": "2026-08-06",
+      "changes": [
+        { "type": "added", "text": "Save directly to GitHub: while editing, the Save button now commits your character to the cloud, so it syncs across your devices and the live site with no file to juggle. Enter your private save key once per session — it's kept only in memory and never stored. A dot on the Save button marks unsaved changes and clears once a save lands." },
+        { "type": "added", "text": "Export a copy: a one-click download of your character as a .json backup, now working in every browser — including Firefox, Safari, and mobile — replacing the old Chrome-only \"save to a file\" button." },
+        { "type": "changed", "text": "Your edits keep autosaving to your browser as you make them, so an interrupted or offline save never loses work; the GitHub save is the moment you publish that work to the cloud." },
+        { "type": "fixed", "text": "A save now shows up the moment you reload — the sheet reads your latest save straight from GitHub, instead of occasionally showing a few-minutes-stale copy right after saving." }
+      ]
+    },
     {
       "version": "1.4.0",
       "date": "2026-08-05",

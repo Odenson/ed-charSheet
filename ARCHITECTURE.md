@@ -459,22 +459,22 @@ and its runbook.
   the no-build ethos, removes the blank-screen failure mode, works offline, and
   is deterministic/reproducible. Trade-off accepted: a ~16KB vendored file in the
   repo and a manual re-fetch to upgrade Lit (rare, since the version is pinned).
-- **Persistence — DECIDED: web-store overlay + direct file save, dual-written.**
-  A localStorage edits overlay (always on, every browser) plus a File System
-  Access **Save** to a player-picked `character.json` (Chromium), written
-  *together* so file ↔ web store stay in sync — the overlay is kept, not cleared.
-  The file handle is remembered in IndexedDB so it reconnects across sessions.
-  GitHub-direct commit remains a clean later Save target since state is just
-  `character.json`, and will use the OAuth device flow (session token in memory;
-  fine-grained PAT as fallback). See §7 (and §7.4 for the GitHub sketch).
-- **Serverless exception — documented, not built: the one sanctioned
-  no-backend exception.** A tiny Cloudflare Worker endpoint (the decided host;
-  see docs/GITHUB-SERVERLESS-SAVE.md §4.1) can act
-  as the GitHub save target so the token never touches the browser (§7.5). It is
-  the only documented exception to "no backend, no external runtime dependency"
-  (ARCHITECTURE §2, goal 1), is opt-in, and ships *instead of* the §7.4 in-browser
-  token for players who want that — never in addition to it. Full design, worker
-  sketch, and impact assessment: `docs/GITHUB-SERVERLESS-SAVE.md`.
+- **Persistence — DECIDED & SHIPPED: one Save → GitHub, over an autosave overlay,
+  plus a portable Export.** A localStorage edits overlay (always on, every
+  browser) is the resilient autosave *beneath* the primary Save, which commits
+  `data/character.json` straight to the `character-data` branch via the serverless
+  worker; on success the overlay reconciles so the live branch read wins. A
+  portable **Export** download is the local backup. The earlier Chromium-only File
+  System Access save is **retired**. See §7.
+- **Serverless exception — DECIDED & SHIPPED: the one sanctioned no-backend
+  exception, and the primary Save.** A tiny Cloudflare Worker (`tools/worker/`;
+  decided host, docs/GITHUB-SERVERLESS-SAVE.md §4.1) commits on the app's behalf,
+  so the GitHub token never touches the browser — only the session `SAVE_KEY`
+  (**required**, fail-closed) travels with the request. It is the only exception to
+  "no backend, no external runtime dependency" (§2, goal 1); the app still ships no
+  server of its own. The app reads the saved character back live via the GitHub
+  contents API (§7.5). Chose this over the §7.4 in-browser token to keep the
+  credential off the page. Full design + runbook: `docs/GITHUB-SERVERLESS-SAVE.md`.
 - **Rules fidelity — DECIDED: core rules first, flag house rules.** During the
   Phase 0 import, port standard Earthdawn rules and **flag any custom/house-rule
   formulas** found in the sheet for confirmation before porting them. Faster path

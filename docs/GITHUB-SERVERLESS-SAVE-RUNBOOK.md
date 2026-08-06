@@ -5,8 +5,8 @@ The build-and-rollout companion to the design doc
 the feature is and why**; this one is the **written reference and runsheet** for
 building it — including the manual steps the repo owner completes.
 
-> Status: **planned, not started.** Nothing here has been built. The runsheet in
-> §4 is the source of truth for progress; check items off as they complete.
+> Status: **shipped** (v1.5.0, 2026-08-06). Built, deployed, and verified
+> end-to-end on `dev`. The runsheet in §4 records the completed steps.
 
 ---
 
@@ -214,10 +214,12 @@ retired. See ARCHITECTURE §7 and design §4.5.
 
 ### Phase 5 — Docs & status flip (CLAUDE)
 
-- [ ] **5.1** Flip design doc §5/§7 and ARCHITECTURE §7.5/§10 from "not built" →
-  "shipped"; record **SAVE_KEY required**.
-- [ ] **5.2** Update this runbook's status line and §7 with the live URL and dates.
-- [ ] **5.3** Changelog entry (player-facing) for the new Save target.
+- [x] **5.1** Flipped design doc §5/§7 and ARCHITECTURE §7/§10 "not built" →
+  "shipped"; recorded **SAVE_KEY required**. Also folded in the consolidated save
+  model and the API-first read.
+- [x] **5.2** Runbook status line + §7 updated with the live URL and dates.
+- [x] **5.3** Changelog entries (player-facing) for Save/Export + the read fix,
+  cut into **v1.5.0** (2026-08-06).
 
 ### Phase 6 — End-to-end verification (YOU drive, CLAUDE checks)
 
@@ -228,13 +230,13 @@ retired. See ARCHITECTURE §7 and design §4.5.
 - [✅] **6.1** On the dev site, enter edit mode (✎) → click **Save** → the key
   prompt appears → paste the SAVE_KEY → Save. Edit a value first so there's
   something to commit. Expect a success toast + commit link.
-- [ ] **6.2** Reload → the edited value persists (read live from the branch) with
+- [✅] **6.2** Reload → the edited value persists (read live from the branch) with
   the overlay reconciled (no stale mask).
-  > ⚠️ **First run failed → fixed (commit `7e6b8ab`), re-test needed.** The reload
-  > showed the pre-save copy: the raw CDN keys its ~5-min cache on the path, so the
-  > `?t=` cache-buster didn't reliably force a fresh read and the reload raced a
-  > stale edge copy. `store.js` now reads via the git-consistent GitHub contents
-  > API (raw CDN → bundle as fallbacks). Re-run once the `dev` deploy lands.
+  > **Passed after a fix (commit `7e6b8ab`).** First run showed the pre-save copy:
+  > the raw CDN keys its ~5-min cache on the path, so the `?t=` cache-buster didn't
+  > reliably force a fresh read and the reload raced a stale edge copy. `store.js`
+  > now reads via the git-consistent GitHub contents API (raw CDN → bundle as
+  > fallbacks); re-test confirmed the save appears immediately on reload.
 - [✅] **6.3** Wrong key → clean error toast, no commit; the next Save re-prompts.
 - [✅] **6.4** **Export** (download icon) → a `.json` copy downloads (works here and
   in Firefox/Safari/mobile).
@@ -328,8 +330,8 @@ typed `SaveError`.
 | PAT created / expires | 2026-08-06 / ~2026-11-04 (90d — rotate before, §6) |
 | SAVE_KEY set | 2026-08-06 |
 | Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
-| App integration merged | 2026-08-06 on `dev` (commit `c2593e1`) — pending Phase 6 sign-off |
-| Docs flipped to "shipped" | _pending Phase 5 (after dev sign-off)_ |
+| App integration merged | 2026-08-06 on `dev` (commit `c2593e1`); read fix `7e6b8ab` |
+| Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
 
 ---
 
