@@ -280,6 +280,14 @@ category; a successful save clears the saved categories (`reconcileOverlay`, §4
 of the feature doc) so the live branch read becomes the source of truth — the
 overlay would otherwise mask a save made from another device.
 
+Because the overlay masks the branch until a save clears it, a draft that was
+never saved (stale cruft, or edits superseded by a save elsewhere) can linger
+over the newer GitHub version. The escape hatch is a **Discard local changes**
+control (edit mode, shown when there are unsaved edits, `ui/ed-confirm.js`): it
+`reconcileOverlay()`s the draft and re-loads from source, so the player can drop
+a stale local copy and take the saved version. Discard is explicit (a confirm) —
+the model never drops edits on its own.
+
 ### 7.2 Export — portable download (`store-export.js`)
 The **Export** button (download icon, shown in edit mode) downloads the character
 as a `.json` file — a local backup, independent of the GitHub save. A plain

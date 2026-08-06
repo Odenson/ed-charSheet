@@ -334,7 +334,11 @@ Wiring rules:
   none is set for the session, Save opens a lean key-prompt (`ed-save-key.js`),
   stores the key **in memory only**, and retries — the overlay holds the edits
   meanwhile, so nothing is lost. A rejected key is dropped so the next Save
-  re-prompts.
+  re-prompts. **The prompt renders as a light-DOM portal on `<body>` — outside
+  `<ed-app>`'s shadow tree — on purpose:** the field is a `type=password` +
+  `autocomplete="current-password"` credential (with a hidden `username`), so
+  password managers can save/fill it, and Apple's iCloud Keychain does not pierce
+  shadow DOM. Keep it document-level; do not move it back inside the shadow tree.
 - **Unsaved indicator.** The Save button shows a dot whenever the overlay has
   edits not yet committed (`hasPendingEdits`); it clears on a successful save and
   survives reload, so an edit made-but-not-saved still reads as unsaved.

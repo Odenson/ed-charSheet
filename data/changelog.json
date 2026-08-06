@@ -6,6 +6,14 @@
   },
   "releases": [
     {
+      "version": "1.5.1",
+      "date": "2026-08-07",
+      "changes": [
+        { "type": "changed", "text": "The save-key prompt now works with password managers — 1Password, Apple's iCloud Keychain, and others can offer to save your key and fill it automatically next time." },
+        { "type": "added", "text": "Discard local changes: while editing, if you have unsaved edits a revert button appears — it throws away the draft held in this browser and reloads the version saved on GitHub, so an old local copy can't linger over your saved character." }
+      ]
+    },
+    {
       "version": "1.5.0",
       "date": "2026-08-06",
       "changes": [
