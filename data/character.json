@@ -1,7 +1,7 @@
 {
   "schema": "ed-character/1",
   "meta": {
-    "name": "✦Chakka",
+    "name": "Chakka",
     "race": "Ork",
     "description": "Ork Power, with no privilege, and a whole lot of fuckin' rage.",
     "portrait": "data/chakka.jpg",
@@ -10,7 +10,7 @@
     "sex": "Male",
     "height": "6'10",
     "skinTone": "Light Grey",
-    "background": "[Live] Chakka drew his first breath in a kaer that was meant to keep its people safe — until slavers cracked it open and dragged them into the light. Torn from his family before he was old enough to hold their faces in memory, he was shackled aboard a Theran airship and sold into slavery. For two years he laboured under a Theran dwarf, swallowing his rage and biding his time. When fate finally left the door to freedom unguarded, Chakka threw himself through it with everything he had — and he has never once looked back.",
+    "background": "Chakka drew his first breath in a kaer that was meant to keep its people safe — until slavers cracked it open and dragged them into the light. Torn from his family before he was old enough to hold their faces in memory, he was shackled aboard a Theran airship and sold into slavery. For two years he laboured under a Theran dwarf, swallowing his rage and biding his time. When fate finally left the door to freedom unguarded, Chakka threw himself through it with everything he had — and he has never once looked back.",
     "sourceSheetVersion": "7.13.2"
   },
   "attributes": {
