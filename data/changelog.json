@@ -2,12 +2,17 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": [
-      { "type": "changed", "text": "The save-key prompt now works with password managers — 1Password, Apple's iCloud Keychain, and others can offer to save your key and fill it automatically next time." },
-      { "type": "added", "text": "Discard local changes: while editing, if you have unsaved edits a revert button appears — it throws away the draft held in this browser and reloads the version saved on GitHub, so an old local copy can't linger over your saved character." }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.5.1",
+      "date": "2026-08-07",
+      "changes": [
+        { "type": "changed", "text": "The save-key prompt now works with password managers — 1Password, Apple's iCloud Keychain, and others can offer to save your key and fill it automatically next time." },
+        { "type": "added", "text": "Discard local changes: while editing, if you have unsaved edits a revert button appears — it throws away the draft held in this browser and reloads the version saved on GitHub, so an old local copy can't linger over your saved character." }
+      ]
+    },
     {
       "version": "1.5.0",
       "date": "2026-08-06",
