@@ -293,35 +293,52 @@ save (from the repo's default branch), so there is no manual branch setup.
 
 ### 4.5 App-side integration
 
-A new save-target module, additive to `store.js` / `store-file.js`:
+**Shipped, and consolidated: GitHub is the one primary Save.** The earlier "three
+targets (web store + file + server)" framing is retired. The model is now:
+
+- **Save → GitHub** (`store-server.js`) — the single primary Save.
+- **Autosave overlay** (`store.js`) — always-on, beneath the save; never a
+  user-facing target (ARCHITECTURE §7.1).
+- **Export → download** (`store-export.js`) — a portable local backup, replacing
+  the retired File System Access save (`store-file.js` is gone).
+
+The save-target module, `store-server.js`:
 
 ```js
-// store-server.js — serverless save target (design sketch, not shipped)
-// Opt-in only: a Settings toggle enables "Save to GitHub (server)".
-const DEFAULT_ENDPOINT = "https://<name>.<subdomain>.workers.dev/save";
+// store-server.js — the GitHub save target (shipped).
+const DEFAULT_ENDPOINT = "https://ed-charsheet-save.edsavechar.workers.dev/save";
 
 export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey } = {}) {
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(saveKey ? { "x-save-key": saveKey } : {}) },
-    body: JSON.stringify({ character }),
-  });
-  const out = await res.json().catch(() => ({ ok: false }));
-  if (!res.ok) throw new SaveError(out?.error?.code ?? `http_${res.status}`, out?.error?.message);
+  if (!saveKey) throw new SaveError("no_key", "Enter your save key to save to GitHub.");
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-save-key": saveKey },
+      body: JSON.stringify({ character }),
+    });
+  } catch { throw new SaveError("offline", "Could not reach the save service."); }
+  const out = await res.json().catch(() => null);
+  if (!res.ok || !out || out.ok === false) throw new SaveError(out?.error?.code ?? `http_${res.status}`, out?.error?.message);
   return out.commit; // { sha, url }
 }
 ```
 
-Wiring rules, matching the existing Save behaviour:
-- **Same bytes.** It serializes with the identical routine the file save uses
-  (merged, inputs-only). The web store is still written on Save as well — the
-  overlay stays the resilient working copy *until the commit confirms* (see
-  "Reconcile the overlay" below).
-- **Opt-in and feature-detected.** Hidden/disabled until the player enables it
-  in Settings; disabled cleanly when offline or when the endpoint is unreachable.
-- **Feedback.** Surfaces the commit URL after success; a visible error on
-  failure (the 409 case is already resolved server-side, so the client has no
-  retry logic).
+Wiring rules:
+- **Same bytes.** It serializes the merged, inputs-only character with the same
+  routine `store-export.js` uses, so a saved and an exported file are identical.
+  The overlay is still written on every edit — the resilient working copy *until
+  the commit confirms* (see "Reconcile the overlay" below).
+- **Key-prompt on save.** `SAVE_KEY` is required (the worker fails closed). If
+  none is set for the session, Save opens a lean key-prompt (`ed-save-key.js`),
+  stores the key **in memory only**, and retries — the overlay holds the edits
+  meanwhile, so nothing is lost. A rejected key is dropped so the next Save
+  re-prompts.
+- **Unsaved indicator.** The Save button shows a dot whenever the overlay has
+  edits not yet committed (`hasPendingEdits`); it clears on a successful save and
+  survives reload, so an edit made-but-not-saved still reads as unsaved.
+- **Feedback.** Surfaces the commit URL after success; a visible typed error on
+  failure (the 409 case is resolved server-side, so the client has no retry).
 - **Reconcile the overlay on success.** After a confirmed commit the branch holds
   those exact inputs, so the localStorage edits overlay for the saved categories
   (`meta` / `items` / `wealth`) is now redundant **and** will mask the branch on

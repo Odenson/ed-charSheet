@@ -121,6 +121,36 @@ export function saveWealthEdits(wealth) {
   return edits;
 }
 
+// The overlay categories a save persists to GitHub. Reconciliation and the
+// dirty indicator both reason over exactly these keys.
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth'];
+
+/**
+ * True when the overlay holds edits not yet committed to GitHub. Drives the
+ * Save button's unsaved indicator: any local edit sets a category; a successful
+ * save clears them (reconcileOverlay), so this reads false again. Survives a
+ * reload, so an edit made but never saved still shows as unsaved.
+ */
+export function hasPendingEdits() {
+  const edits = loadEdits();
+  return SAVED_CATEGORIES.some((k) => edits[k] != null);
+}
+
+/**
+ * After a confirmed GitHub save the branch holds these exact inputs, so the
+ * overlay's saved categories are now redundant — and would mask the branch on
+ * the next (cache-busted) load, including edits saved from another device
+ * (design §4.5). Clear them so the branch read becomes the source of truth.
+ * Call only on save success.
+ */
+export function reconcileOverlay(categories = SAVED_CATEGORIES) {
+  const edits = loadEdits();
+  for (const k of categories) delete edits[k];
+  if (Object.keys(edits).length) localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  else localStorage.removeItem(EDITS_KEY);
+  return edits;
+}
+
 /** Apply the saved edits overlay onto a freshly-fetched character. */
 function applyEdits(character, edits) {
   if (!edits) return character;

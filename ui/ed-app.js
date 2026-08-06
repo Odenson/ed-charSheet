@@ -1,13 +1,15 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits } from '../store.js';
-import { isFileSaveSupported, restoreFileHandle, saveToFile } from '../store-file.js';
+import { loadCharacter, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { saveServer, SaveError } from '../store-server.js';
+import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-edit-meta.js';
+import './ed-save-key.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -25,10 +27,11 @@ export class EdApp extends LitElement {
     _dark: { state: true },
     _roll: { state: true },
     _editMode: { state: true },
-    _fileName: { state: true },
-    _fileDirty: { state: true },
-    _fileBusy: { state: true },
-    _fileError: { state: true },
+    _dirty: { state: true },
+    _saving: { state: true },
+    _saveError: { state: true },
+    _saveOk: { state: true },
+    _keyPrompt: { state: true },
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -36,9 +39,9 @@ export class EdApp extends LitElement {
   // flows back down). Not reactive state — _model is the render trigger.
   _character = null;
   _rules = null;
-  // Whether this browser can write a user-picked file (Chromium only). Fixed for
-  // the session, so a plain field — not reactive state.
-  _fileSupported = isFileSaveSupported();
+  // The SAVE_KEY for GitHub saves. Held in memory for the session only — never
+  // localStorage (runbook §0). A plain field, not reactive state.
+  _saveKey = null;
 
   static styles = css`
     :host {
@@ -80,20 +83,23 @@ export class EdApp extends LitElement {
     .icon-btn.edit.active {
       background: var(--accent, #b26a00); border-color: var(--accent, #b26a00); color: #fff;
     }
-    /* Accent dot: edits in the web store not yet flushed to the file. */
+    /* Accent dot: local edits not yet committed to GitHub. */
     .icon-btn.save.dirty::after {
       content: ''; position: absolute; top: -2px; right: -2px;
       width: 8px; height: 8px; border-radius: 50%;
       background: var(--accent, #b26a00);
       border: 1.5px solid light-dark(#f4f5f7, #12151b);
     }
-    .file-toast {
+    .toast {
       position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
       z-index: 2200; max-width: 90vw;
       padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.8rem;
-      background: light-dark(#fff, #232833); color: #c0392b;
-      border: 1px solid #c0392b; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+      background: light-dark(#fff, #232833);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     }
+    .toast.error { color: #c0392b; border: 1px solid #c0392b; }
+    .toast.ok { color: light-dark(#1a7a3e, #6ecb8f); border: 1px solid light-dark(#1a7a3e, #6ecb8f); }
+    .toast a { color: inherit; font-weight: 500; }
     .status { padding: 2rem 0; color: var(--muted, #667); font-weight: 500; }
     .status.error { color: #c0392b; }
     .stub { text-align: center; color: var(--muted, #889); padding: 3rem 0; font-size: 0.9rem; }
@@ -120,12 +126,14 @@ export class EdApp extends LitElement {
     // affordances); flip this on to reveal editable regions. Not persisted —
     // the sheet always opens in read mode.
     this._editMode = false;
-    // File persistence (Chromium): the connected file's name, whether the web
-    // store has unsaved-to-file edits, and transient save state.
-    this._fileName = null;
-    this._fileDirty = false;
-    this._fileBusy = false;
-    this._fileError = null;
+    // GitHub save state. _dirty = local edits not yet committed (survives reload
+    // via the overlay); _saving = in-flight; _saveError / _saveOk = last result;
+    // _keyPrompt = the key modal is open.
+    this._dirty = hasPendingEdits();
+    this._saving = false;
+    this._saveError = null;
+    this._saveOk = null;
+    this._keyPrompt = false;
     // Theme: honour a saved preference, else follow the system setting.
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -151,6 +159,12 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
+    // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
+    this.addEventListener('ed-save-key', (e) => {
+      this._saveKey = e.detail?.key || null;
+      this._keyPrompt = false;
+      if (this._saveKey) this._save();
+    });
     try {
       const { character, rules } = await loadCharacter();
       this._character = character;
@@ -159,20 +173,14 @@ export class EdApp extends LitElement {
     } catch (e) {
       this._error = String(e);
     }
-    // Reconnect a previously-picked file (name only; write permission is
-    // re-requested lazily on the next Save). Never blocks the character load.
-    if (this._fileSupported) {
-      const f = await restoreFileHandle();
-      if (f) this._fileName = f.name;
-    }
   }
 
   _editMeta(patch) {
     if (!this._character || !patch) return;
     this._character = { ...this._character, meta: { ...this._character.meta, ...patch } };
-    saveMetaEdits(patch); // web store: always-on, instant, no permissions
-    // The file (if connected) is now behind the web store until the next Save.
-    this._fileDirty = true;
+    saveMetaEdits(patch); // overlay: always-on autosave, instant, no permissions
+    // Local edits are now ahead of the last GitHub commit until the next Save.
+    this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -183,7 +191,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(items)) return;
     this._character = { ...this._character, items };
     saveItemEdits(items);
-    this._fileDirty = true;
+    this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -194,33 +202,49 @@ export class EdApp extends LitElement {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth);
-    this._fileDirty = true;
+    this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
   }
 
-  // Dual-write the merged, inputs-only character to the connected file (picking
-  // one on first use). The web store already holds these edits, so afterwards
-  // memory ↔ web store ↔ file are identical. Cancelling the picker is a no-op.
-  async _saveFile() {
-    if (!this._character || this._fileBusy) return;
-    this._fileBusy = true;
-    this._fileError = null;
+  // Save to GitHub: POST the merged, inputs-only character to the worker, which
+  // commits it to the character-data branch (store-server.js). Requires a
+  // SAVE_KEY — if none is set for the session, open the key prompt first; the
+  // overlay already holds the edits, so nothing is lost meanwhile. On success,
+  // reconcile the overlay so the branch read becomes the source of truth (§4.5).
+  async _save() {
+    if (!this._character || this._saving) return;
+    if (!this._saveKey) { this._keyPrompt = true; return; }
+    this._saving = true;
+    this._saveError = null;
+    this._saveOk = null;
     try {
-      const { name } = await saveToFile(this._character);
-      this._fileName = name;
-      this._fileDirty = false;
+      const commit = await saveServer(this._character, { saveKey: this._saveKey });
+      reconcileOverlay();
+      this._dirty = false;
+      this._saveOk = commit; // { sha, url }
     } catch (e) {
-      if (e && e.name === 'AbortError') return; // user dismissed the picker
-      this._fileError = e?.message ? String(e.message) : String(e);
+      // A rejected key: drop it so the next Save re-prompts.
+      if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
+      this._saveError = e?.message ? String(e.message) : String(e);
     } finally {
-      this._fileBusy = false;
+      this._saving = false;
+    }
+  }
+
+  // Export a local copy: a portable download of the same inputs-only bytes. A
+  // backup, independent of the GitHub save — no key, no network, all browsers.
+  _export() {
+    if (!this._character) return;
+    try {
+      exportCharacter(this._character);
+    } catch (e) {
+      this._saveError = `Export failed: ${e?.message ? String(e.message) : String(e)}`;
     }
   }
 
   _saveTitle() {
-    if (this._fileBusy) return 'Saving…';
-    if (this._fileName) return this._fileDirty ? `Save changes to ${this._fileName}` : `Saved to ${this._fileName}`;
-    return 'Save to a character file…';
+    if (this._saving) return 'Saving to GitHub…';
+    return this._dirty ? 'Save to GitHub (unsaved changes)' : 'Saved to GitHub';
   }
 
   _applyTheme() {
@@ -279,18 +303,28 @@ export class EdApp extends LitElement {
           title=${this._editMode ? 'Finish editing' : 'Edit character details'}
           aria-label=${this._editMode ? 'Finish editing' : 'Edit character details'}
         ><span aria-hidden="true">✎</span></button>
-        ${this._editMode && this._fileSupported
+        ${this._editMode
           ? html`<button
-              class="icon-btn save ${this._fileDirty ? 'dirty' : ''}"
-              @click=${this._saveFile}
-              ?disabled=${this._fileBusy}
-              title=${this._saveTitle()}
-              aria-label=${this._saveTitle()}
-            ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
-                <circle cx="12" cy="14" r="2" />
-                <path d="M14 4v4h-6v-4" />
-              </svg></button>`
+                class="icon-btn save ${this._dirty ? 'dirty' : ''}"
+                @click=${this._save}
+                ?disabled=${this._saving}
+                title=${this._saveTitle()}
+                aria-label=${this._saveTitle()}
+              ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
+                  <circle cx="12" cy="14" r="2" />
+                  <path d="M14 4v4h-6v-4" />
+                </svg></button>
+              <button
+                class="icon-btn export"
+                @click=${this._export}
+                title="Export a copy (download)"
+                aria-label="Export a copy (download)"
+              ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="M8 11l4 4l4 -4" />
+                  <path d="M5 19h14" />
+                </svg></button>`
           : ''}
         <button
           class="icon-btn theme"
@@ -308,10 +342,16 @@ export class EdApp extends LitElement {
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}
+      ${this._keyPrompt ? html`<ed-save-key @close=${() => (this._keyPrompt = false)}></ed-save-key>` : ''}
       <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog></footer>
-      ${this._fileError
-        ? html`<div class="file-toast" role="alert" @click=${() => (this._fileError = null)}>
-            Couldn't save the file: ${this._fileError}
+      ${this._saveError
+        ? html`<div class="toast error" role="alert" @click=${() => (this._saveError = null)}>
+            Couldn't save: ${this._saveError}
+          </div>`
+        : ''}
+      ${this._saveOk
+        ? html`<div class="toast ok" role="status" @click=${() => (this._saveOk = null)}>
+            Saved to GitHub ✓ ${this._saveOk.url ? html`— <a href=${this._saveOk.url} target="_blank" rel="noopener">view commit</a>` : ''}
           </div>`
         : ''}
     `;

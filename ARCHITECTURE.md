@@ -258,67 +258,69 @@ This is an explicit requirement, so it's a first-class design concern:
 
 ---
 
-## 7. Persistence (no backend)
+## 7. Persistence (no backend of ours)
 
-Two layers ship today, written **together** on Save so they never drift.
+One **primary Save** — direct to GitHub — over an always-on autosave, with a
+portable **Export** for a local backup. The serverless GitHub save (§7.5) is the
+one sanctioned backend exception (§2, goal 1); the app itself still ships no
+server.
 
-### 7.1 Web store — always on (`store.js`)
-localStorage key `ed-character-edits` holds an **edits overlay**: only the
-inputs the player changed (`{ meta: { … } }`), never a whole snapshot. At load
-the overlay is merged onto the freshly-fetched `data/character.json`, which stays
-the source of truth for everything untouched. Instant, no permissions, survives
-refresh, works on every browser and offline. "Store only inputs, never derived"
-holds — the overlay carries raw inputs only.
+### 7.1 Web store — always-on autosave (`store.js`)
+localStorage key `ed-character-edits` holds an **edits overlay**: only the inputs
+the player changed (`{ meta, items, wealth }`), never a whole snapshot. Every
+edit writes it instantly — no permissions, survives refresh, works on every
+browser and offline. At load the overlay is merged onto the freshly-fetched
+`data/character.json`, which stays the source of truth for everything untouched.
+"Store only inputs, never derived" holds — the overlay carries raw inputs only.
 
-### 7.2 File save — File System Access (`store-file.js`, Chromium)
-An in-app **Save** (the floppy-outline button, shown in edit mode) writes the
-character to a real file the player picks — their durable, committable backup.
+It is **not** a user-facing save target; it is the resilient draft *beneath* the
+GitHub save. So a failed or not-yet-attempted save never loses edits, and the
+Save button's unsaved dot is driven by it (`hasPendingEdits`): any edit sets a
+category; a successful save clears the saved categories (`reconcileOverlay`, §4.5
+of the feature doc) so the live branch read becomes the source of truth — the
+overlay would otherwise mask a save made from another device.
 
-- **Pick once, reconnect after.** `showSaveFilePicker()` returns a
-  `FileSystemFileHandle`; we persist it in **IndexedDB** (`db: ed-file`, store
-  `handles`, key `character`) so later sessions reconnect to the same file by
-  name. localStorage can't hold a handle; IndexedDB can.
-- **One permission click across restarts.** Within a session, saves are silent
-  after the first grant. After a full browser restart the browser re-asks for
-  write access once (a single click — *not* re-picking the file); a security
-  guarantee we can't bypass.
-- **Chromium-only, feature-detected.** Gated on `window.showSaveFilePicker`, not
-  on host — so Save appears on the live site *and* locally in Chrome/Edge. On
-  Firefox/Safari the button is hidden and the web store alone persists (a
-  download-based export could be the fallback there later).
-- **Dual-write, kept in sync.** Save serializes the **full merged, inputs-only**
-  character (`schema: "ed-character/1"`, `JSON.stringify(…, 2) + '\n'`) to *both*
-  the file and the web store, so afterwards memory ↔ web store ↔ file are
-  identical. The overlay is **not** cleared — it stays the resilient working copy,
-  and the two can't disagree as long as every edit flows through the app. A small
-  dot on the Save button shows when the web store is ahead of the file.
-- **The commit gap.** The file is a local artifact; carrying a change into the
-  *next* session (or to production) is still a manual `git commit && git push` —
-  deliberately, so the app needs no secrets and no backend.
+### 7.2 Export — portable download (`store-export.js`)
+The **Export** button (download icon, shown in edit mode) downloads the character
+as a `.json` file — a local backup, independent of the GitHub save. A plain
+`Blob` download: no permissions, no picker, no handle, and it works in **every**
+browser (Firefox / Safari / mobile), not just Chromium.
+
+- **Same bytes as a save.** `serializeCharacter` emits the identical merged,
+  inputs-only form the worker commits (`schema: "ed-character/1"`,
+  `JSON.stringify(…, 2) + '\n'`), so an exported file and a GitHub-saved file are
+  byte-for-byte the same.
+- **A backup, not the canonical store.** GitHub (§7.5) is the canonical copy that
+  syncs across devices; the export is a point-in-time copy the player keeps or
+  re-imports. It carries no dirty tracking of its own.
 - **Formatting note.** Serializing normalizes JSON to 2-space, so hand-compacted
-  single-line objects in `character.json` re-expand on the first save
-  (semantically identical and valid — just a one-time diff). Pre-normalizing the
-  file once removes that churn.
+  single-line objects in `character.json` re-expand once (semantically identical
+  — a one-time diff). Pre-normalizing the file removes that churn.
 
-### 7.3 Future Save targets (not built)
-State is *just* `character.json`, so each of these is an additive Save target,
-not a rewrite:
+> **Retired:** the earlier Chromium-only **File System Access** save
+> (`store-file.js`, `showSaveFilePicker` + an IndexedDB handle) is gone. With
+> GitHub as the canonical store, a local file is just an exportable backup, so
+> the portable download replaces it — simpler, and no longer Chromium-gated.
 
-| Strategy | How | Pros | Cons |
-|----------|-----|------|------|
-| **GitHub as store** (see §7.4) | commit `character.json` via the GitHub API, an OAuth device-flow token (fallback: fine-grained PAT) | no manual commit; syncs across devices; versioned | token held in browser memory for the session |
-| **Serverless write endpoint** (see §7.5) | a small Cloudflare Worker (decided host — see the feature doc) commits for the app | no token in the browser; same GitHub loop | **breaks the no-backend rule — the one sanctioned exception** |
-| **File export/import** | download/upload `character.json` | portable, works everywhere | manual round-trip |
-| **URL state** | encode a snapshot in the link | shareable | size-limited |
+### 7.3 Save targets — status
+State is *just* `character.json`, so each Save target is additive, not a rewrite.
+What shipped and what stayed on the shelf:
 
-### 7.4 Future: save directly to GitHub — what it could look like
-Today's local-file save still leans on a manual commit/push. A GitHub target
-closes that loop: **Save** commits `data/character.json` to a dedicated
-`character-data` branch and the app reads it live at runtime — genuinely "real"
-saving from any device, including the live site, with no local checkout in the
-loop and no Pages rebuild.
+| Strategy | Status | Notes |
+|----------|--------|-------|
+| **Serverless write endpoint** (§7.5) | ✅ **shipped — the primary Save** | Cloudflare Worker commits for the app; no token in the browser. The one sanctioned backend exception. |
+| **File export/import** (§7.2) | ✅ **shipped — Export** | portable download; local backup, works everywhere |
+| **In-browser GitHub token** (§7.4) | ❌ not built — alternative | commit via the GitHub API with an OAuth/PAT token held in browser memory; **superseded by §7.5**, which keeps the credential off the page |
+| **URL state** | ❌ not built | encode a snapshot in the link; shareable but size-limited |
 
-Sketch of the flow (all client-side; still no backend of ours):
+### 7.4 Alternative considered (not built): in-browser GitHub token
+Kept for the record as the alternative to §7.5 (which shipped). This path commits
+to the `character-data` branch **directly from the browser** and reads it live at
+runtime — the same "real saving from any device" outcome, but with the GitHub
+credential on the page. §7.5 was chosen instead precisely to keep that credential
+off the page.
+
+Sketch of the flow (all client-side; no backend of ours):
 
 1. **Auth (once).** Prefer GitHub's **OAuth device flow**: Save shows a code and
    `github.com/login/device` link; the player approves in their browser, and the
@@ -343,37 +345,34 @@ Sketch of the flow (all client-side; still no backend of ours):
    branch at runtime (`store.js`), so a save appears without rebuilding; locally
    it keeps reading the working copy.
 
-This reuses the exact **dual-write** shape from §7.2 — the picker/handle is
-simply swapped for "device-flow token + repo path," and the serialized bytes are
-identical (inputs-only `character.json`). Trade-offs: a token in the browser is
-a real exposure (mitigated by least-privilege + session-only memory), it adds a
-network dependency the local-file path doesn't have, and the live read depends
-on the committed branch rather than a redeploy. Because it is purely an
-alternate Save target, it can land opt-in without disturbing the web-store +
-local-file model. (For players who'd rather the credential never touch the page,
-§7.5 documents the one serverless alternative.)
+The serialized bytes are identical to a §7.5 save (inputs-only `character.json`);
+only the actor differs — the browser holds the token instead of the worker.
+Trade-offs that ruled it out: a token in the browser is a real exposure (only
+partly mitigated by least-privilege + session-only memory), where §7.5 keeps it
+in the worker's secret store and never on the page.
 
-### 7.5 Future: serverless save endpoint — the one sanctioned backend exception
+### 7.5 Serverless save endpoint — the primary Save (the one sanctioned backend exception)
 
-The §7.4 flow keeps the credential in the browser (session-only in memory). For
-players who want the token to never enter the page at all, the one sanctioned
-alternative is a tiny **write endpoint** that commits on the app's behalf: a
-single Cloudflare Worker — the decided host (the comparison that settled it and
-the Deno Deploy / Vercel portability alternatives are recorded in
-docs/GITHUB-SERVERLESS-SAVE.md §4.1) — holds the repo-scoped GitHub token in the
-platform's secret store, and the app `POST`s the same merged,
-inputs-only character; the worker does the GET-SHA → PUT-commit to the dedicated
-`character-data` branch, and the app reads the committed file live at runtime —
-the deploy workflow (which watches `main` and `dev` only) is never triggered, so
-a save does not rebuild the app. Feedback and `409` retry behave the same.
+**Shipped.** The app's **Save** (§7.1's autosave sits beneath it) `POST`s the
+merged, inputs-only character to a tiny **write endpoint** that commits on the
+app's behalf, so the GitHub credential never enters the browser — only the
+session's `SAVE_KEY` travels with the request. The endpoint is a single
+**Cloudflare Worker** (`tools/worker/`; the host comparison and the Deno Deploy /
+Vercel portability alternatives are in docs/GITHUB-SERVERLESS-SAVE.md §4.1). It
+holds the repo-scoped GitHub token in the platform's secret store, does the
+GET-SHA → PUT-commit to the dedicated `character-data` branch, and the app reads
+the committed file live at runtime (`store.js`). The deploy workflow watches
+`main` and `dev` only, so a save never rebuilds the app. The client sees one
+`200` (with the commit URL) or one typed error; the `409` retry lives in the
+worker.
 
-This is the **only** documented exception to the "no backend, no external
-runtime dependency" constraint (§2, goal 1). It is deliberate, opt-in, and
-additive: the web-store + local-file model stays the default and the only
-offline path. It ships *instead of* §7.4's in-browser token for players who want
-that — never in addition to it. The full design — how it works, how it is built,
-and its effect on the existing app — is broken out in
-[docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md).
+App side: `store-server.js` (`saveServer`) is the target; the `SAVE_KEY` is
+entered via a key-prompt on first save and held **in memory only** (never
+localStorage); on success the overlay reconciles (§7.1). This is the **only**
+documented exception to the "no backend, no external runtime dependency"
+constraint (§2, goal 1) — deliberate, and the app still ships no server of its
+own. Full design, build, and rollout: [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md)
+and its runbook.
 
 ---
 

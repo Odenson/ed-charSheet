@@ -17,8 +17,9 @@ building it — including the manual steps the repo owner completes.
 | Host | **Cloudflare Worker** | Free tier, one file, `wrangler` deploy |
 | Worker code location | **`tools/worker/`** in this repo | `tools/` is excluded from the Pages build, so it never deploys as part of the site |
 | Endpoint auth | **`SAVE_KEY` required (fail closed)** | Deviation from the design doc's *optional* default — recorded in §5/§7 of the design doc when we ship |
-| SAVE_KEY in the app | **Session-only, in memory** | Entered in Settings each session; never written to `localStorage` |
-| Endpoint URL in the app | Hardcoded default, overridable in Settings | The default is filled in once the worker is deployed |
+| Save model | **One primary Save → GitHub; Export = local download** | Consolidated (owner decision): over the always-on autosave overlay. File System Access save retired. See ARCHITECTURE §7 |
+| SAVE_KEY in the app | **Session-only, in memory** | Entered via a **key-prompt on first save** each session; never written to `localStorage` |
+| Endpoint URL in the app | Hardcoded default | The deployed worker; a Settings override is deferred (one field doesn't warrant a panel) |
 
 ---
 
@@ -181,16 +182,26 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 
 ### Phase 3 — App integration (CLAUDE)
 
-- [ ] **3.1** `store-server.js` — `saveServer(character, { saveKey })` POST to the
-  endpoint (design §4.5), with typed errors.
-- [ ] **3.2** Settings: a **"Save to GitHub"** toggle + a SAVE_KEY field held **in
-  memory only** (never `localStorage`); the endpoint URL defaults to the deployed
-  worker and is overridable.
-- [ ] **3.3** Wire as a third Save target in edit mode (web store + file + server).
-- [ ] **3.4** **Overlay reconciliation on success** — clear the saved
-  `meta`/`items`/`wealth` keys from the `localStorage` edits overlay so the branch
-  read is the source of truth (design §4.5 "Reconcile the overlay").
-- [ ] **3.5** Honor UI rules: Escape-closes / Enter-confirms, theme-aware, viewport.
+**Consolidated model (owner decision):** one primary **Save → GitHub**, over the
+always-on autosave overlay, plus a portable **Export** download. The old "third
+save target (web store + file + server)" plan and the File System Access save are
+retired. See ARCHITECTURE §7 and design §4.5.
+
+- [x] **3.1** `store-server.js` — `saveServer(character, { endpoint, saveKey })`
+  POST to the endpoint (design §4.5), typed `SaveError` (incl. `no_key` /
+  `offline`). `DEFAULT_ENDPOINT` = the deployed worker. Tested (`store-server.test.js`).
+- [x] **3.2** **Save → GitHub is the one primary Save** (edit-mode icon, all
+  browsers). `SAVE_KEY` via a lean **key-prompt on save** (`ed-save-key.js`), held
+  **in memory only** (never `localStorage`); endpoint hardcoded (a Settings panel
+  and overridable URL are deferred — not needed for one field).
+- [x] **3.3** **Export** — portable `.json` download (`store-export.js`), replacing
+  the retired `store-file.js` (deleted). Works in every browser.
+- [x] **3.4** **Overlay reconciliation on success** — `reconcileOverlay()` clears
+  the saved `meta`/`items`/`wealth` keys so the branch read is the source of truth
+  (design §4.5). Unsaved dot driven by `hasPendingEdits()`.
+- [x] **3.5** UI rules honored: key-prompt modal Escape-closes / Enter-confirms,
+  theme-aware, viewport; data-down/dispatch-up preserved (views dispatch, `ed-app`
+  saves).
 
 ### Phase 4 — Tests (CLAUDE)
 
