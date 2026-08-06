@@ -10,6 +10,7 @@ import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
+import './ed-confirm.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -32,6 +33,7 @@ export class EdApp extends LitElement {
     _saveError: { state: true },
     _saveOk: { state: true },
     _keyPrompt: { state: true },
+    _confirmDiscard: { state: true },
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -134,6 +136,7 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     this._keyPrompt = false;
+    this._confirmDiscard = false;
     // Theme: honour a saved preference, else follow the system setting.
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -247,6 +250,24 @@ export class EdApp extends LitElement {
     return this._dirty ? 'Save to GitHub (unsaved changes)' : 'Saved to GitHub';
   }
 
+  // Discard the local autosave draft and reload the saved (GitHub) version.
+  // Clears the overlay so it can't mask the branch, then re-loads from source —
+  // the fix for a stale local draft leaking over a newer GitHub save.
+  async _discardLocal() {
+    this._confirmDiscard = false;
+    reconcileOverlay(); // clear every saved category from the overlay
+    try {
+      const { character, rules } = await loadCharacter();
+      this._character = character;
+      this._rules = rules;
+      this._model = deriveModel(character, rules);
+      this._dirty = false;
+      this._saveError = null;
+    } catch (e) {
+      this._saveError = `Couldn't reload the saved version: ${e?.message ? String(e.message) : String(e)}`;
+    }
+  }
+
   _applyTheme() {
     // Force the color-scheme on the document root so light-dark() everywhere follows it.
     document.documentElement.style.colorScheme = this._dark ? 'dark' : 'light';
@@ -303,6 +324,17 @@ export class EdApp extends LitElement {
           title=${this._editMode ? 'Finish editing' : 'Edit character details'}
           aria-label=${this._editMode ? 'Finish editing' : 'Edit character details'}
         ><span aria-hidden="true">✎</span></button>
+        ${this._editMode && this._dirty
+          ? html`<button
+                class="icon-btn revert"
+                @click=${() => (this._confirmDiscard = true)}
+                title="Discard local changes (reload the saved version)"
+                aria-label="Discard local changes (reload the saved version)"
+              ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 12a9 9 0 1 0 3 -6.7l-3 2.7" />
+                  <path d="M3 4v4h4" />
+                </svg></button>`
+          : ''}
         ${this._editMode
           ? html`<button
                 class="icon-btn save ${this._dirty ? 'dirty' : ''}"
@@ -343,6 +375,15 @@ export class EdApp extends LitElement {
           ></ed-roll-modal>`
         : ''}
       ${this._keyPrompt ? html`<ed-save-key @close=${() => (this._keyPrompt = false)}></ed-save-key>` : ''}
+      ${this._confirmDiscard
+        ? html`<ed-confirm
+            heading="Discard local changes?"
+            message="This clears the unsaved edits stored in this browser and reloads the character saved on GitHub. It can't be undone."
+            confirmLabel="Discard"
+            @confirm=${this._discardLocal}
+            @close=${() => (this._confirmDiscard = false)}
+          ></ed-confirm>`
+        : ''}
       <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog></footer>
       ${this._saveError
         ? html`<div class="toast error" role="alert" @click=${() => (this._saveError = null)}>
