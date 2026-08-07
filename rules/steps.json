@@ -1,4 +1,6 @@
-[
+{
+  "schema": "ed-steps/1",
+  "steps": [
   {
     "step": 0,
     "dice": null,
@@ -375,3 +377,4 @@
     "modifier": 0
   }
 ]
+}

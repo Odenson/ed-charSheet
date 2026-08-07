@@ -122,7 +122,7 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 - [x] **2.1 [CLAUDE] Scaffold `tools/worker/`.** Claude adds `worker.js` (design
   §4.2 handler, `SAVE_KEY` **required** per §2.1), `wrangler.toml` (§5.1 below),
   `package.json` (wrangler dev-dep), and `worker.test.js`. *No secrets, no deploy.*
-  ✅ Done — `worker.test.js` covers Phase 4 (§4.1) too; `node --test` green (15/15).
+  ✅ Done — `worker.test.js` covers Phase 4 (step 4.1) too; `node --test` green (15/15).
 
 - [x] **2.0 [YOU] Cloudflare account.** If you don't have one, sign up free at
   cloudflare.com. No credit card needed for Workers free tier.
@@ -315,8 +315,8 @@ typed `SaveError`.
 - **Recover from a bad save:** save again with correct data, or revert the branch
   commit on GitHub. The `main`/`dev` app bundles are never touched by a save.
 - **Disable the feature:** turn the Settings toggle off (app), or
-  `npx wrangler delete` the worker (endpoint). Reads keep working via the bundle
-  fallback.
+  `npx wrangler delete` the worker (endpoint). Reads keep working — the character
+  (and portrait) live on the `character-data` branch regardless of the worker.
 - **Rotate the PAT:** before expiry, generate a new fine-grained PAT (1.1) and
   `npx wrangler secret put GITHUB_TOKEN` again. Rotate the SAVE_KEY the same way.
 

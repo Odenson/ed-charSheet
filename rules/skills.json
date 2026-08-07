@@ -1,4 +1,6 @@
-[
+{
+  "schema": "ed-skills/1",
+  "skills": [
   {
     "name": "Acrobatic Defense",
     "tier": 1
@@ -616,3 +618,4 @@
     "tier": 1
   }
 ]
+}

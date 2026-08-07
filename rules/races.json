@@ -14,14 +14,14 @@
           "name": "Heat Sight",
           "summary": "Sees radiated heat as colour; allows seeing in the dark at the expense of detail. Fades as ambient light increases, does not penetrate objects, and is blocked by effects that block normal sight.",
           "effects": [
-            { "type": "sense", "target": { "domain": "sense", "name": "HeatSight" }, "condition": "always", "source": "race" }
+            { "type": "sense", "target": { "domain": "sense", "name": "HeatSight" }, "condition": "always", "source": "race", "summary": "Sees radiated heat as colour; allows seeing in the dark at the expense of detail." }
           ]
         },
         {
           "name": "Strong Back",
           "summary": "+2 Strength for the purpose of determining carrying capacity only.",
           "effects": [
-            { "type": "attribute-modifier", "target": { "domain": "attribute", "name": "Strength" }, "operation": "add", "value": 2, "measure": "value", "condition": "situational", "scope": "carryingCapacity", "source": "race" }
+            { "type": "attribute-modifier", "target": { "domain": "attribute", "name": "Strength" }, "operation": "add", "value": 2, "measure": "value", "condition": "situational", "scope": "carryingCapacity", "source": "race", "summary": "+2 Strength for determining carrying capacity only." }
           ]
         }
       ]
@@ -36,7 +36,7 @@
           "name": "Low-Light Vision",
           "summary": "Sees at much lower light levels than humans; a single torch lights a large hall and starlight is ample. No extra susceptibility to flash-blindness. Complete darkness still blinds.",
           "effects": [
-            { "type": "sense", "target": { "domain": "sense", "name": "LowLightVision" }, "condition": "always", "source": "race" }
+            { "type": "sense", "target": { "domain": "sense", "name": "LowLightVision" }, "condition": "always", "source": "race", "summary": "Sees at much lower light levels than humans; complete darkness still blinds." }
           ]
         }
       ]
@@ -51,7 +51,7 @@
           "name": "Versatility",
           "summary": "Adept-only racial talent allowing a human to learn talents from Disciplines other than their own. Human adepts begin with it at Rank 0 and raise it with Legend Points as a Novice talent. Non-adept humans cannot learn it.",
           "effects": [
-            { "type": "grant-ability", "target": { "domain": "ability", "name": "Versatility" }, "operation": "set", "value": 0, "measure": "rank", "condition": "situational", "scope": "adept-only", "source": "race" }
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Versatility" }, "operation": "set", "value": 0, "measure": "rank", "condition": "situational", "scope": "adept-only", "source": "race", "summary": "Adept-only: may learn talents from other Disciplines, beginning at Rank 0 as a Novice talent." }
           ]
         }
       ]
@@ -66,14 +66,14 @@
           "name": "Increased Wound Threshold",
           "summary": "+3 to Wound Threshold, reflecting stone-like resistance to damage.",
           "effects": [
-            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "WoundThreshold" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "race" }
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "WoundThreshold" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "source": "race", "summary": "+3 to Wound Threshold." }
           ]
         },
         {
           "name": "Natural Armor",
           "summary": "Stone-like skin provides Physical Armor 3. Obsidimen can only wear 'living' armor, which adds to (rather than replaces) this natural armor.",
           "effects": [
-            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "set", "value": 3, "measure": "rating", "stacking": "replace", "condition": "always", "source": "race", "note": "acts as a base; only living armor adds on top" }
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "set", "value": 3, "measure": "rating", "stacking": "replace", "condition": "always", "source": "race", "note": "acts as a base; only living armor adds on top", "summary": "Stone-like skin provides Physical Armor 3; only 'living' armor adds to it." }
           ]
         }
       ]
@@ -88,14 +88,14 @@
           "name": "Gahad",
           "summary": "A fierce situational impulse. When an ork gives in to (or fails to resist) a triggering situation, they gain +1 to Action or Effect tests aimed at ending the trigger or taking revenge. Resisting requires a Willpower (6) test and causes a 'hangover' (Harried). Largely roleplay; bonuses and application are at GM discretion.",
           "effects": [
-            { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": 1, "measure": "result", "condition": "situational", "scope": "resolving a gahad trigger", "gmDiscretion": true, "source": "race" }
+            { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": 1, "measure": "result", "condition": "situational", "scope": "resolving a gahad trigger", "gmDiscretion": true, "source": "race", "summary": "+1 to Action or Effect tests aimed at ending a triggered gahad or taking revenge (GM call)." }
           ]
         },
         {
           "name": "Low-Light Vision",
           "summary": "Sees at much lower light levels than humans; a single torch lights a large hall and starlight is ample. No extra susceptibility to flash-blindness. Complete darkness still blinds.",
           "effects": [
-            { "type": "sense", "target": { "domain": "sense", "name": "LowLightVision" }, "condition": "always", "source": "race" }
+            { "type": "sense", "target": { "domain": "sense", "name": "LowLightVision" }, "condition": "always", "source": "race", "summary": "Sees at much lower light levels than humans; complete darkness still blinds." }
           ]
         }
       ]
@@ -110,7 +110,7 @@
           "name": "Heat Sight",
           "summary": "Sees radiated heat as colour; allows seeing in the dark at the expense of detail. Fades as ambient light increases, does not penetrate objects, and is blocked by effects that block normal sight.",
           "effects": [
-            { "type": "sense", "target": { "domain": "sense", "name": "HeatSight" }, "condition": "always", "source": "race" }
+            { "type": "sense", "target": { "domain": "sense", "name": "HeatSight" }, "condition": "always", "source": "race", "summary": "Sees radiated heat as colour; allows seeing in the dark at the expense of detail." }
           ]
         }
       ]
@@ -125,8 +125,8 @@
           "name": "Tail Combat",
           "summary": "Can strike with the tail as an unarmed attack (using an unarmed combat talent/skill), dealing Strength-Step damage. May instead attach a melee weapon of up to Size 2 to the tail (an Attached Weapon). Enables the Tail Attack combat option.",
           "effects": [
-            { "type": "grant-attack", "target": { "domain": "attack", "name": "tail" }, "operation": "ref", "value": { "ref": "attribute|Strength|Step" }, "measure": "step", "condition": "always", "source": "race", "note": "may attach a melee weapon of up to Size 2" },
-            { "type": "enable-option", "target": { "domain": "option", "name": "TailAttack" }, "condition": "always", "source": "race" }
+            { "type": "grant-attack", "target": { "domain": "attack", "name": "tail" }, "operation": "ref", "value": { "ref": "attribute|Strength|Step" }, "measure": "step", "condition": "always", "source": "race", "note": "may attach a melee weapon of up to Size 2", "summary": "Strike with the tail as an unarmed attack, dealing Strength-Step damage (may attach a melee weapon up to Size 2)." },
+            { "type": "enable-option", "target": { "domain": "option", "name": "TailAttack" }, "condition": "always", "source": "race", "summary": "Enables the Tail Attack combat option." }
           ]
         }
       ]
@@ -141,21 +141,21 @@
           "name": "Astral Sight",
           "summary": "All windlings have access to the Astral Sight talent; adepts begin with it at Rank 0 and may raise it with Legend Points as a Novice talent.",
           "effects": [
-            { "type": "grant-ability", "target": { "domain": "ability", "name": "Astral Sight" }, "operation": "set", "value": 0, "measure": "rank", "condition": "always", "source": "race" }
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Astral Sight" }, "operation": "set", "value": 0, "measure": "rank", "condition": "always", "source": "race", "summary": "All windlings have access to the Astral Sight talent; adepts begin at Rank 0." }
           ]
         },
         {
           "name": "Flight",
           "summary": "Can fly (rate 16) but not indefinitely: after ~20 minutes aloft a Toughness (5) test is required, with a cumulative +2 per extra 5 minutes; failure costs 1 Strain. Wet wings cut flight time to 5 minutes, escalate the tests, and leave the windling Harried until dry.",
           "effects": [
-            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Movement", "property": "Fly" }, "operation": "set", "value": 16, "measure": "rating", "condition": "always", "source": "race", "note": "fatigue after ~20 min flight; see summary" }
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Movement", "property": "Fly" }, "operation": "set", "value": 16, "measure": "rating", "condition": "always", "source": "race", "note": "fatigue after ~20 min flight; see summary", "summary": "Fly at rate 16; ~20-minute limit with escalating Toughness tests (wet wings penalize)." }
           ]
         },
         {
           "name": "Increased Physical Defense",
           "summary": "Small size and natural mobility add +2 to Physical Defense.",
           "effects": [
-            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "race" }
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "source": "race", "summary": "+2 Physical Defense." }
           ]
         }
       ]

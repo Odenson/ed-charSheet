@@ -21,8 +21,10 @@ testable layers:
 - **Data** — `data/character.json` holds *inputs only* (attributes, ranks,
   resources); `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
   table, the Characteristics Table, talent mechanics, disciplines, skills, races).
-  Modifiers live as `effects` arrays on the abilities/items that grant them, in a
-  controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
+  The character file and its portrait live on the `character-data` branch and are
+  read live from it (gitignored local working copies serve local dev; see
+  WORKFLOW.md). Modifiers live as `effects` arrays on the abilities/items that
+  grant them, in a controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
 - **Engine** (pure, framework-free, testable) — derives characteristics from the
   Characteristics Table plus the taxonomy effects, recomputing everything from
   inputs so editing one attribute cascades to all derived values; plus a Step→Dice

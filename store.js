@@ -39,9 +39,11 @@ async function loadJSON(path) {
 
 // The character file is source info, not app code: a serverless save commits it
 // to the `character-data` branch, which the deploy workflow does not watch, so
-// a save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). On the
-// Pages site we read it LIVE from that branch so a save shows up immediately;
-// everywhere else (local dev, file://) we read the working copy in the bundle.
+// a save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). The bundle
+// ships no character data — character.json and the portrait image live only on
+// that branch. On the Pages site we read them LIVE from the branch so a save
+// shows up immediately; everywhere else (local dev, file://) we read the local
+// working copies, which are gitignored (see .gitignore / WORKFLOW.md).
 const CHARACTER_OWNER = 'odenson';
 const CHARACTER_REPO = 'ed-charSheet';
 const CHARACTER_BRANCH = 'character-data';
@@ -53,6 +55,19 @@ function onPages() {
 const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/character.json?ref=${CHARACTER_BRANCH}`;
 const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/character.json`;
 
+// Resolve a `meta.portrait` path (e.g. `data/chakka.jpg`) to a loadable URL.
+// On the Pages site the portrait lives on the character-data branch like the
+// character file (the bundle ships no character data), so we hit the raw CDN
+// directly — a static repo asset doesn't need the git-consistent contents API
+// tier that character.json does (docs/GITHUB-SERVERLESS-SAVE.md §4.5). Locally
+// the working copy is served from the bundle. The UI handles a load failure
+// with its placeholder fallback (docs/UI-GUIDELINES.md §6).
+function portraitUrlFor(portrait) {
+  if (!portrait) return null;
+  if (onPages()) return `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/${portrait}`;
+  return `./${portrait}`;
+}
+
 // On the Pages site, read the saved character live from the character-data
 // branch. Prefer the GitHub **contents API** (`Accept: raw`): it reads the git
 // database directly, so a just-saved commit is visible immediately. The raw CDN
@@ -60,8 +75,10 @@ const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/
 // it — so a save-then-reload can race a stale edge copy (the read-after-write
 // bug that Phase 6 surfaced). Fallbacks keep it never-worse-than-before: if the
 // API is unreachable or rate-limited (60/hr per IP, unauthenticated) fall back
-// to the raw CDN (cache-busted, eventually consistent), then to the deployed
-// bundle. CORS is open on both hosts; the browser sets the required User-Agent.
+// to the raw CDN (cache-busted, eventually consistent). There is deliberately no
+// deployed-bundle fallback — the bundle ships no character data, so a failure
+// here surfaces the load error rather than masking it with stale bytes. CORS is
+// open on both hosts; the browser sets the required User-Agent.
 async function loadCharacterData() {
   if (!onPages()) return loadJSON('./data/character.json');
   try {
@@ -73,13 +90,7 @@ async function loadCharacterData() {
   } catch {
     /* network/CORS hiccup — fall through to the CDN */
   }
-  try {
-    return await loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
-  } catch {
-    // No save on the data branch yet (or raw is unreachable): the deployed copy
-    // rather than failing the whole app.
-    return loadJSON('./data/character.json');
-  }
+  return loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
 }
 
 // --- Persistence (Phase 2) -------------------------------------------------
@@ -179,7 +190,7 @@ function applyEdits(character, edits) {
  * the model without re-fetching.
  */
 export async function loadCharacter() {
-  const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
+  const [character, stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
     loadCharacterData(),
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
@@ -188,6 +199,9 @@ export async function loadCharacter() {
     loadJSON('./rules/characteristics.json'),
     loadJSON('./rules/items.json'),
   ]);
+  // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
+  // keeps an unwrapped file working.
+  const steps = stepsFile.steps ?? stepsFile;
   const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile };
   return { character: applyEdits(character, loadEdits()), rules };
 }
@@ -388,6 +402,9 @@ export function deriveModel(character, rules) {
 
   return {
     meta: character.meta ?? {},
+    // Derived, never stored: the loadable URL for `meta.portrait` (branch raw
+    // CDN on Pages, bundle-relative working copy locally).
+    portraitUrl: portraitUrlFor(character.meta?.portrait),
     attributes,
     resources: character.resources ?? {},
     disciplines,

@@ -114,7 +114,7 @@ export class EdApp extends LitElement {
       position: fixed; top: 0.75rem; right: 0.75rem; z-index: 1000;
       padding: 0.25rem 0.7rem; border-radius: 999px;
       background: #b26a00; color: #fff;
-      font: 700 0.7rem/1 system-ui, sans-serif; letter-spacing: 0.08em;
+      font: 500 0.7rem/1 system-ui, sans-serif; letter-spacing: 0.08em;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); pointer-events: none;
     }
   `;

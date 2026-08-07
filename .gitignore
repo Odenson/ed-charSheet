@@ -21,3 +21,9 @@ npm-debug.log*
 # Local-only self-referential symlink for simulating the /dev/ instance
 # (see README → "Simulating the dev instance locally"). Never committed.
 /dev
+
+# Character data lives on the character-data branch, not in the bundle
+# (store.js loads it live on the Pages site). The gitignored working copies
+# keep local dev / file:// working; fresh clones read from the branch instead.
+data/character.json
+data/chakka.jpg

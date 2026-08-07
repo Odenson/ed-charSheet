@@ -73,7 +73,7 @@ the only offline path; this is strictly an additional option.
 └──────────────────────┘
    No deploy, no rebuild: the deploy workflow (WORKFLOW.md) watches main and dev
    only. On its next load the Pages app fetches the character LIVE from the
-   committed branch (store.js), falling back to the deployed copy:
+   committed branch (store.js):
    https://raw.githubusercontent.com/{owner}/{repo}/character-data/data/character.json
 ```
 
@@ -97,7 +97,7 @@ the only offline path; this is strictly an additional option.
    someone else saved), the worker re-reads the SHA and retries (bounded), the
    same retry loop §7.4 sketches for the client.
 7. **Live read.** On its next load the Pages app fetches the committed file live
-   from the branch (`store.js`), falling back to the deployed copy. Both `/` and
+   from the branch (`store.js`). Both `/` and
    `/dev/` read the same branch, so the two environments show the same character.
 
 ### 3.2 Request / response contract
@@ -105,7 +105,7 @@ the only offline path; this is strictly an additional option.
 | | Value |
 |---|---|
 | Endpoint | `POST https://<worker>/save` |
-| Headers | `Content-Type: application/json`; optional `x-save-key` (see §5) |
+| Headers | `Content-Type: application/json`; `x-save-key` (required — fail-closed, §5) |
 | Body | `{ "character": <inputs-only ed-character/1 JSON> }` |
 | 200 | `{ "ok": true, "commit": { "sha": "…", "url": "https://github.com/…/commit/…" } }` |
 | 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "too_large", "message": "…" } }` |
@@ -276,13 +276,13 @@ created by the repo owner, never committed and never in the app:
 | `GITHUB_OWNER` / `GITHUB_REPO` | The repo that hosts the app (e.g. `odenson` / `ed-charSheet`). |
 | `GITHUB_PATH` | Default `data/character.json`. |
 | `GITHUB_BRANCH` | Default `character-data` — a data-only branch the deploy workflow does not watch, so saves never rebuild the app. |
-| `SAVE_KEY` | Optional shared endpoint key (see §5). |
+| `SAVE_KEY` | **Required** shared endpoint key — fail-closed (see §5). |
 
 ### 4.4 Deploying the worker
 
 ```bash
 npm i -D wrangler                 # or wrangler via npx
-wrangler secret put GITHUB_TOKEN  # interactive; also OWNER/REPO/PATH/BRANCH, optionally SAVE_KEY
+wrangler secret put GITHUB_TOKEN  # interactive; also OWNER/REPO/PATH/BRANCH and SAVE_KEY
 wrangler deploy                   # uses wrangler.toml with name + main
 ```
 
@@ -349,9 +349,9 @@ Wiring rules:
   (`meta` / `items` / `wealth`) is now redundant **and** will mask the branch on
   the next load — including edits made from another device. On success, clear the
   reconciled keys from the overlay so the (cache-busted) branch read becomes the
-  source of truth. **Trade-off:** if a later branch read is unreachable and falls
-  back to the deployed bundle, that device shows bundle-age data until the branch
-  is reachable again — acceptable versus permanently masking saves. This is the
+  source of truth. **Trade-off:** if a later branch read is unreachable, that
+  device shows the load error rather than stale data — acceptable versus
+  permanently masking saves. This is the
   exact failure a direct, out-of-band branch edit exposed in testing: a stale
   `meta.name` left in the overlay hid the branch's updated name, with no error
   (the live fetch succeeded; `applyEdits` merged the stale name on top).
@@ -367,9 +367,15 @@ for read-after-write because it keys its ~5-minute cache on the path, and the
 edge copy (the bug Phase 6 surfaced). Fallbacks keep it never-worse: if the API
 is unreachable or rate-limited (60/hr per IP, unauthenticated — ample for one
 player, and the response is cached with `no-store`), it falls back to the raw
-CDN (cache-busted, eventually consistent), then to the deployed bundle. Locally
-it keeps reading the working copy. `/` and `/dev/` read the same branch, so both
-environments show the same character.
+CDN (cache-busted, eventually consistent). There is deliberately **no deployed
+bundle fallback** — the bundle ships no character data, so a total failure
+surfaces the load error rather than masking it with stale bytes. Locally it
+keeps reading the working copy (gitignored; WORKFLOW.md). `/` and `/dev/` read
+the same branch, so both environments show the same character. The portrait
+image (`meta.portrait`, e.g. `data/chakka.jpg`) is read the same way from the
+branch's raw CDN — a static repo asset doesn't need the git-consistent contents
+API tier, and the UI falls back to a placeholder icon if it can't load
+(docs/UI-GUIDELINES.md §6).
 
 ### 4.6 Testing
 
@@ -386,8 +392,9 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
   without any deploy, then reset the branch if desired.
 - **App.** Assert `saveServer` sends exactly the bytes the §7.2 serializer
   produces, and that error codes map to the modal feedback paths. Also assert
-  `store.js` reads the live branch on a Pages-like origin and falls back to the
-  deployed copy when the branch has no file yet.
+  `store.js` reads the live branch on a Pages-like origin and throws a clear
+  load error when the branch is unreachable (there is no deployed copy to fall
+  back to).
 
 ---
 
@@ -436,19 +443,20 @@ server-side, plus honest limits:
   saves go to `character-data`, which is not a trigger branch, so nothing ever
   rebuilds on a save.
 - **Local dev / working copy.** Off the Pages site the app still reads
-  `./data/character.json`, so a local checkout keeps working exactly as today.
+  `./data/character.json` (and the portrait from `./${meta.portrait}`) — the
+  gitignored working copies, so a local checkout keeps working as today.
 - **No new runtime dependency for anyone not using it.** The save module loads
   only when the option is enabled. The live read (§3, step 7) applies only on
-  the Pages site, where it replaces a bundle fetch with the same vendor's raw
-  file host.
+  the Pages site, where it reads the branch instead of a bundle copy — the
+  bundle ships no character data.
 
 ### 6.2 What is added
 
 | Addition | Notes |
 |---|---|
 | `store-server.js` | A save-target module (feature-detected, opt-in) |
-| `store.js` live read | On the Pages site the character is fetched from the `character-data` branch (raw), falling back to the deployed copy; local runs unchanged |
-| Settings toggle | "Save to GitHub (server)" — enables the target and holds the optional `SAVE_KEY` for the session |
+| `store.js` live read | On the Pages site the character (and portrait) is fetched from the `character-data` branch; local runs read the gitignored working copies |
+| Settings toggle | "Save to GitHub (server)" — enables the target and holds the required `SAVE_KEY` for the session |
 | Save action entry | A third target alongside web store + file, in edit mode |
 | Worker + secrets | Deployed outside the repo; owner-only setup |
 

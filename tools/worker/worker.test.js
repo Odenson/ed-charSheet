@@ -1,7 +1,7 @@
 // worker.test.js — run with `npm test` (node --test, no deps).
 //
 // Exercises the serverless save handler (worker.js) with a mocked GitHub fetch.
-// Covers runbook §4.1 / design §4.6: auth (fail-closed SAVE_KEY), routing,
+// Covers runbook Phase 4 / design §4.6: auth (fail-closed SAVE_KEY), routing,
 // body/schema/size validation, the happy-path GET-sha → PUT contract, the
 // bounded 409 retry, and upstream-failure mapping.
 

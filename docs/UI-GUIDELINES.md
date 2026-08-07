@@ -28,7 +28,7 @@ Five tabs, each a distinct lens on the character:
 | Overview | At-a-glance: hero portrait + header, attributes, defences, armour, movement, health, combat |
 | Disciplines | Per-discipline detail with a toggle between the character's disciplines (talents live here — there is no separate Talents tab) |
 | Spells | Matrices and spells by circle (later) |
-| Gear | Weapons, armour, thread items, kit (later) |
+| Gear | Weapons, armour, thread items, kit |
 | Notes | Running character history / log over time |
 
 ## 5. Derived values are placeholder pills
@@ -39,9 +39,12 @@ fabricated number.** Only values we actually have (attributes, damage, wounds,
 talent steps, etc.) render as real numbers.
 
 ## 6. Portrait is a repo image
-The hero portrait is an image file committed to the repo, referenced by
-`meta.portrait` in `character.json` (e.g. `data/chakka.jpg`). If the field is
-absent the UI falls back to a placeholder icon.
+The hero portrait is an image file held on the `character-data` branch, like the
+character file (the bundle ships no character data), referenced by
+`meta.portrait` in `character.json` (e.g. `data/chakka.jpg`). On the Pages site
+the app reads it live from that branch's raw CDN; locally it uses the gitignored
+working copy. If the field is absent **or the image fails to load** the UI falls
+back to a placeholder icon.
 
 ## 7. Modal keyboard conventions
 Every modal/overlay follows the same keyboard contract:
