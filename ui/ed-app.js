@@ -195,7 +195,12 @@ export class EdApp extends LitElement {
       }
       const id = this._initialId(ids, store);
       if (id) await this._loadCharacter(id, { store });
-      else this._picker = true; // first run with no saved selection: ask
+      else {
+        // First run with no saved selection: keep the fetched store so the
+        // picker has characters to list (only _loadCharacter sets it otherwise).
+        this._characterStore = store;
+        this._picker = true;
+      }
     } catch (e) {
       this._error = String(e);
     }
