@@ -17,7 +17,8 @@ head_sampling_rate = 1
 [vars]
 GITHUB_OWNER  = "odenson"
 GITHUB_REPO   = "ed-charSheet"
-GITHUB_PATH   = "data/character.json"
+GITHUB_PATH   = "data/character.json"   # legacy single-file save (no id)
+GITHUB_STORE  = "data/characters.json"  # grouped store upsert (with id)
 GITHUB_BRANCH = "character-data"
 # ALLOWED_ORIGIN defaults to https://odenson.github.io in worker.js; override
 # here only if the app is served from a different origin.

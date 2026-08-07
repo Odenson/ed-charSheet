@@ -231,7 +231,7 @@ export class EdOverview extends LitElement {
   // Modal body listing all character metadata (any field added to meta shows up).
   _metaBody() {
     const meta = this.model?.meta ?? {};
-    const HIDE = new Set(['name', 'portrait', 'sourceSheetVersion']);
+    const HIDE = new Set(['id', 'name', 'portrait', 'sourceSheetVersion']);
     const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
     const entries = Object.entries(meta).filter(([k, v]) => !HIDE.has(k) && v != null && v !== '');
     return html`

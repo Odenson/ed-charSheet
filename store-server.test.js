@@ -37,6 +37,16 @@ test('happy path: POSTs { character } with the key header, returns the commit', 
   }
 });
 
+test('envelope carries the character id when one is given', async () => {
+  const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: { sha: 'abc', url: 'u' } } }));
+  try {
+    await saveServer(CHAR, { saveKey: 'k', id: 'chakka' });
+    assert.deepEqual(JSON.parse(mock.calls[0].options.body), { character: CHAR, id: 'chakka' });
+  } finally {
+    mock.restore();
+  }
+});
+
 test('missing key throws no_key before any request', async () => {
   const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: {} } }));
   try {

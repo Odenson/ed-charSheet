@@ -21,25 +21,29 @@ the build**:
 |--------|------|----------|
 | `main` | Production app | ✅ → root |
 | `dev` | Testing app | ✅ → `/dev/` |
-| `character-data` | File store for `data/character.json` **and the portrait image** (`data/chakka.jpg`) | ❌ never deployed |
+| `character-data` | File store for the grouped character store `data/characters.json` (plus legacy `data/character.json` **and the portrait image** `data/chakka.jpg`) | ❌ never deployed |
 
 The deploy workflow listens to `main` and `dev` only, so nothing committed to
 `character-data` ever triggers a rebuild or a Pages deployment. The branch exists
-for one reason: to hold the latest `data/character.json` — the inputs-only
-character file — committed by the serverless save target
+for one reason: to hold the character data — the grouped store
+`data/characters.json` (`{ schema: "ed-characters/1", characters: { "<id>": { …
+} } }`) — committed by the serverless save target
 (docs/GITHUB-SERVERLESS-SAVE.md) on the app's behalf, alongside the portrait
-image the sheet references via `meta.portrait`.
+image each entry references via `meta.portrait`. The legacy single-file
+`data/character.json` is retained on the branch during the dev→main transition,
+after which only the grouped store is written.
 
 Both environments **source the character detail from this one branch**: on the
-Pages site the app reads `data/character.json` live from `character-data` —
+Pages site the app reads `data/characters.json` live from `character-data` —
 preferring the GitHub contents API (git-consistent, so a fresh save shows up
 immediately), falling back to the raw CDN
 (docs/GITHUB-SERVERLESS-SAVE.md §4.5); locally it reads the gitignored working
 copy (see "Local character copies" below). The portrait is read live from the
 same branch's raw CDN. Because `/` and `/dev/` read the same branch, a save
 shows up identically in both — and a save never rebuilds either one. The app
-bundles ship **no character data**: `data/character.json` and the portrait are
-gitignored so they stay out of every deploy (local working copies only).
+bundles ship **no character data**: `data/characters.json`,
+`data/character.json` and the portrait are gitignored so they stay out of every
+deploy (local working copies only).
 
 ## One-time setup (repo owner)
 
@@ -130,18 +134,19 @@ entirely while reconnecting the histories, then push.
   asset and `fetch` paths in the app must be relative (`./data/...`,
   `./engine/...`), never root-absolute (`/data/...`). This keeps the same build
   working at both the root and the subpath.
-- **Saves never rebuild the app.** The serverless save target commits
-  `data/character.json` to the dedicated `character-data` branch — a file store,
-  not a build input (see "The `character-data` branch" above and
-  docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed.
-- **Local character copies.** `data/character.json` and the portrait image
-  (`data/chakka.jpg`) are gitignored (see `.gitignore`): they live on
-  `character-data`, not in the bundle. Local dev / `file://` reads the working
-  copies from the working tree. After a fresh clone, fetch the latest with
-  `git show character-data:data/character.json > data/character.json` (and
-  likewise for the portrait) — or just rely on the branch live-read on the Pages
-  site.
+- **Saves never rebuild the app.** The serverless save target upserts
+  `characters[id]` in `data/characters.json` on the dedicated `character-data`
+  branch — a file store, not a build input (see "The `character-data` branch"
+  above and docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed.
+- **Local character copies.** `data/characters.json`, the legacy
+  `data/character.json`, and the portrait image (`data/chakka.jpg`) are gitignored
+  (see `.gitignore`): they live on `character-data`, not in the bundle. Local
+  dev / `file://` reads the working copies from the working tree. After a fresh
+  clone, fetch the latest with
+  `git show character-data:data/characters.json > data/characters.json` (and
+  likewise for `data/character.json` and the portrait) — or just rely on the
+  branch live-read on the Pages site.
 - **What gets deployed:** the static app (`index.html`, `ui/`, `engine/`,
   `data/`, `rules/`, assets). Excluded: `tools/`, `node_modules/`, `package*.json`,
   `*.xlsx`, and anything gitignored (source spreadsheet, rulebook extracts,
-  talent prose, `data/character.json`, the portrait image).
+  talent prose, `data/characters.json`, `data/character.json`, the portrait image).

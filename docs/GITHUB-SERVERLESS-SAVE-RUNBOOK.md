@@ -64,10 +64,11 @@ the worker's secret store.
 | `SAVE_KEY` | **secret** | 64-char hex from `openssl rand -hex 32` | `wrangler secret put` |
 | `GITHUB_OWNER` | var | `odenson` | `wrangler.toml [vars]` |
 | `GITHUB_REPO` | var | `ed-charSheet` | `wrangler.toml [vars]` |
-| `GITHUB_PATH` | var | `data/character.json` | `wrangler.toml [vars]` |
+| `GITHUB_PATH` | var | `data/character.json` — **legacy** single-file target, used only when a save carries no `id` | `wrangler.toml [vars]` |
+| `GITHUB_STORE` | var | `data/characters.json` — grouped store (`ed-characters/1`); saves with an `id` upsert `characters[id]` here | `wrangler.toml [vars]` |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
-Only the two **secrets** are sensitive; the four vars are plain config and live
+Only the two **secrets** are sensitive; the five vars are plain config and live
 in `wrangler.toml`. **No secret is ever committed or placed in the app.**
 
 ---
@@ -146,8 +147,8 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   npx wrangler secret put GITHUB_TOKEN     # paste the PAT from 1.1
   npx wrangler secret put SAVE_KEY         # paste the hex from 1.2
   ```
-  (The four `GITHUB_OWNER/REPO/PATH/BRANCH` vars are already in `wrangler.toml`;
-  no action needed.)
+  (The five `GITHUB_OWNER/REPO/PATH/STORE/BRANCH` vars are already in
+  `wrangler.toml`; no action needed.)
 
 - [x] **2.4 [YOU] Deploy.**
   ```bash
@@ -173,9 +174,17 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   #     commit to character-data; harmless — it's the current character)
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
     -H "x-save-key: $KEY" --data-binary @data/character.json -w '\n%{http_code}\n'
+
+  # (c) With an id → upserts characters[id] in data/characters.json (grouped
+  #     store); expect 200. NOTE: since the JSON payload must be a JSON body
+  #     (not file bytes), use -d with a quoted JSON here.
+  curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
+    -H "x-save-key: $KEY" \
+    -d '{"id":"chakka","character":{"schema":"ed-character/1","meta":{"id":"chakka"}}}' \
+    -w '\n%{http_code}\n'
   ```
-  Pass = (a) `401` unauthorized, (b) `200` with `commit.url`. If (b) fails, check
-  the worker logs: `npx wrangler tail` while re-running the curl.
+  Pass = (a) `401` unauthorized, (b) and (c) `200` with `commit.url`. If (b)/(c)
+  fail, check the worker logs: `npx wrangler tail` while re-running the curl.
 
 - [x] **2.6 [YOU] Record the URL.** `https://ed-charsheet-save.edsavechar.workers.dev`
   — recorded in §7; this becomes the app's hardcoded `DEFAULT_ENDPOINT` in Phase 3.
@@ -187,9 +196,10 @@ always-on autosave overlay, plus a portable **Export** download. The old "third
 save target (web store + file + server)" plan and the File System Access save are
 retired. See ARCHITECTURE §7 and design §4.5.
 
-- [x] **3.1** `store-server.js` — `saveServer(character, { endpoint, saveKey })`
+- [x] **3.1** `store-server.js` — `saveServer(character, { endpoint, saveKey, id })`
   POST to the endpoint (design §4.5), typed `SaveError` (incl. `no_key` /
-  `offline`). `DEFAULT_ENDPOINT` = the deployed worker. Tested (`store-server.test.js`).
+  `offline`). The body carries `id` when set, so the worker upserts the grouped
+  store. `DEFAULT_ENDPOINT` = the deployed worker. Tested (`store-server.test.js`).
 - [x] **3.2** **Save → GitHub is the one primary Save** (edit-mode icon, all
   browsers). `SAVE_KEY` via a lean **key-prompt on save** (`ed-save-key.js`), held
   **in memory only** (never `localStorage`); endpoint hardcoded (a Settings panel
@@ -208,9 +218,12 @@ retired. See ARCHITECTURE §7 and design §4.5.
 - [x] **4.1** `node --test` on the worker (mocked GitHub `fetch`): missing/wrong
   key → 401; bad JSON / wrong schema / oversize → 400; happy path PUTs with the
   GET-returned `sha`; `409` → bounded retry → success.
-  ✅ Done in 2.1 — `worker.test.js` ships with the scaffold (15 tests, green). Also
+  ✅ Done in 2.1 — `worker.test.js` ships with the scaffold (green). Also
   covers unconfigured-key → 401, branch-creation, and non-409 → 502 mapping. The
   missing/wrong-key cases exercise the constant-time `safeEqual` path (§5.2b).
+  Extended for multi-character: an `id` upserts `characters[id]` and preserves
+  the other entries, invalid ids → `400 invalid_id`, and a `404` store is
+  created fresh (docs/PLAN-MULTI-CHARACTER.md Phase E).
 
 ### Phase 5 — Docs & status flip (CLAUDE)
 
@@ -259,10 +272,11 @@ enabled = true
 head_sampling_rate = 1
 
 [vars]
-GITHUB_OWNER  = "odenson"
-GITHUB_REPO   = "ed-charSheet"
-GITHUB_PATH   = "data/character.json"
-GITHUB_BRANCH = "character-data"
+GITHUB_OWNER   = "odenson"
+GITHUB_REPO    = "ed-charSheet"
+GITHUB_PATH    = "data/character.json"
+GITHUB_STORE   = "data/characters.json"
+GITHUB_BRANCH  = "character-data"
 ```
 
 Secrets (`GITHUB_TOKEN`, `SAVE_KEY`) are **not** in this file — they're set with
@@ -302,9 +316,11 @@ why a save failed).
 
 ### 5.3 App save target
 
-`saveServer(character, { endpoint, saveKey })` per design §4.5 — POSTs
-`{ character }` with the `x-save-key` header, returns `{ sha, url }` or throws a
-typed `SaveError`.
+`saveServer(character, { endpoint, saveKey, id })` per design §4.5 — POSTs
+`{ character, id }` (id present when a character is selected) with the
+`x-save-key` header, returns `{ sha, url }` or throws a typed `SaveError`.
+The id keeps the app's per-character edits (`ed-character-edits:${id}` overlay)
+and branch writes aligned on the same character.
 
 ---
 
@@ -332,6 +348,7 @@ typed `SaveError`.
 | Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
 | App integration merged | 2026-08-06 on `dev` (commit `c2593e1`); read fix `7e6b8ab` |
 | Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
+| Multi-character store | `GITHUB_STORE` + `id` upsert shipped on `dev` (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
 
 ---
 

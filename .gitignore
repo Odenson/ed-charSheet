@@ -26,4 +26,5 @@ npm-debug.log*
 # (store.js loads it live on the Pages site). The gitignored working copies
 # keep local dev / file:// working; fresh clones read from the branch instead.
 data/character.json
+data/characters.json
 data/chakka.jpg

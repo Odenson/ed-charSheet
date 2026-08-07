@@ -266,12 +266,14 @@ one sanctioned backend exception (§2, goal 1); the app itself still ships no
 server.
 
 ### 7.1 Web store — always-on autosave (`store.js`)
-localStorage key `ed-character-edits` holds an **edits overlay**: only the inputs
-the player changed (`{ meta, items, wealth }`), never a whole snapshot. Every
-edit writes it instantly — no permissions, survives refresh, works on every
-browser and offline. At load the overlay is merged onto the freshly-fetched
-`data/character.json`, which stays the source of truth for everything untouched.
-"Store only inputs, never derived" holds — the overlay carries raw inputs only.
+The overlay is keyed per character: `ed-character-edits:${id}` holds an **edits
+overlay** for that character — only the inputs the player changed
+(`{ meta, items, wealth }`), never a whole snapshot. Every edit writes it
+instantly — no permissions, survives refresh, works on every browser and
+offline. At load the overlay is merged onto the freshly-fetched store entry
+(`characters[id]` in `data/characters.json`, §7.5), which stays the source of
+truth for everything untouched. "Store only inputs, never derived" holds — the
+overlay carries raw inputs only.
 
 It is **not** a user-facing save target; it is the resilient draft *beneath* the
 GitHub save. So a failed or not-yet-attempted save never loses edits, and the
@@ -311,8 +313,8 @@ browser (Firefox / Safari / mobile), not just Chromium.
 > the portable download replaces it — simpler, and no longer Chromium-gated.
 
 ### 7.3 Save targets — status
-State is *just* `character.json`, so each Save target is additive, not a rewrite.
-What shipped and what stayed on the shelf:
+State is *just* the character entries in the grouped store, so each Save target
+is additive, not a rewrite. What shipped and what stayed on the shelf:
 
 | Strategy | Status | Notes |
 |----------|--------|-------|
@@ -370,10 +372,20 @@ session's `SAVE_KEY` travels with the request. The endpoint is a single
 Vercel portability alternatives are in docs/GITHUB-SERVERLESS-SAVE.md §4.1). It
 holds the repo-scoped GitHub token in the platform's secret store, does the
 GET-SHA → PUT-commit to the dedicated `character-data` branch, and the app reads
-the committed file live at runtime (`store.js`). The deploy workflow watches
+the committed data live at runtime (`store.js`). The deploy workflow watches
 `main` and `dev` only, so a save never rebuilds the app. The client sees one
 `200` (with the commit URL) or one typed error; the `409` retry lives in the
 worker.
+
+**Multi-character (v1.6.0-dev).** Characters are grouped in a single store,
+`data/characters.json` (`{ schema: "ed-characters/1", characters: { "<id>": {
+… ed-character/1 entry … } } }`). A save carrying an `id` makes the worker
+upsert `characters[id]` (GET the store → replace the entry → PUT the whole file);
+a save without an `id` falls back to the legacy `data/character.json` path. The
+app reads the store once — one fetch discovers **and** loads every character —
+and the first-run picker lists the store's ids (docs/PLAN-MULTI-CHARACTER.md).
+`data/character.json` is retained on the branch during the transition; the split
+ends when `dev` → `main`.
 
 App side: `store-server.js` (`saveServer`) is the target; the `SAVE_KEY` is
 entered via a key-prompt on first save and held **in memory only** (never
@@ -391,7 +403,7 @@ and its runbook.
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
-  store.js            # loads character.json + rules/*.json, builds the view-model (pure)
+  store.js            # loads the grouped character store (data/characters.json) + rules/*.json, builds the view-model (pure)
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
   store-server.test.js# node --test (see `npm test`)
@@ -404,6 +416,7 @@ and its runbook.
     ed-edit-meta.js   # meta edit modal
     ed-save-key.js    # GitHub save key prompt
     ed-confirm.js     # reusable confirmation modal
+    ed-character-picker.js # character chooser modal (first-run picker, §7.5)
     ed-changelog.js   # changelog badge/modal
   engine/                    # pure, DOM-free, independently testable
     derive.js                # attribute value/step, talent step, step→dice map
@@ -416,11 +429,12 @@ and its runbook.
     #          dddice.js (optional 3D dice adapter)
   data/
     changelog.json    # feature changelog (shipped history)
-    # character.json + chakka.jpg are NOT bundle files: they live on the
-    # character-data branch and are read live on the Pages site (see §7.5 /
+    # characters.json (the grouped store), character.json (legacy single file)
+    # and chakka.jpg are NOT bundle files: they live on the character-data
+    # branch and are read live on the Pages site (see §7.5 /
     # docs/GITHUB-SERVERLESS-SAVE.md). Gitignored local working copies exist for
-    # local dev / file://. The portrait is the repo image referenced by
-    # character.json meta.portrait (docs/UI-GUIDELINES.md §6).
+    # local dev / file://. The portrait is the repo image referenced by each
+    # entry's meta.portrait (docs/UI-GUIDELINES.md §6).
   rules/
     steps.json attributes.json characteristics.json talents.json
     disciplines.json races.json skills.json items.json
@@ -493,12 +507,14 @@ and its runbook.
   is deterministic/reproducible. Trade-off accepted: a ~16KB vendored file in the
   repo and a manual re-fetch to upgrade Lit (rare, since the version is pinned).
 - **Persistence — DECIDED & SHIPPED: one Save → GitHub, over an autosave overlay,
-  plus a portable Export.** A localStorage edits overlay (always on, every
-  browser) is the resilient autosave *beneath* the primary Save, which commits
-  `data/character.json` straight to the `character-data` branch via the serverless
-  worker; on success the overlay reconciles so the live branch read wins. A
-  portable **Export** download is the local backup. The earlier Chromium-only File
-  System Access save is **retired**. See §7.
+  plus a portable Export.** A per-character localStorage edits overlay
+  (`ed-character-edits:${id}`, always on, every browser) is the resilient
+  autosave *beneath* the primary Save, which upserts `characters[id]` in the
+  grouped `data/characters.json` (`ed-characters/1`) straight to the
+  `character-data` branch via the serverless worker; on success the overlay
+  reconciles so the live branch read wins. A portable **Export** download is the
+  local backup. The earlier Chromium-only File System Access save is
+  **retired**. See §7.
 - **Serverless exception — DECIDED & SHIPPED: the one sanctioned no-backend
   exception, and the primary Save.** A tiny Cloudflare Worker (`tools/worker/`;
   decided host, docs/GITHUB-SERVERLESS-SAVE.md §4.1) commits on the app's behalf,
@@ -514,7 +530,10 @@ and its runbook.
   to a working v1 without silently dropping your customizations.
 - **Scope — DECIDED: single character (Chakka).** Data layout and UI target one
   character for now; the `character.json` structure stays clean enough to
-  generalize to multi-character later without a rewrite.
+  generalize to multi-character later without a rewrite. *(Updated 2026-08-07:
+  multi-character loading landed — the grouped `data/characters.json` store with
+  a first-run picker, docs/PLAN-MULTI-CHARACTER.md; a delete-character feature
+  remains future work.)*
 - **Cascade — DECIDED: recompute-all, not a dependency graph.** For one
   character, a pure `derive(inputs) → derived` that recomputes everything is
   simple and instant; the `REF` dependency graph is a later optimization only if

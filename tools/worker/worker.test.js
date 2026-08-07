@@ -200,6 +200,108 @@ test('accepts { character } envelope as well as the bare file', async () => {
   }
 });
 
+// --- grouped store (save with id) -------------------------------------------
+
+const STORE = {
+  schema: 'ed-characters/1',
+  characters: { chakka: { schema: 'ed-character/1', meta: { name: 'Chakka' } } },
+};
+const storeB64 = (store) => Buffer.from(JSON.stringify(store), 'utf8').toString('base64');
+const readsStore = (store, sha = 'store-sha') => ({
+  'GET /contents/data/characters.json': () => ({ status: 200, body: { sha, content: storeB64(store), encoding: 'base64' } }),
+});
+const putStoreOk = (commitSha = 'store-commit') => ({
+  'PUT /contents/data/characters.json': () => ({
+    status: 200,
+    body: { content: { sha: commitSha }, html_url: `https://github.com/commit/${commitSha}` },
+  }),
+});
+
+test('save with id → replaces characters[id] in the grouped store and PUTs it whole', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsStore(STORE), ...putStoreOk() });
+  try {
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 200);
+    assert.equal(json.commit.sha, 'store-commit');
+
+    const put = mock.calls.find((c) => c.method === 'PUT');
+    assert.ok(put.url.endsWith('/contents/data/characters.json'), 'writes the grouped store, not character.json');
+    const sent = JSON.parse(put.options.body);
+    assert.equal(sent.sha, 'store-sha', 'PUT carries the store sha from the GET');
+    assert.equal(sent.branch, 'character-data', 'branch is env-pinned');
+    const written = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
+    assert.equal(written.schema, 'ed-characters/1');
+    assert.deepEqual(written.characters.chakka, CHAR, 'posted entry replaces characters[chakka]');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save with id preserves the other entries in the store', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsStore(STORE), ...putStoreOk() });
+  try {
+    await call(req({ character: { ...CHAR, meta: { name: 'Other' } }, id: 'other' }));
+    const put = mock.calls.find((c) => c.method === 'PUT');
+    const written = JSON.parse(Buffer.from(JSON.parse(put.options.body).content, 'base64').toString('utf8'));
+    assert.ok(written.characters.chakka, 'chakka still present');
+    assert.equal(written.characters.other.meta.name, 'Other');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('missing store (404) → creates a fresh ed-characters/1 store', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    'GET /contents/data/characters.json': () => ({ status: 404, body: {} }),
+    ...putStoreOk(),
+  });
+  try {
+    const { status } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 200);
+    const sent = JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body);
+    assert.equal(sent.sha, undefined, 'no sha on a create');
+    const written = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
+    assert.deepEqual(written, { schema: 'ed-characters/1', characters: { chakka: CHAR } });
+  } finally {
+    mock.restore();
+  }
+});
+
+test('invalid id (path traversal / bad chars) → 400 invalid_id', async () => {
+  for (const bad of ['../evil', 'A/b', 'a b', '..', 'a.b', 'É', 42, '']) {
+    const { status, json } = await call(req({ character: CHAR, id: bad }));
+    assert.equal(status, 400, `id ${JSON.stringify(bad)} → 400`);
+    assert.equal(json.error.code, 'invalid_id');
+  }
+});
+
+test('grouped-store 409 then 200 → retry re-reads the moved store sha', async () => {
+  let reads = 0;
+  let puts = 0;
+  const mock = mockGitHub({
+    ...branchExists,
+    'GET /contents/data/characters.json': () => {
+      reads += 1;
+      return { status: 200, body: { sha: `s${reads}`, content: storeB64(STORE) } };
+    },
+    'PUT /contents/data/characters.json': () => {
+      puts += 1;
+      if (puts === 1) return { status: 409, body: {} };
+      return { status: 200, body: { content: { sha: 'ok', html_url: 'u' } } };
+    },
+  });
+  try {
+    const { status } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 200);
+    assert.equal(puts, 2, 'retried once');
+    const putsArr = mock.calls.filter((c) => c.method === 'PUT');
+    assert.equal(JSON.parse(putsArr[1].options.body).sha, 's2', 'retry re-reads the moved sha');
+  } finally {
+    mock.restore();
+  }
+});
+
 test('missing branch is created before the first write', async () => {
   let branchCreated = false;
   const mock = mockGitHub({

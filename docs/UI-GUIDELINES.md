@@ -40,11 +40,27 @@ talent steps, etc.) render as real numbers.
 
 ## 6. Portrait is a repo image
 The hero portrait is an image file held on the `character-data` branch, like the
-character file (the bundle ships no character data), referenced by
-`meta.portrait` in `character.json` (e.g. `data/chakka.jpg`). On the Pages site
-the app reads it live from that branch's raw CDN; locally it uses the gitignored
-working copy. If the field is absent **or the image fails to load** the UI falls
-back to a placeholder icon.
+character store (the bundle ships no character data), referenced by
+`meta.portrait` in each character's entry in `data/characters.json`
+(e.g. `data/chakka.jpg`). On the Pages site the app reads it live from that
+branch's raw CDN; locally it uses the gitignored working copy. If the field is
+absent **or the image fails to load** the UI falls back to a placeholder icon.
+
+## 6a. Character chooser (first-run picker + load icon)
+The header row carries a **load icon** (always visible, before the theme toggle)
+that opens the character chooser. The chooser:
+- Opens automatically on first run when there is no valid saved character
+  (`localStorage 'ed-character'` is stale or absent) and the store holds more
+  than one character; a single-entry store auto-loads instead.
+- Lists every character in the store, sorted by id, each row showing the portrait
+  thumbnail (`meta.portrait`, name-initial placeholder when absent/broken) and a
+  label of `meta.name` (falling back to the id).
+- Is a modal: **Escape/backdrop closes** it, **Enter confirms** the focused row,
+  and the first row is autofocused.
+- With pending unsaved edits, a switch asks for confirmation first (drafts stay in
+  the browser — closing the chooser abandons the switch, not the edits).
+- Closing without a selection leaves the app in a **"No character selected"**
+  state with a "Choose a character" button to reopen the picker.
 
 ## 7. Modal keyboard conventions
 Every modal/overlay follows the same keyboard contract:
