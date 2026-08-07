@@ -59,14 +59,15 @@ test('resolveKnack keeps a bare unknown knack, with no parent', () => {
 
 // --- real rules/knacks.json catalog ------------------------------------------
 
-test('real knacks catalog: 143 entries, ed-knacks/1 shape', () => {
+test('real knacks catalog: 144 entries, ed-knacks/1 shape', () => {
   const names = Object.keys(realCatalog);
-  assert.equal(names.length, 143);
+  assert.equal(names.length, 144);
   assert.ok(names.includes('Lip Reading'));
   assert.ok(names.includes('Point-Blank Shot'));
   assert.ok(names.includes('Detect Spirit'));
   assert.ok(names.includes('Hunting'));
   assert.ok(names.includes('Skinning'));
+  assert.ok(names.includes('Animal Tracking'));
   for (const k of Object.values(realCatalog)) {
     assert.ok(Array.isArray(k.parents) && k.parents.length > 0, k.summary);
     for (const p of k.parents) assert.equal(typeof p, 'string'); // name-only binding keys

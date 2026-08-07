@@ -3,7 +3,7 @@
   "source": "Earthdawn 4E \u2014 Companion guide knack chapter. Knack entries (parent talent, rank requirement, step/action/strain where printed, restrictions, and original-wording summaries of the printed knack text).",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "notes": [
-    "143 knacks catalogued from the Companion guide.",
+    "144 knacks catalogued from the Companion guide.",
     "Parents are name-only binding keys: a knack may be governed by the skill or the talent of the same name, and which kind binds is resolved from the character's owned abilities (never hard-typed here). Multi-parent knacks list parents in the printed order and default to the first; `via` on the character selects another.",
     "Crafting knacks (Step: N/A) and [Special Maneuver] knacks print no Step/Action/Strain; those fields are null.",
     "skillUse records the Companion's \"Skill Use\" marker (Yes (Novice|Journeyman|Warden) / No / NA / None) or null where not printed.",
@@ -105,6 +105,18 @@
       "skillUse": "NA",
       "restrictions": "None",
       "summary": "As the skill, Player\u2019s Guide, p. 192."
+    },
+    "Animal Tracking": {
+      "parents": [
+        "Wilderness Survival"
+      ],
+      "requiredRank": 2,
+      "action": "Sustained",
+      "strain": "0",
+      "step": "Rank+PER",
+      "skillUse": "NA",
+      "restrictions": "None",
+      "summary": "The adept applies their knowledge of the wild to following the tracks and sign animals leave behind. In place of the Animal Tracking skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to follow the tracks and sign of animals across any terrain."
     },
     "Anticipate Movement": {
       "parents": [
