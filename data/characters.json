@@ -416,7 +416,7 @@
         "name": "Chakka-TEST",
         "race": "Ork",
         "description": "Ork Power, with no privilege, and a whole lot of fuckin' rage.",
-        "portrait": "",
+        "portrait": "data/test-orc.jpeg",
         "age": 20,
         "weight": "120 kg",
         "sex": "Male",
