@@ -22,7 +22,7 @@ testable layers:
   *inputs only* (attributes, ranks, resources) as `characters[id]` entries;
   `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
   table, the Characteristics Table, talent mechanics, disciplines, skills, races).
-  The store, the legacy `data/character.json` compat copy, and each character's
+  The store and each character's
   portrait live on the `character-data` branch and are read live from it
   (gitignored local working copies serve local dev; see WORKFLOW.md). Modifiers
   live as `effects` arrays on the abilities/items that grant them, in a
@@ -41,7 +41,7 @@ Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 ## Project structure
 
 ```
-data/            characters.json (grouped store: every character's inputs) + legacy character.json
+data/            characters.json (grouped store: every character's inputs)
 rules/           steps, attributes, characteristics, talents, disciplines, skills, races
 docs/            EFFECT-TAXONOMY.md (effect vocabulary), UI-GUIDELINES.md (UI/UX contract)
 engine/          pure rules engine + *.test.js (derive, characteristics, dice)

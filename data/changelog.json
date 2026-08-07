@@ -2,12 +2,18 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": [
-      { "type": "changed", "text": "The character file and its portrait now live on the character-data branch and are read straight from it, so the deployed app bundles no character data — a save and its portrait show up on the live site immediately, with no rebuild." },
-      { "type": "added", "text": "Multiple characters: the app can now hold more than one character, and a character picker in the header (also shown automatically on first run) lets you switch between them. Each character keeps its own unsaved draft in this browser, and saves write to the right character on GitHub." }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.6.0",
+      "date": "2026-08-07",
+      "changes": [
+        { "type": "added", "text": "Multiple characters: the app can now hold more than one character, and a character picker in the header (also shown automatically on first run) lets you switch between them. Each character keeps its own unsaved draft in this browser, and saves write to the right character on GitHub." },
+        { "type": "changed", "text": "The character store and each character's portrait now live on the character-data branch and are read straight from it, so the deployed app bundles no character data — a save and its portrait show up on the live site immediately, with no rebuild." },
+        { "type": "fixed", "text": "The character picker now lists your characters the first time it opens (a fresh browser showed an empty list), so you can always load a character." }
+      ]
+    },
     {
       "version": "1.5.1",
       "date": "2026-08-07",

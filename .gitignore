@@ -25,6 +25,6 @@ npm-debug.log*
 # Character data lives on the character-data branch, not in the bundle
 # (store.js loads it live on the Pages site). The gitignored working copies
 # keep local dev / file:// working; fresh clones read from the branch instead.
-data/character.json
+# (The legacy data/character.json line was removed with its file at v1.6.0.)
 data/characters.json
 data/chakka.jpg

@@ -1,17 +1,17 @@
 // worker.js — GitHub serverless save endpoint (Cloudflare Worker).
 //
 // POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": "<character id>" }
-//             (or the bare file itself — legacy, no id)
 //
 // Commits the posted character to the `character-data` branch on the app's
 // behalf, so the GitHub credential never enters the browser. The deploy workflow
 // does not watch that branch, so a save is a data commit — never an app rebuild.
 // The app reads the branch live (store.js), so a save shows up on next load.
 //
-// With an `id`, the save upserts the character into the grouped store
+// The `id` names the character's entry in the grouped store
 // `data/characters.json` (ed-characters/1): GET the store, replace
-// `characters[id]`, PUT it back. Without an `id` (the pre-multi-character app),
-// it keeps the legacy single-file behavior and writes `data/character.json`.
+// `characters[id]`, PUT it back. The id is required — the grouped store is the
+// only save target since the v1.6.0 promotion (the legacy single-file
+// `data/character.json` path was removed with it).
 //
 // This build REQUIRES SAVE_KEY and fails closed (runbook §2.1 / §5.2): a missing
 // or wrong `x-save-key`, OR an unconfigured SAVE_KEY, is rejected 401. Everything
@@ -60,12 +60,11 @@ export default {
     } catch {
       return json(cors, 400, { ok: false, error: { code: 'invalid_json', message: 'body is not JSON' } });
     }
-    // Accept `{ character, id }` or the bare file (legacy, no id).
-    const character = body?.character ?? body;
+    const character = body?.character;
     if (!isValidCharacter(character))
       return json(cors, 400, { ok: false, error: { code: 'invalid_character', message: 'not an ed-character/1 file' } });
-    const id = body?.character ? body.id ?? undefined : undefined;
-    if (id !== undefined && !isValidId(id))
+    const id = body?.id;
+    if (!isValidId(id))
       return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
 
     const branch = env.GITHUB_BRANCH ?? 'character-data'; // NOT main/dev — never triggers a deploy
@@ -81,13 +80,8 @@ export default {
 
     try {
       await ensureBranch(repo, branch, gh); // first save only
-      if (id !== undefined) {
-        const storePath = env.GITHUB_STORE ?? 'data/characters.json';
-        return await upsertCharacter(repo, branch, gh, storePath, id, character, cors);
-      }
-      const path = env.GITHUB_PATH ?? 'data/character.json';
-      const content = toBase64(JSON.stringify(character, null, 2) + '\n'); // byte-identical to the file save
-      return await putFile(repo, branch, gh, path, content, cors);
+      const storePath = env.GITHUB_STORE ?? 'data/characters.json';
+      return await upsertCharacter(repo, branch, gh, storePath, id, character, cors);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(JSON.stringify({ message: 'save failed (upstream)', error: message }));
@@ -96,29 +90,10 @@ export default {
   },
 };
 
-// PUT a single pre-encoded file at `path` (legacy single-character save).
-async function putFile(repo, branch, gh, path, content, cors) {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const sha = await currentSha(repo, path, branch, gh);
-    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${path}`, {
-      method: 'PUT',
-      headers: { ...gh, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Save character (serverless)', content, sha, branch }),
-    });
-    if (res.ok) return ok(cors, res);
-    if (res.status !== 409) { // other failure
-      console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
-      return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
-    }
-    // 409: sha moved between our GET and PUT — loop re-reads and retries.
-  }
-  return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
-}
-
 // Upsert `character` under `characters[id]` in the grouped store at `storePath`.
 // Reads the whole store (sha + content), replaces the one entry, PUTs it back —
-// same bounded GET-sha → PUT 409-retry contract as putFile. A missing store file
-// (first id-save on a fresh repo) is created as a fresh ed-characters/1 store.
+// same bounded GET-sha → PUT 409-retry contract. A missing store file (first
+// id-save on a fresh repo) is created as a fresh ed-characters/1 store.
 async function upsertCharacter(repo, branch, gh, storePath, id, character, cors) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { sha, store } = await readStore(repo, storePath, branch, gh);
@@ -166,12 +141,6 @@ async function ensureBranch(repo, branch, gh) {
     body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: base.object.sha }),
   });
   if (!created.ok) throw new Error(`create branch ${created.status}`);
-}
-
-async function currentSha(repo, path, branch, gh) {
-  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${path}?ref=${branch}`, { headers: gh });
-  if (!res.ok) throw new Error(`read ${res.status}`);
-  return (await res.json()).sha;
 }
 
 // Base64-encode a string as its UTF-8 bytes. `btoa` alone only accepts Latin1

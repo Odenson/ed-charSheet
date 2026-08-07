@@ -236,6 +236,8 @@ Run these before calling the feature done:
 | 2026-08-07 | C | Worker upsert (`id` → replace `characters[id]`, PUT whole store in the 409 loop; absent `id` → legacy `GITHUB_PATH`); `store-server.js` envelope; `GITHUB_STORE` var in `wrangler.toml`. |
 | 2026-08-07 | D | Header load icon, `ed-character-picker.js` modal, first-run chooser, no-selection state, confirm-switch dirty guard, `meta.id` hidden on Overview. |
 | 2026-08-07 | E | 6 new tests (90/90 green), `node --check` + static-server smoke clean, docs ceremony (save doc/runbook/ARCHITECTURE/WORKFLOW/UI-GUIDELINES/README/changelog) shipped, `.gitignore` updated, pushed to `dev`. |
+| 2026-08-07 | F | First-run picker empty-list bug fixed on `dev` (commit `72ee189`); user-verified save→grouped-store on the dev site after the worker was redeployed. |
+| 2026-08-07 | — | **Released v1.6.0** (dev → main). Full cleanup at promotion: worker no-`id` path + `GITHUB_PATH` stripped (`id` required → `400 invalid_id`), `data/character.json` deleted from the branch, `.gitignore` + docs updated; tests 88/88. Owner redeploys the worker. |
 
 ---
 

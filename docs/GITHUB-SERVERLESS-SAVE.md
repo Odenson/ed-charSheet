@@ -81,20 +81,18 @@ the only offline path; this is strictly an additional option.
    produces: the merged, inputs-only character, `JSON.stringify(…, 2) + '\n'`
    (§7.2). Nothing about the data model changes.
 2. **App POSTs.** The worker's single endpoint `/save`, body
-   `{ "character": { … }, "id": "…" }` (the `id` is the multi-character store
-   key, §4.5; omit it to use the legacy single-file path),
+   `{ "character": { … }, "id": "…" }` — the `id` is required (the grouped store
+   is the only save target since v1.6.0),
    `Content-Type: application/json`.
 3. **Worker validates.** JSON parses, `schema === "ed-character/1"`, byte size
-   within the cap, `id` matches `^[a-z0-9][a-z0-9-]{0,63}$` when present, path
-   and branch come from its own config, not the request.
+   within the cap, `id` matches `^[a-z0-9][a-z0-9-]{0,63}$`, path and branch come
+   from its own config, not the request.
 4. **Worker commits.** To the `character-data` branch (created on the first
    save, skipped after):
-   - With an `id`: `GET /repos/{owner}/{repo}/contents/{GITHUB_STORE}?ref=character-data`
-     → the grouped store's blob `sha`; replace `characters[id]` with the new
-     entry; `PUT …` the whole store back (whole-file rewrite — no per-character
-     git history, accepted).
-   - Without an `id`: `GET`/`PUT …/contents/{GITHUB_PATH}` — the legacy
-     single-file `data/character.json` path, unchanged.
+   `GET /repos/{owner}/{repo}/contents/{GITHUB_STORE}?ref=character-data`
+   → the grouped store's blob `sha`; replace `characters[id]` with the new
+   entry; `PUT …` the whole store back (whole-file rewrite — no per-character
+   git history, accepted).
 5. **No rebuild.** The deploy workflow (WORKFLOW.md) fires on `main` and `dev`
    only; `character-data` is not a trigger, so a save never rebuilds the app. The
    character file is source info the app reads at runtime — it needs no build.
@@ -112,9 +110,9 @@ the only offline path; this is strictly an additional option.
 |---|---|
 | Endpoint | `POST https://<worker>/save` |
 | Headers | `Content-Type: application/json`; `x-save-key` (required — fail-closed, §5) |
-| Body | `{ "character": <inputs-only ed-character/1 JSON>, "id": <store key, optional — legacy path when omitted> }` |
+| Body | `{ "character": <inputs-only ed-character/1 JSON>, "id": <required store key> }` |
 | 200 | `{ "ok": true, "commit": { "sha": "…", "url": "https://github.com/…/commit/…" } }` |
-| 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "too_large", "message": "…" } }` |
+| 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "invalid_id", "message": "…" } }` |
 | 401 | `{ "ok": false, "error": { "code": "unauthorized", "message": "bad save key" } }` |
 | 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save only" } }` |
 | 409 | Retried internally (bounded, 3 attempts); only surfaced if retries exhaust |
@@ -173,10 +171,10 @@ A single ES-module handler. Design sketch:
 
 ```js
 // worker.js — GitHub serverless save endpoint (design sketch, not shipped)
-// POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": <optional store key> }
-// Shipped worker adds: SAVE_KEY fail-closed auth (§5), and when an id is present
-// the write upserts into the grouped store (GET store -> replace characters[id]
-// -> PUT whole store) instead of the single-file PUT shown below.
+// POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": <required store key> }
+// Shipped worker differs: SAVE_KEY fail-closed auth (§5), and the write upserts
+// into the grouped store (GET store -> replace characters[id] -> PUT whole
+// store); the legacy single-file PUT shown below was removed at v1.6.0.
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const GITHUB = "https://api.github.com";
 const MAX_BYTES = 512 * 1024;                 // character.json is a few KB; cap generously
@@ -283,8 +281,7 @@ created by the repo owner, never committed and never in the app:
 |---|---|
 | `GITHUB_TOKEN` | **Fine-grained PAT**, scoped to this repo only, `Contents: read/write`. Created once by the repo owner in GitHub → Settings → Developer settings → Fine-grained tokens. |
 | `GITHUB_OWNER` / `GITHUB_REPO` | The repo that hosts the app (e.g. `odenson` / `ed-charSheet`). |
-| `GITHUB_PATH` | **Legacy** single-file target, default `data/character.json` — used only when the request carries no `id`. |
-| `GITHUB_STORE` | Multi-character grouped store, default `data/characters.json` — `{ "schema": "ed-characters/1", "characters": { "<id>": { … } } }`; used when the request carries an `id`. |
+| `GITHUB_STORE` | The grouped store, default `data/characters.json` — `{ "schema": "ed-characters/1", "characters": { "<id>": { … } } }`; saves upsert `characters[id]` here. The only save target since v1.6.0 (the legacy `GITHUB_PATH` single-file target was removed at promotion). |
 | `GITHUB_BRANCH` | Default `character-data` — a data-only branch the deploy workflow does not watch, so saves never rebuild the app. |
 | `SAVE_KEY` | **Required** shared endpoint key — fail-closed (see §5). |
 
@@ -326,7 +323,7 @@ export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveK
     res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-save-key": saveKey },
-      body: JSON.stringify({ character, ...(id != null ? { id } : {}) }),
+      body: JSON.stringify({ character, id }),
     });
   } catch { throw new SaveError("offline", "Could not reach the save service."); }
   const out = await res.json().catch(() => null);
@@ -401,20 +398,19 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
 - **Worker handler, unit.** Mock the GitHub `fetch` (a stub returning a
   scripted SHA, a scripted `409` then `200`, and a `403`), then assert: wrong
   method/path → `404`; non-JSON → `400`; wrong schema / oversized → `400`;
-  correct request → `PUT` receives the GET-returned `sha`, the pinned
-  branch/path, and base64 equal to the §7.2 serialization; `409` → second attempt
-  carries the new `sha`; final failure → `502`/`409`. For the grouped store:
-  an `id` upserts `characters[id]` and **preserves the other entries**; an
-  unknown/invalid id (`'../evil'`, `'A/b'`, `'a b'`, `'..'`, `'a.b'`, `'É'`,
-  `42`, `''`) → `400 invalid_id`; a missing store (`404`) is created fresh.
+  an `id` upserts `characters[id]` and **preserves the other entries**; a
+  missing/invalid id (incl. `'../evil'`, `'A/b'`, `'a b'`, `'..'`, `'a.b'`,
+  `'É'`, `42`, `''`) → `400 invalid_id`; a missing store (`404`) is created
+  fresh; `409` → second attempt carries the new `sha`; final failure → `502`/
+  `409`. (The legacy no-id path is gone — the id is required since v1.6.0.)
 - **Worker, manual integration.** One real `POST` against the repo, verify the
   commit appears on `character-data` and the app shows it on a Pages-like origin
   without any deploy, then reset the branch if desired.
 - **App.** Assert `saveServer` sends exactly the bytes the §7.2 serializer
-  produces (and carries the `id` when one is set), and that error codes map to
-  the modal feedback paths. Also assert `store.js` reads the live branch on a
-  Pages-like origin and throws a clear load error when the branch is unreachable
-  (there is no deployed copy to fall back to).
+  produces (and always carries the `id`), and that error codes map to the modal
+  feedback paths. Also assert `store.js` reads the live branch on a Pages-like
+  origin and throws a clear load error when the branch is unreachable (there is
+  no deployed copy to fall back to).
 
 ---
 
@@ -502,13 +498,15 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
 - **No new taxonomy.** No changes to `rules/*.json`, `character.json` fields, or
   docs/EFFECT-TAXONOMY.md. The one additive schema is `ed-characters/1` — a
   grouping wrapper (`characters[id]`) whose entries are unchanged
-  `ed-character/1` files, plus `meta.id` set inside each entry.
+  `ed-character/1` files, plus `meta.id` set inside each entry. The legacy
+  single-file `data/character.json` and the worker's no-`id` path were **removed
+  at the v1.6.0 promotion** — the grouped store is the only save target.
 
 ---
 
 ## 7. Status & resolved decisions
 
-**Status: shipped** (v1.5.0, 2026-08-06; matches ARCHITECTURE §10). Worker live at
+**Status: shipped** (v1.6.0, 2026-08-07; matches ARCHITECTURE §10). Worker live at
 `https://ed-charsheet-save.edsavechar.workers.dev`; app integration in `store-server.js`.
 
 | Decision | Resolved as |
@@ -519,7 +517,7 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
 | Endpoint URL in app | Hardcoded default (Settings override deferred) |
 | Save model | One primary Save → GitHub, over the autosave overlay; Export = local download (§4.5) |
 | Read-after-write | App reads the branch via the git-consistent GitHub contents API (§4.5) |
-| Multi-character store | Saves upsert `characters[id]` in the grouped `data/characters.json` (`ed-characters/1`); legacy no-`id` saves still write `data/character.json` (§3.1, §4.3) |
+| Multi-character store | Saves upsert `characters[id]` in the grouped `data/characters.json` (`ed-characters/1`) — the **only** save target since v1.6.0 (legacy `data/character.json` + no-`id` path removed at promotion) |
 
 ---
 

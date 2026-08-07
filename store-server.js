@@ -44,19 +44,17 @@ function messageForCode(code) {
  * on success; throws a typed {@link SaveError} otherwise. `saveKey` is required
  * (the worker fails closed) — a missing key throws `no_key` before any request,
  * so the caller can prompt for it. `id` (the character's map key in the grouped
- * store) makes the save an upsert of `characters[id]`; without it the worker
- * falls back to the legacy single-file path.
+ * store) is required — the worker upserts `characters[id]` in the grouped store.
  */
 export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey, id } = {}) {
   if (!saveKey) throw new SaveError('no_key', 'Enter your save key to save to GitHub.');
 
-  const payload = id !== undefined ? { character, id } : { character };
   let res;
   try {
     res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-save-key': saveKey },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ character, id }),
     });
   } catch {
     // The fetch itself failed — offline, DNS, CORS, or the worker is unreachable.

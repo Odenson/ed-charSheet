@@ -2,8 +2,10 @@
 //
 // Exercises the serverless save handler (worker.js) with a mocked GitHub fetch.
 // Covers runbook Phase 4 / design §4.6: auth (fail-closed SAVE_KEY), routing,
-// body/schema/size validation, the happy-path GET-sha → PUT contract, the
-// bounded 409 retry, and upstream-failure mapping.
+// body/schema/size validation, the grouped-store upsert contract (GET store →
+// replace characters[id] → PUT whole store), the bounded 409 retry, and
+// upstream-failure mapping. Since the v1.6.0 promotion the id is required —
+// the grouped store is the only save target (the legacy single-file path is gone).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +18,7 @@ const ENV = {
   GITHUB_TOKEN: 'gh-token',
   GITHUB_OWNER: 'odenson',
   GITHUB_REPO: 'ed-charSheet',
-  GITHUB_PATH: 'data/character.json',
+  GITHUB_STORE: 'data/characters.json',
   GITHUB_BRANCH: 'character-data',
 };
 
@@ -61,9 +63,19 @@ function mockGitHub(routes) {
 
 // Branch already exists → ensureBranch is a no-op after one GET.
 const branchExists = { 'GET /git/ref/heads/character-data': () => ({ status: 200, body: { ref: 'ok' } }) };
-const readsSha = (sha) => ({ 'GET /contents/data/character.json': () => ({ status: 200, body: { sha } }) });
-const putOk = (commitSha = 'new-commit-sha') => ({
-  'PUT /contents/data/character.json': () => ({
+
+// --- grouped store fixtures --------------------------------------------------
+
+const STORE = {
+  schema: 'ed-characters/1',
+  characters: { chakka: { schema: 'ed-character/1', meta: { name: 'Chakka' } } },
+};
+const storeB64 = (store) => Buffer.from(JSON.stringify(store), 'utf8').toString('base64');
+const readsStore = (store, sha = 'store-sha') => ({
+  'GET /contents/data/characters.json': () => ({ status: 200, body: { sha, content: storeB64(store), encoding: 'base64' } }),
+});
+const putStoreOk = (commitSha = 'store-commit') => ({
+  'PUT /contents/data/characters.json': () => ({
     status: 200,
     body: { content: { sha: commitSha }, html_url: `https://github.com/commit/${commitSha}` },
   }),
@@ -119,118 +131,59 @@ test('non-JSON body → 400', async () => {
   assert.equal(json.error.code, 'invalid_json');
 });
 
+test('bare file without the { character, id } envelope → 400', async () => {
+  const { status, json } = await call(req(CHAR));
+  assert.equal(status, 400);
+  assert.equal(json.error.code, 'invalid_character');
+});
+
+test('missing id → 400 invalid_id', async () => {
+  const { status, json } = await call(req({ character: CHAR }));
+  assert.equal(status, 400);
+  assert.equal(json.error.code, 'invalid_id');
+});
+
+test('invalid id (path traversal / bad chars) → 400 invalid_id', async () => {
+  for (const bad of ['../evil', 'A/b', 'a b', '..', 'a.b', 'É', 42, '']) {
+    const { status, json } = await call(req({ character: CHAR, id: bad }));
+    assert.equal(status, 400, `id ${JSON.stringify(bad)} → 400`);
+    assert.equal(json.error.code, 'invalid_id');
+  }
+});
+
 test('wrong schema → 400', async () => {
-  const { status, json } = await call(req({ schema: 'ed-character/999' }));
+  const { status, json } = await call(req({ schema: 'ed-character/999', id: 'chakka' }));
   assert.equal(status, 400);
   assert.equal(json.error.code, 'invalid_character');
 });
 
 test('oversized character → 400', async () => {
-  const big = { schema: 'ed-character/1', blob: 'x'.repeat(600 * 1024) };
+  const big = { character: { schema: 'ed-character/1', blob: 'x'.repeat(600 * 1024) }, id: 'chakka' };
   const { status, json } = await call(req(big));
   assert.equal(status, 400);
   assert.equal(json.error.code, 'invalid_character');
 });
 
-// --- happy path --------------------------------------------------------------
-
-test('happy path → 200; PUT carries GET sha, pinned branch/path, byte-identical content', async () => {
-  const mock = mockGitHub({ ...branchExists, ...readsSha('sha-123'), ...putOk('commit-abc') });
-  try {
-    const { status, json } = await call(req(CHAR));
-    assert.equal(status, 200);
-    assert.equal(json.ok, true);
-    assert.equal(json.commit.sha, 'commit-abc');
-    assert.equal(json.commit.url, 'https://github.com/commit/commit-abc');
-
-    const put = mock.calls.find((c) => c.method === 'PUT');
-    const sent = JSON.parse(put.options.body);
-    assert.equal(sent.sha, 'sha-123', 'PUT reuses the sha from the GET');
-    assert.equal(sent.branch, 'character-data', 'branch is env-pinned, not from request');
-    assert.ok(put.url.endsWith('/contents/data/character.json'), 'path is env-pinned');
-    // Byte-identical to what the file save writes: pretty JSON + trailing newline.
-    const expected = Buffer.from(JSON.stringify(CHAR, null, 2) + '\n').toString('base64');
-    assert.equal(sent.content, expected);
-  } finally {
-    mock.restore();
-  }
-});
-
-test('non-Latin1 content (em-dash, ✦ star) encodes as UTF-8 base64, not btoa-throws', async () => {
-  const mock = mockGitHub({ ...branchExists, ...readsSha('s'), ...putOk() });
-  try {
-    // Real character.json has em-dashes in the background; magic items use ✦.
-    const unicodeChar = { schema: 'ed-character/1', meta: { name: 'Chakka' }, note: 'freedom — at last ✦' };
-    const { status, json } = await call(req(unicodeChar));
-    assert.equal(status, 200, 'must not 502 on btoa InvalidCharacterError');
-    assert.equal(json.ok, true);
-    const put = mock.calls.find((c) => c.method === 'PUT');
-    const sent = JSON.parse(put.options.body);
-    // base64 of the UTF-8 bytes — what GitHub stores and what the file save writes.
-    const expected = Buffer.from(JSON.stringify(unicodeChar, null, 2) + '\n', 'utf8').toString('base64');
-    assert.equal(sent.content, expected);
-    // Round-trips back to the exact bytes (multi-byte chars intact).
-    assert.equal(Buffer.from(sent.content, 'base64').toString('utf8'), JSON.stringify(unicodeChar, null, 2) + '\n');
-  } finally {
-    mock.restore();
-  }
-});
-
-test('every GitHub request carries a User-Agent (GitHub 403s without one)', async () => {
-  const mock = mockGitHub({ ...branchExists, ...readsSha('s'), ...putOk() });
-  try {
-    await call(req(CHAR));
-    const ghCalls = mock.calls.filter((c) => c.url.includes('api.github.com'));
-    assert.ok(ghCalls.length > 0, 'made at least one GitHub call');
-    for (const c of ghCalls) {
-      assert.ok(c.options.headers['User-Agent'], `missing User-Agent on ${c.method} ${c.url}`);
-    }
-  } finally {
-    mock.restore();
-  }
-});
-
-test('accepts { character } envelope as well as the bare file', async () => {
-  const mock = mockGitHub({ ...branchExists, ...readsSha('s'), ...putOk() });
-  try {
-    const { status } = await call(req({ character: CHAR }));
-    assert.equal(status, 200);
-  } finally {
-    mock.restore();
-  }
-});
-
-// --- grouped store (save with id) -------------------------------------------
-
-const STORE = {
-  schema: 'ed-characters/1',
-  characters: { chakka: { schema: 'ed-character/1', meta: { name: 'Chakka' } } },
-};
-const storeB64 = (store) => Buffer.from(JSON.stringify(store), 'utf8').toString('base64');
-const readsStore = (store, sha = 'store-sha') => ({
-  'GET /contents/data/characters.json': () => ({ status: 200, body: { sha, content: storeB64(store), encoding: 'base64' } }),
-});
-const putStoreOk = (commitSha = 'store-commit') => ({
-  'PUT /contents/data/characters.json': () => ({
-    status: 200,
-    body: { content: { sha: commitSha }, html_url: `https://github.com/commit/${commitSha}` },
-  }),
-});
+// --- grouped-store upsert ----------------------------------------------------
 
 test('save with id → replaces characters[id] in the grouped store and PUTs it whole', async () => {
   const mock = mockGitHub({ ...branchExists, ...readsStore(STORE), ...putStoreOk() });
   try {
     const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
     assert.equal(status, 200);
+    assert.equal(json.ok, true);
     assert.equal(json.commit.sha, 'store-commit');
+    assert.equal(json.commit.url, 'https://github.com/commit/store-commit');
 
     const put = mock.calls.find((c) => c.method === 'PUT');
-    assert.ok(put.url.endsWith('/contents/data/characters.json'), 'writes the grouped store, not character.json');
+    assert.ok(put.url.endsWith('/contents/data/characters.json'), 'writes the grouped store');
     const sent = JSON.parse(put.options.body);
     assert.equal(sent.sha, 'store-sha', 'PUT carries the store sha from the GET');
-    assert.equal(sent.branch, 'character-data', 'branch is env-pinned');
+    assert.equal(sent.branch, 'character-data', 'branch is env-pinned, not from request');
+    // Byte-identical to what the file save writes: pretty JSON + trailing newline.
+    const expected = JSON.stringify({ ...STORE, characters: { ...STORE.characters, chakka: CHAR } }, null, 2) + '\n';
+    assert.equal(Buffer.from(sent.content, 'base64').toString('utf8'), expected);
     const written = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
-    assert.equal(written.schema, 'ed-characters/1');
     assert.deepEqual(written.characters.chakka, CHAR, 'posted entry replaces characters[chakka]');
   } finally {
     mock.restore();
@@ -268,13 +221,61 @@ test('missing store (404) → creates a fresh ed-characters/1 store', async () =
   }
 });
 
-test('invalid id (path traversal / bad chars) → 400 invalid_id', async () => {
-  for (const bad of ['../evil', 'A/b', 'a b', '..', 'a.b', 'É', 42, '']) {
-    const { status, json } = await call(req({ character: CHAR, id: bad }));
-    assert.equal(status, 400, `id ${JSON.stringify(bad)} → 400`);
-    assert.equal(json.error.code, 'invalid_id');
+test('non-Latin1 content (em-dash, ✦ star) encodes as UTF-8 base64, not btoa-throws', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsStore(STORE), ...putStoreOk() });
+  try {
+    // Real character data has em-dashes in the background; magic items use ✦.
+    const unicodeChar = { schema: 'ed-character/1', meta: { name: 'Chakka' }, note: 'freedom — at last ✦' };
+    const { status, json } = await call(req({ character: unicodeChar, id: 'chakka' }));
+    assert.equal(status, 200, 'must not 502 on btoa InvalidCharacterError');
+    assert.equal(json.ok, true);
+    const put = mock.calls.find((c) => c.method === 'PUT');
+    const sent = JSON.parse(put.options.body);
+    // Round-trips back to the exact bytes (multi-byte chars intact).
+    const written = Buffer.from(sent.content, 'base64').toString('utf8');
+    assert.ok(written.includes('freedom — at last ✦'), 'UTF-8 round-trips through the store merge');
+  } finally {
+    mock.restore();
   }
 });
+
+test('every GitHub request carries a User-Agent (GitHub 403s without one)', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsStore(STORE), ...putStoreOk() });
+  try {
+    await call(req({ character: CHAR, id: 'chakka' }));
+    const ghCalls = mock.calls.filter((c) => c.url.includes('api.github.com'));
+    assert.ok(ghCalls.length > 0, 'made at least one GitHub call');
+    for (const c of ghCalls) {
+      assert.ok(c.options.headers['User-Agent'], `missing User-Agent on ${c.method} ${c.url}`);
+    }
+  } finally {
+    mock.restore();
+  }
+});
+
+test('missing branch is created before the first write', async () => {
+  let branchCreated = false;
+  const mock = mockGitHub({
+    'GET /git/ref/heads/character-data': () => ({ status: 404, body: {} }),
+    'GET /repos/odenson/ed-charSheet': () => ({ status: 200, body: { default_branch: 'main' } }),
+    'GET /git/ref/heads/main': () => ({ status: 200, body: { object: { sha: 'base-sha' } } }),
+    'POST /git/refs': () => {
+      branchCreated = true;
+      return { status: 201, body: { ref: 'refs/heads/character-data' } };
+    },
+    ...readsStore(STORE),
+    ...putStoreOk(),
+  });
+  try {
+    const { status } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 200);
+    assert.ok(branchCreated, 'ensureBranch POSTed a new ref');
+  } finally {
+    mock.restore();
+  }
+});
+
+// --- conflict retry ----------------------------------------------------------
 
 test('grouped-store 409 then 200 → retry re-reads the moved store sha', async () => {
   let reads = 0;
@@ -302,64 +303,14 @@ test('grouped-store 409 then 200 → retry re-reads the moved store sha', async 
   }
 });
 
-test('missing branch is created before the first write', async () => {
-  let branchCreated = false;
-  const mock = mockGitHub({
-    'GET /git/ref/heads/character-data': () => ({ status: 404, body: {} }),
-    'GET /repos/odenson/ed-charSheet': () => ({ status: 200, body: { default_branch: 'main' } }),
-    'GET /git/ref/heads/main': () => ({ status: 200, body: { object: { sha: 'base-sha' } } }),
-    'POST /git/refs': () => {
-      branchCreated = true;
-      return { status: 201, body: { ref: 'refs/heads/character-data' } };
-    },
-    ...readsSha('s'),
-    ...putOk(),
-  });
-  try {
-    const { status } = await call(req(CHAR));
-    assert.equal(status, 200);
-    assert.ok(branchCreated, 'ensureBranch POSTed a new ref');
-  } finally {
-    mock.restore();
-  }
-});
-
-// --- conflict retry ----------------------------------------------------------
-
-test('409 then 200 → second PUT carries the freshly re-read sha', async () => {
-  let shaReads = 0;
-  let putAttempts = 0;
-  const mock = mockGitHub({
-    ...branchExists,
-    'GET /contents/data/character.json': () => {
-      shaReads += 1;
-      return { status: 200, body: { sha: `sha-${shaReads}` } };
-    },
-    'PUT /contents/data/character.json': () => {
-      putAttempts += 1;
-      if (putAttempts === 1) return { status: 409, body: {} };
-      return { status: 200, body: { content: { sha: 'ok' }, html_url: 'u' } };
-    },
-  });
-  try {
-    const { status } = await call(req(CHAR));
-    assert.equal(status, 200);
-    assert.equal(putAttempts, 2, 'retried once');
-    const puts = mock.calls.filter((c) => c.method === 'PUT');
-    assert.equal(JSON.parse(puts[1].options.body).sha, 'sha-2', 'retry re-reads the moved sha');
-  } finally {
-    mock.restore();
-  }
-});
-
 test('persistent 409 → 409 conflict after MAX_RETRIES', async () => {
   const mock = mockGitHub({
     ...branchExists,
-    ...readsSha('s'),
-    'PUT /contents/data/character.json': () => ({ status: 409, body: {} }),
+    ...readsStore(STORE),
+    'PUT /contents/data/characters.json': () => ({ status: 409, body: {} }),
   });
   try {
-    const { status, json } = await call(req(CHAR));
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
     assert.equal(status, 409);
     assert.equal(json.error.code, 'conflict');
     assert.equal(mock.calls.filter((c) => c.method === 'PUT').length, 3);
@@ -373,11 +324,11 @@ test('persistent 409 → 409 conflict after MAX_RETRIES', async () => {
 test('non-409 GitHub failure (403) → 502 upstream', async () => {
   const mock = mockGitHub({
     ...branchExists,
-    ...readsSha('s'),
-    'PUT /contents/data/character.json': () => ({ status: 403, body: {} }),
+    ...readsStore(STORE),
+    'PUT /contents/data/characters.json': () => ({ status: 403, body: {} }),
   });
   try {
-    const { status, json } = await call(req(CHAR));
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
     assert.equal(status, 502);
     assert.equal(json.error.code, 'upstream');
   } finally {

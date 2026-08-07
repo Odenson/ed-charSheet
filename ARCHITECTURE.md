@@ -377,15 +377,15 @@ the committed data live at runtime (`store.js`). The deploy workflow watches
 `200` (with the commit URL) or one typed error; the `409` retry lives in the
 worker.
 
-**Multi-character (v1.6.0-dev).** Characters are grouped in a single store,
+**Multi-character (shipped, v1.6.0).** Characters are grouped in a single store,
 `data/characters.json` (`{ schema: "ed-characters/1", characters: { "<id>": {
-… ed-character/1 entry … } } }`). A save carrying an `id` makes the worker
-upsert `characters[id]` (GET the store → replace the entry → PUT the whole file);
-a save without an `id` falls back to the legacy `data/character.json` path. The
-app reads the store once — one fetch discovers **and** loads every character —
-and the first-run picker lists the store's ids (docs/PLAN-MULTI-CHARACTER.md).
-`data/character.json` is retained on the branch during the transition; the split
-ends when `dev` → `main`.
+… ed-character/1 entry … } } }`). A save always carries an `id` (required since
+v1.6.0) and the worker upserts `characters[id]` (GET the store → replace the
+entry → PUT the whole file). The app reads the store once — one fetch discovers
+**and** loads every character — and the first-run picker lists the store's ids
+(docs/PLAN-MULTI-CHARACTER.md). The legacy `data/character.json` and the worker's
+no-`id` path were **removed at the v1.6.0 promotion** — the grouped store is the
+only save target.
 
 App side: `store-server.js` (`saveServer`) is the target; the `SAVE_KEY` is
 entered via a key-prompt on first save and held **in memory only** (never
@@ -429,12 +429,12 @@ and its runbook.
     #          dddice.js (optional 3D dice adapter)
   data/
     changelog.json    # feature changelog (shipped history)
-    # characters.json (the grouped store), character.json (legacy single file)
-    # and chakka.jpg are NOT bundle files: they live on the character-data
-    # branch and are read live on the Pages site (see §7.5 /
-    # docs/GITHUB-SERVERLESS-SAVE.md). Gitignored local working copies exist for
-    # local dev / file://. The portrait is the repo image referenced by each
-    # entry's meta.portrait (docs/UI-GUIDELINES.md §6).
+    # characters.json (the grouped store) and chakka.jpg are NOT bundle files:
+    # they live on the character-data branch and are read live on the Pages
+    # site (see §7.5 / docs/GITHUB-SERVERLESS-SAVE.md). Gitignored local working
+    # copies exist for local dev / file://. The portrait is the repo image
+    # referenced by each entry's meta.portrait (docs/UI-GUIDELINES.md §6). The
+    # legacy data/character.json was removed at the v1.6.0 promotion.
   rules/
     steps.json attributes.json characteristics.json talents.json
     disciplines.json races.json skills.json items.json
