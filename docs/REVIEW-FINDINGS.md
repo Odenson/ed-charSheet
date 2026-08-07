@@ -51,7 +51,24 @@ the user considers `rules/*.json` a static document, not prone to change.
 
 ## 🛡️ G1 — Stored derived values: `karma.available` / `legend.available`
 
-**Status:** 🔴 OPEN · **Tier:** 1 (data-model invariant — **owner sign-off**)
+**Status:** 🟡 PARTIAL — Legend resolved (2026-08-07, owner sign-off); `karma.available`
+still OPEN · **Tier:** 1 (data-model invariant — **owner sign-off**)
+
+**Legend resolution (option a):** `legend.available` and the Legendary Status band are
+now derived in the store from the inputs: the status band via `engine/legend.js`
+(`legendaryStatus`), and `available` as `totalEarnt − all spent the engine can price`
+— the audit total from `engine/legend-spent.js`, not the recorded `totalSpent` input
+(the recorded figure remains on display only for the reconciliation delta). The UI
+reads `model.legend.*`; the sheet's stored `resources.legend.available` is no longer
+read (a dead input — it can be dropped from the `character-data` branch as data
+cleanup). `karma.available` and `karma.legend` are unchanged and remain the open half
+of this finding.
+
+---
+
+### Original finding
+
+**Tier:** 1 (data-model invariant — **owner sign-off**)
 
 `data/character.json:286` — `karma.available: 18` = `converted` 123 − `spent`
 105; `data/character.json:295` — `legend.available: 654` = `totalEarnt` 45315 −

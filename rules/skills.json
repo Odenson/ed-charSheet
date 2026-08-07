@@ -1,621 +1,3129 @@
 {
   "schema": "ed-skills/1",
+  "source": "Earthdawn 4E — skills. Mechanics + original-wording summaries (no verbatim rulebook prose). Enriched from the Players' Guide skill/talent text, the Companion guide, and the app's talent catalog.",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "notes": [
+    "154 skills catalogued (23 general skills, 105 talent-named skills, 22 language variants, 4 artisan variants). Mechanics (attribute/action/strain) and summaries authored for all; effects follow the effect taxonomy as note entries.",
+    "Skill version of a talent never causes Strain (strain is 0 for every skill).",
+    "Attribute-less knacks (Step: Rank — Critical Hit, Defensive Posture, Impressive Display, Mount Attack, Resist Pain, Vicious Wound, Weapon Breaker, Witty Repartee) carry no 'attribute' field, mirroring how the talent catalog models attribute-less talents.",
+    "Name variants in the catalog map to extract entries: Map Making -> Mapmaking, Entertaining -> Entertainer, Lock Pick -> Lock Picking, Melee Weapon(s) -> Melee Weapons, Missile Weapon(s) -> Missile Weapons, Throwing Weapon(s) -> Throwing Weapons.",
+    "Bribery and Skinning each appear twice in the catalog; both entries are preserved.",
+    "Tier is numeric (1 = Novice, 2 = Journeyman, 3 = Warden) as in the existing catalog."
+  ],
   "skills": [
-  {
-    "name": "Acrobatic Defense",
-    "tier": 1
-  },
-  {
-    "name": "Acting",
-    "tier": 1
-  },
-  {
-    "name": "Aggressive Maneuver",
-    "tier": 2
-  },
-  {
-    "name": "Air Sailing",
-    "tier": 1
-  },
-  {
-    "name": "Alchemy",
-    "tier": 1
-  },
-  {
-    "name": "Animal Bond",
-    "tier": 1
-  },
-  {
-    "name": "Animal Handling",
-    "tier": 1
-  },
-  {
-    "name": "Animal Tracking",
-    "tier": 1
-  },
-  {
-    "name": "Animal Training",
-    "tier": 1
-  },
-  {
-    "name": "Anticipate Blow",
-    "tier": 1
-  },
-  {
-    "name": "Arcane Mutterings",
-    "tier": 1
-  },
-  {
-    "name": "Arrow Fletching (Artisan)",
-    "tier": 1
-  },
-  {
-    "name": "Artisan",
-    "tier": 1
-  },
-  {
-    "name": "Artist",
-    "tier": 1
-  },
-  {
-    "name": "Assess Intentions",
-    "tier": 2
-  },
-  {
-    "name": "Avoid Blow",
-    "tier": 1
-  },
-  {
-    "name": "Awareness",
-    "tier": 1
-  },
-  {
-    "name": "Battle Bellow",
-    "tier": 2
-  },
-  {
-    "name": "Battle Shout",
-    "tier": 1
-  },
-  {
-    "name": "Blade Juggle",
-    "tier": 2
-  },
-  {
-    "name": "Body Painting (Artisan)",
-    "tier": 1
-  },
-  {
-    "name": "Bone Carving (Artisan)",
-    "tier": 1
-  },
-  {
-    "name": "Braiding (Artisan)",
-    "tier": 1
-  },
-  {
-    "name": "Bribery",
-    "tier": 1
-  },
-  {
-    "name": "Bribery",
-    "tier": 1
-  },
-  {
-    "name": "Charge",
-    "tier": 1
-  },
-  {
-    "name": "Climbing",
-    "tier": 1
-  },
-  {
-    "name": "Conceal Object",
-    "tier": 2
-  },
-  {
-    "name": "Conversation",
-    "tier": 1
-  },
-  {
-    "name": "Craft Armor",
-    "tier": 1
-  },
-  {
-    "name": "Craft Weapon",
-    "tier": 1
-  },
-  {
-    "name": "Craftsman",
-    "tier": 1
-  },
-  {
-    "name": "Create Orichalcum",
-    "tier": 3
-  },
-  {
-    "name": "Critical Hit",
-    "tier": 3
-  },
-  {
-    "name": "Danger Sense",
-    "tier": 1
-  },
-  {
-    "name": "Defensive Posture",
-    "tier": 3
-  },
-  {
-    "name": "Design Enchanting Pattern",
-    "tier": 2
-  },
-  {
-    "name": "Detect True Element",
-    "tier": 2
-  },
-  {
-    "name": "Diplomacy",
-    "tier": 1
-  },
-  {
-    "name": "Disarm",
-    "tier": 2
-  },
-  {
-    "name": "Disarm Trap",
-    "tier": 1
-  },
-  {
-    "name": "Disguise",
-    "tier": 1
-  },
-  {
-    "name": "Distract",
-    "tier": 1
-  },
-  {
-    "name": "Down Strike",
-    "tier": 2
-  },
-  {
-    "name": "Embroidery",
-    "tier": 1
-  },
-  {
-    "name": "Emotion Song",
-    "tier": 1
-  },
-  {
-    "name": "Engaging Banter",
-    "tier": 1
-  },
-  {
-    "name": "Entertaining",
-    "tier": 1
-  },
-  {
-    "name": "Evaluate",
-    "tier": 1
-  },
-  {
-    "name": "Evidence Analysis",
-    "tier": 2
-  },
-  {
-    "name": "Fast Hand",
-    "tier": 2
-  },
-  {
-    "name": "Feint",
-    "tier": 2
-  },
-  {
-    "name": "First Impression",
-    "tier": 1
-  },
-  {
-    "name": "Flirting",
-    "tier": 1
-  },
-  {
-    "name": "Forgery",
-    "tier": 1
-  },
-  {
-    "name": "Graceful Exit",
-    "tier": 1
-  },
-  {
-    "name": "Great Leap",
-    "tier": 1
-  },
-  {
-    "name": "Haggle",
-    "tier": 1
-  },
-  {
-    "name": "Harvest True Element",
-    "tier": 2
-  },
-  {
-    "name": "Heartening Laugh",
-    "tier": 1
-  },
-  {
-    "name": "Horror Lore",
-    "tier": 1
-  },
-  {
-    "name": "Hunting",
-    "tier": 1
-  },
-  {
-    "name": "Hypnotize",
-    "tier": 2
-  },
-  {
-    "name": "Impressive Display",
-    "tier": 1
-  },
-  {
-    "name": "Intimidating Bellow",
-    "tier": 2
-  },
-  {
-    "name": "Knowledge",
-    "tier": 1
-  },
-  {
-    "name": "Leadership",
-    "tier": 2
-  },
-  {
-    "name": "Lip Reading",
-    "tier": 1
-  },
-  {
-    "name": "Lock Pick",
-    "tier": 1
-  },
-  {
-    "name": "Maneuver",
-    "tier": 1
-  },
-  {
-    "name": "Manuscript Illumination",
-    "tier": 1
-  },
-  {
-    "name": "Map Making",
-    "tier": 1
-  },
-  {
-    "name": "Melee Weapon",
-    "tier": 1
-  },
-  {
-    "name": "Mimic Voice",
-    "tier": 1
-  },
-  {
-    "name": "Missile Weapon",
-    "tier": 1
-  },
-  {
-    "name": "Mount Attack",
-    "tier": 2
-  },
-  {
-    "name": "Navigation",
-    "tier": 1
-  },
-  {
-    "name": "Painting",
-    "tier": 1
-  },
-  {
-    "name": "Patient Maneuver",
-    "tier": 2
-  },
-  {
-    "name": "Physician",
-    "tier": 1
-  },
-  {
-    "name": "Picking Pockets",
-    "tier": 1
-  },
-  {
-    "name": "Pilot Boat",
-    "tier": 1
-  },
-  {
-    "name": "Poetry",
-    "tier": 1
-  },
-  {
-    "name": "Poisoned Influence",
-    "tier": 2
-  },
-  {
-    "name": "Public Speaking",
-    "tier": 1
-  },
-  {
-    "name": "Read River",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Drake)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Dwarf)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Elf)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Human)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Obsidiman)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Ork)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (T`skrang)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Theran)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Throalic)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Troll)",
-    "tier": 1
-  },
-  {
-    "name": "Read/Write Language (Windling)",
-    "tier": 1
-  },
-  {
-    "name": "Research",
-    "tier": 1
-  },
-  {
-    "name": "Resist Pain",
-    "tier": 3
-  },
-  {
-    "name": "Resist Taunt",
-    "tier": 2
-  },
-  {
-    "name": "Riding",
-    "tier": 1
-  },
-  {
-    "name": "Riposte",
-    "tier": 2
-  },
-  {
-    "name": "Robe Embroidery",
-    "tier": 1
-  },
-  {
-    "name": "Rune Carving",
-    "tier": 1
-  },
-  {
-    "name": "Sail Embroidery",
-    "tier": 1
-  },
-  {
-    "name": "Sailing",
-    "tier": 1
-  },
-  {
-    "name": "Sculpting",
-    "tier": 1
-  },
-  {
-    "name": "Second Attack",
-    "tier": 2
-  },
-  {
-    "name": "Second Shot",
-    "tier": 2
-  },
-  {
-    "name": "Second Weapon",
-    "tier": 2
-  },
-  {
-    "name": "Seduction",
-    "tier": 1
-  },
-  {
-    "name": "Setup",
-    "tier": 2
-  },
-  {
-    "name": "Shield Bash",
-    "tier": 1
-  },
-  {
-    "name": "Shield Drive",
-    "tier": 2
-  },
-  {
-    "name": "Skinning",
-    "tier": 1
-  },
-  {
-    "name": "Skinning",
-    "tier": 1
-  },
-  {
-    "name": "Slough Blame",
-    "tier": 2
-  },
-  {
-    "name": "Speak Language",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Drake)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Dwarf)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Elf)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Human)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Obsidiman)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Ork)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (T`skrang)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Theran)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Throalic)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Troll)",
-    "tier": 1
-  },
-  {
-    "name": "Speak Language (Windling)",
-    "tier": 1
-  },
-  {
-    "name": "Stealthy Stride",
-    "tier": 1
-  },
-  {
-    "name": "Sure Mount",
-    "tier": 1
-  },
-  {
-    "name": "Surprise Strike",
-    "tier": 1
-  },
-  {
-    "name": "Swift Kick",
-    "tier": 1
-  },
-  {
-    "name": "Swimming",
-    "tier": 1
-  },
-  {
-    "name": "Swing Attack",
-    "tier": 1
-  },
-  {
-    "name": "Swinging Move",
-    "tier": 1
-  },
-  {
-    "name": "Tactics",
-    "tier": 1
-  },
-  {
-    "name": "Tailor",
-    "tier": 1
-  },
-  {
-    "name": "Tanning",
-    "tier": 1
-  },
-  {
-    "name": "Tattooist",
-    "tier": 1
-  },
-  {
-    "name": "Taunt",
-    "tier": 1
-  },
-  {
-    "name": "Throwing Weapon",
-    "tier": 1
-  },
-  {
-    "name": "Tracking",
-    "tier": 1
-  },
-  {
-    "name": "Trick Riding",
-    "tier": 1
-  },
-  {
-    "name": "Unarmed Combat",
-    "tier": 1
-  },
-  {
-    "name": "Vicious Wound",
-    "tier": 3
-  },
-  {
-    "name": "Weapon Breaker",
-    "tier": 3
-  },
-  {
-    "name": "Wheeling Attack",
-    "tier": 2
-  },
-  {
-    "name": "Wheeling Defense",
-    "tier": 2
-  },
-  {
-    "name": "Wilderness Survival",
-    "tier": 1
-  },
-  {
-    "name": "Witty Repartee",
-    "tier": 3
-  },
-  {
-    "name": "Wood Carving",
-    "tier": 1
-  },
-  {
-    "name": "Wound Balance",
-    "tier": 1
-  }
-]
+    {
+      "name": "Acrobatic Defense",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the highest Physical Defense of any opponents in close combat range",
+      "summary": "Flip, spin, and somersault to make yourself harder to hit; you must be able to move and have room to maneuver. On success add +2 per success to your Physical Defense against the opponents tested against.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "+2 to Physical Defense per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Adds +2 Physical Defense"
+      }
+    },
+    {
+      "name": "Acting",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the target's Social Defense (or the audience's Social Defense during a performance)",
+      "summary": "Pretend to be someone else, mimicking voice, speech patterns, gestures, and mannerisms appropriate to the role; a successful test convinces the target that you are the sort of person you portray. Passing for a specific person known to the target needs at least three successes. During a theatrical performance the result is compared to the audience's Social Defense. Can be used as an Artisan skill.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target believes the persona being portrayed (3+ successes for a specific known identity)."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Impersonates a role"
+      }
+    },
+    {
+      "name": "Aggressive Maneuver",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the target's Physical Defense",
+      "summary": "Use aggressive positioning to gain a superior offensive position without improving your own defense. Each success gives a +2 bonus to close-combat Attack tests against that target.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "+2 to close-combat Attack tests against the target per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Boosts close-combat attack"
+      }
+    },
+    {
+      "name": "Air Sailing",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Willpower",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5",
+      "summary": "Work the rigging, tiller, and oars of airships. An Air Sailing (5) test counts you as one crew member per success; joining an airship crew requires Rank 1 or higher.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Counts as one crew member per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Crews an airship"
+      }
+    },
+    {
+      "name": "Alchemy",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "the Difficulty Number of the recipe (poisons use the poison's Effect Step)",
+      "summary": "Understand the magical principles and formulas of alchemical concoctions, gather ingredients (usually a day's work), and test or analyze discovered potions. Brewing a recipe takes a day's work; a successful test creates the concoction, one dose per success, while a failed test leaves it inert and useless.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The concoction is finished and immediately usable — one dose per success."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Crafts alchemical concoctions"
+      }
+    },
+    {
+      "name": "Animal Bond",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "the animal's Social Defense",
+      "summary": "Forge a bond of trust with an animal. Success gives the animal a Neutral Attitude toward you; further tests can improve it further (with at least a day between tests).",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The animal's Attitude toward you improves."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Befriends an animal"
+      }
+    },
+    {
+      "name": "Animal Handling",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Willpower",
+      "action": "Standard",
+      "versus": "the highest Social Defense among the group of animals (+1 per additional animal)",
+      "summary": "Work with domesticated animals, getting them to perform actions beyond their normal behavior. Requires at least a Neutral Attitude with all animals being commanded.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The animals perform the requested action."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Commands domesticated animals"
+      }
+    },
+    {
+      "name": "Animal Tracking",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Follow the tracks and sign left by animals. A test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The animal's trail is followed."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Follows animal tracks"
+      }
+    },
+    {
+      "name": "Animal Training",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the animal's Social Defense",
+      "summary": "Train an animal to obey simple commands such as 'stop', 'heel', 'fetch', and 'kill'. An animal can learn a maximum number of commands equal to your rank, each taught with a separate successful test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The animal learns the command."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Teaches animal commands"
+      }
+    },
+    {
+      "name": "Anticipate Blow",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Simple",
+      "versus": "target's Mystic Defense (requires higher Initiative than the target)",
+      "summary": "Read a foe you out-initiative (vs Mystic Defense): each success adds +2 to your Physical Defense against that foe's attacks until end of round, and +2 per success to your first Attack test against them. Usable up to rank times per round.",
+      "effects": [
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "on-success",
+          "perSuccess": true,
+          "duration": "rounds",
+          "rounds": 1,
+          "scope": "vs the target's attacks",
+          "source": "skill",
+          "summary": "+2 Physical Defense vs that foe's attacks until end of round (per success)."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "result",
+          "condition": "on-success",
+          "perSuccess": true,
+          "scope": "first Attack test vs the target",
+          "source": "skill",
+          "summary": "+2 per success to your first Attack test against the target."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Boosts Physical Defense"
+      }
+    },
+    {
+      "name": "Arcane Mutterings",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "the highest Social Defense among the target group (+1 per additional character)",
+      "summary": "Confuse others by muttering dire, largely incomprehensible warnings. On success the targets become confused and are considered Harried for a number of rounds equal to the rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Targets are Harried for rounds equal to the rank."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Confuses with mutterings"
+      }
+    },
+    {
+      "name": "Arrow Fletching (Artisan)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for fletching arrows and other missile shafts. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Fletches missile shafts"
+      }
+    },
+    {
+      "name": "Artisan",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Template skill for a specific art or craft. The Difficulty Number for most Artisan tests is 5, reflecting that nearly everyone in Earthdawn practices an Artisan skill. A successful Artisan test used in a greeting ritual (DN 5) proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Proves the character free of Horror taint during a greeting ritual."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Crafts an art"
+      }
+    },
+    {
+      "name": "Artist",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "each observer's Social Defense (compared to the recorded test result)",
+      "summary": "Produce physical works of art that evoke emotion. The test result is recorded, then compared to each observer's Social Defense; the Success Level determines how well the observer appreciates the work. Can be used as an Artisan skill.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The observer appreciates the work based on the recorded result."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Creates emotional art"
+      }
+    },
+    {
+      "name": "Assess Intentions",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the target's Social Defense",
+      "summary": "Discern the true intentions of a Namegiver you have been conversing with for at least ten minutes. A successful (often secret) test reveals the target's true feelings and motives.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target's true intentions are revealed."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads a person's intent"
+      }
+    },
+    {
+      "name": "Avoid Blow",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Free",
+      "versus": "attacker's Attack test result",
+      "summary": "Reactively dodge or parry an incoming close- or ranged-combat attack; on a success the blow is avoided. Usable up to rank times per round (one attempt per attack); not usable while blindsided or surprised.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Negates the triggering attack."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Dodges incoming attacks"
+      }
+    },
+    {
+      "name": "Awareness",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Simple",
+      "versus": "a Difficulty Number set by the gamemaster (based on what is being spotted)",
+      "summary": "Notice hidden or concealed things, used in place of a Perception test to spot a target: 1 success spots at short range, 3+ at medium range.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Spot the searched-for target (range by success level)."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Spots hidden things"
+      }
+    },
+    {
+      "name": "Battle Bellow",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the highest Social Defense among the target group (+1 per additional target)",
+      "summary": "Issue a great bellow that inspires allies and intimidates enemies within range (rank x 10 yards). Enemies affected suffer a -1 penalty to their tests; allies gain a bonus.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Enemies take -1 to tests; allies are bolstered.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Inspires allies, intimidates foes"
+      }
+    },
+    {
+      "name": "Battle Shout",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the target's Social Defense",
+      "summary": "Shout to intimidate a single foe within range (rank x 5 yards). On success the target incurs a -2 penalty per success to their tests until the end of the following round. Each use against the same target is harder.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "-2 per success to the target's tests until the end of the next round.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Intimidates a single foe"
+      }
+    },
+    {
+      "name": "Blade Juggle",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the combined Size of the blades + the highest Damage Step among them",
+      "summary": "Create a whirling, flashing barrier of knives or other weapons between yourself and your opponents. On success you begin juggling, gaining Defense bonuses for as long as you keep the blades aloft.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "A whirling blade barrier improves your Defense."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Deflects with blade barrier"
+      }
+    },
+    {
+      "name": "Body Painting (Artisan)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for painting the body with ritual and decorative designs. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Paints ritual designs"
+      }
+    },
+    {
+      "name": "Bone Carving (Artisan)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for carving bone into implements and art. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Carves bone"
+      }
+    },
+    {
+      "name": "Braiding (Artisan)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for braiding cord, leather, and hair. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Braids cord and hair"
+      }
+    },
+    {
+      "name": "Bribery",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "the target's Social Defense (+1 per additional character)",
+      "summary": "Discreetly buy favors with cash. Small favors take small bribes (a few silver or a couple of hours' wages); larger favors take at least a day's earnings for the target. Generous bribes may earn a test bonus at the gamemaster's discretion.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target does the favor asked."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Buys favors discreetly"
+      }
+    },
+    {
+      "name": "Bribery",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "the target's Social Defense (+1 per additional character)",
+      "summary": "Discreetly buy favors with cash. Small favors take small bribes (a few silver or a couple of hours' wages); larger favors take at least a day's earnings for the target. Generous bribes may earn a test bonus at the gamemaster's discretion.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target does the favor asked."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Buys favors discreetly"
+      }
+    },
+    {
+      "name": "Charge",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Free",
+      "versus": "situational (used in place of Strength for a mounted Charging Attack's damage)",
+      "summary": "Increase the effectiveness of a successful mounted Charging Attack by using this Step in place of your Strength Step for the Damage test. May also be used in place of a Strength test to avoid being knocked from your mount.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Damage from a mounted Charging Attack is increased."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Strengthens mounted damage"
+      }
+    },
+    {
+      "name": "Climbing",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster, usually based on the surface",
+      "summary": "Clamber up or down vertical surfaces. On success you move 2 yards per round, +1 yard per additional success; failure means no progress.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "You move 2 yards, +1 per extra success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Climbs vertical surfaces"
+      }
+    },
+    {
+      "name": "Conceal Object",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the result becomes the Difficulty Number to find the hidden object",
+      "summary": "Hide one or more objects on the body, up to a combined Size equal to rank; the test result is the Difficulty to find them. Producing a concealed item grants the benefit of Surprise.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Object hidden; the result sets the Difficulty to find it."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Hides objects on body"
+      }
+    },
+    {
+      "name": "Conversation",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the highest Social Defense among the target group (+1 per additional character)",
+      "summary": "Make a favorable impression in social situations through tone and word choice. On success the Attitude of the target characters rises favorably toward you.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The targets' Attitude toward you rises favorably."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Improves social attitude"
+      }
+    },
+    {
+      "name": "Craft Armor",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "the armor's Physical + Mystic Armor ratings + 5 (shields: Physical + Mystic Defense bonus + 5)",
+      "summary": "Create new armor and shields at a properly equipped forge, accumulating a total number of successes equal to the item's Physical Armor (or the shield's Physical Defense bonus), each test taking one week. Damaged armor and shields can be repaired against half the creation Difficulty. A Rule of One ruins the item entirely.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Progress toward crafting the armor/shield; a Rule of One ruins it."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Forges armor and shields"
+      }
+    },
+    {
+      "name": "Craft Weapon",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "the weapon's Damage Step + 5",
+      "summary": "Create new weapons and missile ammunition at a properly equipped forge, accumulating successes equal to the weapon's Size, each test taking one day. Damaged weapons can be repaired against half the creation Difficulty. A Rule of One ruins the item entirely.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Progress toward crafting the weapon; a Rule of One ruins it."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Forges weapons and ammunition"
+      }
+    },
+    {
+      "name": "Craftsman",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "the Difficulty Number of the item (2 simple / 5 ordinary / 8+ exotic)",
+      "summary": "Make or repair items with the proper tools and materials; complex items may require accumulating multiple successes. A failed test only costs time, but a Rule of One destroys the item beyond salvation.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The item is made or repaired successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Makes or repairs items"
+      }
+    },
+    {
+      "name": "Create Orichalcum",
+      "tier": 3,
+      "strain": 0,
+      "attribute": "Willpower",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Purify and create orichalcum from True elements, using the Elementalism or Thread Smithing talent as the basis. The non-magical skill version can only purify orichalcum, not create it.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Orichalcum is purified (or created, for adepts)."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Purifies True elements"
+      }
+    },
+    {
+      "name": "Critical Hit",
+      "tier": 3,
+      "strain": 0,
+      "action": "Free",
+      "versus": "a successful close- or ranged-combat Attack test",
+      "summary": "When a close-combat or ranged Attack test scores at least three successes, the damage inflicted is increased by the skill rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Damage on the qualifying attack is increased by the rank."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Boosts damage on crits"
+      }
+    },
+    {
+      "name": "Danger Sense",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Free",
+      "versus": "trap/hazard's Initiative test result",
+      "summary": "Supernatural awareness of hazards within rank ×10 yards: vs a trap or ambush's Initiative result, acting normally and avoiding the Surprise penalty when successful.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Act normally; avoid the Surprise penalty."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Senses nearby hazards"
+      }
+    },
+    {
+      "name": "Defensive Posture",
+      "tier": 3,
+      "strain": 0,
+      "action": "Free",
+      "versus": "situational (adds to a Physical Defense action test)",
+      "summary": "Improve your ability to avoid physical attacks by adding the rank to an action test that improves Physical Defense (such as Acrobatic Defense or Anticipate Blow); the granted Defense bonus also applies to Avoid Blow and Riposte tests. Usable once per turn.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "skill",
+          "summary": "Adds the rank to Physical Defense-improving action tests; usable once per turn."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Improves Physical Defense"
+      }
+    },
+    {
+      "name": "Design Enchanting Pattern",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Willpower",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Design and modify enchanting patterns, using Patterncraft or Thread Smithing. As a skill this applies only to alchemical magic items, and must be learned separately for each category of item.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The enchanting pattern is designed or modified."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Designs enchanting patterns"
+      }
+    },
+    {
+      "name": "Detect True Element",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Detection difficulty of the elemental pockets in the area",
+      "summary": "Use divination magic and your natural connection to the elements to detect any pockets of True elements in the area.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Pockets of True elements in the area are detected."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Detects True elements"
+      }
+    },
+    {
+      "name": "Diplomacy",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the negotiating target's Social Defense",
+      "summary": "Mitigate disputes and influence the development of mutual interests. On success the negotiator's Attitude towards their opponents improves by one degree for a number of hours equal to the rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target's Attitude towards the other side improves one degree."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Soothes disputes"
+      }
+    },
+    {
+      "name": "Disarm",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the target's Physical Defense",
+      "summary": "Use clever feints and flashy weapon play to knock an opponent's weapon from their hand. On success the weapon is sent spinning away in a direction of your choice for a distance based on your Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The opponent's weapon is knocked from their hand."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knocks foe's weapon away"
+      }
+    },
+    {
+      "name": "Disarm Trap",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "Difficulty Number set by the gamemaster",
+      "summary": "Render a trap inoperative vs a GM-set Difficulty; success disables the trigger (a Rule of One sets it off). Up to rank attempts per trap. Grants trap/ward detection with Awareness.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The trap's trigger is disabled."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Disables traps"
+      }
+    },
+    {
+      "name": "Disguise",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "the result becomes the Difficulty Number for attempts to see through the disguise",
+      "summary": "Use costumes and make-up (minimum 30 minutes of preparation) to disguise yourself or another as a chosen Namegiver. The test result becomes the Difficulty Number to see through the disguise, which lasts a number of hours equal to your Disguise rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The disguise is convincing; its result sets the Difficulty to see through it."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Disguises as another"
+      }
+    },
+    {
+      "name": "Distract",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the target's Social Defense",
+      "summary": "Divert an opponent's attention by making yourself a more tempting target. On success both you and the target suffer a -1 penalty per success to Physical Defense against each other's attacks.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Both you and the target take -1 to Physical Defense against each other per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Distracts a target"
+      }
+    },
+    {
+      "name": "Down Strike",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Free",
+      "versus": "situational (used in place of Strength for a close-combat Damage test)",
+      "summary": "From a stable position at least a yard above your opponent (mounted, on higher ground, or jumping down), deliver a more devastating close-combat attack, substituting this Step for your Strength Step in the Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The close-combat damage test uses the Down Strike Step."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Strikes from above"
+      }
+    },
+    {
+      "name": "Embroidery",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for decorative needlework on fabric. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Embroiders decorative needlework"
+      }
+    },
+    {
+      "name": "Emotion Song",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "the highest Social Defense among the audience",
+      "summary": "Sing songs that arouse an audience toward a basic emotion (fear, love, hate, happiness, anger, or joy) directed at the subject of the song. Each performance takes at least ten minutes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The audience feels the emotion toward the song's subject."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Arouses an emotion"
+      }
+    },
+    {
+      "name": "Engaging Banter",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "target's Social Defense",
+      "summary": "Engage a target who can understand you in witty chat (vs Social Defense) for rank minutes; the target is distracted and harried, and each success imposes −2 on their Perception tests to notice anything but the adept.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Target distracted and harried for rank minutes."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Distracts with banter"
+      }
+    },
+    {
+      "name": "Entertaining",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the highest Social Defense among the observers",
+      "summary": "Perform a type of performing art (musician, poet, singer, storyteller, and so on). Each success means 25 percent of the audience enjoys and remembers the performance. Can be used as an Artisan skill.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "25 percent of the audience enjoys and remembers the performance per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Performs a craft"
+      }
+    },
+    {
+      "name": "Evaluate",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the item's Mystic Defense",
+      "summary": "Gauge the true market value of an object. One success reveals the item's approximate price; additional successes may disclose further detail about it.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The item's approximate price is revealed."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Gauges item's value"
+      }
+    },
+    {
+      "name": "Evidence Analysis",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Examine physical evidence with observation, logic, and divination magic to answer questions relating to an investigation, such as whether an occupant slept poorly or which weapon was used to kill.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The evidence yields an answer to the investigation question."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Analyzes physical evidence"
+      }
+    },
+    {
+      "name": "Fast Hand",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the result becomes the Difficulty Number to notice the switched items",
+      "summary": "Sleight-of-hand plus minor illusion to move one or two small items (no larger than 6 inches) between locations within reach; the test result is the Difficulty for observers to notice.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Items switched; the result sets the Difficulty to notice."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Moves items unseen"
+      }
+    },
+    {
+      "name": "Feint",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the target's Social Defense",
+      "summary": "Deceive a target so they are Harried for your next Attack test against them. Each subsequent use against the same target requires an additional success.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target is Harried against your next Attack test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Harries for an attack"
+      }
+    },
+    {
+      "name": "First Impression",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "target's Social Defense",
+      "summary": "Make a strong first impression on someone newly met (vs Social Defense); on success improve their Attitude by one degree, more with extra successes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Improve the target's Attitude by one degree (+ per extra successes)."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Improves first impression"
+      }
+    },
+    {
+      "name": "Flirting",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the target's Social Defense",
+      "summary": "Combine flattery, intense attention, and clever wordplay to affect another person. Successes escalate the effect — one intrigues, two gain full attention, three leave a lasting impression, four or more leave the target completely smitten. The effect fades after one week.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target's interest grows with the number of successes."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Wins attention through flattery"
+      }
+    },
+    {
+      "name": "Forgery",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Sustained",
+      "versus": "the result becomes the Difficulty Number for attempts to detect the forgery",
+      "summary": "Create false papers, legal documents, and correspondence, taking two to five times as long as the original. The test result becomes the Difficulty Number to detect the forgery. Forging artwork also requires the appropriate Artist skill.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The forgery is convincing; its result sets the Difficulty to detect it."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Forges false documents"
+      }
+    },
+    {
+      "name": "Graceful Exit",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "the highest Social Defense among the target group",
+      "summary": "Escape from combat by distracting your opponents. On success you make good your escape, moving as far from the combat as possible; taking any action other than movement ends the effect.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "You escape and move away from the combat."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Escapes combat"
+      }
+    },
+    {
+      "name": "Great Leap",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Free",
+      "versus": "the result is the distance jumped (yards, split horizontally and vertically)",
+      "summary": "Jump great distances; the test result is the number of yards jumped, divided between horizontal and vertical distance but not exceeding your Movement Rate in either direction.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "You jump a number of yards equal to the result."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Leaps great distances"
+      }
+    },
+    {
+      "name": "Haggle",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "customer's or merchant's Social Defense",
+      "summary": "Buy or sell at a better price (vs Social Defense); each success moves the price 5% in the adept's favor. Up to rank tests per transaction; bargaining stops when either side fails.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Price shifts 5% in the adept's favor per success."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Bargains for better price"
+      }
+    },
+    {
+      "name": "Harvest True Element",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Willpower",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Harvest kernels of a True element through magic from an elemental pocket or lode. Compared to mining it produces fewer kernels, but requires no specialized tools and usually yields higher-quality kernels.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Kernels of the True element are harvested."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Harvests True elements"
+      }
+    },
+    {
+      "name": "Heartening Laugh",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the highest Social Defense among opponents within earshot",
+      "summary": "Direct a booming, mocking laugh at your opponents. Friendly characters who hear it add a +2 bonus per success to their Social Defense against effects based on fear.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Friendly listeners gain +2 per success to Social Defense vs fear.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Bolsters allies' defenses"
+      }
+    },
+    {
+      "name": "Horror Lore",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of Horrors, their servants, and the Scourge. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant Horror lore is recalled."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows Horror lore"
+      }
+    },
+    {
+      "name": "Hunting",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Find game, set snares, and kill or capture animals for food. A test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Game is found and secured."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Finds and kills game"
+      }
+    },
+    {
+      "name": "Hypnotize",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the target's Social Defense",
+      "summary": "Magically mesmerize another character within 10 yards, making them susceptible to persuasion. The target must not be distracted (a character in combat cannot be hypnotized).",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target is mesmerized and susceptible to persuasion."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Hypnotizes a target"
+      }
+    },
+    {
+      "name": "Impressive Display",
+      "tier": 1,
+      "strain": 0,
+      "action": "Simple",
+      "versus": "the target's Social Defense",
+      "summary": "Impress a character with a display of a skill of your choice. The display's test result is compared to the target's Social Defense; on success you add +2 per success to Interaction tests against that character for a number of hours equal to the rank. Combat talents used this way cannot deal damage.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "+2 per success to Interaction tests against the target.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Impresses with a display"
+      }
+    },
+    {
+      "name": "Intimidating Bellow",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the highest Social Defense among the target group",
+      "summary": "Issue a terrifying bellow at all enemies within range (rank x 10 yards). If successful, all affected enemies suffer a -1 penalty to their tests per success.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Affected enemies take -1 to their tests per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Intimidates all enemies"
+      }
+    },
+    {
+      "name": "Knowledge",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Be knowledgeable about a defined topic, broad or focused; the gamemaster judges how applicable the knowledge is to the question at hand.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Recalls topic knowledge"
+      }
+    },
+    {
+      "name": "Leadership",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the highest Social Defense among the target group",
+      "summary": "Lead a group of characters no larger than your rank x 20 members. After a short speech, on success characters with a Neutral Attitude or better toward you follow your lead.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Neutral-or-better characters follow your lead."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Leads a group"
+      }
+    },
+    {
+      "name": "Lip Reading",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the target's Social Defense",
+      "summary": "Eavesdrop on a conversation by watching the target character's lips. On success you can read what the speaker is saying for a number of minutes equal to the test result, as long as you can see them.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "You can read the speaker's words for minutes equal to the result."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads lips from afar"
+      }
+    },
+    {
+      "name": "Lock Pick",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster (mundane locks) or the lock's Mystic Defense (magical locks)",
+      "summary": "Conjure a set of pale blue telekinetic lock picks to open mundane or magical locks. Success opens the lock.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The lock is opened."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Opens locks"
+      }
+    },
+    {
+      "name": "Maneuver",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the target's Physical Defense",
+      "summary": "Use fancy footwork and mobility to gain a superior position against a single opponent. Each success grants +2 to your Physical Defense from that target's attacks and to the first close-combat Attack test you make against them that round.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "+2 to Physical Defense and your first close-combat Attack test per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Gains superior position"
+      }
+    },
+    {
+      "name": "Manuscript Illumination",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for decorating manuscripts with illumination. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Illuminates manuscripts"
+      }
+    },
+    {
+      "name": "Map Making",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "Difficulty Number 7 (original map) or 5 (copy)",
+      "summary": "Copy an existing map (Mapmaking (5)) or draw an original map of an area you have traveled (Mapmaking (7), assisted by Navigation tests). The Success Level determines the map's quality, from basic landmarks to maps usable with Shantaya's sextant. A Craftsman skill.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "A map of a quality determined by the Success Level is produced."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Makes maps"
+      }
+    },
+    {
+      "name": "Melee Weapon",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "target's Physical Defense",
+      "summary": "Close-combat attack with a hand-held weapon vs the target's Physical Defense; on a hit, make a Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Hit — follow with a close-combat Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Attacks in close combat"
+      }
+    },
+    {
+      "name": "Mimic Voice",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the speaker's Social Defense (to learn) / the result sets the Difficulty to detect the imitation",
+      "summary": "Mimic a voice you hear. On success you learn and can mimic it for a number of hours equal to the rank; when trying to fool others, the test result sets the Difficulty Number for detecting the imitation.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The voice is mimicked for hours equal to the rank."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Mimics a voice"
+      }
+    },
+    {
+      "name": "Missile Weapon",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "target's Physical Defense",
+      "summary": "Ranged attack with a bow, crossbow, or similar projectile weapon against the target's Physical Defense; on a hit, make a Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Hit — follow with a ranged Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Attacks at range"
+      }
+    },
+    {
+      "name": "Mount Attack",
+      "tier": 2,
+      "strain": 0,
+      "action": "Simple",
+      "versus": "the target of the mount's attack (replaces the mount's Attack test)",
+      "summary": "Increase the accuracy of your mount's attacks. Add the rank to your mount's Dexterity Step for its Attack test, replacing the mount's normal Attack test. You must be riding the mount to benefit.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The mount's attack hits."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Boosts mount's attack"
+      }
+    },
+    {
+      "name": "Navigation",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster (Navigation table)",
+      "summary": "Read maps, chart courses, and travel safely. After ten minutes determining your position (needing a view of the sky and navigator's charts), the Success Level sets your accuracy: one success places you within 10 miles, four or more within a mile.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Your position is determined within a distance based on the Success Level."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Charts a safe course"
+      }
+    },
+    {
+      "name": "Painting",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for painting pictures and decorative images. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Paints pictures"
+      }
+    },
+    {
+      "name": "Patient Maneuver",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Free",
+      "versus": "your own Physical Defense (the result replaces it)",
+      "summary": "Fight defensively for a turn to create an opening. Announce the knack before Initiative; the test result replaces your Physical Defense for the round, using your Standard Action.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Your Physical Defense is replaced by the result for the round."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Fights defensively"
+      }
+    },
+    {
+      "name": "Physician",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "the condition's Difficulty Number (e.g. Injury/Wounds 5, Broken Bones 8, Black Death 15)",
+      "summary": "Diagnose and treat injuries and diseases after a half-hour examination. On success the character learns the problem and how to treat it, and their Physician rank is added to the patient's next Recovery or resistance test. Treating a Wound removes its penalty to Recovery tests.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The patient's next Recovery or resistance test gains a bonus equal to the Physician rank."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Diagnoses and treats injuries"
+      }
+    },
+    {
+      "name": "Picking Pockets",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the result becomes the Difficulty Number for Perception tests made to notice the theft",
+      "summary": "Lift an item from another character's pocket or pouch; the test result is the Difficulty for Perception tests made to notice the theft.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Item removed; the result sets the Difficulty to notice the theft."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Lifts items unseen"
+      }
+    },
+    {
+      "name": "Pilot Boat",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster (used like Air Sailing)",
+      "summary": "Operate the fire-engine powered riverboats of the t'skrang, used the same way as Air Sailing. Crew success rates determine maneuvering: 25% hold position, 50% maneuver against the current in straight lines, 75% navigate freely.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Counts toward the ship's maneuvering based on the crew's success rate."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Crews a riverboat"
+      }
+    },
+    {
+      "name": "Poetry",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for composing poetry. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Composes poetry"
+      }
+    },
+    {
+      "name": "Poisoned Influence",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the negotiating target's Social Defense",
+      "summary": "Inflame disputes and influence the development of mutual antipathy. On success the target's Attitude towards their opponents worsens by one degree for a number of hours equal to the rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target's Attitude towards their opponents worsens one degree."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Worsens social relations"
+      }
+    },
+    {
+      "name": "Public Speaking",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the highest Social Defense among the audience",
+      "summary": "Address an audience effectively and hold its attention. The test result is compared to the audience's Social Defense.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The audience is held by the speech."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Holds an audience"
+      }
+    },
+    {
+      "name": "Read River",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Read the channels, currents, and hazards of a river to navigate it safely, much as Navigation does for land and sea routes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The river's course and hazards are understood."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Navigates rivers safely"
+      }
+    },
+    {
+      "name": "Read/Write Language",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Learn to read and write different languages. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language is learned and can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes languages"
+      }
+    },
+    {
+      "name": "Read/Write Language (Drake)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Drake language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Drake"
+      }
+    },
+    {
+      "name": "Read/Write Language (Dwarf)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Dwarf language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Dwarf"
+      }
+    },
+    {
+      "name": "Read/Write Language (Elf)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Elf language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Elf"
+      }
+    },
+    {
+      "name": "Read/Write Language (Human)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Human language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Human"
+      }
+    },
+    {
+      "name": "Read/Write Language (Obsidiman)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Obsidiman language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Obsidiman"
+      }
+    },
+    {
+      "name": "Read/Write Language (Ork)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Ork language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Ork"
+      }
+    },
+    {
+      "name": "Read/Write Language (T`skrang)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the T`skrang language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes T'skrang"
+      }
+    },
+    {
+      "name": "Read/Write Language (Theran)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Theran language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Theran"
+      }
+    },
+    {
+      "name": "Read/Write Language (Throalic)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Throalic language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Throalic"
+      }
+    },
+    {
+      "name": "Read/Write Language (Troll)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Troll language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Troll"
+      }
+    },
+    {
+      "name": "Read/Write Language (Windling)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Read and write the Windling language. Used as described for the Read/Write Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be read and written."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reads and writes Windling"
+      }
+    },
+    {
+      "name": "Research",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Find information through study and investigation, including library research and following up on rumors and legends.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The sought information is found."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Researches a topic"
+      }
+    },
+    {
+      "name": "Resist Pain",
+      "tier": 3,
+      "strain": 0,
+      "action": "NA",
+      "versus": "situational (passive reduction of Wound penalties)",
+      "summary": "Be more resistant to the effects of injury and other sources of pain. Wound penalties you suffer are reduced by the rank (e.g. rank 1 reduces the -2 penalty from two Wounds to -1), and the rank adds to any Action tests made to ignore intense pain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "skill",
+          "summary": "Wound penalties are reduced by the rank."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Reduces wound penalties"
+      }
+    },
+    {
+      "name": "Resist Taunt",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Willpower",
+      "action": "Free",
+      "versus": "the attack's test result",
+      "summary": "Steel yourself against attacks directed against your Social Defense. On success the effect is negated; effective against Persuasion, Taunt, Intimidation, and similar talents.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The social attack is negated."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Steels against social attacks"
+      }
+    },
+    {
+      "name": "Riding",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Sustained",
+      "versus": "the mount's Social Defense",
+      "summary": "Ride and control a mount. Friendly mounts can be ridden freely, while Neutral or untrained mounts require a successful test against their Social Defense to ride them at all, and a Trick Riding test to take them into combat.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The mount is ridden and controlled."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Rides and controls a mount"
+      }
+    },
+    {
+      "name": "Riposte",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Free",
+      "versus": "the opponent's Attack test result",
+      "summary": "Use your melee weapon to block an opponent's melee attack, possibly turning it back on them. On success you parry the attack and avoid damage; extra successes let you counterattack.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The attack is blocked; extra successes counterattack."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Blocks and counter-attacks"
+      }
+    },
+    {
+      "name": "Robe Embroidery",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for embroidering robes and vestments. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Embroiders robes"
+      }
+    },
+    {
+      "name": "Rune Carving",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for carving runes and ritual symbols. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Carves runes"
+      }
+    },
+    {
+      "name": "Sail Embroidery",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for embroidering sails and ship canvas. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Embroiders sails"
+      }
+    },
+    {
+      "name": "Sailing",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster (used like Air Sailing)",
+      "summary": "Sail watercraft propelled by wind or muscle power (not fire-engine boats or airships), used the same way as Air Sailing. Crew success rates determine maneuvering: 25% keep the boat from drifting, 50% sail with the wind, 75% sail against the wind and maneuver.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Counts toward the boat's maneuvering based on the crew's success rate."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Sails watercraft"
+      }
+    },
+    {
+      "name": "Sculpting",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for carving or modeling sculptures. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Sculpts figures"
+      }
+    },
+    {
+      "name": "Second Attack",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "opponent's Physical Defense",
+      "summary": "Make an additional close-combat attack with the same weapon used in the first attack that round (vs Physical Defense); on a hit, roll Damage as normal.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Extra close-combat attack lands — follow with a Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Adds a second attack"
+      }
+    },
+    {
+      "name": "Second Shot",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the target's Physical Defense",
+      "summary": "Make an additional ranged attack in the same round, using the same weapon for missile attacks or the same type of weapon for thrown attacks.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The additional ranged attack hits — make a Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Adds a second shot"
+      }
+    },
+    {
+      "name": "Second Weapon",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the target's Physical Defense",
+      "summary": "Wield a one-handed melee weapon in your off-hand to attack the same round as your primary weapon. On success make a Damage test for the weapon as normal.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The off-hand attack hits — make a Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Fights with off-hand weapon"
+      }
+    },
+    {
+      "name": "Seduction",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "the target's Social Defense",
+      "summary": "Convince a character of your preferred sex to become romantically involved. A seduction has four stages (First Impression, Intriguing Conversation, Move to Intimacy, Suggestion), each requiring at least 10 minutes of interaction before a test. Extra successes give +1 to tests made during the next stage.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The seduction advances to the next stage."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Pursues a romance"
+      }
+    },
+    {
+      "name": "Setup",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the target's Social Defense",
+      "summary": "Maneuver into position to aid an ally against an opponent. Each success gives the ally +2 to their next close-combat Attack test against the target and +2 to their Physical Defense against that target until the end of the round.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The ally gains +2 Attack and +2 Physical Defense against the target per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Aids an ally's attack"
+      }
+    },
+    {
+      "name": "Shield Bash",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Simple",
+      "versus": "situational (used for the Damage test after a successful close-combat attack)",
+      "summary": "Use your shield as a melee weapon after a successful close-combat attack. Use Shield Bash for the Damage test (Physical Armor reduces the result), and the target makes a Knockdown test against the damage dealt.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The shield-bash damage is dealt and the target makes a Knockdown test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Bashes with shield"
+      }
+    },
+    {
+      "name": "Shield Drive",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Simple",
+      "versus": "the target's Physical Defense",
+      "summary": "Quickly bash the target with your shield. On success the target makes a Knockdown test against the Shield Drive result. You lose any Defense bonuses from your shield until your next action.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target makes a Knockdown test against the result."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knocks target down"
+      }
+    },
+    {
+      "name": "Skinning",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Remove hides and pelts cleanly from slain creatures so they can be tanned and used. A test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The hide or pelt is removed undamaged."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Removes hides cleanly"
+      }
+    },
+    {
+      "name": "Skinning",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Remove hides and pelts cleanly from slain creatures so they can be tanned and used. A test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The hide or pelt is removed undamaged."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Removes hides cleanly"
+      }
+    },
+    {
+      "name": "Slough Blame",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Standard",
+      "versus": "higher of the accuser's or scapegoat's Social Defense",
+      "summary": "Concoct a plausible explanation and pass blame from one character to another (vs the higher of the accuser's or scapegoat's Social Defense, +1 per additional character) for rank minutes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Blame passes to the scapegoat for rank minutes."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Passes blame to another"
+      }
+    },
+    {
+      "name": "Speak Language",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Learn to communicate in different languages. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language is learned and can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks different languages"
+      }
+    },
+    {
+      "name": "Speak Language (Drake)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Drake language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Drake"
+      }
+    },
+    {
+      "name": "Speak Language (Dwarf)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Dwarf language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Dwarf"
+      }
+    },
+    {
+      "name": "Speak Language (Elf)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Elf language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Elf"
+      }
+    },
+    {
+      "name": "Speak Language (Human)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Human language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Human"
+      }
+    },
+    {
+      "name": "Speak Language (Obsidiman)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Obsidiman language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Obsidiman"
+      }
+    },
+    {
+      "name": "Speak Language (Ork)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Ork language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Ork"
+      }
+    },
+    {
+      "name": "Speak Language (T`skrang)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the T`skrang language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks T'skrang"
+      }
+    },
+    {
+      "name": "Speak Language (Theran)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Theran language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Theran"
+      }
+    },
+    {
+      "name": "Speak Language (Throalic)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Throalic language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Throalic"
+      }
+    },
+    {
+      "name": "Speak Language (Troll)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Troll language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Troll"
+      }
+    },
+    {
+      "name": "Speak Language (Windling)",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the Difficulty Number for the language being learned",
+      "summary": "Speak the Windling language. Used as described for the Speak Language talent, but does not cause Strain.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The language can be spoken."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Speaks Windling"
+      }
+    },
+    {
+      "name": "Stealthy Stride",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "observers' Perception/Awareness test results (opposed)",
+      "summary": "Move quietly and unobtrusively; opposed by observers' Perception/Awareness to avoid being detected.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Move undetected past observers."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Moves quietly unnoticed"
+      }
+    },
+    {
+      "name": "Sure Mount",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Free",
+      "versus": "in place of any Knockdown test required of you or your mount while mounted",
+      "summary": "Avoid being dismounted or your mount being knocked down, using this test in place of any Knockdown test required while mounted.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "You and your mount stay upright."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Stays mounted"
+      }
+    },
+    {
+      "name": "Surprise Strike",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Free",
+      "versus": "situational (used in place of Strength for the Damage test)",
+      "summary": "Take advantage of an unaware or distracted opponent to inflict a telling blow against targets who are Surprised, Blindsided, or Knocked Down, substituting this Step for your Strength Step in the Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Damage against the unaware target uses the Surprise Strike Step."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Strikes unaware foes"
+      }
+    },
+    {
+      "name": "Swift Kick",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the target's Physical Defense",
+      "summary": "If you have free use of a leg and a higher Initiative, kick an opponent as an additional close-combat attack. On success make an unarmed Damage test as normal.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The kick hits — make an unarmed Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Kicks as extra attack"
+      }
+    },
+    {
+      "name": "Swimming",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Standard",
+      "versus": "a Difficulty Number based on the water condition (e.g. 4 calm water, 15 open ocean)",
+      "summary": "Swim. A test is only made when the water condition changes or at the gamemaster's discretion; Movement is halved while swimming (normal for t'skrang, half for windlings; obsidimen cannot swim). A Rule of One starts the character drowning.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The character keeps swimming and makes progress."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Swims through water"
+      }
+    },
+    {
+      "name": "Swing Attack",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the target's Physical Defense",
+      "summary": "Swing down at an opponent from an elevated position using ropes, rigging, or vines. If you swing past, the attack is treated as a Swooping Attack with no penalty; if you land next to the target, it is treated as a normal close-combat attack.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The swing attack hits (Swooping Attack if you swung past)."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Swinging down attack"
+      }
+    },
+    {
+      "name": "Swinging Move",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "Difficulty Number 8 (up to your Movement Rate; higher for up to double)",
+      "summary": "Travel distances by swinging from ropes or vines, such as airship rigging or a chandelier. Swinging up to your Movement Rate is a Swinging Move (8) test; covering up to double your Movement Rate is more difficult.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "You travel the distance by swinging."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Swings across distances"
+      }
+    },
+    {
+      "name": "Tactics",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "the opposing commander's Tactics test result",
+      "summary": "Direct combat to the advantage of your soldiers (who must be at least Friendly to you). The plan is set offensive or defensive, then a Tactics test determines the benefit.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Your troops gain an advantage based on the Success Level."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Directs combat tactics"
+      }
+    },
+    {
+      "name": "Tailor",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for cutting and sewing clothing. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Sews clothing"
+      }
+    },
+    {
+      "name": "Tanning",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Treat and cure animal hides to produce leather and rawhide. A craft test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The hide is tanned and made usable."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Cures hides into leather"
+      }
+    },
+    {
+      "name": "Tattooist",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Apply tattoos to the skin. A craft test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The tattoo is applied cleanly."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Applies tattoos"
+      }
+    },
+    {
+      "name": "Taunt",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Simple",
+      "versus": "the target's Social Defense",
+      "summary": "Distract a character who can understand you by insulting and humiliating them. On success they incur a -1 test penalty and -1 to Social Defense per success for a number of rounds equal to the rank.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "-1 per success to the target's tests and Social Defense.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Distracts with insults"
+      }
+    },
+    {
+      "name": "Throwing Weapon",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "target's Physical Defense",
+      "summary": "Ranged attack with a thrown weapon against the target's Physical Defense; on a hit, make a Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "Hit — follow with a Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Throws weapon attack"
+      }
+    },
+    {
+      "name": "Tracking",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Follow the trails left by people or animals across great distances, using a combination of senses and divination magic.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The trail is followed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Follows tracks afar"
+      }
+    },
+    {
+      "name": "Trick Riding",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Perform acrobatics while riding. Used in place of Avoid Blow to dodge close- or ranged-combat attacks directed at you or your mount, and to goad your mount over fences, chasms, or other obstacles.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The mounted acrobatic maneuver succeeds."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Rides acrobatically"
+      }
+    },
+    {
+      "name": "Unarmed Combat",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the target's Physical Defense",
+      "summary": "Attack in close combat with your hands, feet, or another body part. On success the attack hits; unless noted otherwise, damage uses your Strength Step only.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The unarmed attack hits — make a Damage test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Attacks with body"
+      }
+    },
+    {
+      "name": "Vicious Wound",
+      "tier": 3,
+      "strain": 0,
+      "action": "Simple",
+      "versus": "the target's Mystic Defense",
+      "summary": "Find and exploit weaknesses in an opponent's anatomy. Each success reduces the target's Wound Threshold against your attacks by -2 for the rest of the round; used as a skill you may inflict at most one additional Wound, regardless of successes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The target's Wound Threshold is reduced by -2 per success for the round.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Exploits anatomy weaknesses"
+      }
+    },
+    {
+      "name": "Weapon Breaker",
+      "tier": 3,
+      "strain": 0,
+      "action": "Free",
+      "versus": "the higher of the weapon's Mystic Defense or its Damage Step + 5",
+      "summary": "Attack an opponent's manufactured weapon with the intent of shattering it. On a successful Damage test, each success reduces the weapon's Damage Step by -2; three successes, or reducing the step to 0, shatters non-magical weapons.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The weapon's Damage Step is reduced by -2 per success.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Shatters enemy weapon"
+      }
+    },
+    {
+      "name": "Wheeling Attack",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Standard",
+      "versus": "the target's Physical Defense",
+      "summary": "Make a more effective mounted Charging Attack. Instead of requiring your mount to move its full Movement Rate, it must move at double its Movement Rate during the round (using the Splitting Movement combat option).",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The wheeling charging attack hits."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Strengthens mounted charge"
+      }
+    },
+    {
+      "name": "Wheeling Defense",
+      "tier": 2,
+      "strain": 0,
+      "attribute": "Dexterity",
+      "action": "Simple",
+      "versus": "the Physical Defense of any opponents within your mount's Movement Rate",
+      "summary": "Urge your mount into a whirling circle to present a constantly moving target. On success you and your mount increase your Physical Defense by +2 per success.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "+2 per success to your and your mount's Physical Defense.",
+          "perSuccess": true
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Improves mounted defense"
+      }
+    },
+    {
+      "name": "Wilderness Survival",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Sustained",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Survive in the wild — locate or build shelter, start a fire, find water, and forage for edible vegetation.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The survival need is met."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Survives in the wild"
+      }
+    },
+    {
+      "name": "Witty Repartee",
+      "tier": 3,
+      "strain": 0,
+      "action": "Free",
+      "versus": "the opponent's Action test result",
+      "summary": "Use charm, wit, and force of personality to deflect attacks against your Social Defense. On success the attack is deflected with no ill effects; extra successes let you turn the effect back on the attacker (once per round, and not while blindsided or surprised).",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The social attack is deflected; extra successes can redirect it."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Deflects with wit"
+      }
+    },
+    {
+      "name": "Wood Carving",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Charisma",
+      "action": "Sustained",
+      "versus": "Difficulty Number 5 (most Artisan skill tests)",
+      "summary": "Artisan skill for carving wood into implements and art. The Difficulty Number for most Artisan tests is 5; a successful use during a greeting ritual proves the character free of Horror taint.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The craft is completed successfully."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Carves wood"
+      }
+    },
+    {
+      "name": "Wound Balance",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Strength",
+      "action": "Free",
+      "versus": "in place of Strength on any Knockdown test (no opposing test)",
+      "summary": "Substitute the Wound Balance step for the Strength step on any Knockdown test while supporting your own weight; may be used while flying.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "skill",
+          "summary": "Use Wound Balance step instead of Strength step for Knockdown tests."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Balances against knockdown"
+      }
+    }
+  ]
 }

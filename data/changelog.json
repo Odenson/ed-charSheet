@@ -2,7 +2,12 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      { "type": "added", "text": "Legend tracking on the Overview: the Legend panel shows your total Legend earned, your Legendary Status (which status band you've reached, with the Renown and Reputation it grants), and how much Legend you have available to spend — your total earned minus everything the sheet can account for as spent. An info button opens a full Legend-spent breakdown that prices each advancement (attributes, talents — including the surcharge on a second Discipline — skills, and knacks) against the rulebook tables and shows how much it can't account for yet." },
+      { "type": "added", "text": "Knacks now live with the ability that governs them: on the Disciplines tab they appear as an indented row beneath their governing talent, and on the Skills tab beneath their governing skill — no more loose list at the bottom. Each knack has an info button that opens its details: the governing ability and required rank, action, strain, and a plain-language description." },
+      { "type": "added", "text": "Skills now show a one-line summary of what they do, matching the talents list." },
+      { "type": "changed", "text": "Attribute steps on the Overview now read like the rest of the sheet — e.g. \"10 · 2D8\" instead of \"s8 2D6\"." }
+    ]
   },
   "releases": [
     {

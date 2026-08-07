@@ -76,6 +76,31 @@ export class EdDisciplines extends LitElement {
     .cbadge { font-size: 0.62rem; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
     .section-gap { margin-top: 14px; }
 
+    /* Skills tab: reuses the .trow grid so the columns line up with the talent
+       table. Knacks derive from a skill or talent and render as an indented child
+       row beneath the row that governs them. */
+    .knrow { display: flex; align-items: center; padding: 3px 0 3px 24px; font-size: 0.76rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .knrow:last-child { border-bottom: none; }
+    .knrow .arr { color: var(--accent); margin-right: 6px; }
+    .kninfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font: 500 italic 0.5rem/1 system-ui, sans-serif; box-sizing: border-box;
+      background: transparent; border: 1.5px solid var(--muted); color: var(--muted);
+      margin-right: 7px; transition: border-color 0.12s ease, color 0.12s ease; }
+    .kninfo:hover { border-color: var(--accent); color: var(--fg); }
+    .kninfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+    .knlbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ktag { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 7px; }
+    /* Neutral info control per skill (skills have no required/optional split). Opens
+       a detail modal — mirrors the talent info button. */
+    .sinfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font: 500 italic 0.5rem/1 system-ui, sans-serif; box-sizing: border-box;
+      background: transparent; border: 1.5px solid var(--muted); color: var(--muted);
+      transition: border-color 0.12s ease, color 0.12s ease; }
+    .sinfo:hover { border-color: var(--accent); color: var(--fg); }
+    .sinfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+
     /* Detail modal (Escape / backdrop / ✕ close), theme-aware. */
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; max-width: 30rem; width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; }
@@ -185,10 +210,163 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // One skill row, using the same .trow grid as talents so the columns line up.
+  // Skills carry name/rank/tier today; Effect/Step/Action stay empty (— for step)
+  // until that data is added, and the roll enables once a skill has a step. Tier
+  // lives in the detail modal, matching how talents show their tier.
+  _skillRow(s) {
+    return html`
+      <div class="trow">
+        <span class="tname">
+          <button
+            class="sinfo"
+            aria-label="${s.name} — view details"
+            title="${s.name} — click for details"
+            @click=${() => (this._modal = { type: 'skill', skill: s })}
+          >i</button>
+          <span class="lbl">${s.name}</span>
+        </span>
+        <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
+        <span class="num">${s.rank}</span>
+        <span class="sd">${s.step != null ? `${s.step} · ${s.dice}` : '—'}</span>
+        <span class="action sd">${s.action ?? ''}</span>
+        <button
+          class="roll"
+          ?disabled=${s.step == null}
+          title=${s.step == null ? 'No step to roll' : `Roll ${s.name}`}
+          aria-label="Roll ${s.name}"
+          @click=${() =>
+            this.dispatchEvent(
+              new CustomEvent('ed-roll', { detail: { label: s.name, step: s.step, karma: null }, bubbles: true, composed: true }),
+            )}
+        >⚄</button>
+      </div>
+    `;
+  }
+
+  // Skills tab: the character's skills in the same table shape as the talent list,
+  // with any knacks nested under the skill they derive from. Knacks arrive already
+  // resolved from the store ({ name, parent:{type,name} }) — only knacks whose parent
+  // is a skill belong here, nested under that skill's row; a knack whose parent is a
+  // talent renders on the discipline talent tables instead. No stray knacks at the end.
+  _skillsView(skills, knacks) {
+    const byParent = new Map();
+    for (const k of knacks ?? []) {
+      if (k.parent?.type !== 'skill') continue;
+      const parent = k.parent?.name ?? null;
+      if (!byParent.has(parent)) byParent.set(parent, []);
+      byParent.get(parent).push(k);
+    }
+    return html`
+      <div class="card">
+        <div class="trow h">
+          <span class="thpad">Skill</span>
+          <span class="effcol">Effect</span>
+          <span class="num">Rank</span>
+          <span>Step</span>
+          <span class="action">Action</span>
+          <span></span>
+        </div>
+        ${skills.map(
+          (s) => html`
+            ${this._skillRow(s)}
+            ${(byParent.get(s.name) ?? []).map((k) => this._knackRow(k))}
+          `,
+        )}
+      </div>
+    `;
+  }
+
+  // One indented child row for a knack nested under the skill/talent it derives from.
+  // Carries the same info control as skills/talents, opening a knack detail modal.
+  _knackRow(k) {
+    return html`
+      <div class="knrow">
+        <span class="arr">↳</span>
+        <button
+          class="kninfo"
+          aria-label="${k.name} — view details"
+          title="${k.name} — click for details"
+          @click=${() => (this._modal = { type: 'knack', knack: k })}
+        >i</button>
+        <span class="knlbl">${k.name}</span>
+        <span class="ktag">knack</span>
+      </div>
+    `;
+  }
+
+  // Knack detail modal. Shows what governs the knack (skill/talent + required rank),
+  // its action/strain, and the paraphrased description. Placeholder when the knack has
+  // no catalog detail yet.
+  _knackModal(k) {
+    const dt = k.detail ?? {};
+    const chips = [
+      k.parent ? { v: `${k.parent.type === 'talent' ? 'Talent' : 'Skill'}: ${k.parent.name}` } : null,
+      k.requiredRank ? { v: `Req. rank ${k.requiredRank}` } : null,
+      k.action ? { v: `${k.action} action` } : null,
+      dt.strain ? { v: `Strain ${dt.strain}` } : null,
+    ].filter(Boolean);
+    return html`
+      <div class="overlay" @click=${() => (this._modal = null)}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label=${k.name} @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle"><span class="kninfo" aria-hidden="true">i</span>${k.name}</span>
+            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+          </div>
+          <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
+          ${dt.summary
+            ? html`<div class="mtext">${dt.summary}</div>`
+            : html`<div class="mtext" style="color: var(--muted)">Knack details not yet recorded.</div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  // Skill detail modal. Mirrors the talent modal: chips summarise the mechanics
+  // (rank/tier/action/attribute/strain), the body shows the paraphrased summary, and
+  // a note carries the test's target. Falls back to a placeholder when a skill has no
+  // catalog detail (unknown/unenriched skill).
+  _skillModal(s) {
+    const dt = s.detail ?? {};
+    const chips = [
+      { v: `Rank ${s.rank}` },
+      s.tier ? { v: s.tier } : null,
+      s.action ? { v: `${s.action} action` } : null,
+      s.attribute ? { v: s.attribute } : null,
+      dt.strain ? { v: `Strain ${dt.strain}` } : null,
+    ].filter(Boolean);
+    return html`
+      <div class="overlay" @click=${() => (this._modal = null)}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label=${s.name} @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${s.name}</span>
+            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+          </div>
+          <div class="mchips">${chips.map((c) => html`<span class="chip">${c.v}</span>`)}</div>
+          ${dt.summary
+            ? html`<div class="mtext">${dt.summary}</div>`
+            : html`<div class="mtext" style="color: var(--muted)">Skill description not yet recorded.</div>`}
+          ${dt.versus ? html`<div class="mnote">Tested against ${dt.versus}.</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
   render() {
     const list = this.model?.disciplines ?? [];
     if (!list.length) return html`<p>No disciplines.</p>`;
+    const skills = this.model?.skills ?? [];
+    const showSkills = skills.length > 0 && this._sel === list.length;
     const d = list[Math.min(this._sel, list.length - 1)];
+    // Knacks governed by a talent render beneath that talent's row (skill-governed
+    // knacks already nest under their skill on the Skills tab).
+    const knacksByTalent = new Map();
+    for (const k of this.model?.knacks ?? []) {
+      if (k.parent?.type !== 'talent') continue;
+      const parent = k.parent?.name ?? null;
+      if (!knacksByTalent.has(parent)) knacksByTalent.set(parent, []);
+      knacksByTalent.get(parent).push(k);
+    }
     const meta = [
       d.durability != null ? { k: 'Durability', v: d.durability, cls: 'dur' } : null,
       d.halfMagic ? { k: 'Half-magic', v: d.halfMagic, cls: 'half' } : null,
@@ -199,44 +377,62 @@ export class EdDisciplines extends LitElement {
       <div class="top">
         <div class="seg">
           ${list.map(
-            (x, i) => html`<button aria-pressed=${i === this._sel} @click=${() => (this._sel = i)}>${x.name}</button>`,
+            (x, i) => html`<button aria-pressed=${!showSkills && i === this._sel} @click=${() => (this._sel = i)}>${x.name}</button>`,
           )}
+          ${skills.length
+            ? html`<button aria-pressed=${showSkills} @click=${() => (this._sel = list.length)}>Skills</button>`
+            : ''}
         </div>
-        <span class="circle">Circle ${d.circle}</span>
+        <span class="circle">${showSkills ? `${skills.length} skill${skills.length === 1 ? '' : 's'}` : `Circle ${d.circle}`}</span>
       </div>
 
-      <div class="meta">
-        ${meta.map((m) => html`<div class="mcell ${m.cls}"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`)}
-      </div>
+      ${showSkills
+        ? this._skillsView(skills, this.model?.knacks ?? [])
+        : html`
+            <div class="meta">
+              ${meta.map((m) => html`<div class="mcell ${m.cls}"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`)}
+            </div>
 
-      <div class="legend">
-        <span class="li"><span class="tinfo req" aria-hidden="true">i</span>required</span>
-        <span class="li"><span class="tinfo opt" aria-hidden="true">i</span>optional</span>
-        <span class="li">click a circle for details</span>
-      </div>
-      <div class="card">
-        <div class="trow h">
-          <span class="thpad">Talent</span>
-          <span class="effcol">Effect</span>
-          <span class="num">Rank</span>
-          <span>Step</span>
-          <span class="action">Action</span>
-          <span></span>
-        </div>
-        ${d.talents.map((t) => this._talentRow(t))}
-      </div>
-
-      ${d.abilities?.length
-        ? html`
-            <h4 class="section-gap">Discipline abilities by circle</h4>
+            <div class="legend">
+              <span class="li"><span class="tinfo req" aria-hidden="true">i</span>required</span>
+              <span class="li"><span class="tinfo opt" aria-hidden="true">i</span>optional</span>
+              <span class="li">click a circle for details</span>
+            </div>
             <div class="card">
-              ${d.abilities.map(
-                (a) => html`<div class="abil"><span class="cbadge">C${a.circle}</span><span>${a.summary}</span></div>`,
+              <div class="trow h">
+                <span class="thpad">Talent</span>
+                <span class="effcol">Effect</span>
+                <span class="num">Rank</span>
+                <span>Step</span>
+                <span class="action">Action</span>
+                <span></span>
+              </div>
+              ${d.talents.map(
+                (t) => html`
+                  ${this._talentRow(t)}
+                  ${(knacksByTalent.get(t.name) ?? []).map((k) => this._knackRow(k))}
+                `,
               )}
             </div>
-          `
+
+            ${d.abilities?.length
+              ? html`
+                  <h4 class="section-gap">Discipline abilities by circle</h4>
+                  <div class="card">
+                    ${d.abilities.map(
+                      (a) => html`<div class="abil"><span class="cbadge">C${a.circle}</span><span>${a.summary}</span></div>`,
+                    )}
+                  </div>
+                `
+              : ''}
+          `}
+      ${this._modal
+        ? this._modal.type === 'skill'
+          ? this._skillModal(this._modal.skill)
+          : this._modal.type === 'knack'
+            ? this._knackModal(this._modal.knack)
+            : this._talentModal(this._modal)
         : ''}
-      ${this._modal ? this._talentModal(this._modal) : ''}
     `;
   }
 }
