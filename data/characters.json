@@ -265,7 +265,7 @@
         },
         {
           "name": "Wilderness Survival",
-          "rank": 1,
+          "rank": 2,
           "tier": "Novice"
         },
         {
@@ -276,13 +276,13 @@
       ],
       "knacks": [
         {
-          "name": "Hunting (Tracking)"
+          "name": "Anticipate Spell"
         },
         {
-          "name": "Skinning (Tracking)"
+          "name": "Skinning"
         },
         {
-          "name": "Tanning (Tracking)"
+          "name": "Hunting"
         }
       ],
       "resources": {
@@ -294,8 +294,8 @@
           "legend": 861
         },
         "legend": {
-          "totalSpent": 44661,
-          "totalEarnt": 45315,
+          "totalSpent": 45261,
+          "totalEarnt": 45915,
           "available": 654
         },
         "health": {
