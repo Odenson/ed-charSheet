@@ -64,7 +64,7 @@ the worker's secret store.
 | `SAVE_KEY` | **secret** | 64-char hex from `openssl rand -hex 32` | `wrangler secret put` |
 | `GITHUB_OWNER` | var | `odenson` | `wrangler.toml [vars]` |
 | `GITHUB_REPO` | var | `ed-charSheet` | `wrangler.toml [vars]` |
-| `GITHUB_PATH` | var | `data/character.json` | `wrangler.toml [vars]` |
+| `GITHUB_STORE` | var | `data/characters.json` — grouped store (`ed-characters/1`); saves upsert `characters[id]` here (the only save target since v1.6.0) | `wrangler.toml [vars]` |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
 Only the two **secrets** are sensitive; the four vars are plain config and live
@@ -122,7 +122,7 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 - [x] **2.1 [CLAUDE] Scaffold `tools/worker/`.** Claude adds `worker.js` (design
   §4.2 handler, `SAVE_KEY` **required** per §2.1), `wrangler.toml` (§5.1 below),
   `package.json` (wrangler dev-dep), and `worker.test.js`. *No secrets, no deploy.*
-  ✅ Done — `worker.test.js` covers Phase 4 (§4.1) too; `node --test` green (15/15).
+  ✅ Done — `worker.test.js` covers Phase 4 (step 4.1) too; `node --test` green (15/15).
 
 - [x] **2.0 [YOU] Cloudflare account.** If you don't have one, sign up free at
   cloudflare.com. No credit card needed for Workers free tier.
@@ -146,7 +146,7 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   npx wrangler secret put GITHUB_TOKEN     # paste the PAT from 1.1
   npx wrangler secret put SAVE_KEY         # paste the hex from 1.2
   ```
-  (The four `GITHUB_OWNER/REPO/PATH/BRANCH` vars are already in `wrangler.toml`;
+  (The four `GITHUB_OWNER/REPO/STORE/BRANCH` vars are already in `wrangler.toml`;
   no action needed.)
 
 - [x] **2.4 [YOU] Deploy.**
@@ -157,9 +157,8 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   subdomain (one-time use `edsavechar`). Deploy prints the endpoint, e.g.
   `https://ed-charsheet-save.edsavechar.workers.dev`.
 
-- [x] **2.5 [YOU] Smoke-test.** Steps 2.2–2.4 leave you in `tools/worker`; the
-  `@data/character.json` path in (b) is **relative to the repo root**, so `cd`
-  back first (or point curl at `@../../data/character.json` instead).
+- [x] **2.5 [YOU] Smoke-test.** The id is required (v1.6.0+); the save targets
+  `data/characters.json` in the repo root.
   ```bash
   cd "$(git rev-parse --show-toplevel)"   # back to repo root — where data/ lives
   WORKER="https://ed-charsheet-save.edsavechar.workers.dev"
@@ -169,10 +168,13 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
     -d '{"schema":"ed-character/1"}' -w '\n%{http_code}\n'
 
-  # (b) Correct key, real file → expect HTTP 200 + a commit URL (writes a real
-  #     commit to character-data; harmless — it's the current character)
+  # (b) Correct key + id → upserts characters[id] in data/characters.json
+  #     (grouped store); expect HTTP 200 + a commit URL. NOTE: the payload must
+  #     be a JSON body (not file bytes), so use -d with a quoted JSON here.
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
-    -H "x-save-key: $KEY" --data-binary @data/character.json -w '\n%{http_code}\n'
+    -H "x-save-key: $KEY" \
+    -d '{"id":"chakka","character":{"schema":"ed-character/1","meta":{"id":"chakka"}}}' \
+    -w '\n%{http_code}\n'
   ```
   Pass = (a) `401` unauthorized, (b) `200` with `commit.url`. If (b) fails, check
   the worker logs: `npx wrangler tail` while re-running the curl.
@@ -187,9 +189,11 @@ always-on autosave overlay, plus a portable **Export** download. The old "third
 save target (web store + file + server)" plan and the File System Access save are
 retired. See ARCHITECTURE §7 and design §4.5.
 
-- [x] **3.1** `store-server.js` — `saveServer(character, { endpoint, saveKey })`
+- [x] **3.1** `store-server.js` — `saveServer(character, { endpoint, saveKey, id })`
   POST to the endpoint (design §4.5), typed `SaveError` (incl. `no_key` /
-  `offline`). `DEFAULT_ENDPOINT` = the deployed worker. Tested (`store-server.test.js`).
+  `offline`). The body always carries `id`, so the worker upserts the grouped
+  store (id required since v1.6.0). `DEFAULT_ENDPOINT` = the deployed worker.
+  Tested (`store-server.test.js`).
 - [x] **3.2** **Save → GitHub is the one primary Save** (edit-mode icon, all
   browsers). `SAVE_KEY` via a lean **key-prompt on save** (`ed-save-key.js`), held
   **in memory only** (never `localStorage`); endpoint hardcoded (a Settings panel
@@ -206,11 +210,15 @@ retired. See ARCHITECTURE §7 and design §4.5.
 ### Phase 4 — Tests (CLAUDE)
 
 - [x] **4.1** `node --test` on the worker (mocked GitHub `fetch`): missing/wrong
-  key → 401; bad JSON / wrong schema / oversize → 400; happy path PUTs with the
-  GET-returned `sha`; `409` → bounded retry → success.
-  ✅ Done in 2.1 — `worker.test.js` ships with the scaffold (15 tests, green). Also
+  key → 401; bad JSON / wrong schema / oversize → 400; grouped-store upsert PUTs
+  with the GET-returned `sha`; `409` → bounded retry → success.
+  ✅ Done in 2.1 — `worker.test.js` ships with the scaffold (green). Also
   covers unconfigured-key → 401, branch-creation, and non-409 → 502 mapping. The
   missing/wrong-key cases exercise the constant-time `safeEqual` path (§5.2b).
+  Extended for multi-character: an `id` upserts `characters[id]` and preserves
+  the other entries, invalid ids → `400 invalid_id`, and a `404` store is
+  created fresh (docs/PLAN-MULTI-CHARACTER.md Phase E). Since v1.6.0 the id is
+  **required** — the legacy no-id path and its tests were removed.
 
 ### Phase 5 — Docs & status flip (CLAUDE)
 
@@ -259,10 +267,10 @@ enabled = true
 head_sampling_rate = 1
 
 [vars]
-GITHUB_OWNER  = "odenson"
-GITHUB_REPO   = "ed-charSheet"
-GITHUB_PATH   = "data/character.json"
-GITHUB_BRANCH = "character-data"
+GITHUB_OWNER   = "odenson"
+GITHUB_REPO    = "ed-charSheet"
+GITHUB_STORE   = "data/characters.json"
+GITHUB_BRANCH  = "character-data"
 ```
 
 Secrets (`GITHUB_TOKEN`, `SAVE_KEY`) are **not** in this file — they're set with
@@ -302,9 +310,12 @@ why a save failed).
 
 ### 5.3 App save target
 
-`saveServer(character, { endpoint, saveKey })` per design §4.5 — POSTs
-`{ character }` with the `x-save-key` header, returns `{ sha, url }` or throws a
-typed `SaveError`.
+`saveServer(character, { endpoint, saveKey, id })` per design §4.5 — POSTs
+`{ character, id }` (the id is **required** since v1.6.0 — the grouped store is
+the only save target) with the `x-save-key` header, returns `{ sha, url }` or
+throws a typed `SaveError`. The id keeps the app's per-character edits
+(`ed-character-edits:${id}` overlay) and branch writes aligned on the same
+character.
 
 ---
 
@@ -315,8 +326,8 @@ typed `SaveError`.
 - **Recover from a bad save:** save again with correct data, or revert the branch
   commit on GitHub. The `main`/`dev` app bundles are never touched by a save.
 - **Disable the feature:** turn the Settings toggle off (app), or
-  `npx wrangler delete` the worker (endpoint). Reads keep working via the bundle
-  fallback.
+  `npx wrangler delete` the worker (endpoint). Reads keep working — the character
+  (and portrait) live on the `character-data` branch regardless of the worker.
 - **Rotate the PAT:** before expiry, generate a new fine-grained PAT (1.1) and
   `npx wrangler secret put GITHUB_TOKEN` again. Rotate the SAVE_KEY the same way.
 
@@ -332,6 +343,8 @@ typed `SaveError`.
 | Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
 | App integration merged | 2026-08-06 on `dev` (commit `c2593e1`); read fix `7e6b8ab` |
 | Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
+| Multi-character store | `GITHUB_STORE` + `id` upsert shipped (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
+| v1.6.0 promotion | Released 2026-08-07 — grouped store is the only save target; legacy `GITHUB_PATH`/`data/character.json` and the worker no-`id` path removed. **Redeploy the worker after this release** (`npx wrangler deploy`). |
 
 ---
 

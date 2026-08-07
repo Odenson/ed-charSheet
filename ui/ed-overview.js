@@ -13,6 +13,7 @@ export class EdOverview extends LitElement {
     _modal: { state: true },
     _lightbox: { state: true },
     _edit: { state: true },
+    _portraitBroken: { state: true },
   };
 
   static styles = css`
@@ -230,7 +231,7 @@ export class EdOverview extends LitElement {
   // Modal body listing all character metadata (any field added to meta shows up).
   _metaBody() {
     const meta = this.model?.meta ?? {};
-    const HIDE = new Set(['name', 'portrait', 'sourceSheetVersion']);
+    const HIDE = new Set(['id', 'name', 'portrait', 'sourceSheetVersion']);
     const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
     const entries = Object.entries(meta).filter(([k, v]) => !HIDE.has(k) && v != null && v !== '');
     return html`
@@ -310,20 +311,33 @@ export class EdOverview extends LitElement {
     `;
   }
 
+  // A fresh model may point at a working portrait URL again, so reset the
+  // broken-image flag whenever the character changes.
+  update(changedProperties) {
+    if (changedProperties.has('model')) this._portraitBroken = false;
+    super.update(changedProperties);
+  }
+
+  _portraitError() {
+    // The branch image failed to load (offline, missing on the branch, …) —
+    // fall back to the placeholder icon (docs/UI-GUIDELINES.md §6).
+    this._portraitBroken = true;
+  }
+
   render() {
     const m = this.model;
     if (!m) return html``;
     const meta = m.meta ?? {};
     const h = m.resources?.health ?? {};
     const metaLine = [meta.race, meta.sex, meta.age ? `Age ${meta.age}` : null].filter(Boolean).join(' · ');
-    const portrait = meta.portrait ? `./${meta.portrait}` : null;
+    const portrait = m.portraitUrl && !this._portraitBroken ? m.portraitUrl : null;
 
     return html`
       <div class="grid">
         <div class="hero">
           <div class="head">
             ${portrait
-              ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @click=${() => (this._lightbox = true)} />`
+              ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @error=${this._portraitError} @click=${() => (this._lightbox = true)} />`
               : ''}
             ${this._editRegion(
               'details',
@@ -351,7 +365,7 @@ export class EdOverview extends LitElement {
           ${meta.description ? this._editRegion('blurb', meta.description) : ''}
           <div class="portrait">
             ${portrait
-              ? html`<img src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />`
+              ? html`<img src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />`
               : html`<span class="ph">▢</span>`}
           </div>
         </div>
@@ -428,7 +442,7 @@ export class EdOverview extends LitElement {
         : ''}
       ${this._lightbox && portrait
         ? html`<div class="overlay" @click=${() => (this._lightbox = false)}>
-            <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} />
+            <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />
           </div>`
         : ''}
       ${this._edit

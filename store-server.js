@@ -28,6 +28,8 @@ function messageForCode(code) {
       return 'Your save key was rejected. Re-enter it and try again.';
     case 'invalid_character':
       return 'The character failed validation and was not saved.';
+    case 'invalid_id':
+      return 'The character id failed validation and was not saved.';
     case 'conflict':
       return 'The saved file kept changing under us — try saving again.';
     case 'upstream':
@@ -41,9 +43,10 @@ function messageForCode(code) {
  * Save the character to GitHub via the worker. Returns the commit `{ sha, url }`
  * on success; throws a typed {@link SaveError} otherwise. `saveKey` is required
  * (the worker fails closed) — a missing key throws `no_key` before any request,
- * so the caller can prompt for it.
+ * so the caller can prompt for it. `id` (the character's map key in the grouped
+ * store) is required — the worker upserts `characters[id]` in the grouped store.
  */
-export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey } = {}) {
+export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey, id } = {}) {
   if (!saveKey) throw new SaveError('no_key', 'Enter your save key to save to GitHub.');
 
   let res;
@@ -51,7 +54,7 @@ export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveK
     res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-save-key': saveKey },
-      body: JSON.stringify({ character }),
+      body: JSON.stringify({ character, id }),
     });
   } catch {
     // The fetch itself failed — offline, DNS, CORS, or the worker is unreachable.

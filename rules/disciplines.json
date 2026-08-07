@@ -122,7 +122,7 @@
         },
         {
           "circle": 5,
-          "talents": ["Summon [Ally Spirits]"],
+          "talents": ["Summon"],
           "effects": [
             { "type": "note", "source": "discipline", "summary": "Free Talent upgrade: one of the free Standard Matrix talents is upgraded to an Enhanced Matrix." },
             { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "Blood Summon: may take Blood Magic Damage equal to a summoned spirit's Strength rating to gain an extra success on a Summon test (healable only a full day after the spirit leaves service)." },

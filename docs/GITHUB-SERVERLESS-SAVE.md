@@ -63,41 +63,45 @@ the only offline path; this is strictly an additional option.
 ```
    Browser (the app)                    Worker (this feature)                  GitHub
 ┌──────────────────────┐   POST /save   ┌───────────────────────────────┐   ┌────────────────┐
-│ Save action          │ ─────────────► │ 1. validate character         │   │ branch created │
-│ serialize the same   │  { character } │ 2. ensure the data branch     │──►│ read SHA       │
-│ inputs-only JSON     │                │ 3. GET contents/character.json│──►│                │
+│ Save action          │ ─────────────► │ 1. validate character + id    │   │ branch created │
+│ serialize the same   │  { character, │ 2. ensure the data branch     │──►│ read SHA       │
+│ inputs-only JSON     │    id }       │ 3. GET contents/characters.json│──►│                │
 │ (identical to §7.2)  │                │    ?ref=character-data        │◄──│ commit         │
-│                      │ ◄───────────── │ 4. PUT contents/character.json│──►│ on the branch  │
+│                      │ ◄───────────── │ 4. PUT contents/characters.json│──►│ on the branch  │
 │ show commit URL /    │  200 {commit}  │    { base64, sha, branch }    │   └────────────────┘
 │ error (409 retried)  │                └───────────────────────────────┘
 └──────────────────────┘
    No deploy, no rebuild: the deploy workflow (WORKFLOW.md) watches main and dev
-   only. On its next load the Pages app fetches the character LIVE from the
-   committed branch (store.js), falling back to the deployed copy:
-   https://raw.githubusercontent.com/{owner}/{repo}/character-data/data/character.json
+   only. On its next load the Pages app fetches the grouped store LIVE from the
+   committed branch (store.js) and selects the saved character by id:
+   https://raw.githubusercontent.com/{owner}/{repo}/character-data/data/characters.json
 ```
 
 1. **App serializes.** The Save action produces the exact bytes the file save
    produces: the merged, inputs-only character, `JSON.stringify(…, 2) + '\n'`
    (§7.2). Nothing about the data model changes.
 2. **App POSTs.** The worker's single endpoint `/save`, body
-   `{ "character": { … } }`, `Content-Type: application/json`.
+   `{ "character": { … }, "id": "…" }` — the `id` is required (the grouped store
+   is the only save target since v1.6.0),
+   `Content-Type: application/json`.
 3. **Worker validates.** JSON parses, `schema === "ed-character/1"`, byte size
-   within the cap, path and branch come from its own config, not the request.
+   within the cap, `id` matches `^[a-z0-9][a-z0-9-]{0,63}$`, path and branch come
+   from its own config, not the request.
 4. **Worker commits.** To the `character-data` branch (created on the first
    save, skipped after):
-   - `GET /repos/{owner}/{repo}/contents/{path}?ref=character-data` → the file's
-     blob `sha` (the contents API needs it to update in place).
-   - `PUT …/contents/{path}` with `{ message, content: base64(bytes), sha,
-     branch: "character-data" }` — one commit on the data branch.
+   `GET /repos/{owner}/{repo}/contents/{GITHUB_STORE}?ref=character-data`
+   → the grouped store's blob `sha`; replace `characters[id]` with the new
+   entry; `PUT …` the whole store back (whole-file rewrite — no per-character
+   git history, accepted).
 5. **No rebuild.** The deploy workflow (WORKFLOW.md) fires on `main` and `dev`
    only; `character-data` is not a trigger, so a save never rebuilds the app. The
    character file is source info the app reads at runtime — it needs no build.
 6. **Feedback.** Worker returns the commit URL. On a `409` (the `sha` moved —
    someone else saved), the worker re-reads the SHA and retries (bounded), the
    same retry loop §7.4 sketches for the client.
-7. **Live read.** On its next load the Pages app fetches the committed file live
-   from the branch (`store.js`), falling back to the deployed copy. Both `/` and
+7. **Live read.** On its next load the Pages app fetches the committed grouped
+   store live from the branch (`store.js`) and selects the character whose `id`
+   matches the app's selection. Both `/` and
    `/dev/` read the same branch, so the two environments show the same character.
 
 ### 3.2 Request / response contract
@@ -105,10 +109,10 @@ the only offline path; this is strictly an additional option.
 | | Value |
 |---|---|
 | Endpoint | `POST https://<worker>/save` |
-| Headers | `Content-Type: application/json`; optional `x-save-key` (see §5) |
-| Body | `{ "character": <inputs-only ed-character/1 JSON> }` |
+| Headers | `Content-Type: application/json`; `x-save-key` (required — fail-closed, §5) |
+| Body | `{ "character": <inputs-only ed-character/1 JSON>, "id": <required store key> }` |
 | 200 | `{ "ok": true, "commit": { "sha": "…", "url": "https://github.com/…/commit/…" } }` |
-| 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "too_large", "message": "…" } }` |
+| 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "invalid_id", "message": "…" } }` |
 | 401 | `{ "ok": false, "error": { "code": "unauthorized", "message": "bad save key" } }` |
 | 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save only" } }` |
 | 409 | Retried internally (bounded, 3 attempts); only surfaced if retries exhaust |
@@ -167,7 +171,10 @@ A single ES-module handler. Design sketch:
 
 ```js
 // worker.js — GitHub serverless save endpoint (design sketch, not shipped)
-// POST /save  { "character": <inputs-only ed-character/1 JSON> }
+// POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": <required store key> }
+// Shipped worker differs: SAVE_KEY fail-closed auth (§5), and the write upserts
+// into the grouped store (GET store -> replace characters[id] -> PUT whole
+// store); the legacy single-file PUT shown below was removed at v1.6.0.
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const GITHUB = "https://api.github.com";
 const MAX_BYTES = 512 * 1024;                 // character.json is a few KB; cap generously
@@ -274,15 +281,15 @@ created by the repo owner, never committed and never in the app:
 |---|---|
 | `GITHUB_TOKEN` | **Fine-grained PAT**, scoped to this repo only, `Contents: read/write`. Created once by the repo owner in GitHub → Settings → Developer settings → Fine-grained tokens. |
 | `GITHUB_OWNER` / `GITHUB_REPO` | The repo that hosts the app (e.g. `odenson` / `ed-charSheet`). |
-| `GITHUB_PATH` | Default `data/character.json`. |
+| `GITHUB_STORE` | The grouped store, default `data/characters.json` — `{ "schema": "ed-characters/1", "characters": { "<id>": { … } } }`; saves upsert `characters[id]` here. The only save target since v1.6.0 (the legacy `GITHUB_PATH` single-file target was removed at promotion). |
 | `GITHUB_BRANCH` | Default `character-data` — a data-only branch the deploy workflow does not watch, so saves never rebuild the app. |
-| `SAVE_KEY` | Optional shared endpoint key (see §5). |
+| `SAVE_KEY` | **Required** shared endpoint key — fail-closed (see §5). |
 
 ### 4.4 Deploying the worker
 
 ```bash
 npm i -D wrangler                 # or wrangler via npx
-wrangler secret put GITHUB_TOKEN  # interactive; also OWNER/REPO/PATH/BRANCH, optionally SAVE_KEY
+wrangler secret put GITHUB_TOKEN  # interactive; also OWNER/REPO/PATH/BRANCH and SAVE_KEY
 wrangler deploy                   # uses wrangler.toml with name + main
 ```
 
@@ -309,14 +316,14 @@ The save-target module, `store-server.js`:
 // store-server.js — the GitHub save target (shipped).
 const DEFAULT_ENDPOINT = "https://ed-charsheet-save.edsavechar.workers.dev/save";
 
-export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey } = {}) {
+export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey, id } = {}) {
   if (!saveKey) throw new SaveError("no_key", "Enter your save key to save to GitHub.");
   let res;
   try {
     res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-save-key": saveKey },
-      body: JSON.stringify({ character }),
+      body: JSON.stringify({ character, id }),
     });
   } catch { throw new SaveError("offline", "Could not reach the save service."); }
   const out = await res.json().catch(() => null);
@@ -349,17 +356,18 @@ Wiring rules:
   (`meta` / `items` / `wealth`) is now redundant **and** will mask the branch on
   the next load — including edits made from another device. On success, clear the
   reconciled keys from the overlay so the (cache-busted) branch read becomes the
-  source of truth. **Trade-off:** if a later branch read is unreachable and falls
-  back to the deployed bundle, that device shows bundle-age data until the branch
-  is reachable again — acceptable versus permanently masking saves. This is the
+  source of truth. **Trade-off:** if a later branch read is unreachable, that
+  device shows the load error rather than stale data — acceptable versus
+  permanently masking saves. This is the
   exact failure a direct, out-of-band branch edit exposed in testing: a stale
   `meta.name` left in the overlay hid the branch's updated name, with no error
   (the live fetch succeeded; `applyEdits` merged the stale name on top).
 
 **Reading the saved character.** The flip side of not rebuilding lives in
-`store.js`: on the Pages site it reads `data/character.json` live from the
-`character-data` branch, **preferring the GitHub contents API**
-(`api.github.com/…/contents/data/character.json?ref=character-data` with
+`store.js`: on the Pages site it reads the grouped store live from the
+`character-data` branch — `data/characters.json` (`{ schema: "ed-characters/1",
+characters: { "<id>": { … } } }`) — **preferring the GitHub contents API**
+(`api.github.com/…/contents/data/characters.json?ref=character-data` with
 `Accept: application/vnd.github.raw`). The API reads the git database directly,
 so a just-saved commit is visible **immediately** — the raw CDN is not reliable
 for read-after-write because it keys its ~5-minute cache on the path, and the
@@ -367,9 +375,21 @@ for read-after-write because it keys its ~5-minute cache on the path, and the
 edge copy (the bug Phase 6 surfaced). Fallbacks keep it never-worse: if the API
 is unreachable or rate-limited (60/hr per IP, unauthenticated — ample for one
 player, and the response is cached with `no-store`), it falls back to the raw
-CDN (cache-busted, eventually consistent), then to the deployed bundle. Locally
-it keeps reading the working copy. `/` and `/dev/` read the same branch, so both
-environments show the same character.
+CDN (cache-busted, eventually consistent). There is deliberately **no deployed
+bundle fallback** — the bundle ships no character data, so a total failure
+surfaces the load error rather than masking it with stale bytes. Locally it
+keeps reading the gitignored working copy (WORKFLOW.md). `/` and `/dev/` read
+the same branch, so both environments show the same characters.
+
+One fetch of the store discovers **and** loads every character: the app reads
+`characters[id]` for the currently selected id, and the first-run picker lists
+every id in the store (docs/PLAN-MULTI-CHARACTER.md, Decision 1). Each
+character's edits overlay is keyed per id
+(`ed-character-edits:${id}`), so pending edits never bleed across characters.
+The portrait image (`meta.portrait`, e.g. `data/chakka.jpg`) is read from the
+branch's raw CDN — a static repo asset doesn't need the git-consistent contents
+API tier, and the UI falls back to a placeholder icon if it can't load
+(docs/UI-GUIDELINES.md §6).
 
 ### 4.6 Testing
 
@@ -378,16 +398,19 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
 - **Worker handler, unit.** Mock the GitHub `fetch` (a stub returning a
   scripted SHA, a scripted `409` then `200`, and a `403`), then assert: wrong
   method/path → `404`; non-JSON → `400`; wrong schema / oversized → `400`;
-  correct request → `PUT` receives the GET-returned `sha`, the pinned
-  branch/path, and base64 equal to the §7.2 serialization; `409` → second attempt
-  carries the new `sha`; final failure → `502`/`409`.
+  an `id` upserts `characters[id]` and **preserves the other entries**; a
+  missing/invalid id (incl. `'../evil'`, `'A/b'`, `'a b'`, `'..'`, `'a.b'`,
+  `'É'`, `42`, `''`) → `400 invalid_id`; a missing store (`404`) is created
+  fresh; `409` → second attempt carries the new `sha`; final failure → `502`/
+  `409`. (The legacy no-id path is gone — the id is required since v1.6.0.)
 - **Worker, manual integration.** One real `POST` against the repo, verify the
   commit appears on `character-data` and the app shows it on a Pages-like origin
   without any deploy, then reset the branch if desired.
 - **App.** Assert `saveServer` sends exactly the bytes the §7.2 serializer
-  produces, and that error codes map to the modal feedback paths. Also assert
-  `store.js` reads the live branch on a Pages-like origin and falls back to the
-  deployed copy when the branch has no file yet.
+  produces (and always carries the `id`), and that error codes map to the modal
+  feedback paths. Also assert `store.js` reads the live branch on a Pages-like
+  origin and throws a clear load error when the branch is unreachable (there is
+  no deployed copy to fall back to).
 
 ---
 
@@ -430,25 +453,28 @@ server-side, plus honest limits:
   absent until enabled.
 - **The engine.** It is persistence-agnostic and never sees this feature.
 - **The data model.** The committed bytes are the same inputs-only
-  `character.json` — the "store only inputs" invariant (ARCHITECTURE §4.1) is
-  untouched because the file content is identical to the file save.
+  `character.json` entry — the "store only inputs" invariant (ARCHITECTURE §4.1)
+  is untouched because the file content is identical to the file save. The
+  grouped store adds only a `schema: "ed-characters/1"` wrapper around unchanged
+  `ed-character/1` entries (Tier 3, additive).
 - **The deploy workflow.** Unchanged, and no longer part of the save path —
   saves go to `character-data`, which is not a trigger branch, so nothing ever
   rebuilds on a save.
 - **Local dev / working copy.** Off the Pages site the app still reads
-  `./data/character.json`, so a local checkout keeps working exactly as today.
+  `./data/characters.json` (and the portrait from `./${meta.portrait}`) — the
+  gitignored working copies, so a local checkout keeps working as today.
 - **No new runtime dependency for anyone not using it.** The save module loads
   only when the option is enabled. The live read (§3, step 7) applies only on
-  the Pages site, where it replaces a bundle fetch with the same vendor's raw
-  file host.
+  the Pages site, where it reads the branch instead of a bundle copy — the
+  bundle ships no character data.
 
 ### 6.2 What is added
 
 | Addition | Notes |
 |---|---|
 | `store-server.js` | A save-target module (feature-detected, opt-in) |
-| `store.js` live read | On the Pages site the character is fetched from the `character-data` branch (raw), falling back to the deployed copy; local runs unchanged |
-| Settings toggle | "Save to GitHub (server)" — enables the target and holds the optional `SAVE_KEY` for the session |
+| `store.js` live read | On the Pages site the grouped store (all characters) is fetched from the `character-data` branch; local runs read the gitignored working copies |
+| Settings toggle | "Save to GitHub (server)" — enables the target and holds the required `SAVE_KEY` for the session |
 | Save action entry | A third target alongside web store + file, in edit mode |
 | Worker + secrets | Deployed outside the repo; owner-only setup |
 
@@ -469,14 +495,18 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
   `raw.githubusercontent.com` (GitHub's own raw file host — same vendor as
   Pages), the minimal exception needed to show saves without rebuilding. It
   affects only the character load on the Pages site and is documented in §3.
-- **No new taxonomy/schema.** No changes to `rules/*.json`, `character.json`,
-  or docs/EFFECT-TAXONOMY.md.
+- **No new taxonomy.** No changes to `rules/*.json`, `character.json` fields, or
+  docs/EFFECT-TAXONOMY.md. The one additive schema is `ed-characters/1` — a
+  grouping wrapper (`characters[id]`) whose entries are unchanged
+  `ed-character/1` files, plus `meta.id` set inside each entry. The legacy
+  single-file `data/character.json` and the worker's no-`id` path were **removed
+  at the v1.6.0 promotion** — the grouped store is the only save target.
 
 ---
 
 ## 7. Status & resolved decisions
 
-**Status: shipped** (v1.5.0, 2026-08-06; matches ARCHITECTURE §10). Worker live at
+**Status: shipped** (v1.6.0, 2026-08-07; matches ARCHITECTURE §10). Worker live at
 `https://ed-charsheet-save.edsavechar.workers.dev`; app integration in `store-server.js`.
 
 | Decision | Resolved as |
@@ -487,6 +517,7 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
 | Endpoint URL in app | Hardcoded default (Settings override deferred) |
 | Save model | One primary Save → GitHub, over the autosave overlay; Export = local download (§4.5) |
 | Read-after-write | App reads the branch via the git-consistent GitHub contents API (§4.5) |
+| Multi-character store | Saves upsert `characters[id]` in the grouped `data/characters.json` (`ed-characters/1`) — the **only** save target since v1.6.0 (legacy `data/character.json` + no-`id` path removed at promotion) |
 
 ---
 

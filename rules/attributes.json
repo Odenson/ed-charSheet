@@ -1,4 +1,5 @@
 {
+  "schema": "ed-attributes/1",
   "order": [
     "Dexterity",
     "Strength",

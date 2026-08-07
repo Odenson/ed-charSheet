@@ -1,16 +1,25 @@
 // worker.js — GitHub serverless save endpoint (Cloudflare Worker).
 //
-// POST /save  { "character": <inputs-only ed-character/1 JSON> }  (or the file itself)
+// POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": "<character id>" }
 //
 // Commits the posted character to the `character-data` branch on the app's
 // behalf, so the GitHub credential never enters the browser. The deploy workflow
 // does not watch that branch, so a save is a data commit — never an app rebuild.
 // The app reads the branch live (store.js), so a save shows up on next load.
 //
+// The `id` names the character's entry in the grouped store
+// `data/characters.json` (ed-characters/1): GET the store, replace
+// `characters[id]`, PUT it back. The id is required — the grouped store is the
+// only save target since the v1.6.0 promotion (the legacy single-file
+// `data/character.json` path was removed with it).
+//
 // This build REQUIRES SAVE_KEY and fails closed (runbook §2.1 / §5.2): a missing
 // or wrong `x-save-key`, OR an unconfigured SAVE_KEY, is rejected 401. Everything
 // else follows the design doc §4.2 handler: schema/size validation, env-pinned
 // path/branch (never taken from the request), GET-sha → PUT, bounded 409 retry.
+// The `id` is validated against a strict character class (no path separators, no
+// traversal) and used only as a map key inside the store — it never becomes a
+// filesystem path.
 //
 // Secrets/vars come from the environment (wrangler.toml [vars] + `wrangler secret
 // put`); nothing sensitive is committed or shipped in the app. Stateless: the
@@ -18,8 +27,9 @@
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const GITHUB = 'https://api.github.com';
-const MAX_BYTES = 512 * 1024; // character.json is a few KB; cap generously
+const MAX_BYTES = 512 * 1024; // a character entry is a few KB; cap generously
 const MAX_RETRIES = 3;        // bounded 409 (sha moved) retries
+const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export default {
   async fetch(request, env) {
@@ -44,17 +54,19 @@ export default {
     if (!env.SAVE_KEY || providedKey === null || !(await safeEqual(providedKey, env.SAVE_KEY)))
       return json(cors, 401, { ok: false, error: { code: 'unauthorized', message: 'bad or missing save key' } });
 
-    let character;
+    let body;
     try {
-      const body = await request.json();
-      character = body.character ?? body; // accept { character } or the file itself
+      body = await request.json();
     } catch {
       return json(cors, 400, { ok: false, error: { code: 'invalid_json', message: 'body is not JSON' } });
     }
+    const character = body?.character;
     if (!isValidCharacter(character))
       return json(cors, 400, { ok: false, error: { code: 'invalid_character', message: 'not an ed-character/1 file' } });
+    const id = body?.id;
+    if (!isValidId(id))
+      return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
 
-    const path = env.GITHUB_PATH ?? 'data/character.json';
     const branch = env.GITHUB_BRANCH ?? 'character-data'; // NOT main/dev — never triggers a deploy
     const repo = `${env.GITHUB_OWNER}/${env.GITHUB_REPO}`;
     const gh = {
@@ -65,28 +77,11 @@ export default {
       // by administrative rules"). Workers don't set one by default, so send it.
       'User-Agent': 'ed-charsheet-save',
     };
-    const content = toBase64(JSON.stringify(character, null, 2) + '\n'); // byte-identical to the file save
 
     try {
       await ensureBranch(repo, branch, gh); // first save only
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        const sha = await currentSha(repo, path, branch, gh);
-        const res = await fetch(`${GITHUB}/repos/${repo}/contents/${path}`, {
-          method: 'PUT',
-          headers: { ...gh, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: 'Save character (serverless)', content, sha, branch }),
-        });
-        if (res.ok) {
-          const c = await res.json();
-          return json(cors, 200, { ok: true, commit: { sha: c.content.sha, url: c.html_url } });
-        }
-        if (res.status !== 409) { // other failure
-          console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
-          return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
-        }
-        // 409: sha moved between our GET and PUT — loop re-reads and retries.
-      }
-      return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
+      const storePath = env.GITHUB_STORE ?? 'data/characters.json';
+      return await upsertCharacter(repo, branch, gh, storePath, id, character, cors);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(JSON.stringify({ message: 'save failed (upstream)', error: message }));
@@ -94,6 +89,44 @@ export default {
     }
   },
 };
+
+// Upsert `character` under `characters[id]` in the grouped store at `storePath`.
+// Reads the whole store (sha + content), replaces the one entry, PUTs it back —
+// same bounded GET-sha → PUT 409-retry contract. A missing store file (first
+// id-save on a fresh repo) is created as a fresh ed-characters/1 store.
+async function upsertCharacter(repo, branch, gh, storePath, id, character, cors) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { sha, store } = await readStore(repo, storePath, branch, gh);
+    store.characters = store.characters ?? {};
+    store.characters[id] = character;
+    const content = toBase64(JSON.stringify(store, null, 2) + '\n');
+    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${storePath}`, {
+      method: 'PUT',
+      headers: { ...gh, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Save character (serverless)', content, sha, branch }),
+    });
+    if (res.ok) return ok(cors, res);
+    if (res.status !== 409) {
+      console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
+      return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
+    }
+  }
+  return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
+}
+
+// Read the grouped store: `{ sha, store }` decoded from the contents API.
+// A 404 (store not created yet) yields a fresh empty store with no sha.
+async function readStore(repo, storePath, branch, gh) {
+  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${storePath}?ref=${branch}`, { headers: gh });
+  if (res.status === 404) return { sha: undefined, store: { schema: 'ed-characters/1', characters: {} } };
+  if (!res.ok) throw new Error(`read ${res.status}`);
+  const obj = await res.json();
+  return { sha: obj.sha, store: JSON.parse(base64ToString(obj.content)) };
+}
+
+function ok(cors, res) {
+  return res.json().then((c) => json(cors, 200, { ok: true, commit: { sha: c.content.sha, url: c.html_url } }));
+}
 
 // First save on a fresh repo: create the data branch from the default branch so
 // the contents API has a ref to write into. No-op on every later save.
@@ -108,12 +141,6 @@ async function ensureBranch(repo, branch, gh) {
     body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: base.object.sha }),
   });
   if (!created.ok) throw new Error(`create branch ${created.status}`);
-}
-
-async function currentSha(repo, path, branch, gh) {
-  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${path}?ref=${branch}`, { headers: gh });
-  if (!res.ok) throw new Error(`read ${res.status}`);
-  return (await res.json()).sha;
 }
 
 // Base64-encode a string as its UTF-8 bytes. `btoa` alone only accepts Latin1
@@ -153,6 +180,23 @@ function isValidCharacter(c) {
     c.schema === 'ed-character/1' &&
     JSON.stringify(c).length <= MAX_BYTES
   );
+}
+
+// A character id is a short lowercase slug used as a map key inside the grouped
+// store — never a filesystem path. The strict character class makes traversal
+// (`../`, `/`, backslash) and control characters impossible to express.
+function isValidId(id) {
+  return typeof id === 'string' && ID_RE.test(id);
+}
+
+// Decode the contents API's base64 payload back to UTF-8 text. GitHub encodes
+// the file's raw bytes; decoding via bytes (not atob's Latin1 assumption) keeps
+// em-dashes and the ✦ magic star intact when the worker merges a store.
+function base64ToString(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function json(cors, status, body) {

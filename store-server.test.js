@@ -22,16 +22,16 @@ function mockFetch(impl) {
   return { calls, restore: () => { globalThis.fetch = original; } };
 }
 
-test('happy path: POSTs { character } with the key header, returns the commit', async () => {
+test('happy path: POSTs { character, id } with the key header, returns the commit', async () => {
   const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: { sha: 'abc', url: 'https://gh/commit/abc' } } }));
   try {
-    const commit = await saveServer(CHAR, { saveKey: 'k' });
+    const commit = await saveServer(CHAR, { saveKey: 'k', id: 'chakka' });
     assert.deepEqual(commit, { sha: 'abc', url: 'https://gh/commit/abc' });
     const { url, options } = mock.calls[0];
     assert.equal(url, DEFAULT_ENDPOINT);
     assert.equal(options.method, 'POST');
     assert.equal(options.headers['x-save-key'], 'k');
-    assert.deepEqual(JSON.parse(options.body), { character: CHAR });
+    assert.deepEqual(JSON.parse(options.body), { character: CHAR, id: 'chakka' });
   } finally {
     mock.restore();
   }

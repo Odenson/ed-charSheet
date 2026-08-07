@@ -1,12 +1,13 @@
 # Cloudflare Worker config for the serverless save endpoint.
-# Deploy: `npx wrangler deploy` (runbook §2.4). Secrets are NOT here — set them
-# with `wrangler secret put GITHUB_TOKEN` and `... SAVE_KEY` (runbook §2.3).
+# Deploy: `npx wrangler deploy` (runbook §4, Phase 2 step 2.4). Secrets are NOT
+# here — set them with `wrangler secret put GITHUB_TOKEN` and `... SAVE_KEY`
+# (runbook §2.2 secrets inventory).
 name = "ed-charsheet-save"
 main = "worker.js"
 compatibility_date = "2026-08-06"
 
 # Workers Logs — so `wrangler tail` and the dashboard surface the structured
-# console.error output on upstream failures (runsheet §2.5 debugging).
+# console.error output on upstream failures (runbook §4, Phase 2 step 2.5 smoke-test).
 [observability]
 enabled = true
 
@@ -14,9 +15,9 @@ enabled = true
 head_sampling_rate = 1
 
 [vars]
-GITHUB_OWNER  = "odenson"
-GITHUB_REPO   = "ed-charSheet"
-GITHUB_PATH   = "data/character.json"
-GITHUB_BRANCH = "character-data"
+GITHUB_OWNER   = "odenson"
+GITHUB_REPO    = "ed-charSheet"
+GITHUB_STORE   = "data/characters.json"  # grouped store upsert (id required)
+GITHUB_BRANCH  = "character-data"
 # ALLOWED_ORIGIN defaults to https://odenson.github.io in worker.js; override
 # here only if the app is served from a different origin.

@@ -1,9 +1,10 @@
 // store.js — loads data and builds the derived view-model the UI renders.
 //
-// Load character.json + the rules files we need, compute display values, and
-// hand a plain object to the UI. Phase 2 adds editing of *inputs*: edits are
-// dispatched up to the app layer, persisted here, and the model is re-derived
-// from inputs (data flows back down). Derived values are never stored.
+// Load the grouped character store (data/characters.json) + the rules files we
+// need, compute display values, and hand a plain object to the UI. Phase 2 adds
+// editing of *inputs*: edits are dispatched up to the app layer, persisted here,
+// and the model is re-derived from inputs (data flows back down). Derived values
+// are never stored.
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
@@ -37,11 +38,14 @@ async function loadJSON(path) {
   return res.json();
 }
 
-// The character file is source info, not app code: a serverless save commits it
-// to the `character-data` branch, which the deploy workflow does not watch, so
-// a save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). On the
-// Pages site we read it LIVE from that branch so a save shows up immediately;
-// everywhere else (local dev, file://) we read the working copy in the bundle.
+// The character store is source info, not app code: a serverless save commits it
+// to the `character-data` branch, which the deploy workflow does not watch, so a
+// save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). The bundle
+// ships no character data — `data/characters.json` (the grouped ed-characters/1
+// store) and the portrait images live only on that branch. On the Pages site we
+// read them LIVE from the branch so a save shows up immediately; everywhere else
+// (local dev, file://) we read the local working copies, which are gitignored
+// (see .gitignore / WORKFLOW.md).
 const CHARACTER_OWNER = 'odenson';
 const CHARACTER_REPO = 'ed-charSheet';
 const CHARACTER_BRANCH = 'character-data';
@@ -50,20 +54,35 @@ function onPages() {
   return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
 }
 
-const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/character.json?ref=${CHARACTER_BRANCH}`;
-const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/character.json`;
+const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/characters.json?ref=${CHARACTER_BRANCH}`;
+const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/characters.json`;
 
-// On the Pages site, read the saved character live from the character-data
+// Resolve a `meta.portrait` path (e.g. `data/chakka.jpg`) to a loadable URL.
+// On the Pages site the portrait lives on the character-data branch like the
+// character store (the bundle ships no character data), so we hit the raw CDN
+// directly — a static repo asset doesn't need the git-consistent contents API
+// tier that the store does (docs/GITHUB-SERVERLESS-SAVE.md §4.5). Locally the
+// working copy is served from the bundle. The UI handles a load failure with
+// its placeholder fallback (docs/UI-GUIDELINES.md §6).
+export function portraitUrlFor(portrait) {
+  if (!portrait) return null;
+  if (onPages()) return `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/${portrait}`;
+  return `./${portrait}`;
+}
+
+// On the Pages site, read the character store live from the character-data
 // branch. Prefer the GitHub **contents API** (`Accept: raw`): it reads the git
 // database directly, so a just-saved commit is visible immediately. The raw CDN
 // keys its ~5-minute cache on the *path* — the `?t=` query doesn't reliably bust
 // it — so a save-then-reload can race a stale edge copy (the read-after-write
 // bug that Phase 6 surfaced). Fallbacks keep it never-worse-than-before: if the
 // API is unreachable or rate-limited (60/hr per IP, unauthenticated) fall back
-// to the raw CDN (cache-busted, eventually consistent), then to the deployed
-// bundle. CORS is open on both hosts; the browser sets the required User-Agent.
-async function loadCharacterData() {
-  if (!onPages()) return loadJSON('./data/character.json');
+// to the raw CDN (cache-busted, eventually consistent). There is deliberately no
+// deployed-bundle fallback — the bundle ships no character data, so a failure
+// here surfaces the load error rather than masking it with stale bytes. CORS is
+// open on both hosts; the browser sets the required User-Agent.
+export async function loadCharacters() {
+  if (!onPages()) return loadJSON('./data/characters.json');
   try {
     const res = await fetch(CHARACTER_API_URL, {
       headers: { Accept: 'application/vnd.github.raw' },
@@ -73,36 +92,34 @@ async function loadCharacterData() {
   } catch {
     /* network/CORS hiccup — fall through to the CDN */
   }
-  try {
-    return await loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
-  } catch {
-    // No save on the data branch yet (or raw is unreachable): the deployed copy
-    // rather than failing the whole app.
-    return loadJSON('./data/character.json');
-  }
+  return loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
 }
 
 // --- Persistence (Phase 2) -------------------------------------------------
 // ARCHITECTURE §7/§10: localStorage now, file export/import later. We store an
 // *edits overlay* — only the inputs the player changed — not a whole character
-// snapshot. The repo's character.json stays the source of truth for everything
+// snapshot. The branch store stays the source of truth for everything
 // untouched; the overlay is merged on top at load. "Store only inputs" holds:
-// meta fields are raw inputs, never derived values.
-const EDITS_KEY = 'ed-character-edits';
+// meta fields are raw inputs, never derived values. Overlays are keyed per
+// character id (`ed-character-edits:<id>`), so each character's local draft is
+// isolated and survives switching between characters.
+function editsKey(id) {
+  return `ed-character-edits:${id}`;
+}
 
-function loadEdits() {
+function loadEdits(id) {
   try {
-    return JSON.parse(localStorage.getItem(EDITS_KEY) || '{}') || {};
+    return JSON.parse(localStorage.getItem(editsKey(id)) || '{}') || {};
   } catch {
     return {}; // corrupt/absent overlay must never block loading the character
   }
 }
 
-/** Merge a `meta` patch into the saved edits overlay and persist it. */
-export function saveMetaEdits(patch) {
-  const edits = loadEdits();
+/** Merge a `meta` patch into the saved edits overlay for `id` and persist it. */
+export function saveMetaEdits(patch, id) {
+  const edits = loadEdits(id);
   edits.meta = { ...(edits.meta || {}), ...patch };
-  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
 
@@ -112,10 +129,10 @@ export function saveMetaEdits(patch) {
  * `equipped` — so the whole array is stored as-is; the reference stats stay in
  * the catalog. "Store only inputs, never derived" holds.
  */
-export function saveItemEdits(items) {
-  const edits = loadEdits();
+export function saveItemEdits(items, id) {
+  const edits = loadEdits(id);
   edits.items = items;
-  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
 
@@ -125,10 +142,10 @@ export function saveItemEdits(items) {
  * per-coin silver value, running total, and gem resale are derived at render
  * time (deriveWealth), never stored. "Store only inputs, never derived" holds.
  */
-export function saveWealthEdits(wealth) {
-  const edits = loadEdits();
+export function saveWealthEdits(wealth, id) {
+  const edits = loadEdits(id);
   edits.wealth = wealth;
-  localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
 
@@ -137,13 +154,13 @@ export function saveWealthEdits(wealth) {
 const SAVED_CATEGORIES = ['meta', 'items', 'wealth'];
 
 /**
- * True when the overlay holds edits not yet committed to GitHub. Drives the
- * Save button's unsaved indicator: any local edit sets a category; a successful
- * save clears them (reconcileOverlay), so this reads false again. Survives a
- * reload, so an edit made but never saved still shows as unsaved.
+ * True when the overlay for `id` holds edits not yet committed to GitHub.
+ * Drives the Save button's unsaved indicator: any local edit sets a category; a
+ * successful save clears them (reconcileOverlay), so this reads false again.
+ * Survives a reload, so an edit made but never saved still shows as unsaved.
  */
-export function hasPendingEdits() {
-  const edits = loadEdits();
+export function hasPendingEdits(id) {
+  const edits = loadEdits(id);
   return SAVED_CATEGORIES.some((k) => edits[k] != null);
 }
 
@@ -154,11 +171,11 @@ export function hasPendingEdits() {
  * (design §4.5). Clear them so the branch read becomes the source of truth.
  * Call only on save success.
  */
-export function reconcileOverlay(categories = SAVED_CATEGORIES) {
-  const edits = loadEdits();
+export function reconcileOverlay(categories = SAVED_CATEGORIES, id) {
+  const edits = loadEdits(id);
   for (const k of categories) delete edits[k];
-  if (Object.keys(edits).length) localStorage.setItem(EDITS_KEY, JSON.stringify(edits));
-  else localStorage.removeItem(EDITS_KEY);
+  if (Object.keys(edits).length) localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  else localStorage.removeItem(editsKey(id));
   return edits;
 }
 
@@ -173,14 +190,18 @@ function applyEdits(character, edits) {
 }
 
 /**
- * Fetch the character (with any saved edits overlaid) and the rules files.
- * Returns { character, rules } — the raw *inputs* the app layer holds and
- * re-derives from. Keep this separate from deriveModel so an edit can rebuild
- * the model without re-fetching.
+ * Fetch the character store (with any saved edits for `id` overlaid) and the
+ * rules files. Returns `{ character, rules, store }` — the raw *inputs* the app
+ * layer holds and re-derives from. Keep this separate from deriveModel so an
+ * edit can rebuild the model without re-fetching. Pass a pre-fetched `store`
+ * (from loadCharacters) to avoid a second fetch when the caller already loaded
+ * it (startup decides the id from the store first).
  */
-export async function loadCharacter() {
-  const [character, steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
-    loadCharacterData(),
+export async function loadCharacter(id, { store } = {}) {
+  const s = store ?? (await loadCharacters());
+  const character = s?.characters?.[id];
+  if (!character) throw new Error(`Unknown character id: ${id}`);
+  const [stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),
@@ -188,8 +209,11 @@ export async function loadCharacter() {
     loadJSON('./rules/characteristics.json'),
     loadJSON('./rules/items.json'),
   ]);
+  // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
+  // keeps an unwrapped file working.
+  const steps = stepsFile.steps ?? stepsFile;
   const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile };
-  return { character: applyEdits(character, loadEdits()), rules };
+  return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
 /**
@@ -388,6 +412,9 @@ export function deriveModel(character, rules) {
 
   return {
     meta: character.meta ?? {},
+    // Derived, never stored: the loadable URL for `meta.portrait` (branch raw
+    // CDN on Pages, bundle-relative working copy locally).
+    portraitUrl: portraitUrlFor(character.meta?.portrait),
     attributes,
     resources: character.resources ?? {},
     disciplines,

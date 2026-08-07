@@ -92,7 +92,8 @@
           "duration": "rounds",
           "rounds": 1,
           "scope": "vs the target's attacks",
-          "source": "talent"
+          "source": "talent",
+          "summary": "+2 Physical Defense vs that foe's attacks until end of round (per success)."
         },
         {
           "type": "test-modifier",
@@ -106,7 +107,8 @@
           "condition": "on-success",
           "perSuccess": true,
           "scope": "first Attack test vs the target",
-          "source": "talent"
+          "source": "talent",
+          "summary": "+2 per success to your first Attack test against the target."
         }
       ]
     },
@@ -412,7 +414,8 @@
           "perSuccess": true,
           "scope": "the frightened target's tests",
           "duration": "special",
-          "source": "talent"
+          "source": "talent",
+          "summary": "-2 to all the target's tests while frightened (per success)."
         }
       ]
     },
@@ -497,7 +500,8 @@
           "perSuccess": true,
           "scope": "ranged attacks vs the marked target",
           "duration": "special",
-          "source": "talent"
+          "source": "talent",
+          "summary": "+2 to ranged attacks against the marked target (per success)."
         }
       ]
     },

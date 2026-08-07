@@ -18,10 +18,14 @@ logic already built in.
 The design mirrors what a spreadsheet-based sheet already does, but as clean,
 testable layers:
 
-- **Data** — `data/character.json` holds *inputs only* (attributes, ranks,
-  resources); `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
+- **Data** — the grouped store `data/characters.json` holds every character's
+  *inputs only* (attributes, ranks, resources) as `characters[id]` entries;
+  `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
   table, the Characteristics Table, talent mechanics, disciplines, skills, races).
-  Modifiers live as `effects` arrays on the abilities/items that grant them, in a
+  The store and each character's
+  portrait live on the `character-data` branch and are read live from it
+  (gitignored local working copies serve local dev; see WORKFLOW.md). Modifiers
+  live as `effects` arrays on the abilities/items that grant them, in a
   controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
 - **Engine** (pure, framework-free, testable) — derives characteristics from the
   Characteristics Table plus the taxonomy effects, recomputing everything from
@@ -37,7 +41,7 @@ Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 ## Project structure
 
 ```
-data/            character.json (the character's inputs)
+data/            characters.json (grouped store: every character's inputs)
 rules/           steps, attributes, characteristics, talents, disciplines, skills, races
 docs/            EFFECT-TAXONOMY.md (effect vocabulary), UI-GUIDELINES.md (UI/UX contract)
 engine/          pure rules engine + *.test.js (derive, characteristics, dice)
