@@ -1089,16 +1089,16 @@
       ],
       "knacks": [
         {
-          "name": "Lip Reading (Awareness)"
+          "name": "Lip Reading"
         },
         {
-          "name": "Animal Tracking (Wilderness Survival)"
+          "name": "Animal Tracking"
         },
         {
-          "name": "Hunting (Wilderness Survival)"
+          "name": "Hunting"
         },
         {
-          "name": "Riding (Animal Handling)"
+          "name": "Riding"
         }
       ],
       "resources": {
