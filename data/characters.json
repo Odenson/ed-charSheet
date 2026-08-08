@@ -685,13 +685,7 @@
       ],
       "knacks": [
         {
-          "name": "Hunting (Tracking)"
-        },
-        {
-          "name": "Skinning (Tracking)"
-        },
-        {
-          "name": "Tanning (Tracking)"
+          "name": "Hunting"
         }
       ],
       "resources": {
