@@ -74,7 +74,7 @@ and keep it in sync with the code.
 | [B](#phase-b--store-wiring) | derive both; `saveHealthEdits` overlay | ✅ Complete |
 | [C](#phase-c--overview-ui) | Health panel fields + damage modal + Recovery test | ✅ Complete |
 | [D](#phase-d--tests) | engine + store overlay tests | ✅ Complete |
-| [E](#phase-e--docs-verification) | Plan doc, changelog, verification, push | 🔄 In progress |
+| [E](#phase-e--docs-verification) | Plan doc, changelog, verification, push | ✅ Complete |
 
 ---
 
@@ -158,7 +158,7 @@ and keep it in sync with the code.
 - [x] E3. Verify Tier 1: Overview fits viewport (no vertical scroll) with the new
       line/chip in light + dark; pills not numbers when ratings are absent;
       modal Escape-closes / Enter-confirms; theme-aware.
-- [ ] E4. Commit to `dev`, push. Release v1.8.0 per WORKFLOW.md when owner calls it.
+- [x] E4. Commit to `dev`, push. Release v1.8.0 per WORKFLOW.md when owner calls it.
 
 ---
 
