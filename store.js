@@ -10,6 +10,7 @@ import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engi
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent } from './engine/legend-spent.js';
+import { damageState } from './engine/health.js';
 import {
   makeCharacteristics,
   defense,
@@ -20,6 +21,7 @@ import {
   unconsciousnessRating,
   deathRating,
   recoveryTests,
+  woundThreshold,
   carryingCapacity,
   initiative,
   knockdown,
@@ -209,9 +211,23 @@ export function saveWealthEdits(wealth, id) {
   return edits;
 }
 
+/**
+ * Persist the character's health inputs to the edits overlay. Health is pure
+ * input — current Damage, Wounds, and Recovery tests used today — so the object
+ * is stored as-is; the ratings and the conscious/dead standing are derived by
+ * the engine (store.js + engine/health.js), never stored. "Store only inputs,
+ * never derived" holds.
+ */
+export function saveHealthEdits(health, id) {
+  const edits = loadEdits(id);
+  edits.health = health;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -240,12 +256,21 @@ export function reconcileOverlay(categories = SAVED_CATEGORIES, id) {
 }
 
 /** Apply the saved edits overlay onto a freshly-fetched character. */
-function applyEdits(character, edits) {
+export function applyEdits(character, edits) {
   if (!edits) return character;
   let next = character;
   if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
   if (edits.items) next = { ...next, items: edits.items };
   if (edits.wealth) next = { ...next, wealth: edits.wealth };
+  if (edits.health) {
+    next = {
+      ...next,
+      resources: {
+        ...(next.resources || {}),
+        health: { ...(next.resources?.health || {}), ...edits.health },
+      },
+    };
+  }
   return next;
 }
 
@@ -498,6 +523,7 @@ export function deriveModel(character, rules) {
     unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
     death: deathRating(touVal, healthEffects, lookupChar),
     recoveries: recoveryTests(touVal, healthEffects, lookupChar),
+    woundThreshold: woundThreshold(touVal, healthEffects, lookupChar),
     carryingCapacity: carryingCapacity(attrVal('Strength'), activeEffects, lookupChar),
     initiative: initiative(dexStep, activeEffects),
     knockdown: knockdown(strStep, activeEffects),
@@ -613,5 +639,9 @@ export function deriveModel(character, rules) {
     skills,
     knacks,
     traits: character.traits ?? [],
+    // Health standing: the stored damage/wounds inputs, run through the pure
+    // engine (engine/health.js) against the derived Unconsciousness/Death ratings
+    // — conscious/unconscious/dead state + headroom. Derived, never stored.
+    healthState: damageState(character.resources?.health ?? {}, characteristics),
   };
 }

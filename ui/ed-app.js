@@ -1,6 +1,7 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { applyHealth } from '../engine/health.js';
 import { saveServer, SaveError } from '../store-server.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
@@ -161,7 +162,7 @@ export class EdApp extends LitElement {
     super.connectedCallback();
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
-      const { label, step, karma } = e.detail;
+      const { label, step, karma, apply } = e.detail;
       const stepRow = this._model?.stepByNumber?.[step];
       if (!stepRow) return;
       // Resolve the Karma die's step row (D6) so the modal can offer +D6.
@@ -169,13 +170,24 @@ export class EdApp extends LitElement {
         karma?.step != null && this._model?.stepByNumber?.[karma.step]
           ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
           : null;
-      this._roll = { label, stepRow, karma: karmaCtx };
+      this._roll = { label, stepRow, karma: karmaCtx, apply: apply ?? null };
+    });
+    // A roll modal with an apply context (e.g. a Recovery test) hands its total
+    // back up; apply it to the character's inputs via the pure engine and
+    // re-derive, then close the roll modal. The UI never computes the value.
+    this.addEventListener('ed-roll-apply', (e) => {
+      const { action, result } = e.detail;
+      if (action === 'recovery-heal') {
+        this._editHealth(applyHealth(this._character?.resources?.health ?? {}, { damage: -result, recoveriesUsed: 1 }));
+      }
+      this._roll = null;
     });
     // A view edited character inputs. Apply the patch, persist the overlay, and
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
+    this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
     this.addEventListener('ed-save-key', (e) => {
       this._saveKey = e.detail?.key || null;
@@ -273,6 +285,24 @@ export class EdApp extends LitElement {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view changed the character's current health (damage / wounds / recovery
+  // tests used). Same inputs-only flow: replace the health inputs, persist the
+  // overlay, mark the file dirty, and re-derive so the standing (conscious /
+  // unconscious / dead) and headroom recompute from the new damage.
+  _editHealth(health) {
+    if (!this._character || !health) return;
+    this._character = {
+      ...this._character,
+      resources: {
+        ...(this._character.resources || {}),
+        health: { ...(this._character.resources?.health || {}), ...health },
+      },
+    };
+    saveHealthEdits(health, this._characterId);
     this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
   }
@@ -468,6 +498,7 @@ export class EdApp extends LitElement {
             .label=${this._roll.label}
             .stepRow=${this._roll.stepRow}
             .karma=${this._roll.karma}
+            .apply=${this._roll.apply}
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}

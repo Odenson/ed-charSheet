@@ -8,6 +8,7 @@ export class EdRollModal extends LitElement {
     label: {},
     stepRow: { attribute: false },
     karma: { attribute: false }, // { grants:[{scope,via,summary}], available, stepRow } | null
+    apply: { attribute: false }, // { action, label } | undefined — show an "Apply" button
     _result: { state: true },
     _karmaResult: { state: true },
     _karmaOn: { state: true },
@@ -45,6 +46,8 @@ export class EdRollModal extends LitElement {
     .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
     .hint { font-size: 0.68rem; color: light-dark(#8a93a3, #6b7688); }
     button.again { font: inherit; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#c9ccd3, #3a4150); background: none; color: inherit; cursor: pointer; }
+    button.appbtn { font: inherit; font-size: 0.8rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#d9944e, #d9944e); background: light-dark(#f6e9dc, #3a2a17); color: var(--accent, #b26a00); cursor: pointer; }
+    .appfoot { display: flex; align-items: center; gap: 8px; }
     .karma-grp .glbl { color: var(--karma); }
     .karma-ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
     .kbtn { font: inherit; font-size: 0.78rem; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--karma); background: none; color: var(--karma); cursor: pointer; }
@@ -97,6 +100,19 @@ export class EdRollModal extends LitElement {
 
   _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
+
+  // When the roll carries an apply context (e.g. a Recovery test), hand the
+  // total result back up with that action so the app can apply it.
+  _apply() {
+    const r = this._result;
+    this.dispatchEvent(
+      new CustomEvent('ed-roll-apply', {
+        detail: { action: this.apply?.action ?? null, result: r.total + (this._karmaResult?.total ?? 0) },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   render() {
@@ -164,7 +180,12 @@ export class EdRollModal extends LitElement {
             : ''}
           <div class="foot">
             <span class="hint">Max on a die explodes: reroll and add.</span>
-            <button class="again" @click=${this._roll}>Roll again</button>
+            ${this.apply
+              ? html`<span class="appfoot">
+                  <button class="appbtn" @click=${this._apply}>${this.apply.label ?? 'Apply result'}</button>
+                  <button class="again" @click=${this._roll}>Roll again</button>
+                </span>`
+              : html`<button class="again" @click=${this._roll}>Roll again</button>`}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
+import { applyHealth } from '../engine/health.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
@@ -14,6 +15,7 @@ export class EdOverview extends LitElement {
     _lightbox: { state: true },
     _edit: { state: true },
     _portraitBroken: { state: true },
+    _healthModal: { state: true },
   };
 
   static styles = css`
@@ -79,6 +81,22 @@ export class EdOverview extends LitElement {
     .line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 0.8rem; }
     .line .rl { display: flex; align-items: center; gap: 6px; }
     .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+    /* Health panel: the heading carries the standing chip + the take-damage/hurt
+       affordance; edit-mode rows swap to small number fields. */
+    .hhead { display: flex; align-items: center; gap: 6px; }
+    .hstate { font-size: 0.6rem; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
+    .hstate.warn { background: var(--accent-bg); color: var(--accent); }
+    .hstate.bad { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
+    .hfield { width: 46px; font: inherit; font-size: 0.8rem; font-weight: 500; color: light-dark(#111418, #f0f3f7); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
+    .hfield:focus { border-bottom-color: var(--accent); }
+    .hrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; }
+    .hnum { width: 72px; font: inherit; font-size: 0.85rem; font-weight: 500; color: light-dark(#111418, #f0f3f7); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; outline: none; text-align: right; }
+    .hnum:focus { border-color: var(--accent); }
+    .hbtn { font: inherit; font-size: 0.78rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
+    .hbtn.plain { border-color: var(--border); background: none; color: var(--muted); }
+    .hrec { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 9px; width: 100%; }
+    .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
+    .hint { font-size: 0.68rem; color: var(--muted); }
     .val { font-weight: 500; }
     .feat { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; font-size: 0.72rem; }
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
@@ -230,10 +248,143 @@ export class EdOverview extends LitElement {
     >⚄</button>`;
   }
 
+  // --- Health (damage / wounds / recovery) ------------------------------------
+
+  // The standing chip on the Health heading: "Conscious" (damaged but up),
+  // "Unconscious", or "Dead". Nothing when unhurt or when ratings are missing
+  // (no fabricated state — the chip would be a placeholder pill, not a guess).
+  _healthChip() {
+    const s = this.model?.healthState?.state;
+    if (!s || s === 'unhurt') return '';
+    const labels = { conscious: 'Conscious', unconscious: 'Unconscious', dead: 'Dead' };
+    const cls = s === 'unconscious' ? 'warn' : s === 'dead' ? 'bad' : '';
+    return html`<span class="hstate ${cls}" title=${this._healthTitle()}>${labels[s]}</span>`;
+  }
+
+  // Tooltip for the chip/Damage row: where the derived thresholds sit.
+  _healthTitle() {
+    const u = this.model?.characteristics?.unconsciousness?.value;
+    const d = this.model?.characteristics?.death?.value;
+    const parts = [];
+    if (u != null) parts.push(`Unconscious at ${u}`);
+    if (d != null) parts.push(`Death at ${d}`);
+    return parts.join(' · ');
+  }
+
+  // Damage / Wounds rows: a number input in edit mode, the stored input otherwise.
+  _healthField(key, current, label) {
+    if (!this.editMode) return html`<span class="val">${current ?? 0}</span>`;
+    return html`<input
+      class="hfield"
+      type="number"
+      min="0"
+      step="1"
+      .value=${String(current ?? 0)}
+      aria-label=${label}
+      @change=${(e) => this._setHealth(key, Number(e.target.value))}
+    />`;
+  }
+
+  // One health input changed (edit mode) — dispatch the input upward. The view
+  // only clamps the bare input; everything else stays with the engine.
+  _setHealth(key, v) {
+    const n = Number.isFinite(v) ? Math.max(0, v) : 0;
+    this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: { [key]: n }, bubbles: true, composed: true }));
+  }
+
+  // Recoveries row: "used / max" — used is an input, max is the engine-derived
+  // per-day Recovery Tests rating (a placeholder pill until the engine computes it).
+  _recoveries(h) {
+    const used = h.recoveriesUsed ?? 0;
+    const max = this.model?.characteristics?.recoveries?.value;
+    if (this.editMode) {
+      return html`<span class="rl">
+        <input
+          class="hfield"
+          type="number"
+          min="0"
+          step="1"
+          .value=${String(used)}
+          aria-label="Recovery tests used today"
+          @change=${(e) => this._setHealth('recoveriesUsed', Number(e.target.value))}
+        />
+        <span>/ ${max ?? this._pend()}</span>
+      </span>`;
+    }
+    return html`<span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>`;
+  }
+
+  // --- Damage modal (mid-session take/heal) -----------------------------------
+
+  _openHealth() {
+    const h = this.model?.resources?.health ?? {};
+    // Draft carries the signed actions (take/heal) plus the absolute current
+    // wounds and recovery-tests-used; open fresh each time.
+    this._healthDraft = { take: 0, heal: 0, wounds: h.wounds ?? 0, used: h.recoveriesUsed ?? 0 };
+    this._healthModal = true;
+  }
+
+  _applyHealthDraft() {
+    const d = this._healthDraft ?? {};
+    const cur = this.model?.resources?.health ?? {};
+    const next = applyHealth(cur, {
+      damage: (d.take ?? 0) - (d.heal ?? 0),
+      wounds: (d.wounds ?? 0) - (cur.wounds ?? 0),
+      recoveriesUsed: (d.used ?? 0) - (cur.recoveriesUsed ?? 0),
+    });
+    this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: next, bubbles: true, composed: true }));
+    this._healthModal = false;
+  }
+
+  // One-tap Recovery test: roll the open-ended Effect test at Toughness step
+  // (reusing the roll modal) with an apply context; the app applies the result
+  // to damage and records +1 Recovery test used. Close this modal to show the roll.
+  _recoveryTest() {
+    const tou = (this.model?.attributes ?? []).find((a) => a.name === 'Toughness');
+    if (tou?.step == null) return;
+    this.dispatchEvent(
+      new CustomEvent('ed-roll', {
+        detail: { label: 'Recovery test', step: tou.step, apply: { action: 'recovery-heal', label: 'Heal this amount' } },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    this._healthModal = false;
+  }
+
+  _healthModalBody() {
+    const h = this.model?.resources?.health ?? {};
+    const st = this.model?.healthState;
+    const d = this._healthDraft ?? {};
+    const rating = (n) => (n == null ? this._pend() : html`${n}`);
+    const stateWord =
+      st?.state && st.state !== 'unhurt' ? html` · <b>${st.state === 'dead' ? 'Dead' : st.state === 'unconscious' ? 'Unconscious' : 'Conscious'}</b>` : '';
+    const set = (k) => (e) => {
+      d[k] = Math.max(0, Number(e.target.value) || 0);
+    };
+    return html`
+      <p class="mpara">
+        Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious
+        ${rating(this.model?.characteristics?.unconsciousness?.value)} · Death
+        ${rating(this.model?.characteristics?.death?.value)}
+      </p>
+      <div class="hrow"><span>Take damage</span><input class="hnum" type="number" min="0" step="1" .value=${d.take} aria-label="Damage to take" @input=${set('take')} /></div>
+      <div class="hrow"><span>Heal</span><input class="hnum" type="number" min="0" step="1" .value=${d.heal} aria-label="Damage to heal" @input=${set('heal')} /></div>
+      <div class="hrow"><span>Wounds</span><input class="hnum" type="number" min="0" step="1" .value=${d.wounds} aria-label="Current wounds" @input=${set('wounds')} /></div>
+      <div class="hrow"><span>Recovery tests used</span><input class="hnum" type="number" min="0" step="1" .value=${d.used} aria-label="Recovery tests used today" @input=${set('used')} /></div>
+      <button class="hbtn hrec" @click=${this._recoveryTest}>⚄ Recovery test — heals the result, uses one</button>
+      <div class="hfoot">
+        <span class="hint">Enter applies · Escape closes</span>
+        <button class="hbtn" @click=${this._applyHealthDraft}>Apply</button>
+      </div>
+    `;
+  }
+
   connectedCallback() {
     super.connectedCallback();
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
+      if (this._healthModal) this._healthModal = false;
       if (this._modal) this._closeModal();
       if (this._lightbox) this._lightbox = false;
     };
@@ -545,12 +696,17 @@ export class EdOverview extends LitElement {
                 <div class="line"><span>Mystic</span>${this._char('mysticArmor')}</div>
               </div>
               <div class="blk">
-                <h4>Health</h4>
-                <div class="line"><span>Damage</span><span class="val">${h.damage ?? 0}</span></div>
+                <h4 class="hhead">
+                  <span>Health</span>
+                  ${this._healthChip()}
+                  <button class="info" title="Take damage or heal" aria-label="Take damage or heal" @click=${() => this._openHealth()}>✚</button>
+                </h4>
+                <div class="line"><span>Damage</span>${this._healthField('damage', h.damage, 'Current damage')}</div>
                 <div class="line"><span>Unconscious</span>${this._char('unconsciousness')}</div>
                 <div class="line"><span>Death</span>${this._char('death')}</div>
-                <div class="line"><span>Wounds</span><span class="val">${h.wounds ?? 0}</span></div>
-                <div class="line"><span>Recoveries</span>${this._char('recoveries')}</div>
+                <div class="line"><span>Wound Threshold</span>${this._char('woundThreshold')}</div>
+                <div class="line"><span>Wounds</span>${this._healthField('wounds', h.wounds, 'Current wounds')}</div>
+                <div class="line"><span>Recoveries</span>${this._recoveries(h)}</div>
               </div>
               <div class="blk">
                 <h4>Movement</h4>
@@ -569,6 +725,24 @@ export class EdOverview extends LitElement {
           </div>
         </div>
       </div>
+      ${this._healthModal
+        ? html`
+            <div class="overlay" @click=${() => (this._healthModal = false)} @keydown=${(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                this._applyHealthDraft();
+              }
+            }}>
+              <div class="modal" @click=${(e) => e.stopPropagation()}>
+                <div class="mhead">
+                  <span>Damage</span>
+                  <button class="mclose" aria-label="Close" @click=${() => (this._healthModal = false)}>✕</button>
+                </div>
+                <div class="mbody">${this._healthModalBody()}</div>
+              </div>
+            </div>
+          `
+        : ''}
       ${this._modal
         ? html`
             <div class="overlay" @click=${this._closeModal}>
