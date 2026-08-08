@@ -384,7 +384,7 @@ export class EdOverview extends LitElement {
     super.connectedCallback();
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
-      if (this._healthModal) this._healthModal = false;
+      if (this._healthModal) this._closeHealthModal();
       if (this._modal) this._closeModal();
       if (this._lightbox) this._lightbox = false;
     };
@@ -403,6 +403,13 @@ export class EdOverview extends LitElement {
     // blue ring) and stays hover-revealed after the modal is gone.
     this.renderRoot.activeElement?.blur();
     this._modal = null;
+  }
+
+  // The damage modal closes the same way as any other: drop focus from the ✚
+  // trigger so an Escape close doesn't leave its :focus-visible ring behind.
+  _closeHealthModal() {
+    this.renderRoot.activeElement?.blur();
+    this._healthModal = false;
   }
 
   // Modal body listing all character metadata (any field added to meta shows up).
@@ -727,7 +734,7 @@ export class EdOverview extends LitElement {
       </div>
       ${this._healthModal
         ? html`
-            <div class="overlay" @click=${() => (this._healthModal = false)} @keydown=${(e) => {
+            <div class="overlay" @click=${this._closeHealthModal} @keydown=${(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 this._applyHealthDraft();
@@ -736,7 +743,7 @@ export class EdOverview extends LitElement {
               <div class="modal" @click=${(e) => e.stopPropagation()}>
                 <div class="mhead">
                   <span>Damage</span>
-                  <button class="mclose" aria-label="Close" @click=${() => (this._healthModal = false)}>✕</button>
+                  <button class="mclose" aria-label="Close" @click=${this._closeHealthModal}>✕</button>
                 </div>
                 <div class="mbody">${this._healthModalBody()}</div>
               </div>
