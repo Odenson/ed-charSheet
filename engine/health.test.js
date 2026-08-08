@@ -8,7 +8,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { makeCharacteristics, woundThreshold } from './characteristics.js';
-import { damageState, applyHealth, HEALTH_STATES } from './health.js';
+import {
+  damageState,
+  applyHealth,
+  HEALTH_STATES,
+  woundsFromHit,
+  knockdownTriggered,
+  knockdownDifficulty,
+  knockdownOutcome,
+  KNOCKED_DOWN_EFFECT,
+} from './health.js';
 
 const table = JSON.parse(
   readFileSync(new URL('../rules/characteristics.json', import.meta.url)),
@@ -127,4 +136,75 @@ test('applyHealth: tolerates a missing health input and never mutates it', () =>
   const next = applyHealth(base, { damage: 2 });
   assert.deepEqual(base, { damage: 4, wounds: 0, recoveriesUsed: 0 }); // untouched
   assert.deepEqual(applyHealth(undefined, { damage: 2 }), { damage: 2, wounds: 0, recoveriesUsed: 0 });
+});
+
+// --- Wounds & knockdown (a wounding hit) -------------------------------------
+// Owner-stated rules: a hit at/above the Wound Threshold records one Wound; a
+// hit five or more over it triggers a Knockdown test (Strength vs. Difficulty =
+// hit − threshold); meeting the difficulty keeps you up, missing knocks you down.
+const WT = 11; // Chakka (Tou 17) — the anchor used above
+
+test('woundsFromHit: a hit at the Wound Threshold records one Wound', () => {
+  assert.equal(woundsFromHit(WT, WT), 1); // exactly at the threshold
+  assert.equal(woundsFromHit(WT + 5, WT), 1);
+});
+
+test('woundsFromHit: below the threshold inflicts no Wound', () => {
+  assert.equal(woundsFromHit(WT - 1, WT), 0);
+  assert.equal(woundsFromHit(0, WT), 0);
+});
+
+test('woundsFromHit: a missing Wound Threshold never fabricates a Wound', () => {
+  assert.equal(woundsFromHit(100, null), 0);
+  assert.equal(woundsFromHit(100, undefined), 0);
+});
+
+test('knockdownTriggered: only a hit five or more over the threshold', () => {
+  assert.equal(knockdownTriggered(WT + 4, WT), false); // 15, one over the 5 gap
+  assert.equal(knockdownTriggered(WT + 5, WT), true); // 16, the gap
+  assert.equal(knockdownTriggered(WT, WT), false); // a plain wounding hit
+  assert.equal(knockdownTriggered(WT + 5, null), false); // no threshold -> no test
+});
+
+test('knockdownDifficulty: hit minus threshold, and only when triggered', () => {
+  assert.equal(knockdownDifficulty(WT + 7, WT), 7);
+  assert.equal(knockdownDifficulty(WT + 5, WT), 5);
+  assert.equal(knockdownDifficulty(WT, WT), null); // not triggered
+  assert.equal(knockdownDifficulty(WT + 9, null), null); // no threshold
+});
+
+test('knockdownOutcome: result at or above the difficulty stays up', () => {
+  assert.equal(knockdownOutcome(9, 9), 'up');
+  assert.equal(knockdownOutcome(12, 9), 'up');
+});
+
+test('knockdownOutcome: a result below the difficulty knocks down', () => {
+  assert.equal(knockdownOutcome(8, 9), 'down');
+  assert.equal(knockdownOutcome(0, 5), 'down');
+});
+
+test('knockdownOutcome: an impossible comparison is null, never decided', () => {
+  assert.equal(knockdownOutcome(5, null), null);
+  assert.equal(knockdownOutcome(null, 5), null);
+});
+
+test('KNOCKED_DOWN_EFFECT: the synthesized condition is taxonomy-shaped and roll-time', () => {
+  assert.equal(KNOCKED_DOWN_EFFECT.type, 'test-modifier');
+  assert.deepEqual(KNOCKED_DOWN_EFFECT.target, { domain: 'test', name: 'Action' });
+  assert.equal(KNOCKED_DOWN_EFFECT.operation, 'add');
+  assert.equal(KNOCKED_DOWN_EFFECT.value, -3);
+  assert.equal(KNOCKED_DOWN_EFFECT.measure, 'result'); // applied at roll time, not folded into a stat
+  assert.equal(KNOCKED_DOWN_EFFECT.source, 'condition');
+  assert.match(KNOCKED_DOWN_EFFECT.summary, /Action tests/);
+});
+
+// The full wound-and-knockdown flow a big hit takes through the engine.
+test('a hit 5+ over the threshold wounds, triggers a test, and resolves up or down', () => {
+  const take = WT + 6; // e.g. 17 vs threshold 11
+  assert.equal(woundsFromHit(take, WT), 1);
+  assert.equal(knockdownTriggered(take, WT), true);
+  const difficulty = knockdownDifficulty(take, WT);
+  assert.equal(difficulty, 6);
+  assert.equal(knockdownOutcome(difficulty, difficulty), 'up'); // just meets it
+  assert.equal(knockdownOutcome(difficulty - 1, difficulty), 'down');
 });

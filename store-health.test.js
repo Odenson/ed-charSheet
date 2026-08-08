@@ -111,3 +111,38 @@ test('deriveModel exposes woundThreshold and healthState from stored inputs only
   // The stored inputs themselves are untouched — the sheet stores only inputs.
   assert.deepEqual(character.resources.health, { damage: 4, wounds: 0, recoveriesUsed: 0 });
 });
+
+test('deriveModel exposes activeEffects: the always-on fold, no condition when not knocked down', () => {
+  memory.clear();
+  const character = {
+    ...baseCharacter(),
+    attributes: { Toughness: { base: 17 } },
+    resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0 } },
+  };
+  const model = deriveModel(character, rules);
+  const names = model.activeEffects.map((e) => e.origin?.kind);
+  assert.ok(Array.isArray(model.activeEffects));
+  assert.ok(!names.includes('condition'), 'no condition effect when standing');
+});
+
+test('deriveModel: knockedDown:true folds the Knocked Down condition into activeEffects', () => {
+  memory.clear();
+  const character = {
+    ...baseCharacter(),
+    attributes: { Toughness: { base: 17 }, Strength: { base: 20 } },
+    resources: { health: { damage: 12, wounds: 1, recoveriesUsed: 0, knockedDown: true } },
+  };
+  const model = deriveModel(character, rules);
+  const cond = model.activeEffects.filter((e) => e.origin?.kind === 'condition');
+  assert.equal(cond.length, 1);
+  assert.equal(cond[0].type, 'test-modifier');
+  assert.equal(cond[0].target.name, 'Action');
+  assert.equal(cond[0].value, -3);
+  assert.deepEqual(cond[0].origin, { kind: 'condition', name: 'Knocked Down' });
+  // The static Knockdown Step is NOT penalized — the −3 is roll-time only
+  // (measure: result), so the derived step stays at Strength Step 8.
+  assert.equal(model.characteristics.knockdown.value, 8);
+  // Cleared: the condition folds back out of the readout.
+  const standing = deriveModel({ ...character, resources: { health: { ...character.resources.health, knockedDown: false } } }, rules);
+  assert.ok(!standing.activeEffects.some((e) => e.origin?.kind === 'condition'));
+});

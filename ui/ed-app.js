@@ -1,7 +1,7 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, loadCharacters, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
-import { applyHealth } from '../engine/health.js';
+import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { saveServer, SaveError } from '../store-server.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
@@ -162,7 +162,7 @@ export class EdApp extends LitElement {
     super.connectedCallback();
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
-      const { label, step, karma, apply } = e.detail;
+      const { label, step, karma, apply, kind, difficulty } = e.detail;
       const stepRow = this._model?.stepByNumber?.[step];
       if (!stepRow) return;
       // Resolve the Karma die's step row (D6) so the modal can offer +D6.
@@ -170,15 +170,28 @@ export class EdApp extends LitElement {
         karma?.step != null && this._model?.stepByNumber?.[karma.step]
           ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
           : null;
-      this._roll = { label, stepRow, karma: karmaCtx, apply: apply ?? null };
+      this._roll = {
+        label,
+        stepRow,
+        karma: karmaCtx,
+        apply: apply ?? null,
+        difficulty: difficulty ?? null,
+        mods: this._rollTimeMods({ kind, apply }),
+      };
     });
     // A roll modal with an apply context (e.g. a Recovery test) hands its total
     // back up; apply it to the character's inputs via the pure engine and
     // re-derive, then close the roll modal. The UI never computes the value.
     this.addEventListener('ed-roll-apply', (e) => {
-      const { action, result } = e.detail;
+      const { action, result, difficulty } = e.detail;
       if (action === 'recovery-heal') {
         this._editHealth(applyHealth(this._character?.resources?.health ?? {}, { damage: -result, recoveriesUsed: 1 }));
+      } else if (action === 'knockdown-result') {
+        // The outcome is re-derived here through the engine (result vs the hit's
+        // difficulty) — the modal only displayed the comparison. The big hit's
+        // damage and any Wound were already applied by the damage modal; this
+        // stores the knocked-down input that the engine's condition effect reads.
+        this._editHealth({ knockedDown: knockdownOutcome(result, difficulty) === 'down' });
       }
       this._roll = null;
     });
@@ -290,21 +303,39 @@ export class EdApp extends LitElement {
   }
 
   // A view changed the character's current health (damage / wounds / recovery
-  // tests used). Same inputs-only flow: replace the health inputs, persist the
-  // overlay, mark the file dirty, and re-derive so the standing (conscious /
-  // unconscious / dead) and headroom recompute from the new damage.
+  // tests used / knocked-down state). Same inputs-only flow: merge the patch
+  // into the health inputs, persist the overlay, mark the file dirty, and
+  // re-derive so the standing (conscious / unconscious / dead) and headroom
+  // recompute from the new damage. The overlay always stores the FULL merged
+  // health object — a partial patch (e.g. `knockedDown: true`) must never
+  // replace the recorded damage/wounds on the next replay.
   _editHealth(health) {
     if (!this._character || !health) return;
+    const merged = { ...(this._character.resources?.health || {}), ...health };
     this._character = {
       ...this._character,
       resources: {
         ...(this._character.resources || {}),
-        health: { ...(this._character.resources?.health || {}), ...health },
+        health: merged,
       },
     };
-    saveHealthEdits(health, this._characterId);
+    saveHealthEdits(merged, this._characterId);
     this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
+  }
+
+  // Roll-time modifiers from live conditions. While Knocked Down every Action
+  // test takes the condition's −3 (errata); the Knockdown and Recovery tests are
+  // exempt, and Initiative / Karma are not Action tests either. The value comes
+  // from the engine's synthesized condition effect (KNOCKED_DOWN_EFFECT) — a
+  // static number is never typed here, and the penalty is applied at roll time,
+  // never folded into a stored/derived stat.
+  _rollTimeMods({ kind, apply } = {}) {
+    if (!this._character?.resources?.health?.knockedDown) return [];
+    const action = apply?.action;
+    if (action === 'recovery-heal' || action === 'knockdown-result') return [];
+    if (kind === 'initiative' || kind === 'knockdown' || kind === 'karma') return [];
+    return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
   }
 
   // Save to GitHub: POST the merged, inputs-only character to the worker, which
@@ -499,6 +530,8 @@ export class EdApp extends LitElement {
             .stepRow=${this._roll.stepRow}
             .karma=${this._roll.karma}
             .apply=${this._roll.apply}
+            .difficulty=${this._roll.difficulty}
+            .mods=${this._roll.mods}
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}

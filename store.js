@@ -10,7 +10,7 @@ import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engi
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent } from './engine/legend-spent.js';
-import { damageState } from './engine/health.js';
+import { damageState, KNOCKED_DOWN_EFFECT } from './engine/health.js';
 import {
   makeCharacteristics,
   defense,
@@ -512,6 +512,13 @@ export function deriveModel(character, rules) {
     durabilityRank: (d.talents ?? []).find((t) => t.name === 'Durability')?.rank ?? 0,
   }));
   const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
+  // Knocked Down is a live condition, not a stored/derived static number: it
+  // shows in Active Effects and is applied as a roll-time −3 to Action tests.
+  // It exists purely because the input is set — clear `knockedDown` and it folds
+  // back out of every derived readout.
+  const conditionEffects = character.resources?.health?.knockedDown
+    ? [{ ...KNOCKED_DOWN_EFFECT, origin: { kind: 'condition', name: 'Knocked Down' } }]
+    : [];
   const touVal = attrVal('Toughness');
 
   const characteristics = {
@@ -643,5 +650,9 @@ export function deriveModel(character, rules) {
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings
     // — conscious/unconscious/dead state + headroom. Derived, never stored.
     healthState: damageState(character.resources?.health ?? {}, characteristics),
+    // Every active effect for the Active Effects panel: the always-on fold
+    // (race/discipline/equipped items, each tagged with its origin) plus any
+    // live condition effect (Knocked Down). All derived, never stored.
+    activeEffects: [...activeEffects, ...conditionEffects],
   };
 }

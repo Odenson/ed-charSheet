@@ -3,7 +3,7 @@
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
-import { applyHealth } from '../engine/health.js';
+import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty } from '../engine/health.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
@@ -16,6 +16,7 @@ export class EdOverview extends LitElement {
     _edit: { state: true },
     _portraitBroken: { state: true },
     _healthModal: { state: true },
+    _resetRecoveries: { state: true },
   };
 
   static styles = css`
@@ -64,6 +65,8 @@ export class EdOverview extends LitElement {
     .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     .kmark { color: var(--karma); }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
+    .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0; }
+    .hreset:hover { color: var(--accent); }
     /* Top row: attributes (compacted) beside the Legend panel, sharing one height. */
     .toprow { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 8px; align-items: stretch; }
     .legend { display: flex; flex-direction: column; }
@@ -102,6 +105,15 @@ export class EdOverview extends LitElement {
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
     .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
     .ftag.race { background: var(--accent-bg); color: var(--accent); }
+    /* Active Effects list: one compact line per effect, the strip bounded with
+       internal scroll so the Overview keeps its no-page-scroll contract. */
+    .aefx .aelist { max-height: 172px; overflow: auto; margin-right: -2px; padding-right: 2px; }
+    .aefx-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 0.7rem; }
+    .aefx-row .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
+    .aefx-row.cond { background: var(--accent-bg); border-radius: 6px; padding: 3px 6px; margin: 2px -2px; }
+    .ftag.cond { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
+    .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .stand:hover { background: var(--accent-bg); }
     .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
     /* Universal hover-reveal: ANY info icon stays hidden until you hover (or
        keyboard-focus) the element it sits in, so it never clutters the read view.
@@ -210,23 +222,25 @@ export class EdOverview extends LitElement {
   // and enables its roll button; falls back to the placeholder pill + disabled roll.
   _combatStep(key, label) {
     const c = this.model?.characteristics?.[key];
-    if (!c || c.value == null) return html`${this._pend()}${this._rollBtn(label, null)}`;
+    if (!c || c.value == null) return html`${this._pend()}${this._rollBtn(label, null, undefined, false, key)}`;
     const title = `Step ${c.value} (base ${c.base}${this._modSummary(c.modifiers)})`;
-    return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma)}`;
+    return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma, false, key)}`;
   }
 
   // Karma: available points (max in the tooltip); the roll button rolls the D6 Karma die.
   _karma(label) {
     const k = this.model?.characteristics?.karma;
-    if (!k) return html`${this._pend()}${this._rollBtn(label, null)}`;
+    if (!k) return html`${this._pend()}${this._rollBtn(label, null, undefined, true, 'karma')}`;
     const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma · die D6`;
-    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step, null, true)}`;
+    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step, null, true, 'karma')}`;
   }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
   // Disabled when there's no step yet (e.g. engine-derived combat stats). If the
   // test is karma-eligible (`karma` grants present), passes a karma context so the
-  // roll modal can offer an optional +D6 Karma die.
-  _rollBtn(label, step, karma, km = false) {
+  // roll modal can offer an optional +D6 Karma die. `kind` tags the roll's family
+  // (initiative/knockdown/karma) so the app knows it is not an Action test and
+  // skips the Knocked Down roll-time −3 (errata).
+  _rollBtn(label, step, karma, km = false, kind = undefined) {
     const disabled = step == null;
     const karmaCtx =
       karma?.grants?.length
@@ -243,7 +257,7 @@ export class EdOverview extends LitElement {
       aria-label="Roll ${label}"
       @click=${(e) => {
         e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step, karma: karmaCtx }, bubbles: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step, karma: karmaCtx, kind }, bubbles: true, composed: true }));
       }}
     >⚄</button>`;
   }
@@ -293,7 +307,9 @@ export class EdOverview extends LitElement {
   }
 
   // Recoveries row: "used / max" — used is an input, max is the engine-derived
-  // per-day Recovery Tests rating (a placeholder pill until the engine computes it).
+  // per-day Recovery Tests rating (a placeholder pill until the engine computes
+  // it). Read mode adds a refresh affordance: "a new day" resets used to 0
+  // (confirming first) — dispatching the input change upward, never storing it.
   _recoveries(h) {
     const used = h.recoveriesUsed ?? 0;
     const max = this.model?.characteristics?.recoveries?.value;
@@ -311,29 +327,67 @@ export class EdOverview extends LitElement {
         <span>/ ${max ?? this._pend()}</span>
       </span>`;
     }
-    return html`<span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>`;
+    return html`<span class="rl">
+      <span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>
+      <button
+        class="hreset"
+        title="A new day begins — reset Recovery tests used to 0"
+        aria-label="Reset Recovery tests used today"
+        @click=${() => (this._resetRecoveries = true)}
+      >⟳</button>
+    </span>`;
   }
 
   // --- Damage modal (mid-session take/heal) -----------------------------------
 
+  // Mid-session damage entry: the sheet takes a hit amount and applies damage and
+  // any Wound itself (the Wound is derived from the hit vs. the Wound Threshold —
+  // never typed in, and never stored unless the engine says one is inflicted).
   _openHealth() {
     const h = this.model?.resources?.health ?? {};
     // Draft carries the signed actions (take/heal) plus the absolute current
-    // wounds and recovery-tests-used; open fresh each time.
-    this._healthDraft = { take: 0, heal: 0, wounds: h.wounds ?? 0, used: h.recoveriesUsed ?? 0 };
+    // recovery-tests-used; open fresh each time. Wounds are NOT in the draft:
+    // a hit auto-records its Wound (or not) via the engine at apply time.
+    this._healthDraft = { take: 0, heal: 0, used: h.recoveriesUsed ?? 0 };
     this._healthModal = true;
   }
 
   _applyHealthDraft() {
     const d = this._healthDraft ?? {};
     const cur = this.model?.resources?.health ?? {};
+    const take = d.take ?? 0;
+    const wt = this.model?.characteristics?.woundThreshold?.value;
+    // The hit inflicts one Wound only when it clears the Wound Threshold — the
+    // engine decides (store only inputs: the hit amount, not the wound).
+    const wound = take > 0 ? woundsFromHit(take, wt) : 0;
     const next = applyHealth(cur, {
-      damage: (d.take ?? 0) - (d.heal ?? 0),
-      wounds: (d.wounds ?? 0) - (cur.wounds ?? 0),
+      damage: take - (d.heal ?? 0),
+      wounds: wound - 0,
       recoveriesUsed: (d.used ?? 0) - (cur.recoveriesUsed ?? 0),
     });
     this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: next, bubbles: true, composed: true }));
     this._healthModal = false;
+    // A hit that lands five or more over the Wound Threshold forces a Knockdown
+    // test (Strength vs. Difficulty = hit − threshold) before the hit is fully
+    // resolved. Only offered when the sheet can roll it (a computed Knockdown
+    // step exists — no fabricated roll otherwise). The hit's damage/wound are
+    // already applied above; the test only decides the knocked-down state.
+    const kd = this.model?.characteristics?.knockdown;
+    if (take > 0 && kd?.value != null && knockdownTriggered(take, wt)) {
+      this.dispatchEvent(
+        new CustomEvent('ed-roll', {
+          detail: {
+            label: 'Knockdown test',
+            step: kd.value,
+            kind: 'knockdown', // exempt from the Knocked Down −3 (errata)
+            difficulty: { value: knockdownDifficulty(take, wt) },
+            apply: { action: 'knockdown-result' },
+          },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    }
   }
 
   // One-tap Recovery test: roll the open-ended Effect test at Toughness step
@@ -362,6 +416,7 @@ export class EdOverview extends LitElement {
     const set = (k) => (e) => {
       d[k] = Math.max(0, Number(e.target.value) || 0);
     };
+    const wt = this.model?.characteristics?.woundThreshold?.value;
     return html`
       <p class="mpara">
         Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious
@@ -370,8 +425,11 @@ export class EdOverview extends LitElement {
       </p>
       <div class="hrow"><span>Take damage</span><input class="hnum" type="number" min="0" step="1" .value=${d.take} aria-label="Damage to take" @input=${set('take')} /></div>
       <div class="hrow"><span>Heal</span><input class="hnum" type="number" min="0" step="1" .value=${d.heal} aria-label="Damage to heal" @input=${set('heal')} /></div>
-      <div class="hrow"><span>Wounds</span><input class="hnum" type="number" min="0" step="1" .value=${d.wounds} aria-label="Current wounds" @input=${set('wounds')} /></div>
       <div class="hrow"><span>Recovery tests used</span><input class="hnum" type="number" min="0" step="1" .value=${d.used} aria-label="Recovery tests used today" @input=${set('used')} /></div>
+      <p class="mpara hint">
+        A hit at or above the Wound Threshold ${rating(wt)} records one Wound; a
+        hit five or more over it triggers a Knockdown test.
+      </p>
       <button class="hbtn hrec" @click=${this._recoveryTest}>⚄ Recovery test — heals the result, uses one</button>
       <div class="hfoot">
         <span class="hint">Enter applies · Escape closes</span>
@@ -491,6 +549,50 @@ export class EdOverview extends LitElement {
         ${discAbilities.map(
           (a) => html`<div class="feat"><span class="ftag">${a.tag}</span><span class="txt">${a.type === 'grant-karma-use' ? html`<span class="kmark" title="Karma use">✦</span> ` : ''}${a.summary}</span></div>`,
         )}
+      </div>
+    `;
+  }
+
+  // Active Effects: the full fold of engine effects currently shaping the
+  // character — race abilities, discipline circle abilities, equipped item and
+  // thread-item effects — plus any live condition (Knocked Down, carrying a
+  // roll-time −3 to Action tests). The list is bounded to an internally
+  // scrolling strip so the Overview still fits the viewport (UI-GUIDELINES §1)
+  // no matter how many effects are active. A live condition offers its
+  // reversal ("Stand up") right on the row.
+  _activeEffects() {
+    const effects = this.model?.activeEffects ?? [];
+    if (!effects.length) return html``;
+    const tag = (e) => {
+      const o = e.origin ?? {};
+      if (o.kind === 'race') return o.name ?? 'race';
+      if (o.kind === 'discipline') return `${String(o.name ?? '').slice(0, 3)} ${o.circle ?? ''}`.trim();
+      if (o.kind === 'thread') return `⚶ ${o.name ?? ''}`;
+      if (o.kind === 'item') return o.name ?? 'item';
+      if (o.kind === 'condition') return 'condition';
+      return e.source ?? '';
+    };
+    return html`
+      <div class="blk aefx">
+        <h4>Active Effects</h4>
+        <div class="aelist">
+          ${effects.map(
+            (e) => html`
+              <div class="aefx-row ${e.origin?.kind === 'condition' ? 'cond' : ''}">
+                <span class="ftag ${e.origin?.kind === 'condition' ? 'cond' : e.origin?.kind === 'race' ? 'race' : ''}" title=${e.origin ? tag(e) : e.source ?? ''}>${tag(e)}</span>
+                <span class="txt" title=${e.summary ?? ''}>${e.summary ?? ''}</span>
+                ${e.origin?.kind === 'condition'
+                  ? html`<button
+                      class="stand"
+                      title="End the Knocked Down condition"
+                      @click=${() =>
+                        this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: { knockedDown: false }, bubbles: true, composed: true }))}
+                    >Stand up</button>`
+                  : ''}
+              </div>
+            `,
+          )}
+        </div>
       </div>
     `;
   }
@@ -728,6 +830,7 @@ export class EdOverview extends LitElement {
                 <div class="line"><span>Karma</span><span class="rl">${this._karma('Karma')}</span></div>
               </div>
               ${this._specialFeatures()}
+              ${this._activeEffects()}
             </div>
           </div>
         </div>
@@ -749,6 +852,20 @@ export class EdOverview extends LitElement {
               </div>
             </div>
           `
+        : ''}
+      ${this._resetRecoveries
+        ? html`<ed-confirm
+            heading="A new day begins"
+            message="Reset Recovery tests used today to 0?"
+            confirmLabel="Reset"
+            @confirm=${() => {
+              this._resetRecoveries = false;
+              this.dispatchEvent(
+                new CustomEvent('ed-edit-health', { detail: { recoveriesUsed: 0 }, bubbles: true, composed: true }),
+              );
+            }}
+            @close=${() => (this._resetRecoveries = false)}
+          ></ed-confirm>`
         : ''}
       ${this._modal
         ? html`

@@ -72,3 +72,74 @@ export function applyHealth(health, change) {
     recoveriesUsed: Math.max(0, (health?.recoveriesUsed ?? 0) + delta(change?.recoveriesUsed)),
   };
 }
+
+// --- Wounds & knockdown (a wounding hit) --------------------------------------
+//
+// Owner-stated rules (plan docs/PLAN-WOUNDS-KNOCKDOWN.md):
+//   - Wound: a single hit with damage >= Wound Threshold inflicts one Wound.
+//   - Knockdown: only when that hit is 5 or more over the Wound Threshold. The
+//     character rolls an open-ended Strength test (the Knockdown step) against
+//     a Difficulty Number equal to the hit's damage minus the Wound Threshold.
+//     Result >= Difficulty -> stays up; below -> knocked down.
+// All helpers are null-safe: with no computed Wound Threshold they return the
+// safe default (0 / false / null) so the UI never invents a threshold.
+
+/**
+ * How many Wounds a single hit inflicts: 1 when its damage is at or above the
+ * Wound Threshold, else 0. (4E: a wound when a single attack's damage meets the
+ * threshold — binary per hit, not per threshold multiple.)
+ * @param {number} take the hit's damage (as recorded in the damage modal)
+ * @param {number|null} woundThreshold the derived Wound Threshold value
+ * @returns {number} 1 | 0
+ */
+export function woundsFromHit(take, woundThreshold) {
+  return woundThreshold != null && Number.isFinite(take) && take >= woundThreshold ? 1 : 0;
+}
+
+/**
+ * Does this hit trigger a Knockdown test? Only when the damage is five or more
+ * over the Wound Threshold (per the owner-stated rule).
+ * @returns {boolean}
+ */
+export function knockdownTriggered(take, woundThreshold) {
+  return woundThreshold != null && Number.isFinite(take) && take >= woundThreshold + 5;
+}
+
+/**
+ * The Knockdown test's Difficulty Number = the hit's damage minus the Wound
+ * Threshold. Only meaningful when `knockdownTriggered` (so >= 5); null otherwise.
+ * @returns {number|null}
+ */
+export function knockdownDifficulty(take, woundThreshold) {
+  if (!knockdownTriggered(take, woundThreshold)) return null;
+  return take - woundThreshold;
+}
+
+/**
+ * The outcome of a Knockdown test, once the open-ended Strength test is rolled:
+ * `'up'` when the result is at or above the Difficulty (not knocked down),
+ * `'down'` when it falls short. Null when the comparison can't be made.
+ * @returns {'up'|'down'|null}
+ */
+export function knockdownOutcome(result, difficulty) {
+  if (difficulty == null || !Number.isFinite(result)) return null;
+  return result >= difficulty ? 'up' : 'down';
+}
+
+/**
+ * The synthesized effect for the Knocked Down condition, so one source serves
+ * both the Active Effects panel and the roll-time penalty. `Action`-test and
+ * `condition` are already taxonomy v3 vocabulary (EFFECT-TAXONOMY §3, §9) —
+ * no taxonomy change. `measure: "result"` — a flat penalty to the rolled test,
+ * applied at roll time (never folded into a stored/derived static number).
+ */
+export const KNOCKED_DOWN_EFFECT = {
+  type: 'test-modifier',
+  target: { domain: 'test', name: 'Action' },
+  operation: 'add',
+  value: -3,
+  measure: 'result',
+  condition: 'always',
+  source: 'condition',
+  summary: '−3 to Action tests while knocked down.',
+};
