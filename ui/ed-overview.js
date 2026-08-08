@@ -62,6 +62,18 @@ export class EdOverview extends LitElement {
     .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     .kmark { color: var(--karma); }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
+    /* Top row: attributes (compacted) beside the Legend panel, sharing one height. */
+    .toprow { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 8px; align-items: stretch; }
+    .legend { display: flex; flex-direction: column; }
+    /* Sized so the Attributes/Legend row keeps its original ~130px height — the
+       total's font and the panel's internal spacing are tuned to fit, not grow. */
+    .legend h4 { margin-bottom: 3px; }
+    .ltotal { text-align: center; padding: 1px 0 2px; }
+    .ltotal .lnum { display: block; font-size: 1.25rem; font-weight: 500; line-height: 1; }
+    .ltotal .lsub { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .llines { border-top: 1px solid var(--border); padding-top: 4px; margin-top: auto; }
+    .legend .line { padding: 0; }
+    .lstatus { font-size: 0.72rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
     .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1; }
     .stack { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
     .line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 0.8rem; }
@@ -95,8 +107,22 @@ export class EdOverview extends LitElement {
     .meta-item:last-child { border-bottom: none; }
     .meta-item dt { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
     .meta-item dd { margin: 2px 0 0; font-size: 0.88rem; line-height: 1.45; color: light-dark(#111418, #f0f3f7); }
+    /* Legend-spent modal: collapsible per-section breakdown + reconciliation footer. */
+    .lspent-sec { border-bottom: 1px solid var(--border); }
+    .lspent-sec > summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; color: light-dark(#111418, #f0f3f7); padding: 6px 0; list-style: none; }
+    .lspent-sec > summary::-webkit-details-marker { display: none; }
+    .lspent-sec .sleft { display: flex; align-items: center; gap: 7px; }
+    .lspent-sec .sleft::before { content: '▸'; color: var(--muted); font-size: 0.8em; transition: transform 0.12s ease; }
+    .lspent-sec[open] > summary .sleft::before { transform: rotate(90deg); }
+    .lspent-sec.additional > summary { color: var(--accent); }
+    .sbadge { font-size: 0.6rem; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
+    .sbadge.add { background: var(--accent-bg); color: var(--accent); }
+    .lspent-sec .lines { padding: 0 0 6px 14px; }
+    .lspent-sec .ldetail { color: var(--muted); font-size: 0.9em; }
+    .lspent-recon { border-top: 2px solid var(--border); margin-top: 0.5rem; padding-top: 0.5rem; font-weight: 500; color: light-dark(#111418, #f0f3f7); }
     @media (max-width: 720px) {
       .grid { grid-template-columns: 1fr; }
+      .toprow { grid-template-columns: 1fr; }
       .portrait { display: none; }
       .avatar { display: block; }
     }
@@ -311,6 +337,119 @@ export class EdOverview extends LitElement {
     `;
   }
 
+  // Legend panel: total Legend earned (a stored input), the Legendary Status it
+  // maps to (Renown + Reputation, engine-derived from rules/legend.json), and the
+  // available points to spend (derived: totalEarnt − totalSpent). Anything not yet
+  // available falls back to the placeholder pill (UI-GUIDELINES §5).
+  _legend() {
+    const l = this.model?.legend;
+    const num = (n) => (n == null ? this._pend() : html`<span class="val">${n.toLocaleString()}</span>`);
+    const status = l?.status;
+    return html`
+      <div class="blk legend">
+        <h4>
+          Legend${status
+            ? html`<button class="info" aria-label="About Legendary Status" title="Legendary Status" @click=${() => this._openModal('Legendary Status', this._legendModalBody(l))}>ⓘ</button>`
+            : ''}
+        </h4>
+        <div class="ltotal">
+          ${l?.totalEarnt != null
+            ? html`<span class="lnum" title="Total Legend Points earned">${l.totalEarnt.toLocaleString()}</span>`
+            : html`<span class="lnum">${this._pend()}</span>`}
+          <span class="lsub">total earned</span>
+        </div>
+        <div class="llines">
+          <div class="line">
+            <span>Status</span>
+            ${status ? html`<span class="lstatus">${status.label}</span>` : this._pend()}
+          </div>
+          <div class="line">
+            <span>Renown / Rep</span>
+            ${status
+              ? html`<span class="val" title="Renown ${status.renown}, Reputation bonus ${status.reputation >= 0 ? '+' : ''}${status.reputation}">${status.renown} / ${status.reputation >= 0 ? '+' : ''}${status.reputation}</span>`
+              : this._pend()}
+          </div>
+          <div class="line">
+            <span>Available${l?.spent
+              ? html`<button class="info" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => this._openModal('Legend spent', this._legendSpentModalBody(l.spent))}>ⓘ</button>`
+              : ''}</span>
+            ${num(l?.available)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Modal body: the Legend-spent audit — each advancement priced against the ED4
+  // cost tables, grouped into sections, with a reconciliation footer comparing the
+  // modeled total to the recorded figure. Each section is a collapsible <details>
+  // (default closed — the summaries give a compact overview of a long list), and
+  // talents are grouped per Discipline so the additional-Discipline surcharge stands
+  // out (an accent "Nth Discipline" badge on the 2nd+ Discipline sections).
+  _legendSpentModalBody(spent) {
+    const fmt = (n) => (n == null ? '—' : n.toLocaleString());
+    return html`
+      <p class="mpara">
+        Legend spent, reconstructed from the sheet by pricing each advancement against
+        the cost tables — attributes, talents (2nd+ Discipline talents cost more), skills,
+        knacks, and woven thread items. Spells arrive in a later phase — the delta below
+        is what this audit does not yet account for.
+      </p>
+      ${spent.sections.map(
+        (sec) => html`
+          <details class="lspent-sec${sec.additional ? ' additional' : ''}">
+            <summary class="sechead">
+              <span class="sleft"
+                >${sec.label}${sec.kind === 'talents'
+                  ? html`<span class="sbadge ${sec.additional ? 'add' : ''}">${sec.ordinalLabel} Discipline</span>`
+                  : ''}</span
+              >
+              <span class="sval">${fmt(sec.total)}</span>
+            </summary>
+            <div class="lines">
+              ${sec.lines.length
+                ? sec.lines.map(
+                    (li) => html`<div class="line"><span>${li.name} <span class="ldetail">${li.detail}</span></span><span>${fmt(li.cost)}</span></div>`,
+                  )
+                : html`<div class="line"><span class="ldetail">Nothing purchased</span><span>0</span></div>`}
+            </div>
+          </details>
+        `,
+      )}
+      <div class="lspent-recon">
+        <div class="line"><span>Modeled total</span><span>${fmt(spent.total)}</span></div>
+        <div class="line"><span>Recorded</span><span>${fmt(spent.recorded)}</span></div>
+        <div class="line"><span>Unmodeled (delta)</span><span>${fmt(spent.delta)}</span></div>
+      </div>
+    `;
+  }
+
+  // Modal body: the four Legendary Status bands with the character's current band
+  // highlighted, so the reader sees the whole ladder and where they stand.
+  _legendModalBody(l) {
+    const cur = l?.status?.label;
+    return html`
+      <p class="mpara">
+        A character's total Legend earned places them in one band, which sets how the
+        wider world regards them — a Renown value and a Reputation bonus.
+      </p>
+      ${(l?.bands ?? []).map(
+        (b) => html`
+          <div class="mtrigger">
+            <div class="mtlabel">
+              ${b.label === cur ? html`<span class="lstatus">${b.label}</span>` : b.label}
+              — Renown ${b.renown}, Rep ${b.reputation >= 0 ? '+' : ''}${b.reputation}
+            </div>
+            <div class="mtdesc">
+              ${b.maxLegend == null ? html`over ${(1000000).toLocaleString()} Legend` : html`up to ${b.maxLegend.toLocaleString()} Legend`}
+              — ${b.definition}
+            </div>
+          </div>
+        `,
+      )}
+    `;
+  }
+
   // A fresh model may point at a working portrait URL again, so reset the
   // broken-image flag whenever the character changes.
   update(changedProperties) {
@@ -371,22 +510,25 @@ export class EdOverview extends LitElement {
         </div>
 
         <div class="right">
-          <div class="blk">
-            <h4>Attributes</h4>
-            <div class="agrid">
-              ${(m.attributes ?? []).map(
-                (a) => html`
-                  <div class="acell">
-                    <div class="an">${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</div>
-                    <div class="r">
-                      <span class="av">${a.value}</span>
-                      <span class="asd">s${a.step} ${a.dice}</span>
-                      ${this._rollBtn(a.name, a.step, a.karma)}
+          <div class="toprow">
+            <div class="blk">
+              <h4>Attributes</h4>
+              <div class="agrid">
+                ${(m.attributes ?? []).map(
+                  (a) => html`
+                    <div class="acell">
+                      <div class="an">${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</div>
+                      <div class="r">
+                        <span class="av">${a.value}</span>
+                        <span class="asd">${a.step} · ${a.dice}</span>
+                        ${this._rollBtn(a.name, a.step, a.karma)}
+                      </div>
                     </div>
-                  </div>
-                `,
-              )}
+                  `,
+                )}
+              </div>
             </div>
+            ${this._legend()}
           </div>
 
           <div class="panels">

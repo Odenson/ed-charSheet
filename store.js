@@ -8,6 +8,8 @@
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
+import { legendAvailable, legendaryStatus } from './engine/legend.js';
+import { auditLegendSpent } from './engine/legend-spent.js';
 import {
   makeCharacteristics,
   defense,
@@ -36,6 +38,64 @@ async function loadJSON(path) {
   const res = await fetch(path);
   if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
   return res.json();
+}
+
+// Like loadJSON but tolerant of a missing file — for a rules catalog that may not be
+// authored yet (e.g. rules/knacks.json). Returns `fallback` instead of throwing.
+async function loadJSONOptional(path, fallback) {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return fallback;
+    return await res.json();
+  } catch {
+    return fallback;
+  }
+}
+
+// Resolve one owned knack against the knack catalog (rules/knacks.json), mirroring how
+// items resolve. A knack references a catalog entry by `name` and optionally names the
+// parent it hangs off via `via` (when the catalog lists several). The catalog supplies
+// the fixed rules — parent(s), requiredRank (its Legend cost), action, description.
+// A catalog parent is a NAME-ONLY binding key: the Companion lets a knack be governed
+// by the skill OR the talent of the same name, so which kind binds is resolved here
+// against the character's owned abilities — owned as a talent → 'talent', else owned
+// as a skill → 'skill', else the Companion's default labeling ('talent').
+// Transitional fallback: if there's no catalog entry and the name is the legacy
+// "Knack (Parent)" string, parse the parent out here — the ONE place that parsing
+// lives, so consumers always get a structured knack. `skillNames`/`talentNames` are
+// the character's owned skill/talent names, used to tag the parent's kind.
+export function resolveKnack(owned, catalog = {}, skillNames = new Set(), talentNames = new Set()) {
+  const ref = catalog[owned.name] ?? null;
+  let name = owned.name;
+  let parent = null;
+  const parentOf = (p) => {
+    const pname = typeof p === 'string' ? p : p?.name ?? null;
+    if (!pname) return null;
+    const type = talentNames.has(pname) ? 'talent' : skillNames.has(pname) ? 'skill' : 'talent';
+    return { type, name: pname };
+  };
+  if (ref) {
+    const chosen = owned.via
+      ? (ref.parents ?? []).find((p) => (typeof p === 'string' ? p : p.name) === owned.via)
+      : (ref.parents ?? [])[0];
+    parent = parentOf(chosen);
+  } else {
+    const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(owned.name ?? '');
+    if (m) {
+      name = m[1].trim();
+      parent = parentOf(m[2].trim());
+    }
+  }
+  return {
+    name,
+    rawName: owned.name,
+    known: ref != null,
+    parent,
+    requiredRank: ref?.requiredRank ?? owned.rank ?? null,
+    action: ref?.action ?? null,
+    brief: ref?.brief ?? null,
+    detail: { summary: ref?.summary ?? null, strain: ref?.strain ?? null, documented: !!ref?.summary },
+  };
 }
 
 // The character store is source info, not app code: a serverless save commits it
@@ -201,18 +261,25 @@ export async function loadCharacter(id, { store } = {}) {
   const s = store ?? (await loadCharacters());
   const character = s?.characters?.[id];
   if (!character) throw new Error(`Unknown character id: ${id}`);
-  const [stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile] = await Promise.all([
+  const [stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile] = await Promise.all([
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
     loadJSON('./rules/disciplines.json'),
     loadJSON('./rules/races.json'),
     loadJSON('./rules/characteristics.json'),
     loadJSON('./rules/items.json'),
+    loadJSON('./rules/legend.json'),
+    loadJSON('./rules/skills.json'),
   ]);
+  // Knack catalog is optional — it may not be authored yet (resolveKnack degrades
+  // gracefully). Loaded separately so a 404 here never rejects the required files.
+  const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
+  // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
+  const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -221,7 +288,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -279,8 +346,8 @@ export function deriveModel(character, rules) {
         required: requiredTalents.has(t.name),
         // Terse one-line effect for the Effect column, and the paraphrased detail
         // the info modal shows. `documented` is false for talents not yet enriched
-        // (the modal then shows only the basics we have).
-        brief: cat.brief || null,
+        // (the modal then shows only the basics we have). Same source as items/skills.
+        brief: cat.presentation?.shortEffect ?? null,
         detail: {
           summary: cat.summary || null,
           versus: cat.versus || null,
@@ -321,7 +388,41 @@ export function deriveModel(character, rules) {
   // racial and discipline effects. Unknown names degrade gracefully (kept, but
   // contribute nothing) so a typo or a future custom item never breaks the sheet.
   const itemCatalog = itemsFile?.items ?? {};
+  const threadItemsCatalog = threadItemsFile?.items ?? {};
+  // A thread item resolves from rules/thread-items.json (schema ed-thread-items/1):
+  // its `effects` are the unthreaded `base` effects plus the effects of each Thread
+  // Rank up to the character's woven `threadRank` (an input; 0 = no thread). Rank
+  // effects combine by `stacking: "replace"` in the engine fold — a higher rank's
+  // effect replaces the previous rank's on the same target (GMG p. 208), never adds.
+  // The extra `thread` block carries display/reference data for the UI (tier, mystic
+  // defense, maximum threads, per-rank key knowledges) — never engine-read.
+  const resolveThreadItem = (owned) => {
+    const ref = threadItemsCatalog[owned.name] ?? null;
+    const threadRank = owned.threadRank ?? 0;
+    const woven = (ref?.threadRanks ?? []).filter((r) => r.rank <= threadRank);
+    return {
+      name: owned.name,
+      equipped: owned.equipped !== false,
+      known: ref != null,
+      kind: ref?.kind ?? owned.kind ?? 'item',
+      living: false,
+      ref: ref?.ref ?? {},
+      effects: [...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])],
+      presentation: {},
+      thread: ref
+        ? {
+            tier: ref.tier ?? null,
+            maximumThreads: ref.maximumThreads ?? null,
+            mysticDefense: ref.mysticDefense ?? null,
+            legendary: ref.legendary ?? false,
+            threadRank,
+            threadRanks: ref.threadRanks ?? [],
+          }
+        : null,
+    };
+  };
   const items = (character.items ?? []).map((owned) => {
+    if (threadItemsCatalog[owned.name]) return resolveThreadItem(owned);
     const ref = itemCatalog[owned.name] ?? null;
     const equipped = owned.equipped !== false; // default to equipped
     return {
@@ -335,6 +436,7 @@ export function deriveModel(character, rules) {
       // Display-only strings for the UI (never engine-read). See rules/items.json
       // notes.presentation — carries the tile's curated `shortEffect` for note items.
       presentation: ref?.presentation ?? {},
+      thread: null,
     };
   });
 
@@ -352,9 +454,18 @@ export function deriveModel(character, rules) {
         ),
     ),
     // Only equipped items contribute — unequipping is just dropping the effects.
+    // Thread items tag their origin `thread` (with the woven rank) so a tooltip can
+    // name the exact rank the effect came from.
     ...items
       .filter((it) => it.equipped)
-      .flatMap((it) => it.effects.map((e) => ({ ...e, origin: { kind: 'item', name: it.name } }))),
+      .flatMap((it) =>
+        it.effects.map((e) => ({
+          ...e,
+          origin: it.thread
+            ? { kind: 'thread', name: it.name, rank: it.thread.threadRank }
+            : { kind: 'item', name: it.name },
+        })),
+      ),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -410,8 +521,78 @@ export function deriveModel(character, rules) {
     characteristics.initiative.karma = karmaUse('Initiative', activeEffects);
   }
 
+  // Legend: derived standing from the stored inputs (totalEarnt) plus the engine's
+  // audit of all spent (engine/legend-spent.js). `available` and the Legendary Status
+  // band are recomputed here — never stored (the sheet's `resources.legend.available`
+  // is now ignored; REVIEW-FINDINGS G1).
+  // Skills resolved against the rules/skills.json catalog, mirroring talents: the
+  // catalog supplies attribute/action/summary/versus/strain, and the step/dice are
+  // derived (skill step = attribute step + rank). A character skill name that carries a
+  // specialisation, e.g. "Speak Language (Ork)", falls back to its base skill entry.
+  // Unknown skills degrade gracefully (kept, no derived values).
+  const skillCatalog = Object.fromEntries((skillsFile.skills ?? []).map((s) => [s.name, s]));
+  const skillRef = (name) =>
+    skillCatalog[name] ?? skillCatalog[String(name).replace(/\s*\([^)]*\)\s*$/, '').trim()] ?? null;
+  const skills = (character.skills ?? []).map((s) => {
+    const cat = skillRef(s.name) ?? {};
+    const attribute = cat.attribute ?? null;
+    const aStep = attribute ? attrStepByName[attribute] : undefined;
+    const step = attribute != null && aStep != null ? talentStep(aStep, s.rank) : null;
+    return {
+      name: s.name,
+      rank: s.rank,
+      tier: s.tier ?? null,
+      attribute,
+      action: cat.action ?? null,
+      step,
+      dice: step != null ? diceForStep(step) : '',
+      known: skillRef(s.name) != null,
+      // Terse effect for the table column — the curated presentation.shortEffect wins,
+      // falling back to the full summary (the modal always shows the full summary).
+      brief: cat.presentation?.shortEffect ?? cat.summary ?? null,
+      detail: {
+        summary: cat.summary ?? null,
+        versus: cat.versus ?? null,
+        strain: cat.strain ?? null,
+        documented: !!cat.summary,
+      },
+    };
+  });
+
+  // Knacks resolved against the catalog (rules/knacks.json), like items. The catalog
+  // supplies the fixed rules (parent, requiredRank, description); resolveKnack degrades
+  // gracefully — and transitionally parses the legacy "Knack (Parent)" name — so the UI
+  // and the audit always receive structured knacks.
+  const knackCatalog = knacksFile?.knacks ?? {};
+  const skillNames = new Set((character.skills ?? []).map((s) => s.name));
+  const talentNames = new Set(
+    (character.disciplines ?? []).flatMap((d) => (d.talents ?? []).map((t) => t.name)),
+  );
+  const knacks = (character.knacks ?? []).map((k) => resolveKnack(k, knackCatalog, skillNames, talentNames));
+
+  const legendInput = character.resources?.legend ?? {};
+  const legendBands = legendFile?.bands ?? [];
+  // `spent` is the engine's audit of every priced advancement; `available` derives
+  // from it — total earned minus all spent the engine can price — so the readout
+  // tracks the sheet's actual advancements rather than the recorded `totalSpent`
+  // input. Unpriced sinks (spells) stay in the reconciliation delta.
+  const threadItemCatalog = threadItemsFile?.items ?? {};
+  const spent = auditLegendSpent(character, legendFile?.costs, { knacks, threadItemCatalog });
+  const legend =
+    legendInput.totalEarnt != null
+      ? {
+          totalEarnt: legendInput.totalEarnt,
+          totalSpent: legendInput.totalSpent ?? 0,
+          available: legendAvailable(legendInput.totalEarnt, spent.total),
+          status: legendaryStatus(legendInput.totalEarnt, legendBands),
+          bands: legendBands,
+          spent,
+        }
+      : null;
+
   return {
     meta: character.meta ?? {},
+    legend,
     // Derived, never stored: the loadable URL for `meta.portrait` (branch raw
     // CDN on Pages, bundle-relative working copy locally).
     portraitUrl: portraitUrlFor(character.meta?.portrait),
@@ -423,11 +604,14 @@ export function deriveModel(character, rules) {
     stepByNumber,
     items,
     itemCatalog,
+    // Thread-item catalogue (rules/thread-items.json) — the add-picker offers its
+    // entries just like items; the resolved `items` carry the `thread` metadata.
+    threadItemCatalog,
     // Wealth: pass the stored inputs through the pure deriver so the view gets
     // coin/gem silver values, the running total and the resale hint (all derived).
     wealth: deriveWealth(character.wealth ?? {}),
-    skills: character.skills ?? [],
-    knacks: character.knacks ?? [],
+    skills,
+    knacks,
     traits: character.traits ?? [],
   };
 }

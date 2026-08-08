@@ -5,24 +5,28 @@
 //
 // Architecture (Tier-1 golden rule): this view NEVER mutates state or derives game
 // values. It reads the resolved items + wealth off the model and, on any change,
-// dispatches the full *input* up to ed-app — `ed-edit-items` ([{ name, equipped }])
-// or `ed-edit-wealth` ({ coins, gems }) — which persists and re-derives so armour /
-// initiative on the Overview and the wealth totals update through the normal
-// cascade. Magic is *inferred* from an item's kind (magic-item / blood-charm /
-// healing-aid); it is never a stored per-item flag. Item detail lives behind a
-// click-through modal styled to match the Disciplines talent modal.
+// dispatches the full *input* up to ed-app — `ed-edit-items` ([{ name, equipped,
+// threadRank? }]) or `ed-edit-wealth` ({ coins, gems }) — which persists and
+// re-derives so armour / initiative on the Overview and the wealth totals update
+// through the normal cascade. Only thread items carry `threadRank` (their woven
+// rank). Magic is *inferred* from an item's kind (magic-item / blood-charm /
+// healing-aid / thread-item); it is never a stored per-item flag. Item detail
+// lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
 
-const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid']);
+const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid', 'thread-item']);
 const KLABEL = {
   weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
   gear: 'Gear', 'magic-item': 'Magic item', 'blood-charm': 'Blood charm', 'healing-aid': 'Healing aid',
+  'thread-item': 'Thread item',
 };
 // Sections group items by function; magic is a property that can appear in any of
-// them (a thread weapon glows in Weapons, a light quartz glows in Gear).
+// them (a thread weapon glows in Weapons, a light quartz glows in Gear). Thread
+// items get their own section so the woven rank is legible across all of them.
 const SECTIONS = [
   { title: 'Weapons & Armour', glyph: '⚔', kinds: ['weapon', 'armor', 'shield', 'ammunition'] },
   { title: 'Gear', glyph: '🎒', kinds: ['gear', 'magic-item'] },
+  { title: 'Thread Items', glyph: '✦', kinds: ['thread-item'] },
   { title: 'Charms & Consumables', glyph: '✦', kinds: ['blood-charm', 'healing-aid'] },
 ];
 
@@ -36,7 +40,14 @@ const costText = (ref) => {
 const subLine = (it) => {
   if (!it) return 'unknown item';
   const base = KLABEL[it.kind] || it.kind;
-  return it.kind === 'weapon' && it.ref?.category ? `${base} · ${it.ref.category}` : base;
+  if (it.kind === 'weapon' && it.ref?.category) return `${base} · ${it.ref.category}`;
+  // A thread item's sub-line names its woven rank — the single most useful
+  // read on the tile (Tier is a reference detail, in the modal).
+  if (it.thread) {
+    const r = it.thread.threadRank ?? 0;
+    return `${base} · ${r > 0 ? `Thread ${r}` : 'no thread woven'}`;
+  }
+  return base;
 };
 
 // Presentation-only: the equipped tile's one-line effect for the right-hand space.
@@ -158,9 +169,11 @@ export class EdEquipment extends LitElement {
     .res .star { color: var(--arcane); width: 12px; }
     .nores { padding: 20px; text-align: center; color: var(--muted); font-size: 0.85rem; }
 
-    /* Two-column board */
-    .board { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-    .blk { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; }
+    /* Two-column board — each column is an independent stack (CSS multi-column),
+       so sections sit flush under the one above and never wait on the block
+       across the gap (a grid's shared row track would push them down together). */
+    .board { column-count: 2; column-gap: 12px; }
+    .blk { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; break-inside: avoid; margin-bottom: 12px; }
     .blk > h4 { display: flex; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 2px 2px 9px; }
     .blk > h4 .ct { margin-left: auto; color: var(--muted); font-weight: 400; letter-spacing: 0; }
     .blk > h4 .total { margin-left: auto; color: var(--accent); font-weight: 500; letter-spacing: 0; font-family: var(--mono); font-size: 0.76rem; }
@@ -247,15 +260,29 @@ export class EdEquipment extends LitElement {
     .mdesc { font-size: 0.82rem; line-height: 1.5; margin: 6px 0; font-style: italic; color: var(--muted); }
     .mact { display: flex; align-items: center; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .mact .spacer { flex: 1; }
+    /* Thread-item rank list — woven ranks are accent-tinted, unwoven muted. */
+    .mthread { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 9px; display: flex; flex-direction: column; gap: 6px; }
+    .trk { border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 0.74rem; line-height: 1.45; color: var(--muted); }
+    .trk.woven { border-color: var(--arcane-line); background: var(--arcane-bg); color: var(--fg); }
+    .trh { display: inline-block; font-size: 0.6rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--arcane); margin-bottom: 2px; }
+    .tkey { font-style: italic; color: var(--muted); }
+    .teff { color: inherit; }
+    .eq.rank { font-size: 0.62rem; padding: 3px 8px; background: var(--bg-card); }
 
     @media (max-width: 620px) {
-      .board { grid-template-columns: 1fr; }
+      .board { column-count: 1; }
     }
   `;
 
-  // Items as the *input* shape the character stores.
+  // Items as the *input* shape the character stores. Only thread items carry
+  // `threadRank` (a woven-rank input); toggling equipment or editing the rank
+  // must never drop it, and non-thread items keep their plain entry.
   _inputs() {
-    return (this.model?.items ?? []).map((it) => ({ name: it.name, equipped: it.equipped }));
+    return (this.model?.items ?? []).map((it) => ({
+      name: it.name,
+      equipped: it.equipped,
+      ...(it.thread ? { threadRank: it.thread.threadRank } : {}),
+    }));
   }
   _commitItems(items) {
     this.dispatchEvent(new CustomEvent('ed-edit-items', { detail: items, bubbles: true, composed: true }));
@@ -270,6 +297,11 @@ export class EdEquipment extends LitElement {
   }
   _toggle(name) {
     this._commitItems(this._inputs().map((i) => (i.name === name ? { ...i, equipped: !i.equipped } : i)));
+  }
+  // A thread item's woven rank is an input; the select dispatches it upward and the
+  // whole sheet re-derives (effects, Legend audit) through the normal cascade.
+  _setThreadRank(name, rank) {
+    this._commitItems(this._inputs().map((i) => (i.name === name ? { ...i, threadRank: rank } : i)));
   }
 
   // --- wealth commits (dispatch the full { coins, gems } input) ---
@@ -307,15 +339,31 @@ export class EdEquipment extends LitElement {
   }
 
   // --- picker ---
+  // Thread items live in their own catalogue (rules/thread-items.json); the picker
+  // offers both catalogues, tagging each with its kind for the left-hand label.
+  _catalogs() {
+    return {
+      ...(this.model?.itemCatalog ?? {}),
+      ...(this.model?.threadItemCatalog ?? {}),
+    };
+  }
   _matches() {
     const q = this._query.trim().toLowerCase();
-    const catalog = this.model?.itemCatalog ?? {};
+    const catalog = this._catalogs();
     return Object.keys(catalog)
       .filter((n) => {
         if (!q) return true;
         const it = catalog[n];
+        // Effect entries are objects carrying a `summary`; reduce every catalog
+        // shape (plain `effects`, thread `base`/`threadRanks`) to strings first,
+        // so the search always compares text.
+        const summaries = [
+          ...(it.effects ?? []).map((e) => e.summary ?? ''),
+          ...(it.base?.effects ?? []).map((e) => e.summary ?? ''),
+          ...(it.threadRanks ?? []).flatMap((r) => r.effects ?? []).map((e) => e.summary ?? ''),
+        ];
         return n.toLowerCase().includes(q) || (KLABEL[it.kind] || '').toLowerCase().includes(q) ||
-          (it.effects ?? []).some((e) => (e.summary || '').toLowerCase().includes(q));
+          summaries.some((s) => s.toLowerCase().includes(q));
       })
       .slice(0, 50);
   }
@@ -336,6 +384,16 @@ export class EdEquipment extends LitElement {
     // The right-hand quiet effect shows on equipped tiles in read mode; edit mode
     // gives that space to the toggle + remove instead.
     const eff = !stored && !this.editMode ? tileEffect(it) : null;
+    // A thread item's woven rank is an *input*; the select feeds _setThreadRank,
+    // which dispatches it up so the engine re-derives effects + Legend cost.
+    const thread = it.thread;
+    const rankSelect = thread
+      ? html`<select class="eq rank" aria-label="Woven thread rank for ${it.name}"
+            .value=${String(thread.threadRank ?? 0)} @change=${(e) => this._setThreadRank(it.name, Number(e.target.value))}>
+            ${[0, ...thread.threadRanks.map((r) => r.rank)].map((r) =>
+              html`<option value=${r}>${r === 0 ? 'No thread' : `Thread ${r}`}</option>`)}
+          </select>`
+      : '';
     return html`
       <div class=${cls}>
         <button class="iteminfo" @click=${() => (this._modal = it.name)} title="View ${it.name} details">
@@ -347,6 +405,7 @@ export class EdEquipment extends LitElement {
           : ''}
         ${this.editMode
           ? html`
+              ${rankSelect}
               <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}
                 title=${it.equipped ? 'On the character — click to store' : 'Owned but not carried — click to equip'}>
                 ${it.equipped ? 'Equipped' : 'Stored'}
@@ -475,6 +534,18 @@ export class EdEquipment extends LitElement {
     // ② Main-effect chips — always-on numeric modifiers as a short `Label ±N`
     // quick-read; their full wording also lands in the summary paragraph below.
     const mainChips = effects.filter((e) => e.type !== 'note' && always(e) && typeof e.value === 'number').map(modifierChip);
+    // Thread items add a reference zone: tier · mystic defense · max threads ·
+    // legendary, plus the per-rank key knowledges/effects (the woven rank is the
+    // rank select, shown in edit mode).
+    const th = it.thread;
+    const threadChips = th
+      ? [
+          th.tier ? { v: `Tier ${th.tier}` } : null,
+          th.mysticDefense != null ? { v: `MD ${th.mysticDefense}` } : null,
+          th.maximumThreads != null ? { v: `Max threads ${th.maximumThreads}` } : null,
+          th.legendary ? { v: 'Legendary' } : null,
+        ].filter(Boolean)
+      : [];
     // Two paragraphs after the chips: (1) the item's flavour description, (2) every
     // effect summary accumulated into one paragraph. Each summary is defensively
     // terminated so authored punctuation gaps don't run sentences together.
@@ -489,6 +560,7 @@ export class EdEquipment extends LitElement {
           </div>
           <div class="mchips">
             ${baseChips.map((c) => html`<span class="chip">${c.v}</span>`)}
+            ${threadChips.map((c) => html`<span class="chip mag">${c.v}</span>`)}
             ${mainChips.map((c) => html`<span class="chip effc">${c.v}</span>`)}
           </div>
           ${!it.known
@@ -498,6 +570,19 @@ export class EdEquipment extends LitElement {
                 ${effectText ? html`<p class="mtext">${effectText}</p>` : ''}
                 ${!description && !effectText && !mainChips.length
                   ? html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`
+                  : ''}
+                ${th
+                  ? html`<div class="mthread">
+                      ${th.threadRanks.map((r) => {
+                        const rr = (r.effects ?? []).map((e) => e.summary).filter(Boolean).map((s) => (/[.!?]$/.test(s) ? s : `${s}.`)).join(' ');
+                        return html`<div class="trk ${r.rank <= th.threadRank ? 'woven' : ''}">
+                            <span class="trh">Thread ${r.rank}</span>
+                            ${r.keyKnowledge ? html`<div class="tkey">${r.keyKnowledge}</div>` : ''}
+                            ${rr ? html`<div class="teff">${rr}</div>` : ''}
+                          </div>`;
+                      })}
+                      ${th.threadRank === 0 ? html`<div class="trk"><span class="trh">No thread woven</span><div class="teff">Rank effects are inactive until a thread is woven.</div></div>` : ''}
+                    </div>`
                   : ''}
               `}
           ${this.editMode
@@ -516,7 +601,7 @@ export class EdEquipment extends LitElement {
     const m = this.model;
     if (!m) return html``;
     const items = m.items ?? [];
-    const catalog = m.itemCatalog ?? {};
+    const catalog = this._catalogs();
     const modalItem = this._modal ? items.find((it) => it.name === this._modal) : null;
 
     return html`

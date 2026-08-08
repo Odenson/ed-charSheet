@@ -1,9 +1,9 @@
 {
   "schema": "ed-talents/1",
-  "source": "Earthdawn 4E — talents. Mechanics + original-wording summaries (no verbatim rulebook prose). Consolidated single file (replaces the separate talents.descriptions.json).",
+  "source": "Earthdawn 4E \u2014 talents. Mechanics + original-wording summaries (no verbatim rulebook prose). Consolidated single file (replaces the separate talents.descriptions.json).",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "notes": [
-    "460 talents catalogued. Mechanics (name/action/attribute) for all; strain/skillUse/tier/summary/effects fully authored for Chakka's 24 talents so far — the rest are enriched incrementally.",
+    "460 talents catalogued. Mechanics (name/action/attribute) for all; strain/skillUse/tier/summary/effects fully authored for Chakka's 24 talents plus all 22 Thief/Warrior discipline talents \u2014 the rest are enriched incrementally.",
     "Talent step = attribute step + rank (attribute-less talents like Durability/True Shot use rank only).",
     "Karma: every talent test is Karma-eligible BY DEFAULT (core rule; the engine handles this, so eligible talents carry no flag). Set \"karma\": false only on a talent that 'notes otherwise'. Versatility-learned talents can never use Karma either, but that is per-character (a \"viaVersatility\": true flag on the character's talent entry), not a property of the talent itself.",
     "Effects follow docs/EFFECT-TAXONOMY.md; action outcomes use condition:on-success (+ perSuccess where they scale)."
@@ -20,8 +20,25 @@
     },
     "Air Dance": {
       "name": "Air Dance",
+      "presentation": {
+        "shortEffect": "Glide on air"
+      },
       "action": "Free",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 2,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Float on a cushion of air, using the Air Dance step for the Initiative test; with three successes on a close-combat Initiative comparison, gain an additional close-combat attack. Once per round; requires the ability to move.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Air Dance step substitutes for Dexterity on Initiative; 3 successes grant an extra close-combat attack."
+        }
+      ]
     },
     "Air Sailing": {
       "name": "Air Sailing",
@@ -66,7 +83,9 @@
     },
     "Anticipate Blow": {
       "name": "Anticipate Blow",
-      "brief": "+Defence & attack",
+      "presentation": {
+        "shortEffect": "+Defence & attack"
+      },
       "action": "Simple",
       "attribute": "Perception",
       "strain": 1,
@@ -137,7 +156,9 @@
     },
     "Astral Sight": {
       "name": "Astral Sight",
-      "brief": "See astral space",
+      "presentation": {
+        "shortEffect": "See astral space"
+      },
       "action": "Simple",
       "attribute": "Perception",
       "strain": 1,
@@ -146,7 +167,7 @@
       },
       "tier": "Novice",
       "versus": "Difficulty 6 (modified by conditions) / target's Mystic Defense",
-      "summary": "Perceive astral space — auras, imprints, and patterns; may examine the pattern of any target whose Mystic Defense is at or below the test result.",
+      "summary": "Perceive astral space \u2014 auras, imprints, and patterns; may examine the pattern of any target whose Mystic Defense is at or below the test result.",
       "effects": [
         {
           "type": "sense",
@@ -162,7 +183,9 @@
     },
     "Avoid Blow": {
       "name": "Avoid Blow",
-      "brief": "Negate an attack",
+      "presentation": {
+        "shortEffect": "Negate an attack"
+      },
       "action": "Free",
       "attribute": "Dexterity",
       "strain": 1,
@@ -184,7 +207,9 @@
     },
     "Awareness": {
       "name": "Awareness",
-      "brief": "Notice hidden things",
+      "presentation": {
+        "shortEffect": "Notice hidden things"
+      },
       "action": "Simple",
       "attribute": "Perception",
       "strain": 0,
@@ -294,8 +319,26 @@
     },
     "Conceal Object": {
       "name": "Conceal Object",
+      "presentation": {
+        "shortEffect": "Hide objects on the body"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Journeyman"
+      },
+      "tier": "Novice",
+      "summary": "Hide one or more objects on the body, up to a combined Size equal to rank; the test result is the Difficulty to find them. Producing a concealed item grants the benefit of Surprise.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Object hidden; the result sets the Difficulty to find it."
+        }
+      ]
     },
     "Conversation": {
       "name": "Conversation",
@@ -321,8 +364,25 @@
     },
     "Crushing Blow": {
       "name": "Crushing Blow",
+      "presentation": {
+        "shortEffect": "Devastating damage"
+      },
       "action": "Free",
-      "attribute": "Strength"
+      "attribute": "Strength",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Journeyman",
+      "summary": "After a successful close-combat attack, substitute the Crushing Blow step for the Strength step on the Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Crushing Blow step replaces Strength step on the Damage test."
+        }
+      ]
     },
     "Down Strike": {
       "name": "Down Strike",
@@ -331,7 +391,9 @@
     },
     "Durability": {
       "name": "Durability",
-      "brief": "+Death & Unconscious",
+      "presentation": {
+        "shortEffect": "+Death & Unconscious"
+      },
       "action": "Passive",
       "strain": 0,
       "skillUse": {
@@ -349,13 +411,49 @@
     },
     "Earth Skin": {
       "name": "Earth Skin",
+      "presentation": {
+        "shortEffect": "Resist magic"
+      },
       "action": "Standard",
-      "attribute": "Toughness"
+      "attribute": "Toughness",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Journeyman",
+      "versus": "your Mystic Defense",
+      "summary": "Spend a Recovery test and roll vs your Mystic Defense; each success adds +2 to Mystic Defense for rank hours. The test always scores at least one success.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "+2 Mystic Defense per success for rank hours."
+        }
+      ]
     },
     "False Sight": {
       "name": "False Sight",
+      "presentation": {
+        "shortEffect": "Empower an illusion"
+      },
       "action": "Free",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Journeyman",
+      "versus": "the effect's Dispel Difficulty",
+      "summary": "Intensify an illusion at the moment of creation (vs the effect's Dispel Difficulty, based on talent rank); each success adds +2 to the Difficulty of sensing or seeing through it for the illusion's duration.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "+2 per success to the Difficulty of seeing through the illusion."
+        }
+      ]
     },
     "Fire Blood": {
       "name": "Fire Blood",
@@ -363,7 +461,9 @@
     },
     "First Impression": {
       "name": "First Impression",
-      "brief": "Improve first meeting",
+      "presentation": {
+        "shortEffect": "Improve first meeting"
+      },
       "action": "Standard",
       "attribute": "Charisma",
       "strain": 0,
@@ -390,7 +490,9 @@
     },
     "Frighten": {
       "name": "Frighten",
-      "brief": "Frighten a target",
+      "presentation": {
+        "shortEffect": "Frighten a target"
+      },
       "action": "Standard",
       "attribute": "Willpower",
       "strain": 0,
@@ -430,7 +532,9 @@
     },
     "Long Shot": {
       "name": "Long Shot",
-      "brief": "Extend weapon range",
+      "presentation": {
+        "shortEffect": "Extend weapon range"
+      },
       "action": "Simple",
       "strain": 1,
       "skillUse": {
@@ -449,12 +553,33 @@
     },
     "Melee Weapon": {
       "name": "Melee Weapon",
+      "presentation": {
+        "shortEffect": "Close-combat attack"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "target's Physical Defense",
+      "summary": "Close-combat attack with a hand-held weapon vs the target's Physical Defense; on a hit, make a Damage test.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Hit \u2014 follow with a close-combat Damage test."
+        }
+      ]
     },
     "Missile Weapon": {
       "name": "Missile Weapon",
-      "brief": "Ranged attack",
+      "presentation": {
+        "shortEffect": "Ranged attack"
+      },
       "action": "Standard",
       "attribute": "Dexterity",
       "strain": 0,
@@ -470,13 +595,15 @@
           "type": "note",
           "condition": "on-success",
           "source": "talent",
-          "summary": "Hit — follow with a ranged Damage test."
+          "summary": "Hit \u2014 follow with a ranged Damage test."
         }
       ]
     },
     "Mystic Aim": {
       "name": "Mystic Aim",
-      "brief": "Boost ranged attack",
+      "presentation": {
+        "shortEffect": "Boost ranged attack"
+      },
       "action": "Simple",
       "attribute": "Perception",
       "strain": 1,
@@ -507,7 +634,9 @@
     },
     "Mystic Pursuit": {
       "name": "Mystic Pursuit",
-      "brief": "Sense targets location",
+      "presentation": {
+        "shortEffect": "Sense targets location"
+      },
       "action": "Standard",
       "attribute": "Perception",
       "strain": 2,
@@ -546,7 +675,9 @@
     },
     "Stealthy Stride": {
       "name": "Stealthy Stride",
-      "brief": "Move unseen",
+      "presentation": {
+        "shortEffect": "Move unseen"
+      },
       "action": "Simple",
       "attribute": "Dexterity",
       "strain": 0,
@@ -582,12 +713,31 @@
     },
     "Temper Flesh": {
       "name": "Temper Flesh",
-      "action": "Sustain",
-      "attribute": "Willpower"
+      "presentation": {
+        "shortEffect": "Ritual hardening"
+      },
+      "action": "Sustained",
+      "attribute": "Willpower",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Journeyman",
+      "versus": "your Toughness Step or Difficulty 6 (whichever is higher)",
+      "summary": "Half-hour ritual (requires being rested and free of Damage and Wounds) rolling vs your Toughness Step or Difficulty 6: success adds rank to Health Ratings and Wound Threshold for one day; on a failure you take Damage equal to your Wound Threshold. Only one Temper Flesh effect at a time.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "+rank to Health Ratings and Wound Threshold for one day on success; failure causes damage equal to Wound Threshold."
+        }
+      ]
     },
     "Throwing Weapon": {
       "name": "Throwing Weapon",
-      "brief": "Thrown attack",
+      "presentation": {
+        "shortEffect": "Thrown attack"
+      },
       "action": "Standard",
       "attribute": "Dexterity",
       "strain": 0,
@@ -603,13 +753,30 @@
           "type": "note",
           "condition": "on-success",
           "source": "talent",
-          "summary": "Hit — follow with a Damage test."
+          "summary": "Hit \u2014 follow with a Damage test."
         }
       ]
     },
     "Tiger Spring": {
       "name": "Tiger Spring",
-      "action": "Free"
+      "presentation": {
+        "shortEffect": "Boost Initiative"
+      },
+      "action": "Free",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Add the Tiger Spring rank as a bonus to the Initiative Step for the round; may be combined with other Initiative-boosting talents. Once per round.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "+rank to the Initiative Step this round."
+        }
+      ]
     },
     "Tracking": {
       "name": "Tracking",
@@ -618,7 +785,9 @@
     },
     "True Shot": {
       "name": "True Shot",
-      "brief": "Add Karma to hit",
+      "presentation": {
+        "shortEffect": "Add Karma to hit"
+      },
       "action": "Free",
       "strain": 2,
       "skillUse": {
@@ -645,17 +814,67 @@
     },
     "Waterfall Slam": {
       "name": "Waterfall Slam",
-      "action": "Free"
+      "presentation": {
+        "shortEffect": "Overwhelm with force"
+      },
+      "action": "Free",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "When you cause a Wound in close combat, the target must make a Knockdown test even if the damage would not normally require one; add rank to the Difficulty of any Knockdown tests your attacks cause.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Target must make a Knockdown test on a Wound; +rank to Knockdown Difficulties from your attacks."
+        }
+      ]
     },
     "Wood Skin": {
       "name": "Wood Skin",
+      "presentation": {
+        "shortEffect": "Toughen against damage"
+      },
       "action": "Standard",
-      "attribute": "Toughness"
+      "attribute": "Toughness",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Spend a Recovery test and roll; add the result to the Health Ratings for rank hours. When the effect expires, it carries away damage equal to that result.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Health Ratings raised by the result for rank hours; damage equal to the result departs when it expires."
+        }
+      ]
     },
     "Wound Balance": {
       "name": "Wound Balance",
+      "presentation": {
+        "shortEffect": "Stand your ground"
+      },
       "action": "Free",
-      "attribute": "Strength"
+      "attribute": "Strength",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "summary": "Substitute the Wound Balance step for the Strength step on any Knockdown test while supporting your own weight; may be used while flying.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Use Wound Balance step instead of Strength step for Knockdown tests."
+        }
+      ]
     },
     "Read/Write Language (Dwarf)": {
       "name": "Read/Write Language (Dwarf)",
@@ -763,8 +982,26 @@
     },
     "Picking Pockets": {
       "name": "Picking Pockets",
+      "presentation": {
+        "shortEffect": "Lift an item unseen"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "summary": "Lift an item from another character's pocket or pouch; the test result is the Difficulty for Perception tests made to notice the theft.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Item removed; the result sets the Difficulty to notice the theft."
+        }
+      ]
     },
     "Power Mask": {
       "name": "Power Mask",
@@ -811,8 +1048,8 @@
       "name": "Blood Insight",
       "action": "Sustained"
     },
-    "Blood of Death’s Sea": {
-      "name": "Blood of Death’s Sea",
+    "Blood of Death\u2019s Sea": {
+      "name": "Blood of Death\u2019s Sea",
       "action": "Free"
     },
     "Bloodhound Form": {
@@ -1197,8 +1434,8 @@
       "name": "Astral Ward",
       "action": "Standard (Special)"
     },
-    "Augment Ally’s Form": {
-      "name": "Augment Ally’s Form",
+    "Augment Ally\u2019s Form": {
+      "name": "Augment Ally\u2019s Form",
       "action": "Sustained"
     },
     "Beast Summons": {
@@ -1417,8 +1654,8 @@
       "name": "Heal Animal Companion",
       "action": "Standard"
     },
-    "I’ll Take That (Special Maneuver)": {
-      "name": "I’ll Take That (Special Maneuver)",
+    "I\u2019ll Take That (Special Maneuver)": {
+      "name": "I\u2019ll Take That (Special Maneuver)",
       "action": "N/A"
     },
     "Ideal Appearance": {
@@ -1477,8 +1714,8 @@
       "name": "Mobile Interference",
       "action": "Standard"
     },
-    "Mold Ally’s Form": {
-      "name": "Mold Ally’s Form",
+    "Mold Ally\u2019s Form": {
+      "name": "Mold Ally\u2019s Form",
       "action": "Sustained"
     },
     "One Eye Open": {
@@ -1573,8 +1810,8 @@
       "name": "Savage Limbs",
       "action": "Free"
     },
-    "Sculpt Ally’s Form": {
-      "name": "Sculpt Ally’s Form",
+    "Sculpt Ally\u2019s Form": {
+      "name": "Sculpt Ally\u2019s Form",
       "action": "Sustained"
     },
     "Seduction": {
@@ -1699,8 +1936,27 @@
     },
     "Danger Sense": {
       "name": "Danger Sense",
+      "presentation": {
+        "shortEffect": "React to danger"
+      },
       "action": "Free",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "trap/hazard's Initiative test result",
+      "summary": "Supernatural awareness of hazards within rank \u00d710 yards: vs a trap or ambush's Initiative result, acting normally and avoiding the Surprise penalty when successful.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Act normally; avoid the Surprise penalty."
+        }
+      ]
     },
     "Dead Fall": {
       "name": "Dead Fall",
@@ -1723,8 +1979,27 @@
     },
     "Disarm Trap": {
       "name": "Disarm Trap",
+      "presentation": {
+        "shortEffect": "Disable a trap"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "Difficulty Number set by the gamemaster",
+      "summary": "Render a trap inoperative vs a GM-set Difficulty; success disables the trigger (a Rule of One sets it off). Up to rank attempts per trap. Grants trap/ward detection with Awareness.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "The trap's trigger is disabled."
+        }
+      ]
     },
     "Disguise": {
       "name": "Disguise",
@@ -1737,7 +2012,9 @@
     },
     "Dispel Magic": {
       "name": "Dispel Magic",
-      "brief": "End a spell",
+      "presentation": {
+        "shortEffect": "End a spell"
+      },
       "action": "Standard",
       "attribute": "Willpower",
       "strain": 1,
@@ -1796,8 +2073,27 @@
     },
     "Engaging Banter": {
       "name": "Engaging Banter",
+      "presentation": {
+        "shortEffect": "Distract with chatter"
+      },
       "action": "Standard",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Journeyman",
+      "versus": "target's Social Defense",
+      "summary": "Engage a target who can understand you in witty chat (vs Social Defense) for rank minutes; the target is distracted and harried, and each success imposes \u22122 on their Perception tests to notice anything but the adept.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Target distracted and harried for rank minutes."
+        }
+      ]
     },
     "Entertaining": {
       "name": "Entertaining",
@@ -1815,8 +2111,26 @@
     },
     "Fast Hand": {
       "name": "Fast Hand",
+      "presentation": {
+        "shortEffect": "Switch small items"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Journeyman"
+      },
+      "tier": "Journeyman",
+      "summary": "Sleight-of-hand plus minor illusion to move one or two small items (no larger than 6 inches) between locations within reach; the test result is the Difficulty for observers to notice.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Items switched; the result sets the Difficulty to notice."
+        }
+      ]
     },
     "Fearsome Charge": {
       "name": "Fearsome Charge",
@@ -1855,8 +2169,27 @@
     },
     "Haggle": {
       "name": "Haggle",
-      "action": "Sustain",
-      "attribute": "Charisma"
+      "presentation": {
+        "shortEffect": "Drive a hard bargain"
+      },
+      "action": "Sustained",
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "customer's or merchant's Social Defense",
+      "summary": "Buy or sell at a better price (vs Social Defense); each success moves the price 5% in the adept's favor. Up to rank tests per transaction; bargaining stops when either side fails.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Price shifts 5% in the adept's favor per success."
+        }
+      ]
     },
     "Heartening Laugh": {
       "name": "Heartening Laugh",
@@ -2002,8 +2335,27 @@
     },
     "Second Attack": {
       "name": "Second Attack",
+      "presentation": {
+        "shortEffect": "Attack again"
+      },
       "action": "Simple",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 2,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Journeyman"
+      },
+      "tier": "Journeyman",
+      "versus": "opponent's Physical Defense",
+      "summary": "Make an additional close-combat attack with the same weapon used in the first attack that round (vs Physical Defense); on a hit, roll Damage as normal.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Extra close-combat attack lands \u2014 follow with a Damage test."
+        }
+      ]
     },
     "Second Shot": {
       "name": "Second Shot",
@@ -2027,8 +2379,27 @@
     },
     "Slough Blame": {
       "name": "Slough Blame",
+      "presentation": {
+        "shortEffect": "Shift suspicion"
+      },
       "action": "Standard",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 1,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Journeyman"
+      },
+      "tier": "Journeyman",
+      "versus": "higher of the accuser's or scapegoat's Social Defense",
+      "summary": "Concoct a plausible explanation and pass blame from one character to another (vs the higher of the accuser's or scapegoat's Social Defense, +1 per additional character) for rank minutes.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Blame passes to the scapegoat for rank minutes."
+        }
+      ]
     },
     "Speak Language": {
       "name": "Speak Language",
@@ -2037,7 +2408,9 @@
     },
     "Spellcasting": {
       "name": "Spellcasting",
-      "brief": "Cast a spell",
+      "presentation": {
+        "shortEffect": "Cast a spell"
+      },
       "action": "Standard",
       "attribute": "Perception",
       "strain": 0,
@@ -2068,7 +2441,9 @@
     },
     "Spirit Talk": {
       "name": "Spirit Talk",
-      "brief": "Talk with spirits",
+      "presentation": {
+        "shortEffect": "Talk with spirits"
+      },
       "action": "Standard",
       "attribute": "Perception",
       "strain": 1,
@@ -2089,7 +2464,9 @@
     },
     "Steel Thought": {
       "name": "Steel Thought",
-      "brief": "Resist mystic attack",
+      "presentation": {
+        "shortEffect": "Resist mystic attack"
+      },
       "action": "Free",
       "attribute": "Willpower",
       "strain": 1,
@@ -2125,7 +2502,9 @@
     },
     "Suppress Curse": {
       "name": "Suppress Curse",
-      "brief": "Suppress a curse",
+      "presentation": {
+        "shortEffect": "Suppress a curse"
+      },
       "action": "Standard",
       "attribute": "Willpower",
       "strain": 1,
@@ -2188,7 +2567,9 @@
     },
     "Thread Weaving (Archer)": {
       "name": "Thread Weaving (Archer)",
-      "brief": "Weave thread magic",
+      "presentation": {
+        "shortEffect": "Weave thread magic"
+      },
       "action": "Standard",
       "attribute": "Perception",
       "strain": 0,
@@ -2227,7 +2608,9 @@
     },
     "Thread Weaving (Nethermancer)": {
       "name": "Thread Weaving (Nethermancer)",
-      "brief": "Weave thread magic",
+      "presentation": {
+        "shortEffect": "Weave thread magic"
+      },
       "action": "Standard",
       "attribute": "Perception",
       "strain": 0,
@@ -2261,8 +2644,24 @@
     },
     "Thread Weaving (Thief)": {
       "name": "Thread Weaving (Thief)",
+      "presentation": {
+        "shortEffect": "Weave thread magic"
+      },
       "action": "Standard",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Weave and maintain magical threads (to thread items, patterns, and Thief thread abilities such as Thief Weaving); max active threads and thread rank equal to rank.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Enables weaving threads for thread items/abilities."
+        }
+      ]
     },
     "Thread Weaving (Troubadour)": {
       "name": "Thread Weaving (Troubadour)",
@@ -2271,8 +2670,24 @@
     },
     "Thread Weaving (Warrior)": {
       "name": "Thread Weaving (Warrior)",
+      "presentation": {
+        "shortEffect": "Weave thread magic"
+      },
       "action": "Standard",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "summary": "Weave and maintain magical threads (to thread items, patterns, and Warrior thread abilities such as War Weaving); max active threads and thread rank equal to rank.",
+      "effects": [
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Enables weaving threads for thread items/abilities."
+        }
+      ]
     },
     "Thread Weaving (Weaponsmith)": {
       "name": "Thread Weaving (Weaponsmith)",
@@ -2352,7 +2767,9 @@
     },
     "Patterncraft": {
       "name": "Patterncraft",
-      "brief": "Read magic patterns",
+      "presentation": {
+        "shortEffect": "Read magic patterns"
+      },
       "attribute": "Perception",
       "action": "Standard",
       "strain": 0,
@@ -2360,7 +2777,7 @@
         "allowed": false
       },
       "tier": "Novice",
-      "summary": "Understand the workings of magic — read and write magical writing, and analyze magical patterns (e.g. translating grimoire pages).",
+      "summary": "Understand the workings of magic \u2014 read and write magical writing, and analyze magical patterns (e.g. translating grimoire pages).",
       "effects": [
         {
           "type": "note",
@@ -2379,7 +2796,27 @@
     },
     "Lock Picking": {
       "name": "Lock Picking",
-      "attribute": "Dexterity"
+      "presentation": {
+        "shortEffect": "Open locks"
+      },
+      "action": "Standard",
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "Difficulty Number (GM) / lock's Mystic Defense",
+      "summary": "Conjure telekinetic lock picks to open a lock: mundane locks vs a GM-set Difficulty, magical locks vs the lock's Mystic Defense. Up to rank attempts per lock; a Rule of One or total failure locks it until the rank rises.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "The lock opens."
+        }
+      ]
     },
     "Melee Weapons": {
       "name": "Melee Weapons",
@@ -2399,7 +2836,9 @@
     },
     "Karma Ritual": {
       "name": "Karma Ritual",
-      "brief": "Refill Karma pool",
+      "presentation": {
+        "shortEffect": "Refill Karma pool"
+      },
       "action": "NA",
       "strain": 0,
       "skillUse": {
@@ -2426,14 +2865,16 @@
     },
     "Standard Matrix": {
       "name": "Standard Matrix",
-      "brief": "Hold a spell",
+      "presentation": {
+        "shortEffect": "Hold a spell"
+      },
       "action": "NA",
       "strain": 0,
       "skillUse": {
         "allowed": false
       },
       "tier": "Novice",
-      "summary": "A basic spell matrix — an astral construct that safely holds one spell for casting without astral interference; rank governs the spell it can hold.",
+      "summary": "A basic spell matrix \u2014 an astral construct that safely holds one spell for casting without astral interference; rank governs the spell it can hold.",
       "effects": [
         {
           "type": "note",

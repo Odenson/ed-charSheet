@@ -151,6 +151,147 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Thief",
+      "importantAttributes": ["Charisma", "Dexterity", "Perception"],
+      "karmaRitual": { "summary": "Sits alone in a darkened place and concentrates for half an hour on being self-reliant, then successfully uses a Discipline talent. Restores the Karma pool." },
+      "artisanSkills": ["Acting", "Poetry"],
+      "halfMagic": { "summary": "Build or bypass security measures intended to prevent theft, and recognize different types of locking mechanisms." },
+      "durability": 5,
+      "talentOptions": {
+        "novice": ["Avoid Blow", "Climbing", "First Impression", "Great Leap", "Melee Weapon", "Missile Weapon", "Sprint", "Surprise Strike", "Taunt", "Throwing Weapon"],
+        "journeyman": ["Blade Juggle", "Call Missile", "Dead Fall", "Disguise Self", "Graceful Exit", "Mimic Voice", "Mystic Pursuit", "Second Weapon", "Spot Armor Flaw", "True Sight"]
+      },
+      "circles": [
+        {
+          "circle": 1,
+          "freeTalents": ["Danger Sense"],
+          "talents": ["Awareness", "Lock Picking", "Picking Pockets", "Stealthy Stride", "Thread Weaving (Thief)"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Charisma" }, "scope": "when attempting to deceive a target", "source": "discipline", "summary": "May spend Karma on Charisma-based tests when attempting to deceive a target." }
+          ]
+        },
+        {
+          "circle": 2,
+          "talents": ["Disarm Trap"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 3,
+          "talents": ["Haggle"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Initiative" }, "source": "discipline", "summary": "May spend Karma on Initiative tests." }
+          ]
+        },
+        {
+          "circle": 4,
+          "talents": ["Conceal Object"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Social" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Social Defense." }
+          ]
+        },
+        {
+          "circle": 5,
+          "talents": ["Engaging Banter"],
+          "effects": [
+            { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "Shadowcloak: as a Simple action, take 2 Strain to increase the Difficulty of any test to detect the adept by +2 for a number of minutes equal to the Thief Weaving rank." },
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Attack" }, "scope": "vs a Surprised or Blindsided opponent", "source": "discipline", "summary": "May spend Karma on Attack tests against a Surprised or Blindsided opponent." }
+          ]
+        },
+        {
+          "circle": 6,
+          "talents": ["Slough Blame"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+2 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 7,
+          "talents": ["Fast Hand"],
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "add", "value": 1, "measure": "step", "source": "discipline", "summary": "+1 Step to Initiative." }
+          ]
+        },
+        {
+          "circle": 8,
+          "talents": ["False Sight"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+3 Physical Defense." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Warrior",
+      "importantAttributes": ["Dexterity", "Strength", "Toughness"],
+      "karmaRitual": { "summary": "Sits cross-legged with a weapon across the knees, meditates and levitates as if using Air Dance (no Strain), then performs the earth defense, water defense, fire attack, and air attack exercises. Restores the Karma pool." },
+      "artisanSkills": ["Sculpting", "Rune Carving"],
+      "halfMagic": { "summary": "Care for and repair weapons and armor; knowledge of military tactics and strategy; recall Barsaive's military history; recognize warrior orders, famous ancient Warriors, and ancient arms and armor." },
+      "durability": 7,
+      "talentOptions": {
+        "novice": ["Acrobatic Defense", "Anticipate Blow", "Danger Sense", "Distract", "Fireblood", "Maneuver", "Missile Weapon", "Shield Bash", "Tactics", "Unarmed Combat"],
+        "journeyman": ["Disarm", "Etiquette", "Leadership", "Life Check", "Lion Heart", "Momentum Attack", "Second Weapon", "Spot Armor Flaw", "Steely Stare", "Swift Kick"]
+      },
+      "circles": [
+        {
+          "circle": 1,
+          "talents": ["Avoid Blow", "Melee Weapon", "Thread Weaving (Warrior)", "Tiger Spring", "Wood Skin"],
+          "effects": []
+        },
+        {
+          "circle": 2,
+          "talents": ["Wound Balance"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 3,
+          "talents": ["Air Dance"],
+          "effects": [
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Recovery" }, "source": "discipline", "summary": "May spend Karma on a Recovery test." }
+          ]
+        },
+        {
+          "circle": 4,
+          "talents": ["Waterfall Slam"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Mystic Defense." }
+          ]
+        },
+        {
+          "circle": 5,
+          "talents": ["Earth Skin"],
+          "effects": [
+            { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "Battle Rites: after 30 minutes of meditation, pick a talent; during any encounter in the next 24 hours, spend a Karma Point as a Simple action to reduce that talent's Strain cost by 1 once per round. A Karma Point is spent per encounter." },
+            { "type": "grant-karma-use", "target": { "domain": "test", "name": "Damage" }, "scope": "close combat", "source": "discipline", "summary": "May spend Karma on any Damage test made in close combat." }
+          ]
+        },
+        {
+          "circle": 6,
+          "talents": ["Temper Flesh"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+2 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 7,
+          "talents": ["Crushing Blow"],
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "RecoveryTests" }, "operation": "add", "value": 1, "measure": "count", "source": "discipline", "summary": "Gains an additional Recovery test." }
+          ]
+        },
+        {
+          "circle": 8,
+          "talents": ["Second Attack"],
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+3 Physical Defense." }
+          ]
+        }
+      ]
     }
   ]
 }

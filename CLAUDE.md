@@ -96,6 +96,7 @@ it for AI sessions; humans use the checklist below):
 | Architecture, layers, phases | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | UI/UX rules | [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md) |
 | Effect vocabulary / schema of `effects` | [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md) |
+| Thread-item data model, engine fold, pricing | [docs/THREAD-ITEMS.md](docs/THREAD-ITEMS.md) |
 | Dev → prod deploy, relative-path rule | [WORKFLOW.md](WORKFLOW.md) |
 | Serverless save feature design | [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md) |
 

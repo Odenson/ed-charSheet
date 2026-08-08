@@ -296,6 +296,89 @@ test('karmaUse finds grant-karma-use permissions by test name, with scope', () =
   assert.equal(karmaUse('Strength', effects), null); // no grant → not karma-eligible
 });
 
+// --- collapseStacking (EFFECT-TAXONOMY §7) -----------------------------------
+
+const m = (name, value, extra = {}) => ({
+  type: 'defense-modifier',
+  target: { domain: 'defense', name },
+  operation: 'add',
+  value,
+  measure: 'rating',
+  condition: 'always',
+  source: 'thread',
+  ...extra,
+});
+
+test('stacking highest: only the largest of a progression applies', () => {
+  // A Discipline's progressive bonuses (circle 2 +1, circle 6 +2, circle 8 +3) are
+  // same-origin `highest` effects — they must collapse to the largest, never sum.
+  const effects = [
+    m('Physical', 1, { stacking: 'highest', origin: { kind: 'discipline', name: 'Archer', circle: 2 } }),
+    m('Physical', 3, { stacking: 'highest', origin: { kind: 'discipline', name: 'Archer', circle: 8 } }),
+    m('Physical', 2, { stacking: 'highest', origin: { kind: 'discipline', name: 'Archer', circle: 6 } }),
+  ];
+  const pd = defense('Physical', 16, effects, lookup);
+  assert.equal(pd.value, 9 + 3); // only +3, not +6
+  assert.equal(pd.modifiers.length, 1);
+});
+
+test('stacking replace: a later thread rank overrides the earlier rank', () => {
+  // Bracers of Aras at Thread Rank 3: base +1 PD (replace), rank 3 +2 PD (replace).
+  // The woven rank replaces the unthreaded base — never +3.
+  const effects = [
+    m('Physical', 1, { stacking: 'replace', origin: { kind: 'thread', name: 'Bracers of Aras', rank: 0 } }),
+    m('Physical', 2, { stacking: 'replace', origin: { kind: 'thread', name: 'Bracers of Aras', rank: 3 } }),
+  ];
+  const pd = defense('Physical', 16, effects, lookup);
+  assert.equal(pd.value, 9 + 2); // rank 3 replaces rank 0
+  assert.equal(pd.modifiers.length, 1);
+  assert.equal(pd.modifiers[0].value, 2);
+});
+
+test('stacking is per-origin: independent sources still add together', () => {
+  // A thread item's rank-3 +2 and a separate shield +1 are different origins — the
+  // `replace` collapse must not swallow the shield's independent bonus.
+  const effects = [
+    m('Physical', 2, { stacking: 'replace', origin: { kind: 'thread', name: 'Bracers of Aras', rank: 3 } }),
+    m('Physical', 1, { stacking: 'cumulative', origin: { kind: 'item', name: 'Shield' } }),
+  ];
+  const pd = defense('Physical', 16, effects, lookup);
+  assert.equal(pd.value, 9 + 2 + 1);
+  assert.equal(pd.modifiers.length, 2);
+});
+
+test('stacking cumulative (default): all instances add together', () => {
+  const effects = [
+    m('Mystic', 1, { origin: { kind: 'discipline', name: 'Archer', circle: 1 } }),
+    m('Mystic', 1, { origin: { kind: 'discipline', name: 'Nethermancer', circle: 1 } }),
+  ];
+  const md = defense('Mystic', 14, effects, lookup);
+  assert.equal(md.value, 8 + 2); // two +1s, different origins
+});
+
+test('stacking unique: only one instance applies regardless of source', () => {
+  const effects = [
+    m('Physical', 2, { stacking: 'unique', origin: { kind: 'race', name: 'Windling' } }),
+    m('Physical', 2, { stacking: 'unique', origin: { kind: 'trait', name: 'Trait X' } }),
+  ];
+  const pd = defense('Physical', 16, effects, lookup);
+  assert.equal(pd.value, 9 + 2); // one instance, not +4
+  assert.equal(pd.modifiers.length, 1);
+});
+
+test('stacking collapse is skipped for effects with no origin (additive tests hold)', () => {
+  // Engine tests build bare effects without origins — those must keep adding so the
+  // existing suite's expectations (e.g. two +1 Mystic effects) don't silently change.
+  const effects = [
+    m('Mystic', 1),
+    m('Mystic', 1),
+    m('Mystic', 2),
+  ];
+  const md = defense('Mystic', 14, effects, lookup);
+  assert.equal(md.value, 8 + 1 + 1 + 2);
+  assert.equal(md.modifiers.length, 3);
+});
+
 test('talentKarmaUse: talents are Karma-eligible by default, with opt-outs', () => {
   assert.ok(talentKarmaUse({}).grants.length); // default: eligible
   assert.equal(talentKarmaUse({}).grants[0].scope, null); // unscoped (always allowed)
