@@ -181,19 +181,21 @@ export class EdApp extends LitElement {
     });
     // A roll modal with an apply context (e.g. a Recovery test) hands its total
     // back up; apply it to the character's inputs via the pure engine and
-    // re-derive, then close the roll modal. The UI never computes the value.
+    // re-derive. The UI never computes the value.
     this.addEventListener('ed-roll-apply', (e) => {
       const { action, result, difficulty } = e.detail;
       if (action === 'recovery-heal') {
         this._editHealth(applyHealth(this._character?.resources?.health ?? {}, { damage: -result, recoveriesUsed: 1 }));
+        this._roll = null; // button-driven: apply and close
       } else if (action === 'knockdown-result') {
-        // The outcome is re-derived here through the engine (result vs the hit's
-        // difficulty) — the modal only displayed the comparison. The big hit's
-        // damage and any Wound were already applied by the damage modal; this
-        // stores the knocked-down input that the engine's condition effect reads.
+        // A Knockdown test resolves itself at roll time — no verify button: a
+        // failed test knocks the character down. The big hit's damage and any
+        // Wound were already applied by the damage modal; this stores the
+        // knocked-down input that the engine's condition effect reads. The roll
+        // modal stays open so the player sees the roll and its outcome line,
+        // then dismisses it.
         this._editHealth({ knockedDown: knockdownOutcome(result, difficulty) === 'down' });
       }
-      this._roll = null;
     });
     // A view edited character inputs. Apply the patch, persist the overlay, and
     // re-derive the model from inputs — the UI never mutates derived state.
@@ -324,17 +326,17 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
-  // Roll-time modifiers from live conditions. While Knocked Down every Action
-  // test takes the condition's −3 (errata); the Knockdown and Recovery tests are
-  // exempt, and Initiative / Karma are not Action tests either. The value comes
-  // from the engine's synthesized condition effect (KNOCKED_DOWN_EFFECT) — a
-  // static number is never typed here, and the penalty is applied at roll time,
-  // never folded into a stored/derived stat.
-  _rollTimeMods({ kind, apply } = {}) {
+  // Roll-time modifiers from live conditions. While Knocked Down every test
+  // takes the condition's −3 (PG p.389: "suffers a –3 penalty to his tests" —
+  // the worked example includes the next Initiative test, so there are no
+  // Action-only or Initiative/Knockdown/Recovery exemptions). The only roll
+  // that never takes it is the Karma die, which is a die roll, not a test. The
+  // value comes from the engine's synthesized condition effect
+  // (KNOCKED_DOWN_EFFECT) — a static number is never typed here, and the
+  // penalty is applied at roll time, never folded into a stored/derived stat.
+  _rollTimeMods({ kind } = {}) {
     if (!this._character?.resources?.health?.knockedDown) return [];
-    const action = apply?.action;
-    if (action === 'recovery-heal' || action === 'knockdown-result') return [];
-    if (kind === 'initiative' || kind === 'knockdown' || kind === 'karma') return [];
+    if (kind === 'karma') return [];
     return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
   }
 

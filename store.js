@@ -10,7 +10,7 @@ import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engi
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent } from './engine/legend-spent.js';
-import { damageState, KNOCKED_DOWN_EFFECT } from './engine/health.js';
+import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
   defense,
@@ -513,17 +513,21 @@ export function deriveModel(character, rules) {
   }));
   const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
   // Knocked Down is a live condition, not a stored/derived static number: it
-  // shows in Active Effects and is applied as a roll-time −3 to Action tests.
-  // It exists purely because the input is set — clear `knockedDown` and it folds
-  // back out of every derived readout.
+  // shows in Active Effects and is applied as a roll-time −3 to every test
+  // (PG p.389), and its −3 to Physical/Mystic Defense folds into the derived
+  // ratings below. It exists purely because the input is set — clear
+  // `knockedDown` and it folds back out of every derived readout.
   const conditionEffects = character.resources?.health?.knockedDown
     ? [{ ...KNOCKED_DOWN_EFFECT, origin: { kind: 'condition', name: 'Knocked Down' } }]
+    : [];
+  const conditionDefenseEffects = character.resources?.health?.knockedDown
+    ? KNOCKED_DOWN_DEFENSE_EFFECTS.map((e) => ({ ...e, origin: { kind: 'condition', name: 'Knocked Down' } }))
     : [];
   const touVal = attrVal('Toughness');
 
   const characteristics = {
-    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
-    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
+    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), [...activeEffects, ...conditionDefenseEffects], lookupChar),
+    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), [...activeEffects, ...conditionDefenseEffects], lookupChar),
     socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
     physicalArmor: physicalArmor(activeEffects),
     mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),

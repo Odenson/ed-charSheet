@@ -17,6 +17,7 @@ import {
   knockdownDifficulty,
   knockdownOutcome,
   KNOCKED_DOWN_EFFECT,
+  KNOCKED_DOWN_DEFENSE_EFFECTS,
 } from './health.js';
 
 const table = JSON.parse(
@@ -195,7 +196,23 @@ test('KNOCKED_DOWN_EFFECT: the synthesized condition is taxonomy-shaped and roll
   assert.equal(KNOCKED_DOWN_EFFECT.value, -3);
   assert.equal(KNOCKED_DOWN_EFFECT.measure, 'result'); // applied at roll time, not folded into a stat
   assert.equal(KNOCKED_DOWN_EFFECT.source, 'condition');
-  assert.match(KNOCKED_DOWN_EFFECT.summary, /Action tests/);
+  assert.match(KNOCKED_DOWN_EFFECT.summary, /all tests/);
+});
+
+test('KNOCKED_DOWN_DEFENSE_EFFECTS: the condition folds −3 into Physical and Mystic Defense only', () => {
+  assert.equal(KNOCKED_DOWN_DEFENSE_EFFECTS.length, 2);
+  for (const e of KNOCKED_DOWN_DEFENSE_EFFECTS) {
+    assert.equal(e.type, 'defense-modifier');
+    assert.equal(e.target.domain, 'defense');
+    assert.ok(['Physical', 'Mystic'].includes(e.target.name), e.target.name);
+    assert.equal(e.operation, 'add');
+    assert.equal(e.value, -3);
+    assert.equal(e.measure, 'rating'); // folds into the static rating
+    assert.equal(e.condition, 'always'); // auto-applies while the condition is set
+    assert.equal(e.source, 'condition');
+  }
+  // Social Defense is only ever hit at the gamemaster's discretion — not folded.
+  assert.ok(KNOCKED_DOWN_DEFENSE_EFFECTS.every((e) => e.target.name !== 'Social'));
 });
 
 // The full wound-and-knockdown flow a big hit takes through the engine.

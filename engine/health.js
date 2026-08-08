@@ -127,11 +127,15 @@ export function knockdownOutcome(result, difficulty) {
 }
 
 /**
- * The synthesized effect for the Knocked Down condition, so one source serves
- * both the Active Effects panel and the roll-time penalty. `Action`-test and
- * `condition` are already taxonomy v3 vocabulary (EFFECT-TAXONOMY §3, §9) —
- * no taxonomy change. `measure: "result"` — a flat penalty to the rolled test,
- * applied at roll time (never folded into a stored/derived static number).
+ * The synthesized effect for the Knocked Down condition's test penalty, so one
+ * source serves both the Active Effects panel and the roll-time penalty.
+ * `measure: "result"` — a flat penalty to the rolled test, applied at roll time
+ * (the book's general rule applies modifiers to the Step; a result modifier is
+ * the explicitly-sanctioned GM-discretion alternative — PG "Bonuses and
+ * Penalties"). Per the PG p.389 the penalty hits *every* test while prone
+ * ("suffers a –3 penalty to his tests" — the worked example includes the next
+ * Initiative test), not just Action tests. `test-modifier`, `condition` and
+ * `measure` are taxonomy v3 vocabulary — no taxonomy change.
  */
 export const KNOCKED_DOWN_EFFECT = {
   type: 'test-modifier',
@@ -141,5 +145,36 @@ export const KNOCKED_DOWN_EFFECT = {
   measure: 'result',
   condition: 'always',
   source: 'condition',
-  summary: '−3 to Action tests while knocked down.',
+  summary: '−3 to all tests while knocked down.',
 };
+
+/**
+ * The Knocked Down condition also subtracts 3 from Physical and Mystic Defense
+ * (PG p.389; Social Defense only at the gamemaster's discretion, so it is not
+ * folded here). Two `defense-modifier` effects — one per defense — so they fold
+ * into the derived ratings while the condition input is set and drop back out
+ * when it is cleared. Same taxonomy vocabulary as the rules' own defense
+ * modifiers (rules/disciplines.json).
+ */
+export const KNOCKED_DOWN_DEFENSE_EFFECTS = [
+  {
+    type: 'defense-modifier',
+    target: { domain: 'defense', name: 'Physical' },
+    operation: 'add',
+    value: -3,
+    measure: 'rating',
+    condition: 'always',
+    source: 'condition',
+    summary: '−3 Physical Defense while knocked down.',
+  },
+  {
+    type: 'defense-modifier',
+    target: { domain: 'defense', name: 'Mystic' },
+    operation: 'add',
+    value: -3,
+    measure: 'rating',
+    condition: 'always',
+    source: 'condition',
+    summary: '−3 Mystic Defense while knocked down.',
+  },
+];

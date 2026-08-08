@@ -60,16 +60,28 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 
 ## Confirmed decisions (owner answers, 2026-08-08)
 
-1. **Knockdown test adjudication = "Roll, then click outcome"** — the damage
-   modal routes a triggering hit to the roll modal ("Knockdown test, vs
-   Difficulty N"); the outcome button is labelled from the actual result
-   (**Stayed up** / **Knocked down**) and clicking it applies it. The result is
-   re-derived through the engine (`knockdownOutcome`) when it lands.
-2. **Knocked Down penalty = roll-time modifier** — every test rolled through the
-   sheet takes the **−3** (per errata, *Action tests* only; the **Knockdown**
-   and **Recovery** tests are exempt, and so are Initiative / Karma rolls, which
-   are not Action tests). The −3 is applied at roll time — never folded into a
-   stored or derived stat.
+1. **Knockdown test adjudication = resolves at roll time** — the damage modal
+   routes a triggering hit to the roll modal ("Knockdown test, vs Difficulty N").
+   There is **no verify button**: the moment the dice land, the outcome is
+   applied automatically — a failed test knocks the character down, a success
+   leaves them standing (re-derived through the engine, `knockdownOutcome`). The
+   roll modal stays open so the player sees the roll and its outcome line
+   (Stayed up / Knocked down), then dismisses it.
+   *(Revised after E: originally "Roll, then click outcome" — owner asked to drop
+   the verification click.)*
+2. **Knocked Down penalty = a modifier, applied at roll time + folded defense** —
+   PG p.389: "the character suffers a –3 penalty to his tests, and subtracts –3
+   from his Physical and Mystic Defense." It is a **modifier**, never a step
+   stored/derived change: the roll-time −3 is applied flat to the test **result**
+   (the book's default is Step-modification, but a result modifier is the
+   explicitly-sanctioned GM-discretion alternative — "Bonuses and Penalties").
+   The −3 hits **every test** while prone — the worked example names the next
+   Initiative test, so there are no Action-only / Knockdown / Recovery / Karma
+   exemptions (the Karma *die* is a die roll, not a test, so it never takes it).
+   The **−3 to Physical and Mystic Defense** folds into the derived ratings while
+   the condition is set; Social Defense is left to GM discretion and is not
+   folded. *(Revised after E: originally "Action tests only, −3 result" — owner
+   chose Option B, the book's prose reading.)*
 3. **Stand up** — the condition is cleared with a **"Stand up"** button in the
    Active Effects panel.
 4. **Remove the manual Wounds field from the damage modal** — a hit auto-records
@@ -131,15 +143,19 @@ lands, append to [Issues & learnings](#issues--learnings) and the
       immediately; the test only decides the knocked-down state.
 - [x] C2. **Roll modal** (`ui/ed-roll-modal.js`): gains generic **`difficulty`**
       ("vs Difficulty N" in the sub-header, plus an outcome line) and **`mods`**
-      (a Mods row; the total includes them). For a Knockdown test the Apply
-      button is labelled from the rolled outcome (Stayed up / Knocked down) via
-      the engine; `ed-roll-apply` carries `{ action, result, difficulty }`.
+      (a Mods row; the total includes them). A Knockdown test shows **no Apply
+      button** — `_roll()` auto-applies the resolved outcome; `ed-roll-apply`
+      carries `{ action, result, difficulty }`.
 - [x] C3. **`ed-app.js`**: `_rollTimeMods()` appends
-      `{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }` to every roll
-      while knocked down, **except** Recovery / Knockdown tests and
-      Initiative / Karma rolls (non-Action). The `ed-roll-apply` handler re-derives
-      `knockdownOutcome(result, difficulty)` and stores `knockedDown`. Combat /
-      Karma roll buttons now tag their `kind` so the app can exempt them.
+      `{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }` to **every**
+      roll while knocked down (PG p.389 — all tests, Initiative included); only
+      the Karma die (a die roll, not a test) is skipped. The `ed-roll-apply`
+      handler re-derives `knockdownOutcome(result, difficulty)` and stores
+      `knockedDown`. Combat / Karma roll buttons still tag their `kind`.
+- [x] C3b. **Defense fold** — while knocked down, the engine's synthesized
+      `KNOCKED_DOWN_DEFENSE_EFFECTS` (−3 `defense-modifier`, `rating` measure,
+      Physical + Mystic) are folded into the derived defenses (not Social, which
+      is GM discretion); they clear with the condition.
 - [x] C4. **Active Effects panel** — a new block under Special Features listing
       every effect in `model.activeEffects` (origin tag + summary); the Knocked
       Down condition row is highlighted and carries **Stand up** (dispatches
@@ -191,6 +207,19 @@ lands, append to [Issues & learnings](#issues--learnings) and the
   Beyond the explicitly-exempt Knockdown + Recovery tests, the Implementation
   also skips Initiative and Karma rolls, which are not Action tests. The
   overview's combat/karma roll buttons tag their `kind` to make that decision.
+- **C2 revision (owner, post-E):** the Knockdown test's outcome is no longer
+  confirmed with a click — `_roll()` auto-applies it the moment the dice land
+  (a failed test knocks the character down) and the roll modal's Apply button
+  is dropped for `knockdown-result`; the modal stays open showing the roll and
+  its outcome line, and `ed-app` no longer closes it on that apply.
+- **C3 revision (owner, post-E — Option B):** the local rulebooks were checked
+  (PG p.389 + Situation Modifiers Table + "Bonuses and Penalties"): Knocked Down
+  is a **modifier**, not a step change. The earlier "Action tests only /
+  Knockdown + Recovery + Initiative + Karma exempt" reading was dropped — the
+  −3 hits **every** test while prone (prose; the example names the next
+  Initiative test). The missing **−3 Physical/Mystic Defense** fold was added
+  (`KNOCKED_DOWN_DEFENSE_EFFECTS`, `rating` measure). Result-measure (not the
+  book's default Step-measure) was kept as the sanctioned alternative.
 
 ## Progress log
 
@@ -198,3 +227,5 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 |------|--------|--------|
 | 2026-08-08 | Plan created; owner answered 4 scope questions (Roll-then-click outcome / roll-time −3 / Stand up / drop the modal Wounds field) and corrected the knockdown rule to "5 over the threshold, Difficulty = hit − threshold" | Baseline `d21de2f`, 162/162 tests |
 | 2026-08-08 | Phases A–D + E1–E4: engine wounds/knockdown helpers + `KNOCKED_DOWN_EFFECT`; `deriveModel.activeEffects` + condition; damage modal auto-wound + knockdown routing; roll modal `difficulty`/`mods` + outcome; roll-time −3 + `knockdown-result` apply; Active Effects panel + Stand up; Recoveries reset; `_editHealth` full-merge fix; 11 new engine tests + 2 new store tests | 174/174 tests pass; pushed to `dev` |
+| 2026-08-08 | Owner revisions: Active Effects lists conditions only (no Special Features / items); recoveries-reset ⟳ moves beside the label; **Knockdown test auto-applies its outcome at roll time** (no verify button — `ed-roll-modal._roll()` dispatches `ed-roll-apply`, `ed-app` stops closing the modal on `knockdown-result`) | 174/174 tests pass; uncommitted on `dev` |
+| 2026-08-08 | Option B (local-rulebook check): Knocked Down is a **modifier** — the roll-time −3 now hits **every** test while prone (no Action-only / Initiative / Knockdown / Recovery exemptions; Karma die only excluded), and the **−3 Physical + Mystic Defense** fold was added (`KNOCKED_DOWN_DEFENSE_EFFECTS`, `rating` measure; Social left to GM discretion). Result-measure kept as the book's sanctioned alternative | 176/176 tests pass; uncommitted on `dev` |

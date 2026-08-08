@@ -89,6 +89,10 @@ export class EdRollModal extends LitElement {
     this._result = rollStep(this.stepRow);
     // Re-roll the Karma die too if it's currently spent.
     this._karmaResult = this._karmaOn && this.karma?.stepRow ? rollStep(this.karma.stepRow) : null;
+    // A Knockdown test resolves itself: the moment the dice land, the outcome
+    // is decided and applied — there is no verify button. A failed test knocks
+    // the character down; the app re-derives that state from this result.
+    if (this.apply?.action === 'knockdown-result') this._apply();
   }
 
   _toggleKarma() {
@@ -233,7 +237,7 @@ export class EdRollModal extends LitElement {
             : ''}
           <div class="foot">
             <span class="hint">Max on a die explodes: reroll and add.</span>
-            ${this.apply
+            ${this.apply && this.apply.action !== 'knockdown-result'
               ? html`<span class="appfoot">
                   <button class="appbtn" @click=${this._apply}>${this._applyLabel()}</button>
                   <button class="again" @click=${this._roll}>Roll again</button>

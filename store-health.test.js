@@ -146,3 +146,25 @@ test('deriveModel: knockedDown:true folds the Knocked Down condition into active
   const standing = deriveModel({ ...character, resources: { health: { ...character.resources.health, knockedDown: false } } }, rules);
   assert.ok(!standing.activeEffects.some((e) => e.origin?.kind === 'condition'));
 });
+
+test('deriveModel: knockedDown folds −3 into Physical and Mystic Defense (not Social), clears on stand-up', () => {
+  memory.clear();
+  const character = {
+    ...baseCharacter(),
+    attributes: { Dexterity: { base: 14 }, Perception: { base: 13 }, Charisma: { base: 12 } },
+    resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0, knockedDown: true } },
+  };
+  const down = deriveModel(character, rules);
+  const up = deriveModel({ ...character, resources: { health: { ...character.resources.health, knockedDown: false } } }, rules);
+  assert.ok(up.characteristics.physicalDefense?.value != null, 'Physical Defense derived');
+  assert.ok(up.characteristics.mysticDefense?.value != null, 'Mystic Defense derived');
+  assert.ok(up.characteristics.socialDefense?.value != null, 'Social Defense derived');
+  // Exactly the PG p.389 −3 to Physical and Mystic Defense while prone.
+  assert.equal(up.characteristics.physicalDefense.value - down.characteristics.physicalDefense.value, 3);
+  assert.equal(up.characteristics.mysticDefense.value - down.characteristics.mysticDefense.value, 3);
+  // Social Defense is only ever hit at GM discretion — never folded.
+  assert.equal(up.characteristics.socialDefense.value, down.characteristics.socialDefense.value);
+  // The −3 shows up in the folded modifiers (source: condition) for the tooltip.
+  assert.ok(down.characteristics.physicalDefense.modifiers.some((m) => m.origin?.kind === 'condition' && m.value === -3));
+  assert.ok(down.characteristics.mysticDefense.modifiers.some((m) => m.origin?.kind === 'condition' && m.value === -3));
+});

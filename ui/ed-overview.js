@@ -101,6 +101,12 @@ export class EdOverview extends LitElement {
     .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
     .hint { font-size: 0.68rem; color: var(--muted); }
     .val { font-weight: 500; }
+    /* A stat currently reduced/buffed by a live condition (e.g. Knocked Down):
+       the number takes the condition colour and a signed badge shows the net
+       amount. Both are presentation only — the value stays the engine's real
+       derived number. */
+    .val.cond { color: light-dark(#a63a2b, #e0846f); }
+    .val .delt { margin-left: 3px; font-size: 0.58rem; font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); vertical-align: 1px; white-space: nowrap; }
     .feat { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; font-size: 0.72rem; }
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
     .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
@@ -185,6 +191,7 @@ export class EdOverview extends LitElement {
     const o = m.origin;
     if (o?.kind === 'discipline') return `${o.name.slice(0, 3)} ${o.circle}`;
     if (o?.kind === 'race') return o.name ?? 'race';
+    if (o?.kind === 'condition') return o.name ?? 'condition';
     return m.source ?? '';
   }
 
@@ -202,11 +209,19 @@ export class EdOverview extends LitElement {
   // Render an engine-derived characteristic as a real number, or fall back to the
   // placeholder pill if the engine hasn't computed it (UI-GUIDELINES §5: never a
   // fabricated number). Hovering shows how the value was built (base + modifiers).
+  // While a live condition (e.g. Knocked Down) folds into the stat, the number is
+  // tinted in the condition colour and a small signed badge shows the net amount —
+  // both derived from the actual modifiers array, never a hardcoded value.
   _char(key) {
     const c = this.model?.characteristics?.[key];
     if (!c || c.value == null) return this._pend();
     const title = `Base ${c.base}${this._modSummary(c.modifiers)}`;
-    return html`<span class="val" title=${title}>${c.value}</span>`;
+    const cond = (c.modifiers ?? []).filter((m) => m.origin?.kind === 'condition');
+    if (!cond.length) return html`<span class="val" title=${title}>${c.value}</span>`;
+    const sum = cond.reduce((s, m) => s + (m.operation === 'subtract' ? -m.value : m.value), 0);
+    const sign = sum > 0 ? '+' : sum < 0 ? '−' : '';
+    const name = cond[0].origin?.name ?? 'condition';
+    return html`<span class="val cond" title=${title}>${c.value}<span class="delt" title=${`${name} ${sign}${Math.abs(sum)}`}>${sign}${Math.abs(sum)}</span></span>`;
   }
 
   // Carry / Lift: the carrying capacity, and the most that can be lifted without a
@@ -374,7 +389,7 @@ export class EdOverview extends LitElement {
           detail: {
             label: 'Knockdown test',
             step: kd.value,
-            kind: 'knockdown', // exempt from the Knocked Down −3 (errata)
+            kind: 'knockdown', // PG p.389: the −3 hits every test, this one included, while prone
             difficulty: { value: knockdownDifficulty(take, wt) },
             apply: { action: 'knockdown-result' },
           },
@@ -549,9 +564,9 @@ export class EdOverview extends LitElement {
   }
 
   // Active Effects: for now, only live conditions — Knocked Down (carrying a
-  // roll-time −3 to Action tests). Special Features (race + discipline circle
-  // abilities) and equipped item / thread-item effects are intentionally NOT
-  // listed at this stage, even though they are still folded into the engine's
+  // roll-time −3 to every test while prone). Special Features (race + discipline
+  // circle abilities) and equipped item / thread-item effects are intentionally
+  // NOT listed at this stage, even though they are still folded into the engine's
   // stat readouts. A condition offers its reversal ("Stand up") right on the
   // row; the strip keeps its internal scroll bound so the Overview still fits
   // the viewport (UI-GUIDELINES §1).
