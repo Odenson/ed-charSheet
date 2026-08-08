@@ -308,8 +308,9 @@ export class EdOverview extends LitElement {
 
   // Recoveries row: "used / max" — used is an input, max is the engine-derived
   // per-day Recovery Tests rating (a placeholder pill until the engine computes
-  // it). Read mode adds a refresh affordance: "a new day" resets used to 0
-  // (confirming first) — dispatching the input change upward, never storing it.
+  // it). Read mode adds a refresh affordance ("a new day" resets used to 0,
+  // confirming first) rendered right after the label word — dispatching the
+  // input change upward, never storing it.
   _recoveries(h) {
     const used = h.recoveriesUsed ?? 0;
     const max = this.model?.characteristics?.recoveries?.value;
@@ -329,12 +330,6 @@ export class EdOverview extends LitElement {
     }
     return html`<span class="rl">
       <span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>
-      <button
-        class="hreset"
-        title="A new day begins — reset Recovery tests used to 0"
-        aria-label="Reset Recovery tests used today"
-        @click=${() => (this._resetRecoveries = true)}
-      >⟳</button>
     </span>`;
   }
 
@@ -553,22 +548,19 @@ export class EdOverview extends LitElement {
     `;
   }
 
-  // Active Effects: the full fold of engine effects currently shaping the
-  // character — race abilities, discipline circle abilities, equipped item and
-  // thread-item effects — plus any live condition (Knocked Down, carrying a
-  // roll-time −3 to Action tests). The list is bounded to an internally
-  // scrolling strip so the Overview still fits the viewport (UI-GUIDELINES §1)
-  // no matter how many effects are active. A live condition offers its
-  // reversal ("Stand up") right on the row.
+  // Active Effects: for now, only live conditions — Knocked Down (carrying a
+  // roll-time −3 to Action tests). Special Features (race + discipline circle
+  // abilities) and equipped item / thread-item effects are intentionally NOT
+  // listed at this stage, even though they are still folded into the engine's
+  // stat readouts. A condition offers its reversal ("Stand up") right on the
+  // row; the strip keeps its internal scroll bound so the Overview still fits
+  // the viewport (UI-GUIDELINES §1).
   _activeEffects() {
-    const effects = this.model?.activeEffects ?? [];
+    const HIDDEN = new Set(['race', 'discipline', 'item', 'thread']);
+    const effects = (this.model?.activeEffects ?? []).filter((e) => !HIDDEN.has(e.origin?.kind));
     if (!effects.length) return html``;
     const tag = (e) => {
       const o = e.origin ?? {};
-      if (o.kind === 'race') return o.name ?? 'race';
-      if (o.kind === 'discipline') return `${String(o.name ?? '').slice(0, 3)} ${o.circle ?? ''}`.trim();
-      if (o.kind === 'thread') return `⚶ ${o.name ?? ''}`;
-      if (o.kind === 'item') return o.name ?? 'item';
       if (o.kind === 'condition') return 'condition';
       return e.source ?? '';
     };
@@ -815,7 +807,17 @@ export class EdOverview extends LitElement {
                 <div class="line"><span>Death</span>${this._char('death')}</div>
                 <div class="line"><span>Wound Threshold</span>${this._char('woundThreshold')}</div>
                 <div class="line"><span>Wounds</span>${this._healthField('wounds', h.wounds, 'Current wounds')}</div>
-                <div class="line"><span>Recoveries</span>${this._recoveries(h)}</div>
+                <div class="line">
+                  <span>Recoveries${this.editMode
+                    ? ''
+                    : html`<button
+                        class="hreset"
+                        title="A new day begins — reset Recovery tests used to 0"
+                        aria-label="Reset Recovery tests used today"
+                        @click=${() => (this._resetRecoveries = true)}
+                      >⟳</button>`}</span>
+                  ${this._recoveries(h)}
+                </div>
               </div>
               <div class="blk">
                 <h4>Movement</h4>
