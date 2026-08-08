@@ -229,25 +229,87 @@ test('auditLegendSpent prices knacks with a rank, flags those without', () => {
   assert.equal(r.delta, 600 - 500);
 });
 
-test('auditLegendSpent prices knacks from the catalog requiredRank', () => {
+test('auditLegendSpent prices knacks from the resolved knacks (opts.knacks)', () => {
   const char = {
     attributes: {},
     disciplines: [],
-    knacks: [{ name: 'Hunting' }, { name: 'Mystery' }], // Mystery not in catalog → unpriced
     resources: { legend: { totalEarnt: 2000, totalSpent: 300 } },
   };
-  const knackCatalog = { Hunting: { requiredRank: 3 } };
-  const r = auditLegendSpent(char, costs, { knackCatalog });
+  // Resolved knacks (as store.resolveKnack produces): requiredRank already bound from
+  // the catalog. The audit reads it directly — it does not re-resolve.
+  const knacks = [
+    { name: 'Hunting', requiredRank: 3 },
+    { name: 'Mystery', requiredRank: null }, // unknown → unpriced
+  ];
+  const r = auditLegendSpent(char, costs, { knacks });
   const kn = r.sections.find((s) => s.key === 'knacks');
   assert.equal(kn.lines[0].cost, 300); // Hunting: talentRank[3].Novice
   assert.equal(kn.lines[0].detail, 'Rank 3');
-  assert.equal(kn.lines[1].cost, null); // Mystery: no catalog entry, no inline rank
+  assert.equal(kn.lines[1].cost, null); // Mystery: no requiredRank
   assert.equal(kn.total, 300);
 });
 
 test('auditLegendSpent omits the knacks section when there are none', () => {
   const r = auditLegendSpent({ attributes: {}, disciplines: [], knacks: [] }, costs);
   assert.equal(r.sections.find((s) => s.key === 'knacks'), undefined);
+});
+
+// --- Thread Items ------------------------------------------------------------
+
+// Thread ranks price against the cumulative talent-rank progression at the item's
+// tier (GMG p.202). The catalog passes in via opts.threadItemCatalog.
+const bracersCatalog = {
+  'Bracers of Aras': { tier: 'Journeyman', threadRanks: [] },
+  'Strange Boots': { tier: 'Warden', threadRanks: [] },
+};
+
+test('auditLegendSpent prices a thread item cumulatively at its tier', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    resources: { legend: { totalEarnt: 5000, totalSpent: 1000 } },
+    items: [{ name: 'Bracers of Aras', threadRank: 3 }],
+  };
+  const r = auditLegendSpent(char, costs, { threadItemCatalog: bracersCatalog });
+  const th = r.sections.find((s) => s.key === 'threads');
+  assert.equal(th.lines[0].name, 'Bracers of Aras');
+  assert.equal(th.lines[0].detail, 'Journeyman · Thread Rank 3');
+  // talentRank: Novice 100, Journeyman 200/300/500 → 200+300+500 = 1000
+  assert.equal(th.lines[0].cost, 1000);
+  assert.equal(th.total, 1000);
+  assert.equal(r.total, 1000);
+});
+
+test('auditLegendSpent shows a thread item with no thread as costing 0', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    items: [{ name: 'Bracers of Aras', threadRank: 0 }],
+  };
+  const r = auditLegendSpent(char, costs, { threadItemCatalog: bracersCatalog });
+  const th = r.sections.find((s) => s.key === 'threads');
+  assert.equal(th.lines[0].detail, 'no thread woven');
+  assert.equal(th.lines[0].cost, 0);
+});
+
+test('auditLegendSpent flags a thread item whose tier is unknown (no fabricated price)', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    items: [{ name: 'Mystery Vessel', threadRank: 2 }],
+  };
+  // In the catalog but without a tier → the rank can't be priced.
+  const r = auditLegendSpent(char, costs, { threadItemCatalog: { 'Mystery Vessel': {} } });
+  const th = r.sections.find((s) => s.key === 'threads');
+  assert.equal(th.lines[0].name, 'Mystery Vessel');
+  assert.equal(th.lines[0].cost, null); // unknown tier → unpriced
+});
+
+test('auditLegendSpent omits the thread-items section when the character owns none', () => {
+  const r = auditLegendSpent({ attributes: {}, disciplines: [] }, costs, {
+    threadItemCatalog: bracersCatalog,
+  });
+  assert.equal(r.sections.find((s) => s.key === 'threads'), undefined);
 });
 
 test('auditLegendSpent handles a character with no legend inputs', () => {

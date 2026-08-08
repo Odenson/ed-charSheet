@@ -274,10 +274,12 @@ export async function loadCharacter(id, { store } = {}) {
   // Knack catalog is optional — it may not be authored yet (resolveKnack degrades
   // gracefully). Loaded separately so a 404 here never rejects the required files.
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
+  // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
+  const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -286,7 +288,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -386,7 +388,41 @@ export function deriveModel(character, rules) {
   // racial and discipline effects. Unknown names degrade gracefully (kept, but
   // contribute nothing) so a typo or a future custom item never breaks the sheet.
   const itemCatalog = itemsFile?.items ?? {};
+  const threadItemsCatalog = threadItemsFile?.items ?? {};
+  // A thread item resolves from rules/thread-items.json (schema ed-thread-items/1):
+  // its `effects` are the unthreaded `base` effects plus the effects of each Thread
+  // Rank up to the character's woven `threadRank` (an input; 0 = no thread). Rank
+  // effects combine by `stacking: "replace"` in the engine fold — a higher rank's
+  // effect replaces the previous rank's on the same target (GMG p. 208), never adds.
+  // The extra `thread` block carries display/reference data for the UI (tier, mystic
+  // defense, maximum threads, per-rank key knowledges) — never engine-read.
+  const resolveThreadItem = (owned) => {
+    const ref = threadItemsCatalog[owned.name] ?? null;
+    const threadRank = owned.threadRank ?? 0;
+    const woven = (ref?.threadRanks ?? []).filter((r) => r.rank <= threadRank);
+    return {
+      name: owned.name,
+      equipped: owned.equipped !== false,
+      known: ref != null,
+      kind: ref?.kind ?? owned.kind ?? 'item',
+      living: false,
+      ref: ref?.ref ?? {},
+      effects: [...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])],
+      presentation: {},
+      thread: ref
+        ? {
+            tier: ref.tier ?? null,
+            maximumThreads: ref.maximumThreads ?? null,
+            mysticDefense: ref.mysticDefense ?? null,
+            legendary: ref.legendary ?? false,
+            threadRank,
+            threadRanks: ref.threadRanks ?? [],
+          }
+        : null,
+    };
+  };
   const items = (character.items ?? []).map((owned) => {
+    if (threadItemsCatalog[owned.name]) return resolveThreadItem(owned);
     const ref = itemCatalog[owned.name] ?? null;
     const equipped = owned.equipped !== false; // default to equipped
     return {
@@ -400,6 +436,7 @@ export function deriveModel(character, rules) {
       // Display-only strings for the UI (never engine-read). See rules/items.json
       // notes.presentation — carries the tile's curated `shortEffect` for note items.
       presentation: ref?.presentation ?? {},
+      thread: null,
     };
   });
 
@@ -417,9 +454,18 @@ export function deriveModel(character, rules) {
         ),
     ),
     // Only equipped items contribute — unequipping is just dropping the effects.
+    // Thread items tag their origin `thread` (with the woven rank) so a tooltip can
+    // name the exact rank the effect came from.
     ...items
       .filter((it) => it.equipped)
-      .flatMap((it) => it.effects.map((e) => ({ ...e, origin: { kind: 'item', name: it.name } }))),
+      .flatMap((it) =>
+        it.effects.map((e) => ({
+          ...e,
+          origin: it.thread
+            ? { kind: 'thread', name: it.name, rank: it.thread.threadRank }
+            : { kind: 'item', name: it.name },
+        })),
+      ),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -529,8 +575,9 @@ export function deriveModel(character, rules) {
   // `spent` is the engine's audit of every priced advancement; `available` derives
   // from it — total earned minus all spent the engine can price — so the readout
   // tracks the sheet's actual advancements rather than the recorded `totalSpent`
-  // input. Unpriced sinks (spells/threads) stay in the reconciliation delta.
-  const spent = auditLegendSpent(character, legendFile?.costs, { knackCatalog });
+  // input. Unpriced sinks (spells) stay in the reconciliation delta.
+  const threadItemCatalog = threadItemsFile?.items ?? {};
+  const spent = auditLegendSpent(character, legendFile?.costs, { knacks, threadItemCatalog });
   const legend =
     legendInput.totalEarnt != null
       ? {
@@ -557,6 +604,9 @@ export function deriveModel(character, rules) {
     stepByNumber,
     items,
     itemCatalog,
+    // Thread-item catalogue (rules/thread-items.json) — the add-picker offers its
+    // entries just like items; the resolved `items` carry the `thread` metadata.
+    threadItemCatalog,
     // Wealth: pass the stored inputs through the pure deriver so the view gets
     // coin/gem silver values, the running total and the resale hint (all derived).
     wealth: deriveWealth(character.wealth ?? {}),

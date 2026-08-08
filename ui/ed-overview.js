@@ -391,10 +391,9 @@ export class EdOverview extends LitElement {
     return html`
       <p class="mpara">
         Legend spent, reconstructed from the sheet by pricing each advancement against
-        the cost tables — attributes, talents (2nd+ Discipline talents cost more), and
-        skills. Knacks are priced when their required rank is recorded. Spells and thread
-        items arrive in a later phase — the delta below is what this audit does not yet
-        account for.
+        the cost tables — attributes, talents (2nd+ Discipline talents cost more), skills,
+        knacks, and woven thread items. Spells arrive in a later phase — the delta below
+        is what this audit does not yet account for.
       </p>
       ${spent.sections.map(
         (sec) => html`

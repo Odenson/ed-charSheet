@@ -1,0 +1,122 @@
+{
+  "schema": "ed-thread-items/1",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "source": "Earthdawn 4E Gamemaster's Guide — the Thread Items chapter (design + examples, pp. 197-236) and Player's Guide (weaving threads to magic items, pp. 220-225). The reference CATALOG: each thread item is a multi-rank magic item — a character weaves Legend-charged threads to it, and each Thread Rank unlocks the effects listed for that rank and below. Per-rank mechanics live in `effects` arrays in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does item effects; a rank's effect replaces the previous rank's effect on the same target (never added together). Summaries are original wording, no verbatim rulebook prose; Key Knowledge text is reference data (what the owner must learn).",
+  "notes": {
+    "ownership": "A character owns a thread item by name in data/character.json `items` (e.g. `{ name, equipped, threadRank }`); `threadRank` is the INPUT (how many ranks woven). All derived values — active effects, Legend spent — come from it and the tier's cost progression.",
+    "base": "`base.effects` is the item's state with no thread attached (most thread items are mundane until a thread is woven, e.g. Faerie Mail is ordinary chain mail); an empty array means 'no effect until threaded'.",
+    "threadRanks": "One entry per Thread Rank, in order. `effects` are applied from Rank 1 up to the character's woven `threadRank`. `keyKnowledge` (usually at odd ranks) and `deed` record the Test Knowledge the owner must learn/research before weaving that rank — reference data. `stacking: replace` on a rank's effect models the rulebook's 'the new thread replaces the old' (a rank-3 +2 replaces the rank-1 +1; they do not sum).",
+    "tier": "Sets the Legend-cost progression for weaving ranks: cumulative `costs.talentRank[rank][tier]` from rules/legend.json (GMG p.202: 'correlate to the cost for increasing talent ranks'). Novice/Journeyman/Warden/Master.",
+    "rankLimit": "Gauge of the item's overall power — the tier table's typical maximum number of ranks (Novice 4, Journeyman 6, Warden 8, Master 10). Legendary items may exceed it; `rankLimit` on an entry is display-only reference.",
+    "maximumThreads": "How many characters can weave a thread to the item before the lowest-rank thread is displaced (GMG p.202). Display-only reference.",
+    "mysticDefense": "The item's raw magical power — the Difficulty Number for Item History tests to learn its Key Knowledges. Display-only reference.",
+    "legendary": "Legendary items are flagged with `legendary: true` (same shape, typically more thread ranks). Deeds are more common on legendary ranks.",
+    "weavingDifficulty": "The Thread Weaving test Difficulty for each Thread Rank (PG Thread Weaving Difficulty Table, p.225): 8 + rank − 1. Display-only reference."
+  },
+  "tiers": {
+    "Novice": { "rankLimit": 4, "mysticDefenseRange": [8, 12] },
+    "Journeyman": { "rankLimit": 6, "mysticDefenseRange": [10, 14] },
+    "Warden": { "rankLimit": 8, "mysticDefenseRange": [12, 16] },
+    "Master": { "rankLimit": 10, "mysticDefenseRange": [14, 18] }
+  },
+  "weavingDifficulty": {
+    "1": 8, "2": 9, "3": 10, "4": 11, "5": 12, "6": 13, "7": 14, "8": 15,
+    "9": 16, "10": 17, "11": 18, "12": 19, "13": 20, "14": 21, "15": 22
+  },
+  "items": {
+    "Bracers of Aras": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 3,
+      "mysticDefense": 12,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG p. 208",
+        "description": "Flexible, silvery metal bracers that wrap around the wrists and forearms, forged with elemental water. The water gems resemble one-inch aquamarine pieces and their color constantly shifts from deep aqua to bright blue."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the bracers.",
+          "effects": [
+            { "type": "defense-modifier", 
+              "target": { "domain": "defense", "name": "Physical" }, 
+              "operation": "add", 
+              "value": 1, 
+              "measure": "rating", 
+              "condition": "always", 
+              "stacking": "replace", 
+              "source": "thread", 
+              "summary": "+1 Physical Defense." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "defense-modifier", 
+              "target": { "domain": "defense", "name": "Mystic" }, 
+              "operation": "add", 
+              "value": 1, 
+              "measure": "rating", 
+              "condition": "always", 
+              "stacking": "replace", 
+              "source": "thread", 
+              "summary": "+1 Mystic Defense." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the mine from which came the metals used to create the bracers.",
+          "effects": [
+            { "type": "defense-modifier", 
+            "target": { "domain": "defense", "name": "Physical" }, 
+            "operation": "add", 
+            "value": 2, 
+            "measure": "rating", 
+            "condition": "always", 
+            "stacking": "replace", 
+            "source": "thread", 
+            "summary": "+2 Physical Defense." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "defense-modifier", 
+            "target": { "domain": "defense", "name": "Mystic" }, 
+            "operation": "add", 
+            "value": 2, 
+            "measure": "rating", 
+            "condition": "always", 
+            "stacking": "replace", 
+            "source": "thread", 
+            "summary": "+2 Mystic Defense." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The creators of the Bracers of Aras formed the gems from a mixture of elemental air and water, and the ratio varies for each set. The owner must learn the ratio of water to air used to create the bracers he wears.",
+          "effects": [
+            { "type": "test-modifier", 
+            "target": { "domain": "test", "name": "Swimming" }, 
+            "operation": "add", 
+            "value": 3, 
+            "measure": "result", 
+            "condition": "situational", 
+            "scope": "1 Strain", 
+            "source": "thread", 
+            "summary": "For 1 Strain, +3 to Swimming tests." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "note", 
+            "source": "thread", 
+            "summary": "For 2 Strain, the owner may breathe underwater for 10 minutes." }
+          ]
+        }
+      ]
+    }
+  }
+}

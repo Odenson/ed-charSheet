@@ -1377,6 +1377,18 @@
       "restrictions": "None",
       "summary": "The adept\u2019s thrown weapon returns to them immediately after an Attack test. This does not count for talent usage limits and can be combined with any knack."
     },
+    "Riding": {
+      "parents": [
+        "Animal Handling"
+      ],
+      "requiredRank": 3,
+      "action": "Free",
+      "strain": "0",
+      "step": "N/A",
+      "skillUse": "Yes",
+      "restrictions": "None",
+      "summary": "The ability to ride and look after a mounts, restricted to animals, not usable for monsters and magical beast. You are trained to saddle and ride the animal and maintain its well being."
+    },
     "Roll With the Punches": {
       "parents": [
         "Avoid Blow"

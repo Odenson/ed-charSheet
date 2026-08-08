@@ -50,6 +50,51 @@ function autoApplies(effect) {
 }
 
 /**
+ * Group a same-progression run of effects and collapse it by the declared
+ * `stacking` mode (EFFECT-TAXONOMY §7) instead of blindly adding every instance:
+ *   cumulative (default) — every instance applies;
+ *   highest              — only the largest applies;
+ *   replace              — only the last applies (a later thread rank supersedes
+ *                          the earlier ranks, GMG p.208 — never summed);
+ *   unique               — only the first applies, regardless of source.
+ * A progression is identified by its `origin` `kind:name` (all thread ranks of one
+ * item, all circle bonuses of one Discipline) — except `unique`, which collapses
+ * across all sources on the target. Effects with no `origin` are treated as their
+ * own progression (no collapse), so bare engine tests keep additive expectations.
+ * Returns the surviving effects in original order.
+ *
+ * @param {Array<object>} effects  applicable non-`set` modifiers
+ * @returns {Array<object>}
+ */
+export function collapseStacking(effects) {
+  // `unique` collapses across sources: keep the first instance of any unique
+  // effect on the target, drop the rest before the per-progression grouping.
+  const uniques = effects.filter((e) => e.stacking === 'unique');
+  const uniqueFirst = uniques[0] ?? null;
+  let remaining = uniqueFirst ? effects.filter((e) => e !== uniqueFirst && e.stacking !== 'unique') : effects;
+  if (uniqueFirst) remaining = [uniqueFirst, ...remaining];
+
+  const keyOf = new Map(); // effect -> progression key (or null)
+  const groups = new Map(); // key -> effects[]
+  for (const e of remaining) {
+    const o = e.origin;
+    const k = o && o.kind && o.name ? `${o.kind}:${o.name}` : null;
+    keyOf.set(e, k);
+    if (k == null) continue;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  }
+  const keep = new Set();
+  for (const [, group] of groups) {
+    const mode = group[0]?.stacking ?? 'cumulative';
+    if (mode === 'highest') keep.add(group.reduce((best, e) => (e.value > best.value ? e : best)));
+    else if (mode === 'replace') keep.add(group[group.length - 1]);
+    else for (const e of group) keep.add(e); // cumulative
+  }
+  return remaining.filter((e) => keyOf.get(e) == null || keep.has(e));
+}
+
+/**
  * Fold every matching, always-on modifier effect onto a base value.
  * `ref`-valued effects are skipped here (they arrive with the dependency work
  * in a later slice); only numeric `value`s apply for now.
@@ -73,9 +118,11 @@ export function applyModifiers(base, effects, match) {
     (e) => match(e) && autoApplies(e) && OPS[e.operation] && typeof e.value === 'number',
   );
   // Pass 1: `set` effects establish the base (later `set` overrides earlier).
-  // Pass 2: everything else folds onto that base, in array order.
+  // Pass 2: the rest are collapsed by `stacking` (§7 — same-progression effects
+  // like a Discipline's progressive bonuses or a thread item's ranks combine by
+  // `highest`/`replace`, never summed) then fold onto that base, in array order.
   const sets = applicable.filter((e) => e.operation === 'set');
-  const rest = applicable.filter((e) => e.operation !== 'set');
+  const rest = collapseStacking(applicable.filter((e) => e.operation !== 'set'));
   let value = base;
   for (const e of sets) value = OPS.set(value, e.value);
   for (const e of rest) value = OPS[e.operation](value, e.value);

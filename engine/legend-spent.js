@@ -14,12 +14,17 @@
 //     columns — skills DO cost Legend (Player's Guide 'Improving Skill Ranks'); the
 //     silver training fee is a separate cost we don't track.
 //   • knacks: a one-time flat cost equal to a Novice talent at the knack's required
-//     Rank (Companions Guide p.76). Knacks aren't ranked up. The required rank comes
-//     from the knack catalog (opts.knackCatalog, rules/knacks.json), falling back to an
-//     inline `rank` on the instance; without either, the knack is left unpriced.
+//     Rank (Companions Guide p.76). Knacks aren't ranked up. The required rank is read
+//     off the resolved knacks passed in as opts.knacks (store.resolveKnack already bound
+//     it from the catalog — the audit does not re-resolve); without a rank, unpriced.
+//   • thread items: each Thread Rank woven costs the cumulative talent-rank progression
+//     for the item's tier (GMG p.202 — thread ranks "correlate to the cost for increasing
+//     talent ranks"). The tier is read off the thread-item catalog passed in as
+//     opts.threadItemCatalog (rules/thread-items.json items); an owned item matching a
+//     catalog name is a thread item, and an unknown tier stays unpriced (—).
 // It then reconciles the modeled total against the character's recorded
-// `resources.legend.totalSpent`, surfacing the still-unmodeled delta. Spells and thread
-// items arrive later; the section list is shaped so those slot in.
+// `resources.legend.totalSpent`, surfacing the still-unmodeled delta. Spells arrive
+// later; the section list is shaped so those slot in.
 //
 // Talents are grouped into one section per Discipline so the additional-Discipline
 // surcharge is visible. The additional-Discipline Rank-1 cost depends on the "lowest
@@ -167,8 +172,8 @@ function ordinalLabel(n) {
  * portion not yet modeled (positive = unmodeled sinks such as spells/threads).
  */
 export function auditLegendSpent(character, costs, opts = {}) {
-  const knackCatalog = opts.knackCatalog ?? {};
   const sections = [];
+  const { knacks: knacksOpt, threadItemCatalog = {} } = opts;
 
   // --- Attributes: only Legend-bought `increases` cost Legend (points are free) ---
   const attrLines = [];
@@ -220,12 +225,14 @@ export function auditLegendSpent(character, costs, opts = {}) {
   }
 
   // --- Knacks: one-time flat cost = Novice talent at the knack's required rank. The
-  //     rank comes from the knack catalog (falling back to an inline `rank`); knacks
-  //     with neither are left unpriced (—) and stay in the delta. ---
-  const knacks = character?.knacks ?? [];
+  //     rank comes straight off the resolved knacks (store.resolveKnack already bound
+  //     it from the catalog) — the audit doesn't re-resolve. `opts.knacks` are those
+  //     resolved knacks; it falls back to a raw `character.knacks` with inline `rank`.
+  //     Knacks with no rank are left unpriced (—) and stay in the delta. ---
+  const knacks = knacksOpt ?? character?.knacks ?? [];
   if (knacks.length) {
     const knackLines = knacks.map((k) => {
-      const rank = knackCatalog[k?.name]?.requiredRank ?? k?.rank ?? null;
+      const rank = k?.requiredRank ?? k?.rank ?? null;
       return {
         name: k?.name ?? 'Knack',
         detail: rank != null ? `Rank ${rank}` : 'rank unrecorded',
@@ -233,6 +240,24 @@ export function auditLegendSpent(character, costs, opts = {}) {
       };
     });
     sections.push({ key: 'knacks', kind: 'knacks', label: 'Knacks', total: sumLines(knackLines), lines: knackLines });
+  }
+
+  // --- Thread items: an owned item whose name is in the thread-item catalog is a
+  //     thread item. Each woven Thread Rank costs the cumulative talent-rank
+  //     progression for the item's tier (GMG p.202). No thread (rank 0) costs nothing;
+  //     an unknown tier is flagged rather than priced at a fabricated number. ---
+  const threadItems = (character?.items ?? []).filter((it) => threadItemCatalog[it?.name]);
+  if (threadItems.length) {
+    const threadLines = threadItems.map((it) => {
+      const ref = threadItemCatalog[it.name];
+      const rank = it.threadRank ?? 0;
+      return {
+        name: it.name,
+        detail: rank > 0 ? `${ref.tier ?? 'unknown tier'} · Thread Rank ${rank}` : 'no thread woven',
+        cost: rank > 0 ? talentRanksCost(rank, ref.tier, costs?.talentRank) : 0,
+      };
+    });
+    sections.push({ key: 'threads', kind: 'threads', label: 'Thread Items', total: sumLines(threadLines), lines: threadLines });
   }
 
   const total = sections.reduce((s, sec) => s + (sec.total ?? 0), 0);
