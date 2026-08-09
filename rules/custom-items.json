@@ -6,13 +6,53 @@
   "items": {
     "Beer Mug of Brawling": {
       "kind": "magic-item",
-      "effects": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "condition": "always",
+          "summary": "Adds +1 Damage step",
+          "source": "item"
+        },
+        {
+          "type": "test-modifier",
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "condition": "always",
+          "summary": "Adds +1 Attack Test step",
+          "source": "item"
+        },
+        {
+          "type": "attribute-modifier",
+          "operation": "subtract",
+          "value": 1,
+          "measure": "step",
+          "target": {
+            "domain": "attribute",
+            "name": "Perception"
+          },
+          "condition": "always",
+          "summary": "Reduces Perception by 1 step",
+          "source": "item"
+        }
+      ],
       "ref": {
         "cost": 500,
         "weight": "0.1",
         "availability": "Very Rare",
         "range": "Touch",
-        "description": "Chakka's travelling beer mug, it gives him both great tasting beer regardless of teh quality in the inn and if there is a brawl provides bonus to holder"
+        "description": "Chakka's travelling beer mug, it gives him both great tasting beer regardless of the quality in the inn and if there is a brawl provides bonus to holder ability to brawl"
       },
       "presentation": {
         "shortEffect": "+1 attack in brawls"
