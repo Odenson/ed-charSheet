@@ -657,13 +657,13 @@ look like `<THIS>`.
       pending item (still usable), Save dot shows → online → Save → reconciled.
 - [x] **D7.** Collision: create a custom item sharing a canon name → custom's
       effects win, override notice shown.
-- [ ] **D8.** Delete a custom item → gone from branch + picker + folded file
+- [x] **D8.** Delete a custom item → gone from branch + picker + folded file
       (mirror semantics).
 - [x] **D9.** Escape closes the modal without saving; Enter saves; light and
       dark both render correctly; desktop viewport fits without vertical scroll.
 
 ### Phase E — Release (YOU)
-- [ ] **E1.** Nothing special to do: the feature + first `rules/custom-items.json`
+- [x] **E1.** Nothing special to do: the feature + first `rules/custom-items.json`
       ride the next normal dev→main squash release PR (WORKFLOW.md §2). A fold
       landing mid-release just joins that PR's diff (expected).
 
