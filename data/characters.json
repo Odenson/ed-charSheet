@@ -702,8 +702,8 @@
           "available": 654
         },
         "health": {
-          "damage": 4,
-          "wounds": 0,
+          "damage": 39,
+          "wounds": 2,
           "recoveriesUsed": 0
         },
         "roundTracker": 218
