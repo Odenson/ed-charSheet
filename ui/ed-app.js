@@ -3,7 +3,7 @@ import { LitElement, html, css } from 'lit';
 import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { saveServer, SaveError } from '../store-server.js';
-import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits } from '../store-custom-items.js';
+import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected } from '../store-custom-items.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
@@ -404,13 +404,14 @@ export class EdApp extends LitElement {
   // A just-confirmed save passes its delta here: the overlay is reconciled only
   // once the re-read actually reflects it, so a git-consistent read that lags
   // the PUT never blanks a freshly saved item (PLAN-CUSTOM-ITEMS §6.6 P8.4).
+  // The reflection check is content-aware (isItemsReflected): a lagged read that
+  // returns the previous commit's file (same names, old content) stays pending
+  // in the overlay instead of being reconciled away and masking the fresh edit.
   async _refreshCustomItems({ savedItems, deletedNames } = {}) {
     try {
       const committed = await loadCustomItems();
       const committedItems = committed?.items ?? {};
-      const reflected =
-        (!savedItems || Object.keys(savedItems).every((n) => committedItems[n] != null)) &&
-        (!deletedNames || deletedNames.every((n) => committedItems[n] == null));
+      const reflected = isItemsReflected(savedItems, deletedNames, committedItems);
       if (reflected) reconcileCustomEdits();
       this._rules = {
         ...this._rules,

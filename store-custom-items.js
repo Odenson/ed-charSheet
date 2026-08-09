@@ -122,6 +122,28 @@ export function applyCustomEdits(file, delta) {
 }
 
 /**
+ * True when a re-read of the branch catalog actually reflects a just-confirmed
+ * save delta — the read is authoritative and the `ed-custom-items` overlay can
+ * be reconciled away. **Content-aware**: an edited item must come back *equal*
+ * to what was saved (same shape the modal's `_delta()` uses to diff), and a
+ * deleted name must be gone. A git-consistent read that lags the PUT can return
+ * the *previous* commit's file — same item names, old content — and a
+ * name-presence check alone then passes wrongly: the overlay would be cleared
+ * while the branch still carries the old content, silently losing the fresh
+ * edit from the modal until a page refresh (docs/PLAN-CUSTOM-ITEMS.md §6.6).
+ */
+export function isItemsReflected(savedItems, deletedNames, committedItems) {
+  for (const [name, item] of Object.entries(savedItems ?? {})) {
+    const seen = committedItems?.[name];
+    if (seen == null || JSON.stringify(seen) !== JSON.stringify(item)) return false;
+  }
+  for (const name of deletedNames ?? []) {
+    if (committedItems?.[name] != null) return false;
+  }
+  return true;
+}
+
+/**
  * Apply a pending delta onto an items *map* `{ name: item }` (the shape
  * `deriveModel.customCommittedCatalog` and the manager modal's `committed` prop
  * carry, vs the ed-items file shape applyCustomEdits takes). Same semantics:

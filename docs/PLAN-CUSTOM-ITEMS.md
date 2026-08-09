@@ -571,21 +571,31 @@ new form field within the existing `ed-items/2` shape (`presentation` with an
 optional string was already validated), a bug fix restoring documented
 behavior, no taxonomy/UI-GUIDELINES change.
 
-**Editing a custom item showed the stale copy until a page refresh — fixed.**
-Reported: on an **edit** of a custom item, the changes added in the previous
-save were not visible in the modal until a refresh. Root cause: after a save
-whose branch re-read lags the `/save-items` PUT, the edit stays pending in the
-`ed-custom-items` overlay (the D3 reconcile rule — right call); on reopen the
-modal's working set is seeded via `applyCustomItemsMap(committed, overlay)`, so
-it holds the **fresh** edited copy. But `_editItem` read `committed[name]`
-**first** (`committed ?? working`) — the stale branch copy — so the form opened
-with the pre-save item while the list already showed the fresh one. Fix:
-`_editItem` reads the working set first (`working ?? committed`), which is
-always at least as fresh as `committed` (the overlay wins by construction, and
-deleted rows never reach the edit button). `committed` remains the `_delta()`
-baseline, so an unreflected save still shows as pending. Pinned by a new
-`applyCustomItemsMap` regression test (overlay-wins upsert) →
-`store-custom-items.test.js` 16/16; root 255/255.
+**Editing a custom item showed the stale copy — effects missing on re-edit —
+until a page refresh — fixed.** Reported: on an **edit** of a custom item, the
+changes added in the previous save (in particular freshly added **effects**)
+were not pulled back into the modal until a refresh. First pass traced it to
+`_editItem` reading `committed[name]` before the working set (`committed ??
+working`) — after a save whose branch re-read lags the `/save-items` PUT, the
+edit stays pending in the overlay and the working set (seeded via
+`applyCustomItemsMap(committed, overlay)`) holds the **fresh** copy, so the form
+opened with the stale branch copy. That half-fix (`working ?? committed`) was
+right but incomplete. The **real** root cause was upstream of the modal in
+`_refreshCustomItems` (ui/ed-app.js): the reflection check that decides when to
+reconcile the overlay away was **content-agnostic** — it only verified each
+saved item *existed* in the re-read (`committedItems[n] != null`), never that
+its **content** matched. A git-consistent read that lags the PUT returns the
+*previous* commit's file: same item name, **old content** (no effects). The
+presence check passed, the overlay was reconciled away, and the stale read
+became the committed baseline — so the modal re-seeded the old item and the
+just-saved effects were gone from the form until a full refresh finally read the
+new content. Fix: extracted a pure, content-aware check `isItemsReflected(saved,
+deleted, committed)` (store-custom-items.js) — a saved item must come back
+**deep-equal** (the same `JSON.stringify` comparison the modal's `_delta()`
+uses), and a delete must be gone. When the read is stale the overlay is kept and
+the fresh copy wins on the next seed. Both fixes pinned by regression tests:
+`applyCustomItemsMap` overlay-wins upsert + `isItemsReflected` lagged-read
+cases → `store-custom-items.test.js` 17/17; root 257/257.
 
 ---
 
@@ -782,6 +792,7 @@ look like `<THIS>`.
 | 2026-08-09 | D7 + D8 fixed | CLAUDE | Both reported bugs reproduced headless against the shipped code. **D8 root cause** (two stacked bugs in the modal seed): (1) the seed ran in `connectedCallback`, but the bound `committed`/`overlay` props are applied after the element connects — so it seeded empty on every open; (2) it read `applyCustomEdits(...)?.items`, treating `committed` (an items map) as an ed-items file shape. Result: `_working` was empty, `_delta()` reported every committed item as deleted, and each create+save POSTed the existing item's delete (confirmed in the branch history — every save replaced the previous item). Fix: seed once per open in `willUpdate` via new pure `applyCustomItemsMap(committed, overlay)` (store-custom-items.js) + regression test. **D7 fixes**: collision check now case-insensitive (`backpack` collides with canon `Backpack`); warning copy uses the owner's wording with the grammar fixed ("This new Custom Item will override the catalog item of the same name if you continue."). New `applyCustomItemsMap` test → root 244/244; `node --check` clean. D8 checklist left unticked for owner re-test on /dev/ | 
 | 2026-08-09 | Post-1.8.0 owner requests | CLAUDE | Two updates to custom-item creation. (1) **Effects-save bug fixed**: every saved item landed with `effects: []` — a Type change blanked the summary (`blankEffect(newType).summary === ''`) and the clean step filtered summary-less rows out. Effect-building/cleaning moved to pure `ui/custom-item-builder.js`; `_setEffect` now keeps the auto summary in sync (index-tracked override), clean never drops a row, and a missing summary is auto-filled. (2) **`presentation.shortEffect` authoring added**: Reference group "Short effect" input with live `n/32` counter + hard `maxlength`; validator gained `MAX_SHORT_EFFECT = 32` so the cap holds through the UI/worker/fold gate. Side fix: `attack-modifier` summary no longer doubles ("Damage Damage" → "Damage"). New `custom-item-builder.test.js` (9) + validator cap test → root 254/254; §6.1/§6.2/§6.3/§6.6 + §10 updated; changelog unreleased entries added |
 | 2026-08-09 | Edit-visibility bug fixed | CLAUDE | **Edit of a custom item showed the pre-save copy until a page refresh.** Root cause: `_editItem` read `committed[name]` before the working set — after a save whose branch re-read lags the PUT, the overlay keeps the edit pending and `_working` (seeded committed ∪ overlay, overlay wins) holds the fresh copy, but the form loaded the stale `committed` one. Fix: `_editItem` now reads the working set first (working is always ≥ fresh; committed stays the delta baseline). Regression test: new `applyCustomItemsMap` overlay-wins-upsert case → root 255/255 |
+| 2026-08-09 | Effects missing on re-edit: real root cause found | CLAUDE | First fix was incomplete. Re-edit after a save still showed the old item — freshly saved **effects** absent until a refresh. Real root cause: `_refreshCustomItems`' reflection check was **content-agnostic** (each saved item just had to *exist* in the re-read). A lagged git-consistent read returns the previous commit's file (same name, old content) → the check passed, the overlay was reconciled away, and the stale read became the baseline → modal re-seeded the old item. Fix: pure content-aware `isItemsReflected` (deep-equal per saved item, delete-gone per name) in store-custom-items.js; ed-app uses it; a stale read keeps the overlay and the fresh copy wins on the next seed. +2 tests → root 257/257; §6.6 note corrected |
 
 ---
  
@@ -793,6 +804,7 @@ After D3 fix: root `243 / 243 pass` (incl. picker 5) · probe green (incl. §2b 
 After D7/D8 fix: root `244 / 244 pass` (incl. `applyCustomItemsMap` 1) · headless modal repro green.
 After post-1.8.0 updates: root `254 / 254 pass` (incl. custom-item-builder 9 + shortEffect cap 1).
 After edit-visibility fix: root `255 / 255 pass` (incl. applyCustomItemsMap overlay-wins 2).
+After effects-re-edit root cause: root `257 / 257 pass` (incl. isItemsReflected 2).
 
 Live values (Phase B): worker URL unchanged; `/save-items` verified
 `___` · first fold `___` · `/dev/` end-to-end `___`.

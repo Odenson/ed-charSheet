@@ -19,6 +19,7 @@ import {
   reconcileCustomEdits,
   applyCustomEdits,
   applyCustomItemsMap,
+  isItemsReflected,
   DEFAULT_ITEMS_ENDPOINT,
 } from './store-custom-items.js';
 import { SaveError } from './store-server.js';
@@ -193,6 +194,32 @@ test('applyCustomItemsMap lets the overlay win over a committed item of the same
   assert.deepEqual(next['Boar Hide'], edited, 'the overlay edit replaces the committed item');
   assert.equal(Object.keys(next).length, 1, 'same name means upsert, not a second row');
   assert.deepEqual(map['Boar Hide'], { kind: 'armor', effects: [{ type: 'note', summary: 'Old copy.' }] }, 'input map is never mutated');
+});
+
+test('isItemsReflected: an equal re-read confirms the save and authorises reconciling the overlay', () => {
+  const saved = { 'Beer Mug': { kind: 'magic-item', effects: [] } };
+  assert.equal(isItemsReflected(saved, [], saved), true, 'read matches the saved item');
+  assert.equal(isItemsReflected(null, null, saved), true, 'nothing saved/deleted is trivially reflected');
+  assert.equal(isItemsReflected(null, ['Old'], {}), true, 'a delete reflects once the name is gone');
+});
+
+test('isItemsReflected: a lagged read (same name, old content) is NOT reflected — the overlay must keep the fresh edit', () => {
+  // THE regression (PLAN-CUSTOM-ITEMS §6.6): a git-consistent read that lags the
+  // PUT returns the previous commit's file — the item name exists but carries
+  // the old content (e.g. effects added in the save are absent). The old
+  // name-presence check passed and reconciled the overlay away, so the modal
+  // re-seeded the stale item and the fresh effects vanished until a refresh.
+  const saved = {
+    'Beer Mug': {
+      kind: 'magic-item',
+      effects: [{ type: 'attack-modifier', operation: 'add', value: 1, measure: 'step', target: { domain: 'attack', name: 'Damage' }, condition: 'always', summary: 'Adds +1 Damage step', source: 'item' }],
+    },
+  };
+  const staleRead = { 'Beer Mug': { kind: 'magic-item', effects: [] } };
+  assert.equal(isItemsReflected(saved, [], staleRead), false, 'same name but old content → still pending, never reconciled away');
+  assert.equal(isItemsReflected(saved, [], {}), false, 'item missing entirely → still pending');
+  assert.equal(isItemsReflected(null, ['Old'], { Old: { kind: 'gear', effects: [] } }), false, 'delete not yet applied → still pending');
+  assert.equal(isItemsReflected(saved, ['Old'], { ...saved, Old: { kind: 'gear', effects: [] } }), false, 'delete lagging on top of a confirmed item → still pending');
 });
 
 // --- store integration: custom item flows through deriveModel ------------------
