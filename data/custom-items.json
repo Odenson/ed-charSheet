@@ -4,7 +4,7 @@
   "source": "custom",
   "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
   "items": {
-    "New Test Item": {
+    "TEST - Beer Mug of Brawling": {
       "kind": "gear",
       "effects": [],
       "ref": {
