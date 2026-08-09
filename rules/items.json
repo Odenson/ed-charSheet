@@ -6,7 +6,7 @@
     "armor": "Worn armor confers Physical/Mystic Armor (damage reducers) via `armor-modifier` effects, and its Initiative penalty via a `characteristic-modifier` on Initiative (measure: step). `living` marks elemental 'living' armor (the only kind an obsidiman may wear atop Natural Armor; PG p.48). `ref` holds display-only stats (cost/weight/availability).",
     "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference.",
     "weapon": "Weapons carry an `attack-modifier` on the attack's Damage step (target `attack`/`Damage`, `operation: add`, measure: step). Every category — melee, missile, and thrown — adds its Damage Step to the Strength-step base (EFFECT-TAXONOMY v3 §4.1; the base is the engine default, not stored here). STR/DEX minima, size, ranges, and entangle details are display-only in `ref`. Ammo rows from the missile table are separate `ammunition` entries.",
-    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note` and is also captured as numeric `characteristic-modifier` effects (operation: subtract, measure: rating, `condition`: situational, `scope`: implanted) on the Death and Unconsciousness ratings, and the Alchemy crafting difficulty (the rulebook's EDN) is display-only in `ref` as `craftingDifficultyNumber`.",
+    "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note` and is also captured as numeric `characteristic-modifier` effects (operation: subtract, measure: rating, `condition`: always) on the Death and Unconsciousness ratings — the engine folds these while the charm is equipped (it collects effects from equipped items only), so wearing the charm genuinely lowers the character's ratings. The Alchemy crafting difficulty (the rulebook's EDN) is display-only in `ref` as `craftingDifficultyNumber`.",
     "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers; `craftingDifficultyNumber` (the Alchemy crafting difficulty, the rulebook's EDN) is display-only in `ref`.",
     "magic-item": "Common magic items: numeric, always-relevant mechanics are typed effects; one-shot, non-numeric, or activated properties are `note` effects.",
     "gear": "Adventuring gear is mostly display-only (`effects: []`); kits record their contents in a `note`, and items with a specific game rule (e.g. Healing Kit +1 Recovery, chain/rope break tests) carry that rule as an effect.",
@@ -2387,7 +2387,7 @@
         "weight": "1 lb",
         "availability": "unusual",
         "craftingDifficultyNumber": 10,
-        "description": "A quartz, veined with red from the character’s own blood when implanted."
+        "description": "A quartz, veined with red from the character’s own blood when equipped."
       },
       "effects": [
         {
@@ -2412,8 +2412,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
         },
@@ -2426,8 +2425,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
@@ -2503,8 +2501,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
         },
@@ -2517,8 +2514,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
@@ -2562,8 +2558,7 @@
           "operation": "subtract",
           "value": 1,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −1."
         },
@@ -2576,8 +2571,7 @@
           "operation": "subtract",
           "value": 1,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −1."
         }
@@ -2621,8 +2615,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
         },
@@ -2635,8 +2628,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
@@ -2684,8 +2676,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
         },
@@ -2698,8 +2689,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
@@ -2758,8 +2748,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
         },
@@ -2772,8 +2761,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
@@ -2832,8 +2820,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
         },
@@ -2846,8 +2833,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
@@ -2885,8 +2871,7 @@
           "operation": "subtract",
           "value": 4,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −4."
         },
@@ -2899,8 +2884,7 @@
           "operation": "subtract",
           "value": 4,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −4."
         }
@@ -2916,7 +2900,7 @@
         "weight": "1 lb",
         "availability": "rare",
         "craftingDifficultyNumber": 12,
-        "description": "A carved horn needle implanted to resist poison and disease."
+        "description": "A carved horn needle equipped to resist poison and disease."
       },
       "effects": [
         {
@@ -2962,8 +2946,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
         },
@@ -2976,8 +2959,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
@@ -3036,8 +3018,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
         },
@@ -3050,8 +3031,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }
@@ -3096,8 +3076,7 @@
           "operation": "subtract",
           "value": 4,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −4."
         },
@@ -3110,8 +3089,7 @@
           "operation": "subtract",
           "value": 4,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −4."
         }
@@ -3156,8 +3134,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
         },
@@ -3170,8 +3147,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
@@ -3216,8 +3192,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −2."
         },
@@ -3230,8 +3205,7 @@
           "operation": "subtract",
           "value": 2,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −2."
         }
@@ -3276,8 +3250,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Unconsciousness Rating −3."
         },
@@ -3290,8 +3263,7 @@
           "operation": "subtract",
           "value": 3,
           "measure": "rating",
-          "condition": "situational",
-          "scope": "implanted",
+          "condition": "always",
           "source": "item",
           "summary": "Implant inflicts Blood Magic Damage: Death Rating −3."
         }

@@ -373,6 +373,34 @@ export function carryingCapacity(strengthValue, effects, lookup) {
   return { ...result, lift: result.value * 2 - 1 };
 }
 
+// --- Movement Rate (race-based, foldable) --------------------------------------
+
+/**
+ * Movement Rate in yards: the race's base walk movement (rules/races.json
+ * `movement.walk`) plus any always-on effects targeting the Movement
+ * characteristic (EFFECT-TAXONOMY §3 — `{characteristic, Movement}` with
+ * optional `property: Walk`). This is what encumbrance folds into (PG p.405:
+ * "their Movement Rate is halved" / "reduced to 2"), and it is derived here so
+ * the fold lands on a real number instead of a silent no-op. Rates are
+ * integers; a halved odd rate rounds down (floor).
+ *
+ * @param {number} baseWalk  race base movement (yards)
+ * @param {Array<object>} effects  active effects (race/discipline/items/conditions)
+ * @returns {{base:number, value:number, modifiers:Array<object>}|null} null if
+ *          the race has no movement data
+ */
+export function movementRate(baseWalk, effects) {
+  if (typeof baseWalk !== 'number') return null;
+  const match = (e) =>
+    e.type === 'characteristic-modifier' &&
+    e.target?.domain === 'characteristic' &&
+    e.target?.name === 'Movement' &&
+    (e.target?.property == null || e.target?.property === 'Walk') &&
+    (e.measure ?? 'rating') === 'rating';
+  const result = applyModifiers(baseWalk, effects, match);
+  return { ...result, value: Math.floor(result.value) };
+}
+
 // --- Combat characteristics (step-based; rolled, not static ratings) ----------
 
 /**

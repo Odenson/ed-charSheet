@@ -166,4 +166,19 @@ assert.equal(loadCustomEdits(), null, 'a corrupt overlay never blocks catalog lo
 assert.equal(MAX_ITEMS, 200, 'item cap constant exported');
 assert.equal(MAX_FILE_BYTES, 512 * 1024, 'file cap constant exported');
 
+// --- 6. the single-worn-armour rule (ui/item-equip-state.js) -------------------
+// The Equipment tab's equip actions route through the pure equip-state module:
+// a second armour must be an explicit swap; the confirmed swap stores the other
+// armours; the engine folds whatever ends up equipped.
+import { equipArmour, applyArmourSwap } from '../ui/item-equip-state.js';
+
+const kinds = { 'Hardened Leather': 'armor', 'Hide Armor': 'armor', Buckler: 'shield' };
+const worn = [{ name: 'Hardened Leather', equipped: true }, { name: 'Hide Armor', equipped: false }];
+
+assert.equal(equipArmour(worn, (n) => kinds[n] ?? null, 'Buckler', 'toggle').blocked, false, 'a shield never blocks equipping');
+assert.equal(equipArmour(worn, (n) => kinds[n] ?? null, 'Hide Armor', 'toggle').blocked, true, 'a second armour blocks');
+const swapped = applyArmourSwap(worn, (n) => kinds[n] ?? null, 'Hide Armor', 'toggle');
+assert.equal(swapped.find((i) => i.name === 'Hardened Leather').equipped, false, 'the worn armour is stored on swap');
+assert.equal(swapped.find((i) => i.name === 'Hide Armor').equipped, true, 'the new armour is worn after swap');
+
 console.log('probe-custom-items: ALL LOGIC CHECKS PASSED');

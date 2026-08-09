@@ -333,6 +333,25 @@ character.
 - **Rotate the PAT:** before expiry, generate a new fine-grained PAT (1.1) and
   `npx wrangler secret put GITHUB_TOKEN` again. Rotate the SAVE_KEY the same way.
 
+### 6.1 Local dev — the full save loop, fully offline
+
+`npm start` boots `tools/dev-server.mjs` (README → Running locally). It mirrors
+the two worker routes on the same origin — `POST /save` →
+`data/characters.json`, `POST /save-items` → `data/custom-items.json` — writing
+to the gitignored working copies that `store.js` already reads off-Pages, so the
+whole save → read-after-write loop runs with no GitHub or Cloudflare in sight.
+Same-origin means no `?save=`/`?save-items=` override is needed; the query-param
+override (5.3) still works against it for cross-origin test rigs.
+
+- Validation, ordering (400 before any file I/O), merged-file re-check, response
+  shapes, and error codes mirror `tools/worker/worker.js`, so the app's
+  `SaveError` mapping runs unchanged. Any/missing `x-save-key` is accepted (the
+  key prompt still appears — type anything).
+- `--lag <ms>` simulates the Pages one-shot stale read (PLAN-CUSTOM-ITEMS.md
+  §6.6): after a write, the next read of that file within the window returns the
+  *previous* content once, so the `isItemsReflected` reconcile can be exercised.
+- Covered by `tools/dev-server.test.js` (temp docroot, ephemeral port).
+
 ---
 
 ## 7. Live values & progress (fill in as you go)

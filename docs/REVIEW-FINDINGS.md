@@ -32,6 +32,33 @@ and add a line to [Re-review log](#re-review-log)**.
 
 ---
 
+## ⚖️ Weight & encumbrance — scope notes (2026-08-09)
+
+Carried weight and encumbrance (engine/weight.js, engine/encumbrance.js, the
+Equipment tab banner, PG p.405) ship with these **deliberate scope decisions** —
+recorded so a later change knows they were made on purpose, not overlooked.
+
+- **All owned items count**, equipped and stored alike — a stowed load still
+  rests on the back. This differs from the effect fold, which is equipped-only
+  by design (`store.js` — an unequipped item's *effects* don't apply, but its
+  *weight* still does).
+- **Coins/gems are excluded.** They live in `character.wealth`, not the owned
+  items, so they never reach the carried total (PG gives coin weights, e.g.
+  copper 1/3 oz — excluded by scope).
+- **Dwarf Strong Back is not auto-applied.** It is `condition: situational` +
+  `scope: carryingCapacity` in rules/races.json, so the engine surfaces it and
+  never bakes it in (EFFECT-TAXONOMY §6). The banner judges against the raw
+  table capacity. *Deferred*: applying Strong Back to the displayed capacity.
+- **Race weight modifiers (PG p.404) are deferred.** Troll/obsidiman armour and
+  clothing ×1.25, windling ×0.2, t'skrang tail ×1.1 are not applied — weights
+  fold in as recorded. *Deferred*: per-race modifiers on the carried total.
+- **Weight parsing conventions** (engine/weight.js): "N lb" as written; "N oz" ÷
+  16; bare numbers (custom items) read as lb; ranges ("8-10 lb") use the
+  midpoint; "Neg."/"—" are negligible (0); "NA"/unrecorded are **unknown** —
+  skipped and counted in the banner's "unweighed" note, never fabricated.
+
+---
+
 ## 🐛 B1 — Broken talent reference in disciplines data
 
 **Status:** ✅ RESOLVED (2026-08-07, manual data edit) · **Tier:** 3
@@ -301,3 +328,4 @@ dangling refs: see R1.)
 | 2026-08-07 | R1 fixed (runbook cross-refs rewritten) | wrangler.toml: `§2.4`→§4 Phase 2 step 2.4, `§2.3`→§2.2, bogus "runsheet §2.5"→§4 Phase 2 step 2.5; worker.test.js: `§4.1`→Phase 4; runbook's own "Phase 4 (§4.1)"→"(step 4.1)". All runbook citations now resolve; 62/62 tests pass. R1 → RESOLVED |
 | 2026-08-07 | R2 fixed (design doc §4.3 `SAVE_KEY` → required) | §3.2 contract, §4.3 secrets table, §4.4 deploy snippet, §6.2 settings row all updated to "required/fail-closed"; §4.2 design sketch intentionally left as the historical "floated as optional" baseline (runbook §5.2 quotes it). R2 → RESOLVED |
 | 2026-08-07 | T1 fixed (`engine/derive.test.js` + `engine/dice.test.js` added) | 24 new tests over the pure derivation/dice helpers, incl. the real steps.json round-trip (locks the `ed-steps/1` shape). Suite 62 → **84, all passing**. T1 → RESOLVED |
+| 2026-08-09 | Weight & encumbrance shipped (engine/weight.js + engine/encumbrance.js, `movementRate` derivation, Gear-tab banner + section totals, Active Effects condition rows) | Taxonomy v3 vocabulary only — no bump/migration. Deliberate scope recorded in §"Weight & encumbrance — scope notes" (all-owned counting, coins/gems excluded, Strong Back + race weight modifiers deferred, weight parsing conventions). Suite 290 → **320, all passing** |

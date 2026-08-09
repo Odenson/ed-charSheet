@@ -112,6 +112,27 @@ test('deriveModel exposes woundThreshold and healthState from stored inputs only
   assert.deepEqual(character.resources.health, { damage: 4, wounds: 0, recoveriesUsed: 0 });
 });
 
+test('deriveModel: an equipped blood charm folds its implant damage into the health ratings', () => {
+  memory.clear();
+  const base = {
+    ...baseCharacter(),
+    attributes: { Toughness: { base: 17 } },
+    resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0 } },
+  };
+  // Death Cheat's implant inflicts Blood Magic Damage: Unconsciousness −3, Death −3.
+  // The effects are `condition: always` on the charm; the engine collects effects
+  // from equipped items only, so the reduction applies exactly while it is worn.
+  const worn = deriveModel({ ...base, items: [{ name: 'Death Cheat', equipped: true }] }, rules);
+  assert.equal(worn.characteristics.unconsciousness.value, 31);
+  assert.equal(worn.characteristics.death.value, 38);
+  const modifier = worn.characteristics.unconsciousness.modifiers.find((m) => m.origin?.kind === 'item' && m.operation === 'subtract' && m.value === 3);
+  assert.ok(modifier, 'the implant damage surfaces as a folded modifier');
+  // Unequipped (stored) — the effect drops back out.
+  const stored = deriveModel({ ...base, items: [{ name: 'Death Cheat', equipped: false }] }, rules);
+  assert.equal(stored.characteristics.unconsciousness.value, 34);
+  assert.equal(stored.characteristics.death.value, 41);
+});
+
 test('deriveModel exposes activeEffects: the always-on fold, no condition when not knocked down', () => {
   memory.clear();
   const character = {

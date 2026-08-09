@@ -19,7 +19,7 @@
 
 import { LitElement, html, css } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
-import { applyCustomItemsMap } from '../store-custom-items.js';
+import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking } from './custom-item-state.js';
 import {
   MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, OPERATIONS, MEASURES, CONDITIONS,
   cap, prettyName, summaryFor, blankEffect, finishEffect, cleanItemForm,
@@ -65,7 +65,7 @@ const QUICK_TEMPLATES = {
   ammunition: [],
   gear: [],
   'magic-item': [],
-  'blood-charm': [{ label: '− Unconsciousness', build: () => ({ type: 'characteristic-modifier', operation: 'subtract', value: 1, measure: 'rating', target: { domain: 'characteristic', name: 'UnconsciousnessRating' }, condition: 'situational' }) }],
+  'blood-charm': [{ label: '− Unconsciousness', build: () => ({ type: 'characteristic-modifier', operation: 'subtract', value: 1, measure: 'rating', target: { domain: 'characteristic', name: 'UnconsciousnessRating' }, condition: 'always' }) }],
   'healing-aid': [{ label: '＋ Recovery Result', build: () => ({ type: 'test-modifier', operation: 'add', value: 1, measure: 'result', target: { domain: 'test', name: 'Recovery' }, condition: 'always' }) }],
 };
 
@@ -126,10 +126,12 @@ export class EdCustomItem extends LitElement {
   }
 
   // Open (or reopen) with the committed catalog + any pending overlay delta as
-  // the working set. Runs once per mount — prop updates while open never reseed.
+  // the working set (see seedWorking — overlay wins, so a just-saved edit still
+  // pending in the overlay is the freshest copy). Runs once per mount — prop
+  // updates while open never reseed.
   _seed() {
     this._seeded = true;
-    this._working = new Map(Object.entries(applyCustomItemsMap(this.committed, this.overlay)));
+    this._working = seedWorking(this.committed, this.overlay);
     this._summaryOverride = new Set();
     this._form = null;
     this._confirmClose = false;
@@ -137,21 +139,14 @@ export class EdCustomItem extends LitElement {
 
   // True when any working-set item differs from the loaded catalog.
   _hasChanges() {
-    const { items, delete: dels } = this._delta();
-    return Object.keys(items).length > 0 || dels.length > 0;
+    return hasChanges(this._delta());
   }
 
   // Diff the working set against the *committed* catalog: { items (create/edit),
-  // delete }. Matching the overlay semantics, so a reload-then-reopen or a draft
-  // re-derive all agree on what still needs saving.
+  // delete }. Matching the overlay semantics (deltaFrom), so a reload-then-reopen
+  // or a draft re-derive all agree on what still needs saving.
   _delta() {
-    const items = {};
-    for (const [name, item] of this._working) {
-      const orig = this.committed?.[name];
-      if (!orig || JSON.stringify(orig) !== JSON.stringify(item)) items[name] = item;
-    }
-    const del = Object.keys(this.committed ?? {}).filter((name) => !this._working.has(name));
-    return { items, delete: del };
+    return deltaFrom(this._working, this.committed);
   }
 
   _dispatch(action) {
@@ -183,8 +178,7 @@ export class EdCustomItem extends LitElement {
 
   // --- working-set mutations ---
   _remove(name) {
-    this._working.delete(name);
-    this._working = new Map(this._working);
+    this._working = removeWorking(this._working, name);
     this._onWorkingChange();
   }
   _editItem(name) {
@@ -203,16 +197,15 @@ export class EdCustomItem extends LitElement {
     this._summaryOverride = new Set();
   }
 
-  // Commit the item form into the working set (upsert semantics: a name that
-  // matches an existing custom item edits it in place).
+  // Commit the item form into the working set (commitForm: upsert semantics — a
+  // name that matches an existing custom item edits it in place; a rename drops
+  // the old key). The clean step supplies the final trimmed name the item is
+  // stored under.
   _commitForm() {
-    const { name, item, originalName } = this._form;
+    const { originalName } = this._form;
     const clean = this._cleanForm();
     if (!clean || !clean.ok) return;
-    const finalName = clean.name;
-    if (originalName && originalName !== finalName) this._working.delete(originalName);
-    this._working.set(finalName, clean.item);
-    this._working = new Map(this._working);
+    this._working = commitForm(this._working, originalName, clean.name, clean.item);
     this._form = null;
     this._onWorkingChange();
   }

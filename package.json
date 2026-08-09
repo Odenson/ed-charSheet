@@ -6,6 +6,9 @@
   "license": "GPL-3.0",
   "private": true,
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "start": "bash scripts/start-local.sh",
+    "dev": "node tools/dev-server.mjs",
+    "dev:sync": "bash scripts/sync-local-data.sh"
   }
 }

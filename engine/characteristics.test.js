@@ -18,6 +18,7 @@ import {
   deathRating,
   recoveryTests,
   carryingCapacity,
+  movementRate,
   initiative,
   knockdown,
   maxKarma,
@@ -241,6 +242,38 @@ test('CarryingCapacity folds an always-on characteristic-modifier; clamps off-ta
   ];
   assert.equal(carryingCapacity(20, eff, lookup).value, 275);
   assert.equal(carryingCapacity(99, [], lookup).base, lookup(30).carry); // clamp
+});
+
+// --- Movement Rate -------------------------------------------------------------
+
+test('movementRate: the race base stands alone with no effects', () => {
+  const m = movementRate(12, []);
+  assert.equal(m.base, 12);
+  assert.equal(m.value, 12);
+  assert.equal(m.modifiers.length, 0);
+});
+
+test('movementRate: null when the race has no movement data', () => {
+  assert.equal(movementRate(undefined, []), null);
+});
+
+test('movementRate folds an always-on Walk effect and ignores a Fly one', () => {
+  const eff = [
+    { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'Movement', property: 'Walk' }, operation: 'add', value: 2, measure: 'rating', condition: 'always' },
+    { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'Movement', property: 'Fly' }, operation: 'add', value: 9, measure: 'rating', condition: 'always' },
+  ];
+  assert.equal(movementRate(12, eff).value, 14);
+});
+
+test('movementRate: encumbrance halving folds and floors', () => {
+  const half = { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'Movement', property: 'Walk' }, operation: 'multiply', value: 0.5, measure: 'rating', condition: 'always' };
+  assert.equal(movementRate(14, [half]).value, 7);
+  assert.equal(movementRate(11, [half]).value, 5); // halved odd rate rounds down
+});
+
+test('movementRate: overburdened caps the rate at 2 via min', () => {
+  const cap = { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'Movement' }, operation: 'min', value: 2, measure: 'rating', condition: 'always' };
+  assert.equal(movementRate(14, [cap]).value, 2);
 });
 
 test('Chakka: Initiative = Dexterity step 8 (no armour, no applicable effect)', () => {

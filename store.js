@@ -23,6 +23,7 @@ import {
   recoveryTests,
   woundThreshold,
   carryingCapacity,
+  movementRate,
   initiative,
   knockdown,
   maxKarma,
@@ -30,6 +31,8 @@ import {
   karmaUse,
   talentKarmaUse,
 } from './engine/characteristics.js';
+import { carriedWeight, parseWeight } from './engine/weight.js';
+import { encumbranceStage, encumbranceEffects } from './engine/encumbrance.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -484,6 +487,9 @@ export function deriveModel(character, rules) {
       ref: ref?.ref ?? {},
       effects: [...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])],
       presentation: {},
+      // The parsed carried weight in pounds (engine/weight.js), for the per-section
+      // totals. Derived, never stored.
+      weight: parseWeight(ref?.ref?.weight),
       thread: ref
         ? {
             tier: ref.tier ?? null,
@@ -511,6 +517,8 @@ export function deriveModel(character, rules) {
       // Display-only strings for the UI (never engine-read). See rules/items.json
       // notes.presentation — carries the tile's curated `shortEffect` for note items.
       presentation: ref?.presentation ?? {},
+      // The parsed carried weight in pounds (engine/weight.js) — derived, never stored.
+      weight: parseWeight(ref?.ref?.weight),
       thread: null,
     };
   });
@@ -575,17 +583,33 @@ export function deriveModel(character, rules) {
     : [];
   const touVal = attrVal('Toughness');
 
+  // Carrying Capacity drives encumbrance, so it derives before the rest. The
+  // carried total counts every owned item — equipped and stored alike, a stowed
+  // load still rests on the back (engine/weight.js); coins/gems are not items
+  // and never reach this sum. The stage's effects then fold into Movement and
+  // the Defences exactly like the Knocked Down condition and surface in the
+  // Active Effects panel — present only while the stage holds.
+  const carryingCapacityResult = carryingCapacity(attrVal('Strength'), activeEffects, lookupChar);
+  const { carried, unweighed } = carriedWeight(items);
+  const weightStanding = encumbranceStage(carried, carryingCapacityResult?.value ?? null);
+  const encumbranceConditionEffects = encumbranceEffects(weightStanding.stage).map((e) => ({
+    ...e,
+    origin: { kind: 'condition', name: weightStanding.label },
+  }));
+  const foldedEffects = [...activeEffects, ...conditionDefenseEffects, ...encumbranceConditionEffects];
+
   const characteristics = {
-    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), [...activeEffects, ...conditionDefenseEffects], lookupChar),
-    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), [...activeEffects, ...conditionDefenseEffects], lookupChar),
-    socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
+    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), foldedEffects, lookupChar),
+    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), foldedEffects, lookupChar),
+    socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), foldedEffects, lookupChar),
     physicalArmor: physicalArmor(activeEffects),
     mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),
     unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
     death: deathRating(touVal, healthEffects, lookupChar),
     recoveries: recoveryTests(touVal, healthEffects, lookupChar),
     woundThreshold: woundThreshold(touVal, healthEffects, lookupChar),
-    carryingCapacity: carryingCapacity(attrVal('Strength'), activeEffects, lookupChar),
+    carryingCapacity: carryingCapacityResult,
+    movementRate: movementRate(raceEntry?.movement?.walk, foldedEffects),
     initiative: initiative(dexStep, activeEffects),
     knockdown: knockdown(strStep, activeEffects),
     karma:
@@ -713,9 +737,22 @@ export function deriveModel(character, rules) {
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings
     // — conscious/unconscious/dead state + headroom. Derived, never stored.
     healthState: damageState(character.resources?.health ?? {}, characteristics),
+    // Carried weight and its encumbrance standing (engine/weight.js + engine/
+    // encumbrance.js): the pound total across every owned item, the count of
+    // items with unrecorded weight, the carrying capacity they're judged
+    // against, and the stage/label the banner renders. All derived, never stored.
+    weight: {
+      carried,
+      unweighed,
+      capacity: carryingCapacityResult?.value ?? null,
+      stage: weightStanding.stage,
+      label: weightStanding.label,
+      ratio: weightStanding.ratio,
+    },
     // Every active effect for the Active Effects panel: the always-on fold
     // (race/discipline/equipped items, each tagged with its origin) plus any
-    // live condition effect (Knocked Down). All derived, never stored.
-    activeEffects: [...activeEffects, ...conditionEffects],
+    // live condition effects (Knocked Down, and the encumbrance stage's). All
+    // derived, never stored.
+    activeEffects: [...activeEffects, ...conditionEffects, ...encumbranceConditionEffects],
   };
 }

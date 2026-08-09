@@ -111,11 +111,14 @@ export class EdOverview extends LitElement {
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
     .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
     .ftag.race { background: var(--accent-bg); color: var(--accent); }
-    /* Active Effects list: one compact line per effect, the strip bounded with
-       internal scroll so the Overview keeps its no-page-scroll contract. */
+    /* Active Effects list: one compact line per condition (a condition's effects
+       collapse to a single row), the strip bounded with internal scroll so the
+       Overview keeps its no-page-scroll contract. */
     .aefx .aelist { max-height: 172px; overflow: auto; margin-right: -2px; padding-right: 2px; }
     .aefx-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 0.7rem; }
     .aefx-row .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
+    /* Condition lead is set in 500 — the UI only uses 400/500 (UI-GUIDELINES §2). */
+    .aefx-row .txt b { font-weight: 500; }
     .aefx-row.cond { background: var(--accent-bg); border-radius: 6px; padding: 3px 6px; margin: 2px -2px; }
     .ftag.cond { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
     .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
@@ -209,19 +212,30 @@ export class EdOverview extends LitElement {
   // Render an engine-derived characteristic as a real number, or fall back to the
   // placeholder pill if the engine hasn't computed it (UI-GUIDELINES §5: never a
   // fabricated number). Hovering shows how the value was built (base + modifiers).
-  // While a live condition (e.g. Knocked Down) folds into the stat, the number is
-  // tinted in the condition colour and a small signed badge shows the net amount —
-  // both derived from the actual modifiers array, never a hardcoded value.
+  // While a live condition (e.g. Knocked Down, an encumbrance stage) folds into
+  // the stat, the number is tinted in the condition colour and a small badge names
+  // the fold: the ±N net for add/subtract, "→ N" for a min cap (overburdened's
+  // "Defense reduced to 2"), "halved" for a ×0.5. Both are derived from the actual
+  // modifiers array, never a hardcoded value.
   _char(key) {
     const c = this.model?.characteristics?.[key];
     if (!c || c.value == null) return this._pend();
     const title = `Base ${c.base}${this._modSummary(c.modifiers)}`;
     const cond = (c.modifiers ?? []).filter((m) => m.origin?.kind === 'condition');
     if (!cond.length) return html`<span class="val" title=${title}>${c.value}</span>`;
-    const sum = cond.reduce((s, m) => s + (m.operation === 'subtract' ? -m.value : m.value), 0);
-    const sign = sum > 0 ? '+' : sum < 0 ? '−' : '';
+    const badge = cond
+      .map((m) => {
+        if (m.operation === 'add') return `${m.value > 0 ? '+' : '−'}${Math.abs(m.value)}`;
+        if (m.operation === 'subtract') return `−${m.value}`;
+        if (m.operation === 'min') return `→ ${m.value}`;
+        if (m.operation === 'multiply') return m.value < 1 ? 'halved' : `×${m.value}`;
+        if (m.operation === 'set') return `= ${m.value}`;
+        return '';
+      })
+      .filter(Boolean)
+      .join(' ');
     const name = cond[0].origin?.name ?? 'condition';
-    return html`<span class="val cond" title=${title}>${c.value}<span class="delt" title=${`${name} ${sign}${Math.abs(sum)}`}>${sign}${Math.abs(sum)}</span></span>`;
+    return html`<span class="val cond" title=${title}>${c.value}<span class="delt" title=${`${name} — ${badge}`}>${badge}</span></span>`;
   }
 
   // Carry / Lift: the carrying capacity, and the most that can be lifted without a
@@ -230,7 +244,23 @@ export class EdOverview extends LitElement {
     const c = this.model?.characteristics?.carryingCapacity;
     if (!c || c.value == null) return this._pend();
     const title = `Carry ${c.value} lb (base ${c.base}${this._modSummary(c.modifiers)}); lift up to ${c.lift} lb without a test (2× carry − 1)`;
-    return html`<span class="val" title=${title}>${c.value} / ${c.lift}</span>`;
+    return html`<span class="val" title=${title}>${c.value} / ${c.lift} lbs</span>`;
+  }
+
+  // Movement Rate in yards: the race's base walk movement, folded with any live
+  // condition — encumbrance halves it (burdened) or reduces it to 2
+  // (overburdened, PG p.405). The engine derives the number; the view renders it
+  // with a small badge naming the fold when a condition is biting (same treatment
+  // as _char). Missing race movement → placeholder pill.
+  _movementRate() {
+    const c = this.model?.characteristics?.movementRate;
+    if (!c || c.value == null) return this._pend();
+    const cond = (c.modifiers ?? []).find((m) => m.origin?.kind === 'condition');
+    const title = `Rate ${c.value} yd (base ${c.base}${this._modSummary(c.modifiers)})`;
+    if (!cond) return html`<span class="val" title=${title}>${c.value} yards</span>`;
+    const badge = cond.operation === 'multiply' ? 'halved' : cond.operation === 'min' ? `→ ${cond.value}` : '';
+    const name = cond.origin?.name ?? 'condition';
+    return html`<span class="val cond" title=${title}>${c.value} yards<span class="delt" title=${`${name} — Movement Rate ${badge}`}>${badge}</span></span>`;
   }
 
   // A rollable combat step (Initiative, Knockdown): shows the engine-derived Step
@@ -564,12 +594,21 @@ export class EdOverview extends LitElement {
   }
 
   // Active Effects: for now, only live conditions — Knocked Down (carrying a
-  // roll-time −3 to every test while prone). Special Features (race + discipline
+  // roll-time −3 to every test while prone) and an active encumbrance stage
+  // (Burdened / Overburdened, PG p.405). Special Features (race + discipline
   // circle abilities) and equipped item / thread-item effects are intentionally
   // NOT listed at this stage, even though they are still folded into the engine's
-  // stat readouts. A condition offers its reversal ("Stand up") right on the
-  // row; the strip keeps its internal scroll bound so the Overview still fits
-  // the viewport (UI-GUIDELINES §1).
+  // stat readouts.
+  //
+  // A condition renders as ONE row no matter how many effects the engine emits
+  // for it — Burdened/Overburdened each produce several effects (one per derived
+  // rating they fold into), but the player reads them as a single condition. The
+  // rows are grouped by condition name and the engine-authored summaries joined
+  // (their leading "Name — " prefix stripped once the name is shown as the row's
+  // bold lead). This is display formatting only — no game value is derived here.
+  // A reversible condition offers its reversal ("Stand up") right on the row;
+  // the strip keeps its internal scroll bound so the Overview still fits the
+  // viewport (UI-GUIDELINES §1).
   _activeEffects() {
     const HIDDEN = new Set(['race', 'discipline', 'item', 'thread']);
     const effects = (this.model?.activeEffects ?? []).filter((e) => !HIDDEN.has(e.origin?.kind));
@@ -579,16 +618,45 @@ export class EdOverview extends LitElement {
       if (o.kind === 'condition') return 'condition';
       return e.source ?? '';
     };
+    // A condition's summaries read like "Burdened (Harried) — Physical Defense
+    // −2." — once the name is the row's lead, strip that prefix for the detail.
+    // The engine authors every condition summary with a "Name — detail" lead
+    // (an "Exceeds lift" row inherits "Overburdened — …" summaries, so the strip
+    // keys off the first em dash, not the exact name).
+    const stripLead = (s) => {
+      if (!s) return s;
+      const dash = s.indexOf('—');
+      return dash > 0 ? s.slice(dash + 1).replace(/^\s*/, '') : s;
+    };
+    const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+    // Group condition effects by condition name (Burdened, Overburdened, …);
+    // anything else stays as its own row.
+    const grouped = [];
+    const cond = new Map();
+    for (const e of effects) {
+      const name = e.origin?.kind === 'condition' ? e.origin.name : null;
+      if (name) {
+        if (!cond.has(name)) cond.set(name, []);
+        cond.get(name).push(e);
+      } else {
+        grouped.push([null, [e]]);
+      }
+    }
+    for (const [name, es] of cond) grouped.push([name, es]);
     return html`
       <div class="blk aefx">
         <h4>Active Effects</h4>
         <div class="aelist">
-          ${effects.map(
-            (e) => html`
-              <div class="aefx-row ${e.origin?.kind === 'condition' ? 'cond' : ''}">
-                <span class="ftag ${e.origin?.kind === 'condition' ? 'cond' : e.origin?.kind === 'race' ? 'race' : ''}" title=${e.origin ? tag(e) : e.source ?? ''}>${tag(e)}</span>
-                <span class="txt" title=${e.summary ?? ''}>${e.summary ?? ''}</span>
-                ${e.origin?.kind === 'condition'
+          ${grouped.map(
+            ([name, es]) => html`
+              <div class="aefx-row ${name ? 'cond' : ''}">
+                <span class="ftag ${name ? 'cond' : ''}" title=${name ? tag(es[0]) : es[0].source ?? ''}>${name ? tag(es[0]) : es[0].source ?? ''}</span>
+                <span class="txt" title=${es.map((e) => e.summary ?? '').join(' ')}>
+                  ${name ? html`<b>${name}</b> — ` : ''}${es
+                    .map((e) => (name ? cap(stripLead(e.summary ?? '')) : e.summary ?? ''))
+                    .join(' ')}
+                </span>
+                ${name === 'Knocked Down'
                   ? html`<button
                       class="stand"
                       title="End the Knocked Down condition"
@@ -836,6 +904,7 @@ export class EdOverview extends LitElement {
               </div>
               <div class="blk">
                 <h4>Movement</h4>
+                <div class="line"><span>Rate</span>${this._movementRate()}</div>
                 <div class="line"><span>Carry / Lift</span>${this._carryLift()}</div>
               </div>
             </div>

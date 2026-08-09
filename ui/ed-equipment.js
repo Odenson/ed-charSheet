@@ -14,6 +14,8 @@
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
 import { pickItemKeys, PICKER_LABELS } from './picker.js';
+import { equipArmour, applyArmourSwap } from './item-equip-state.js';
+import './ed-confirm.js';
 
 const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid', 'thread-item']);
 // Kind labels shared with the pure picker module (ui/picker.js).
@@ -30,6 +32,9 @@ const SECTIONS = [
 
 const isMagic = (it) => !!it && MAGIC_KINDS.has(it.kind);
 const grp = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
+// A section's carried weight = the sum of its rows' engine-parsed pounds (each
+// `it.weight` is a derived value off the model — never computed here).
+const secWeight = (rows) => rows.reduce((t, it) => t + (typeof it.weight === 'number' ? it.weight : 0), 0);
 const costText = (ref) => {
   const c = ref?.cost;
   if (c == null) return null;
@@ -98,6 +103,7 @@ export class EdEquipment extends LitElement {
     _coinMenu: { state: true },       // "add coin" menu open
     _shownCoins: { state: true },     // coin keys pinned visible at 0 (edit mode)
     _customItemsOpen: { state: true }, // custom-item manager modal open
+    _swapPrompt: { state: true },     // { name, via } — armour swap confirmation
   };
 
   constructor() {
@@ -109,6 +115,7 @@ export class EdEquipment extends LitElement {
     this._coinMenu = false;
     this._shownCoins = new Set();
     this._customItemsOpen = false;
+    this._swapPrompt = null;
     this._onKeydown = (e) => {
       if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
       else if (e.key === 'Escape' && this._addOpen) { e.stopPropagation(); this._closePicker(); }
@@ -203,6 +210,8 @@ export class EdEquipment extends LitElement {
     .blk > h4 { display: flex; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 2px 2px 9px; }
     .blk > h4 .ct { margin-left: auto; color: var(--muted); font-weight: 400; letter-spacing: 0; }
     .blk > h4 .total { margin-left: auto; color: var(--accent); font-weight: 500; letter-spacing: 0; font-family: var(--mono); font-size: 0.76rem; }
+    /* In a section header the count already right-aligns; the weight sits beside it. */
+    .blk > h4 .ct + .total { margin-left: 8px; }
     .glyph { font-size: 0.82rem; color: var(--accent); }
 
     .item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 9px; background: var(--bg-chip); border: 1px solid var(--border); margin-bottom: 6px; }
@@ -219,6 +228,19 @@ export class EdEquipment extends LitElement {
     .eq.on { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
     .eq:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .statechip { font-size: 0.62rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+    /* Encumbrance stage chip — muted at clear, accent when burdened, danger past it. */
+    .statechip.wstage { white-space: nowrap; }
+    .wstage.burdened { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+    .wstage.overburdened, .wstage.excess { color: var(--danger); border-color: var(--danger); background: light-dark(rgba(192, 57, 43, 0.08), rgba(229, 115, 115, 0.12)); }
+
+    /* Carried-weight banner */
+    .wrow { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--fg); margin: 2px 2px 4px; flex-wrap: wrap; }
+    .wrow b { font-weight: 500; font-family: var(--mono); }
+    .wline { font-size: 0.7rem; color: var(--muted); margin: 0 2px; }
+    .wline b { font-weight: 500; font-family: var(--mono); color: var(--fg); }
+    /* Unavailable capacity renders as the muted dashed placeholder pill
+       (UI-GUIDELINES §5 — never a fabricated number). */
+    .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
     /* Quiet main-effect on the right of an equipped tile: notes read as plain muted
        text; numeric effects emphasise the value. */
     .quiet { font-size: 0.72rem; color: var(--muted); white-space: nowrap; flex: 0 0 auto; text-align: right; }
@@ -313,16 +335,52 @@ export class EdEquipment extends LitElement {
   _commitItems(items) {
     this.dispatchEvent(new CustomEvent('ed-edit-items', { detail: items, bubbles: true, composed: true }));
   }
+
+  // Resolve an item's kind wherever it lives: already-owned (model resolves it,
+  // unknown names degrade to 'item') or still in a catalog (canon + custom —
+  // the add-picker offers both). Only 'armor' competes for the single worn slot.
+  _kindOf(name) {
+    return (
+      this.model?.items?.find((i) => i.name === name)?.kind ??
+      this.model?.itemCatalog?.[name]?.kind ??
+      null
+    );
+  }
+  _wornArmourName() {
+    return this.model?.items?.find((i) => i.equipped && i.kind === 'armor')?.name ?? null;
+  }
+
+  // Route every equip through the pure equip-state module. Equipping a SECOND
+  // armour returns `blocked` — hold the action and prompt the swap; the prompt
+  // and the action stay un-applied until the player decides.
+  _equip(name, via) {
+    const r = equipArmour(this._inputs(), (n) => this._kindOf(n), name, via);
+    if (r.blocked) {
+      this._swapPrompt = { name, via };
+      return;
+    }
+    this._commitItems(r.items);
+  }
   _add(name) {
     if (!name || this._inputs().some((i) => i.name === name)) return;
-    this._commitItems([...this._inputs(), { name, equipped: true }]);
+    this._equip(name, 'add');
   }
   _remove(name) {
     this._commitItems(this._inputs().filter((i) => i.name !== name));
     if (this._modal === name) this._modal = null;
   }
   _toggle(name) {
-    this._commitItems(this._inputs().map((i) => (i.name === name ? { ...i, equipped: !i.equipped } : i)));
+    this._equip(name, 'toggle');
+  }
+  // The player accepted the swap: the new armour is worn, every other armour is
+  // stored (item-equip-state.applyArmourSwap — pure, inputs only). Blur first so
+  // the swap modal leaves no :focus-visible ring behind (same as _closeModal).
+  _confirmSwap() {
+    this.renderRoot.activeElement?.blur();
+    const { name, via } = this._swapPrompt ?? {};
+    this._swapPrompt = null;
+    if (!name) return;
+    this._commitItems(applyArmourSwap(this._inputs(), (n) => this._kindOf(n), name, via));
   }
   // A thread item's woven rank is an input; the select dispatches it upward and the
   // whole sheet re-derives (effects, Legend audit) through the normal cascade.
@@ -390,6 +448,24 @@ export class EdEquipment extends LitElement {
     else if (e.key === 'Escape') { this._closePicker(); }
   }
 
+  // One set of armour worn: equipping a second one asks first. The message names
+  // the armour that's currently worn so the swap is a conscious trade. Cancel
+  // (ed-confirm's Escape / backdrop / ✕) simply drops the held action — nothing
+  // has been committed yet, so there is nothing to undo.
+  _swapModal() {
+    const { name } = this._swapPrompt ?? {};
+    const worn = this._wornArmourName();
+    if (!name || !worn) return '';
+    return html`<ed-confirm
+      tone="accent"
+      heading="Swap armour?"
+      message="Only one set of armour can be worn — ${worn} is currently worn. Equip ${name} instead and store ${worn}?"
+      confirmLabel="Swap"
+      @confirm=${this._confirmSwap}
+      @close=${() => { this.renderRoot.activeElement?.blur(); this._swapPrompt = null; }}
+    ></ed-confirm>`;
+  }
+
   _itemRow(it) {
     const mg = isMagic(it);
     const stored = !it.equipped;
@@ -434,13 +510,40 @@ export class EdEquipment extends LitElement {
     `;
   }
 
+  // The carried-weight banner: the engine's total (every owned item) judged
+  // against Carrying Capacity, with the encumbrance stage chip (PG p.405), the
+  // Movement-Rate fold when it bites, and a note when some weights are unrecorded.
+  // All numbers come off the model — nothing is computed here.
+  _weightBanner() {
+    const w = this.model?.weight;
+    const cc = this.model?.characteristics?.carryingCapacity;
+    const mv = this.model?.characteristics?.movementRate;
+    if (!w) return html``;
+    const capacity = w.capacity ?? cc?.value ?? null;
+    const known = capacity != null;
+    const shifted = w.stage !== 'clear' && mv && mv.value != null && mv.base != null && mv.value !== mv.base;
+    return html`
+      <div class="blk">
+        <h4><span class="glyph">⚖</span>Carried Weight<span class="total">${grp(w.carried)} lb</span></h4>
+        <div class="wrow">
+          ${known
+            ? html`<span class="wline">Capacity <b>${grp(capacity)} lb</b> · Lift <b>${grp(cc?.lift ?? capacity * 2 - 1)} lb</b></span>`
+            : html`<span class="pend">—</span>`}
+          ${known ? html`<span class="statechip wstage ${w.stage}">${w.label}</span>` : ''}
+        </div>
+        ${shifted ? html`<div class="wline">Movement <b>${mv.base} → ${mv.value}</b>${mv.value === 2 ? ' · reduced to 2' : ' · halved'}</div>` : ''}
+        ${w.unweighed ? html`<div class="wline">${w.unweighed} item${w.unweighed > 1 ? 's' : ''} with unrecorded weight</div>` : ''}
+      </div>
+    `;
+  }
+
   _section(sec, items) {
     const rows = items.filter((it) => sec.kinds.includes(it.kind));
     // Equipped items first (in their existing order), stored items last.
     const ordered = [...rows.filter((it) => it.equipped), ...rows.filter((it) => !it.equipped)];
     return html`
       <div class="blk">
-        <h4><span class="glyph">${sec.glyph}</span>${sec.title}<span class="ct">${rows.length}</span></h4>
+        <h4><span class="glyph">${sec.glyph}</span>${sec.title}<span class="ct">${rows.length}</span>${rows.length ? html`<span class="total">${grp(secWeight(rows))} lb</span>` : ''}</h4>
         ${ordered.length ? ordered.map((it) => this._itemRow(it)) : html`<div class="empty">— nothing here —</div>`}
       </div>
     `;
@@ -650,12 +753,16 @@ export class EdEquipment extends LitElement {
           `
         : ''}
 
+      ${this._weightBanner()}
+
       <div class="board">
         ${SECTIONS.map((sec) => this._section(sec, items))}
         ${this._wealthCard()}
       </div>
 
       ${modalItem ? this._detailModal(modalItem) : ''}
+
+      ${this._swapModal()}
 
       ${this._customItemsOpen
         ? html`<ed-custom-item

@@ -2,8 +2,8 @@
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
-import { saveServer, SaveError } from '../store-server.js';
-import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected } from '../store-custom-items.js';
+import { saveServer, SaveError, DEFAULT_ENDPOINT } from '../store-server.js';
+import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
@@ -386,7 +386,7 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     try {
-      const commit = await saveCustomItems(items, { saveKey: this._saveKey, deleteNames });
+      const commit = await saveCustomItems(items, { endpoint: this._endpointFor('save-items', DEFAULT_ITEMS_ENDPOINT), saveKey: this._saveKey, deleteNames });
       this._saveOk = commit; // { sha, url }
       await this._refreshCustomItems({ savedItems: items, deletedNames: deleteNames });
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
@@ -424,6 +424,15 @@ export class EdApp extends LitElement {
     }
   }
 
+  // Local dev save targets: point the POSTs somewhere else via
+  // `?save=<url>` / `?save-items=<url>` (tools/dev-server.mjs, README → Running
+  // locally). Absent → the deployed worker (default behaviour — no config needed
+  // to save). A bare origin or path resolves against the app's own origin.
+  _endpointFor(param, fallback) {
+    const raw = new URLSearchParams(location.search).get(param);
+    return raw ? new URL(raw, location.href).href : fallback;
+  }
+
   // Roll-time modifiers from live conditions. While Knocked Down every test
   // takes the condition's −3 (PG p.389: "suffers a –3 penalty to his tests" —
   // the worked example includes the next Initiative test, so there are no
@@ -450,13 +459,13 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     try {
-      let commit = await saveServer(this._character, { saveKey: this._saveKey, id: this._characterId });
+      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId });
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
       // Save commits that too — /save-items POST, reconcile, re-read the catalog.
       const pending = loadCustomEdits();
       if (pending && (Object.keys(pending.items ?? {}).length || (pending.delete ?? []).length)) {
-        const customCommit = await saveCustomItems(pending.items ?? {}, { saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
+        const customCommit = await saveCustomItems(pending.items ?? {}, { endpoint: this._endpointFor('save-items', DEFAULT_ITEMS_ENDPOINT), saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
         commit = customCommit; // last commit link wins
         await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
