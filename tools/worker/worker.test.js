@@ -6,6 +6,9 @@
 // replace characters[id] → PUT whole store), the bounded 409 retry, and
 // upstream-failure mapping. Since the v1.6.0 promotion the id is required —
 // the grouped store is the only save target (the legacy single-file path is gone).
+// Plus the /save-items route (PLAN-CUSTOM-ITEMS P3): the custom-items catalog
+// upsert (merge + delete + PUT whole ed-items/2 file), validation via the shared
+// engine/validate-item.js gate, size/count caps, and the same retry/failure map.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -76,6 +79,36 @@ const readsStore = (store, sha = 'store-sha') => ({
 });
 const putStoreOk = (commitSha = 'store-commit') => ({
   'PUT /contents/data/characters.json': () => ({
+    status: 200,
+    body: { content: { sha: commitSha }, html_url: `https://github.com/commit/${commitSha}` },
+  }),
+});
+
+// --- custom-items fixtures ----------------------------------------------------
+
+const ITEM = {
+  kind: 'gear',
+  effects: [{ type: 'note', summary: 'A lantern that sheds light for 30 yards.' }],
+};
+const ITEM2 = {
+  kind: 'magic-item',
+  effects: [
+    { type: 'test-modifier', operation: 'add', value: 1, measure: 'step', target: { domain: 'test', name: 'Search' }, summary: '+1 step on Search tests' },
+  ],
+};
+const ITEMS = {
+  schema: 'ed-items/2',
+  effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
+  source: 'custom',
+  notes: 'Player-created items.',
+  items: { Lantern: ITEM, 'Ring of Searching': ITEM2 },
+};
+const itemsB64 = (file) => Buffer.from(JSON.stringify(file), 'utf8').toString('base64');
+const readsItems = (file, sha = 'items-sha') => ({
+  'GET /contents/data/custom-items.json': () => ({ status: 200, body: { sha, content: itemsB64(file), encoding: 'base64' } }),
+});
+const putItemsOk = (commitSha = 'items-commit') => ({
+  'PUT /contents/data/custom-items.json': () => ({
     status: 200,
     body: { content: { sha: commitSha }, html_url: `https://github.com/commit/${commitSha}` },
   }),
@@ -329,6 +362,235 @@ test('non-409 GitHub failure (403) → 502 upstream', async () => {
   });
   try {
     const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502);
+    assert.equal(json.error.code, 'upstream');
+  } finally {
+    mock.restore();
+  }
+});
+
+// --- custom-items catalog (/save-items) --------------------------------------
+
+test('save-items upserts new items and PUTs the whole catalog', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsItems(ITEMS), ...putItemsOk() });
+  try {
+    const { status, json } = await call(req({ items: { 'New Item': ITEM } }, { path: '/save-items' }));
+    assert.equal(status, 200);
+    assert.equal(json.ok, true);
+    assert.equal(json.commit.sha, 'items-commit');
+
+    const put = mock.calls.find((c) => c.method === 'PUT');
+    assert.ok(put.url.endsWith('/contents/data/custom-items.json'), 'writes the catalog file');
+    const sent = JSON.parse(put.options.body);
+    assert.equal(sent.sha, 'items-sha', 'PUT carries the sha from the GET');
+    assert.equal(sent.branch, 'character-data', 'branch is env-pinned, not from request');
+    assert.equal(sent.message, 'Save custom items (serverless)');
+    // Byte-identical to the local file save: pretty JSON + trailing newline.
+    const expected = JSON.stringify({ ...ITEMS, items: { ...ITEMS.items, 'New Item': ITEM } }, null, 2) + '\n';
+    assert.equal(Buffer.from(sent.content, 'base64').toString('utf8'), expected);
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items custom item wins over a canon-name collision', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsItems(ITEMS), ...putItemsOk() });
+  try {
+    await call(req({ items: { Lantern: ITEM2 } }, { path: '/save-items' }));
+    const written = JSON.parse(Buffer.from(JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body).content, 'base64').toString('utf8'));
+    assert.deepEqual(written.items.Lantern, ITEM2, 'posted item replaces the existing entry');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items delete removes the named item', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsItems(ITEMS), ...putItemsOk() });
+  try {
+    await call(req({ delete: ['Lantern'] }, { path: '/save-items' }));
+    const written = JSON.parse(Buffer.from(JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body).content, 'base64').toString('utf8'));
+    assert.deepEqual(written.items, { 'Ring of Searching': ITEM2 });
+  } finally {
+    mock.restore();
+  }
+});
+
+test('missing catalog (404) → creates a fresh ed-items/2 file', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    'GET /contents/data/custom-items.json': () => ({ status: 404, body: {} }),
+    ...putItemsOk(),
+  });
+  try {
+    const { status } = await call(req({ items: { Lantern: ITEM } }, { path: '/save-items' }));
+    assert.equal(status, 200);
+    const sent = JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body);
+    assert.equal(sent.sha, undefined, 'no sha on a create');
+    const written = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
+    assert.equal(written.schema, 'ed-items/2');
+    assert.deepEqual(written.items, { Lantern: ITEM });
+  } finally {
+    mock.restore();
+  }
+});
+
+test('invalid item delta → 400 invalid_items, no PUT', async () => {
+  let puts = 0;
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsItems(ITEMS),
+    'PUT /contents/data/custom-items.json': () => {
+      puts += 1;
+      return { status: 200, body: {} };
+    },
+  });
+  try {
+    const cases = [
+      { items: { Broken: { kind: 'spaceship', effects: [] } } }, // unknown kind
+      { items: { Broken: { kind: 'gear', effects: [{ type: 'note' }] } } }, // note needs a summary
+      { items: { Broken: { kind: 'gear', effects: [{ type: 'defense-modifier', operation: 'add', value: 1, target: { domain: 'attribute', name: 'Dexterity' }, summary: 'x' }] } } }, // domain mismatch
+      { items: { Bad: 'not an item' } },
+      { items: { Bad: null } },
+      { delete: [''] },
+      { items: 'nope' },
+    ];
+    for (const body of cases) {
+      const { status, json } = await call(req(body, { path: '/save-items' }));
+      assert.equal(status, 400, `delta ${JSON.stringify(body)} → 400`);
+      assert.equal(json.error.code, 'invalid_items');
+    }
+    assert.equal(puts, 0, 'invalid delta never reaches a PUT');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('oversized single item (over 4096 bytes) → 400 invalid_items', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsItems(ITEMS), ...putItemsOk() });
+  try {
+    const big = { kind: 'gear', effects: [{ type: 'note', summary: 'x'.repeat(5000) }] };
+    const { status, json } = await call(req({ items: { Huge: big } }, { path: '/save-items' }));
+    assert.equal(status, 400);
+    assert.equal(json.error.code, 'invalid_items');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('merged catalog over the caps (200 items) → 400 invalid_items, no PUT', async () => {
+  const many = {};
+  for (let i = 0; i < 200; i++) many[`item-${i}`] = ITEM;
+  const bigFile = { schema: 'ed-items/2', effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)', source: 'custom', notes: '', items: many };
+  let puts = 0;
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsItems(bigFile),
+    'PUT /contents/data/custom-items.json': () => {
+      puts += 1;
+      return { status: 200, body: {} };
+    },
+  });
+  try {
+    const { status, json } = await call(req({ items: { overflow: ITEM } }, { path: '/save-items' }));
+    assert.equal(status, 400);
+    assert.equal(json.error.code, 'invalid_items');
+    assert.equal(puts, 0, 'over-cap merged file never reaches a PUT');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items keeps UTF-8 content (em-dash, ✦ star) through the catalog merge', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsItems(ITEMS), ...putItemsOk() });
+  try {
+    const unicodeItem = { kind: 'gear', effects: [{ type: 'note', summary: 'freedom — at last ✦' }] };
+    const { status } = await call(req({ items: { Relic: unicodeItem } }, { path: '/save-items' }));
+    assert.equal(status, 200);
+    const written = Buffer.from(JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body).content, 'base64').toString('utf8');
+    assert.ok(written.includes('freedom — at last ✦'), 'UTF-8 round-trips through the catalog merge');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items fails closed on auth (wrong key → 401)', async () => {
+  const { status } = await call(req({ items: {} }, { path: '/save-items', key: 'nope' }));
+  assert.equal(status, 401);
+});
+
+test('a /save-items request must carry the items envelope (character-shaped body → 400)', async () => {
+  const { status, json } = await call(req({ character: CHAR, id: 'chakka' }, { path: '/save-items' }));
+  assert.equal(status, 400);
+  assert.equal(json.error.code, 'invalid_items');
+});
+
+test('a /save request still rejects items-shaped bodies', async () => {
+  const { status, json } = await call(req({ items: { x: ITEM } }));
+  assert.equal(status, 400);
+  assert.equal(json.error.code, 'invalid_character');
+});
+
+test('save-items target is env-pinned to GITHUB_ITEMS_PATH', async () => {
+  const mock = mockGitHub({ ...branchExists, ...readsItems(ITEMS), ...putItemsOk() });
+  try {
+    const env = { ...ENV, GITHUB_ITEMS_PATH: 'data/custom-items.json' };
+    const { status } = await call(req({ items: { x: ITEM } }, { path: '/save-items' }), env);
+    assert.equal(status, 200);
+    assert.ok(mock.calls.find((c) => c.method === 'PUT').url.endsWith('/contents/data/custom-items.json'));
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items 409 then 200 → retry re-reads the moved sha', async () => {
+  let reads = 0;
+  let puts = 0;
+  const mock = mockGitHub({
+    ...branchExists,
+    'GET /contents/data/custom-items.json': () => {
+      reads += 1;
+      return { status: 200, body: { sha: `s${reads}`, content: itemsB64(ITEMS) } };
+    },
+    'PUT /contents/data/custom-items.json': () => {
+      puts += 1;
+      return puts === 1 ? { status: 409, body: {} } : { status: 200, body: { content: { sha: 'ok', html_url: 'u' } } };
+    },
+  });
+  try {
+    const { status } = await call(req({ items: { x: ITEM } }, { path: '/save-items' }));
+    assert.equal(status, 200);
+    assert.equal(puts, 2, 'retried once');
+    const putsArr = mock.calls.filter((c) => c.method === 'PUT');
+    assert.equal(JSON.parse(putsArr[1].options.body).sha, 's2', 'retry re-reads the moved sha');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items persistent 409 → 409 conflict after MAX_RETRIES', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsItems(ITEMS),
+    'PUT /contents/data/custom-items.json': () => ({ status: 409, body: {} }),
+  });
+  try {
+    const { status, json } = await call(req({ items: { x: ITEM } }, { path: '/save-items' }));
+    assert.equal(status, 409);
+    assert.equal(json.error.code, 'conflict');
+    assert.equal(mock.calls.filter((c) => c.method === 'PUT').length, 3);
+  } finally {
+    mock.restore();
+  }
+});
+
+test('save-items non-409 GitHub failure (403) → 502 upstream', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsItems(ITEMS),
+    'PUT /contents/data/custom-items.json': () => ({ status: 403, body: {} }),
+  });
+  try {
+    const { status, json } = await call(req({ items: { x: ITEM } }, { path: '/save-items' }));
     assert.equal(status, 502);
     assert.equal(json.error.code, 'upstream');
   } finally {

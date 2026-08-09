@@ -21,9 +21,22 @@
 // traversal) and used only as a map key inside the store — it never becomes a
 // filesystem path.
 //
+// POST /save-items  { "items": { "<name>": <item> }, "delete"?: ["<name>", …] }
+//
+// The companion write endpoint for the player-created custom-item catalog
+// (docs/PLAN-CUSTOM-ITEMS.md): GET `data/custom-items.json` (ed-items/2) on the
+// same branch, merge the posted items (custom wins on a canon-name collision),
+// apply the delete list, PUT it back — same bounded GET-sha → PUT 409-retry
+// contract as /save. Every item is validated by engine/validate-item.js (shared
+// with the UI and the fold job) and the whole merged file is re-checked before
+// the PUT: this endpoint is the first gate between the open endpoint and
+// rules/custom-items.json on dev.
+//
 // Secrets/vars come from the environment (wrangler.toml [vars] + `wrangler secret
 // put`); nothing sensitive is committed or shipped in the app. Stateless: the
 // worker holds nothing between calls.
+
+import { validateItem, validateItemsFile } from '../../engine/validate-item.js';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const GITHUB = 'https://api.github.com';
@@ -43,8 +56,8 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
-    if (url.pathname !== '/save' || request.method !== 'POST')
-      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save only' } });
+    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items'))
+      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save or POST /save-items only' } });
 
     // SAVE_KEY is required (fail closed): reject if unconfigured, missing, or
     // wrong. The key is compared in constant time (hash-then-compare, see
@@ -60,12 +73,6 @@ export default {
     } catch {
       return json(cors, 400, { ok: false, error: { code: 'invalid_json', message: 'body is not JSON' } });
     }
-    const character = body?.character;
-    if (!isValidCharacter(character))
-      return json(cors, 400, { ok: false, error: { code: 'invalid_character', message: 'not an ed-character/1 file' } });
-    const id = body?.id;
-    if (!isValidId(id))
-      return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
 
     const branch = env.GITHUB_BRANCH ?? 'character-data'; // NOT main/dev — never triggers a deploy
     const repo = `${env.GITHUB_OWNER}/${env.GITHUB_REPO}`;
@@ -79,6 +86,26 @@ export default {
     };
 
     try {
+      if (url.pathname === '/save-items') {
+        // Custom items are the shared catalog (ed-items/2). The delta shape and
+        // every posted item are validated first (fail fast, before any GitHub
+        // call), and the merged file is re-checked before the PUT — see
+        // upsertItems.
+        const checked = checkItemsDelta(body);
+        if (!checked.ok)
+          return json(cors, 400, { ok: false, error: { code: 'invalid_items', message: checked.errors[0] } });
+        await ensureBranch(repo, branch, gh); // first save only
+        const itemsPath = env.GITHUB_ITEMS_PATH ?? 'data/custom-items.json';
+        return await upsertItems(repo, branch, gh, itemsPath, body, cors);
+      }
+
+      const character = body?.character;
+      if (!isValidCharacter(character))
+        return json(cors, 400, { ok: false, error: { code: 'invalid_character', message: 'not an ed-character/1 file' } });
+      const id = body?.id;
+      if (!isValidId(id))
+        return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
+
       await ensureBranch(repo, branch, gh); // first save only
       const storePath = env.GITHUB_STORE ?? 'data/characters.json';
       return await upsertCharacter(repo, branch, gh, storePath, id, character, cors);
@@ -122,6 +149,77 @@ async function readStore(repo, storePath, branch, gh) {
   if (!res.ok) throw new Error(`read ${res.status}`);
   const obj = await res.json();
   return { sha: obj.sha, store: JSON.parse(base64ToString(obj.content)) };
+}
+
+// Upsert custom items into the shared catalog at `itemsPath` (ed-items/2): GET
+// the file, merge the posted `items` (custom wins on a name collision) and apply
+// the `delete` list, PUT it back — same bounded GET-sha → PUT 409-retry contract
+// as character saves. A missing file (first save) is created as a fresh catalog.
+// The whole merged file is re-checked with validateItemsFile before the PUT; a
+// merged file that no longer validates never reaches the branch.
+async function upsertItems(repo, branch, gh, itemsPath, delta, cors) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { sha, file } = await readItemsFile(repo, itemsPath, branch, gh);
+    for (const [name, item] of Object.entries(delta.items ?? {})) file.items[name] = item;
+    for (const name of delta.delete ?? []) delete file.items[name];
+    const checked = validateItemsFile(file);
+    if (!checked.ok)
+      return json(cors, 400, { ok: false, error: { code: 'invalid_items', message: checked.errors[0] } });
+    const content = toBase64(JSON.stringify(file, null, 2) + '\n');
+    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${itemsPath}`, {
+      method: 'PUT',
+      headers: { ...gh, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Save custom items (serverless)', content, sha, branch }),
+    });
+    if (res.ok) return ok(cors, res);
+    if (res.status !== 409) {
+      console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
+      return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
+    }
+  }
+  return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
+}
+
+// Read the custom-items catalog: `{ sha, file }` decoded from the contents API.
+// A 404 (catalog not created yet) yields a fresh empty ed-items/2 file with no sha.
+async function readItemsFile(repo, itemsPath, branch, gh) {
+  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${itemsPath}?ref=${branch}`, { headers: gh });
+  if (res.status === 404)
+    return {
+      sha: undefined,
+      file: {
+        schema: 'ed-items/2',
+        effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
+        source: 'custom',
+        notes: 'Player-created items, folded into rules/custom-items.json on dev by CI.',
+        items: {},
+      },
+    };
+  if (!res.ok) throw new Error(`read ${res.status}`);
+  const obj = await res.json();
+  return { sha: obj.sha, file: JSON.parse(base64ToString(obj.content)) };
+}
+
+// Validate the /save-items delta: `{ items, delete? }`. Returns `{ ok, errors }`;
+// on failure the first error becomes the 400 message. Every posted item goes
+// through the same engine/validate-item.js gate the UI and fold job use.
+function checkItemsDelta(body) {
+  const errors = [];
+  const items = body?.items;
+  const dels = body?.delete;
+  if (items === undefined && dels === undefined) {
+    errors.push('must provide items and/or delete');
+  }
+  if (items !== undefined && (typeof items !== 'object' || items === null || Array.isArray(items))) {
+    errors.push('items: must be an object of name → item');
+  } else {
+    for (const [name, item] of Object.entries(items ?? {})) {
+      for (const e of validateItem(name, item).errors) errors.push(`items["${name}"]: ${e}`);
+    }
+  }
+  if (dels !== undefined && (!Array.isArray(dels) || dels.some((d) => typeof d !== 'string' || d === '')))
+    errors.push('delete: must be an array of non-empty names');
+  return { ok: errors.length === 0, errors };
 }
 
 function ok(cors, res) {

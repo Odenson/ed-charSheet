@@ -1,11 +1,14 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { saveServer, SaveError } from '../store-server.js';
+import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits } from '../store-custom-items.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
+import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-edit-meta.js';
@@ -54,6 +57,9 @@ export class EdApp extends LitElement {
   // The SAVE_KEY for GitHub saves. Held in memory for the session only — never
   // localStorage (runbook §0). A plain field, not reactive state.
   _saveKey = null;
+  // A custom-item save interrupted by the key prompt (saveKey absent). Replayed
+  // once the prompt confirms; cleared on any prompt close.
+  _pendingCustomSave = null;
 
   static styles = css`
     :host {
@@ -161,7 +167,7 @@ export class EdApp extends LitElement {
     super.connectedCallback();
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
-      const { label, step, karma } = e.detail;
+      const { label, step, karma, apply, kind, difficulty } = e.detail;
       const stepRow = this._model?.stepByNumber?.[step];
       if (!stepRow) return;
       // Resolve the Karma die's step row (D6) so the modal can offer +D6.
@@ -169,19 +175,56 @@ export class EdApp extends LitElement {
         karma?.step != null && this._model?.stepByNumber?.[karma.step]
           ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
           : null;
-      this._roll = { label, stepRow, karma: karmaCtx };
+      this._roll = {
+        label,
+        stepRow,
+        karma: karmaCtx,
+        apply: apply ?? null,
+        difficulty: difficulty ?? null,
+        mods: this._rollTimeMods({ kind, apply }),
+      };
+    });
+    // A roll modal with an apply context (e.g. a Recovery test) hands its total
+    // back up; apply it to the character's inputs via the pure engine and
+    // re-derive. The UI never computes the value.
+    this.addEventListener('ed-roll-apply', (e) => {
+      const { action, result, difficulty } = e.detail;
+      if (action === 'recovery-heal') {
+        this._editHealth(applyHealth(this._character?.resources?.health ?? {}, { damage: -result, recoveriesUsed: 1 }));
+        this._roll = null; // button-driven: apply and close
+      } else if (action === 'knockdown-result') {
+        // A Knockdown test resolves itself at roll time — no verify button: a
+        // failed test knocks the character down. The big hit's damage and any
+        // Wound were already applied by the damage modal; this stores the
+        // knocked-down input that the engine's condition effect reads. The roll
+        // modal stays open so the player sees the roll and its outcome line,
+        // then dismisses it.
+        this._editHealth({ knockedDown: knockdownOutcome(result, difficulty) === 'down' });
+      }
     });
     // A view edited character inputs. Apply the patch, persist the overlay, and
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
+    this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
+    // A custom-item save paused for the key replays first; otherwise retry the
+    // character save. The pending is consumed either way.
     this.addEventListener('ed-save-key', (e) => {
       this._saveKey = e.detail?.key || null;
       this._keyPrompt = false;
-      if (this._saveKey) this._save();
+      const pending = this._pendingCustomSave;
+      this._pendingCustomSave = null;
+      if (!this._saveKey) return;
+      if (pending) this._saveCustomItems(pending.items, pending.delete);
+      else this._save();
     });
+    // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3).
+    // 'draft' writes the overlay instantly (resilient) and re-derives so pending
+    // items resolve this session; 'save' POSTs to /save-items with the session
+    // key (re-prompting via ed-save-key if absent), reconciles on success.
+    this.addEventListener('ed-edit-custom-items', (e) => this._editCustomItems(e.detail));
     // The character picker dispatched a choice — load that character.
     this.addEventListener('load-character', (e) => {
       if (e.detail?.id) this._loadCharacter(e.detail.id);
@@ -227,7 +270,7 @@ export class EdApp extends LitElement {
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
-      this._dirty = hasPendingEdits(id);
+      this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
       this._picker = false;
       this._noSelection = false;
       this._error = null;
@@ -277,6 +320,123 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
+  // A view changed the character's current health (damage / wounds / recovery
+  // tests used / knocked-down state). Same inputs-only flow: merge the patch
+  // into the health inputs, persist the overlay, mark the file dirty, and
+  // re-derive so the standing (conscious / unconscious / dead) and headroom
+  // recompute from the new damage. The overlay always stores the FULL merged
+  // health object — a partial patch (e.g. `knockedDown: true`) must never
+  // replace the recorded damage/wounds on the next replay.
+  _editHealth(health) {
+    if (!this._character || !health) return;
+    const merged = { ...(this._character.resources?.health || {}), ...health };
+    this._character = {
+      ...this._character,
+      resources: {
+        ...(this._character.resources || {}),
+        health: merged,
+      },
+    };
+    saveHealthEdits(merged, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3). The
+  // view only dispatches the delta; this handler owns persistence.
+  //   'draft' — write the `ed-custom-items` overlay instantly (a pending item
+  //     survives a reload and an offline worker) and re-derive so the picker /
+  //     catalog resolve it this session. Data still flows down through render.
+  //   'save'  — POST the delta to /save-items with the session save key (re-prompt
+  //     if absent, replaying on confirm); on success reconcile the overlay (the
+  //     branch read becomes the truth), re-read the catalog, and toast the commit.
+  _editCustomItems({ items, delete: deleteNames, action }) {
+    if (!this._character) return;
+    if (action === 'draft') {
+      // Overlay write is instant and resilient; the committed catalog is
+      // unchanged, so re-apply the overlay to it in place (no network fetch).
+      // A net-empty delta (add-then-remove) clears the overlay — nothing pending.
+      const delta = { items: items ?? {}, delete: deleteNames ?? [] };
+      if (Object.keys(delta.items).length || delta.delete.length) saveCustomEdits(delta);
+      else reconcileCustomEdits();
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      this._rules = {
+        ...this._rules,
+        customItemsFile: applyCustomEdits(this._rules.customItemsCommittedFile, loadCustomEdits()),
+      };
+      this._model = deriveModel(this._character, this._rules);
+      return;
+    }
+    if (action !== 'save') return;
+    if (!Object.keys(items ?? {}).length && !(deleteNames ?? []).length) return;
+    if (!this._saveKey) {
+      this._pendingCustomSave = { items: items ?? {}, delete: deleteNames ?? [] };
+      this._keyPrompt = true;
+      return;
+    }
+    this._saveCustomItems(items ?? {}, deleteNames ?? []);
+  }
+
+  // The /save-items POST + catalog re-read (shared by the modal's Save and the
+  // key-prompt replay). The overlay reconciles inside the re-read once the
+  // branch reflects the delta (see _refreshCustomItems); on failure the overlay
+  // keeps the delta so nothing is lost.
+  async _saveCustomItems(items, deleteNames) {
+    this._saving = true;
+    this._saveError = null;
+    this._saveOk = null;
+    try {
+      const commit = await saveCustomItems(items, { saveKey: this._saveKey, deleteNames });
+      this._saveOk = commit; // { sha, url }
+      await this._refreshCustomItems({ savedItems: items, deletedNames: deleteNames });
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+    } catch (e) {
+      if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
+      this._saveError = e?.message ? String(e.message) : String(e);
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  // Re-read the custom-item catalog from the branch and re-derive the model with
+  // the (possibly pending) overlay applied — keeps the picker, the merged
+  // itemCatalog and the manager modal's committed baseline consistent.
+  // A just-confirmed save passes its delta here: the overlay is reconciled only
+  // once the re-read actually reflects it, so a git-consistent read that lags
+  // the PUT never blanks a freshly saved item (PLAN-CUSTOM-ITEMS §6.6 P8.4).
+  async _refreshCustomItems({ savedItems, deletedNames } = {}) {
+    try {
+      const committed = await loadCustomItems();
+      const committedItems = committed?.items ?? {};
+      const reflected =
+        (!savedItems || Object.keys(savedItems).every((n) => committedItems[n] != null)) &&
+        (!deletedNames || deletedNames.every((n) => committedItems[n] == null));
+      if (reflected) reconcileCustomEdits();
+      this._rules = {
+        ...this._rules,
+        customItemsCommittedFile: committed,
+        customItemsFile: applyCustomEdits(committed, loadCustomEdits()),
+      };
+      this._model = deriveModel(this._character, this._rules);
+    } catch (e) {
+      this._saveError = `Couldn't refresh custom items: ${e?.message ? String(e.message) : String(e)}`;
+    }
+  }
+
+  // Roll-time modifiers from live conditions. While Knocked Down every test
+  // takes the condition's −3 (PG p.389: "suffers a –3 penalty to his tests" —
+  // the worked example includes the next Initiative test, so there are no
+  // Action-only or Initiative/Knockdown/Recovery exemptions). The only roll
+  // that never takes it is the Karma die, which is a die roll, not a test. The
+  // value comes from the engine's synthesized condition effect
+  // (KNOCKED_DOWN_EFFECT) — a static number is never typed here, and the
+  // penalty is applied at roll time, never folded into a stored/derived stat.
+  _rollTimeMods({ kind } = {}) {
+    if (!this._character?.resources?.health?.knockedDown) return [];
+    if (kind === 'karma') return [];
+    return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
+  }
+
   // Save to GitHub: POST the merged, inputs-only character to the worker, which
   // commits it to the character-data branch (store-server.js). Requires a
   // SAVE_KEY — if none is set for the session, open the key prompt first; the
@@ -289,14 +449,23 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     try {
-      const commit = await saveServer(this._character, { saveKey: this._saveKey, id: this._characterId });
+      let commit = await saveServer(this._character, { saveKey: this._saveKey, id: this._characterId });
       reconcileOverlay(undefined, this._characterId);
-      this._dirty = false;
+      // The save dot also reflects a pending custom-item delta, so a confirmed
+      // Save commits that too — /save-items POST, reconcile, re-read the catalog.
+      const pending = loadCustomEdits();
+      if (pending && (Object.keys(pending.items ?? {}).length || (pending.delete ?? []).length)) {
+        const customCommit = await saveCustomItems(pending.items ?? {}, { saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
+        commit = customCommit; // last commit link wins
+        await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
+      }
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
       this._saveOk = commit; // { sha, url }
     } catch (e) {
       // A rejected key: drop it so the next Save re-prompts.
       if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
       this._saveError = e?.message ? String(e.message) : String(e);
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
     } finally {
       this._saving = false;
     }
@@ -330,7 +499,9 @@ export class EdApp extends LitElement {
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
-      this._dirty = false;
+      // Discarding clears the character overlay only; a pending custom-item delta
+      // is a separate, global overlay and survives.
+      this._dirty = hasCustomPendingEdits();
       this._saveError = null;
     } catch (e) {
       this._saveError = `Couldn't reload the saved version: ${e?.message ? String(e.message) : String(e)}`;
@@ -358,7 +529,13 @@ export class EdApp extends LitElement {
       case 'spells':
         return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
       case 'equipment':
-        return html`<ed-equipment .model=${m} .editMode=${this._editMode}></ed-equipment>`;
+        return html`<ed-equipment
+          .model=${m}
+          .editMode=${this._editMode}
+          .customCommitted=${m.customCommittedCatalog}
+          .customOverlay=${loadCustomEdits()}
+          .customCanonKeys=${m.customCanonKeys}
+        ></ed-equipment>`;
       case 'notes':
         return html`<div class="stub"><span class="big">❋</span>Notes — a running history of the character. Coming soon.</div>`;
       default:
@@ -468,10 +645,13 @@ export class EdApp extends LitElement {
             .label=${this._roll.label}
             .stepRow=${this._roll.stepRow}
             .karma=${this._roll.karma}
+            .apply=${this._roll.apply}
+            .difficulty=${this._roll.difficulty}
+            .mods=${this._roll.mods}
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}
-      ${this._keyPrompt ? html`<ed-save-key @close=${() => (this._keyPrompt = false)}></ed-save-key>` : ''}
+      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; }}></ed-save-key>` : ''}
       ${this._confirmDiscard
         ? html`<ed-confirm
             heading="Discard local changes?"

@@ -1,0 +1,60 @@
+name: Fold custom items
+
+# Durability/versioning only: mirrors the player-created catalog
+# (`data/custom-items.json` on character-data) into `rules/custom-items.json` on
+# dev. The app never depends on this for availability — the live read is the
+# branch (store.js); the bundled rules file is just the offline fallback. The
+# dev push this makes triggers deploy-pages.yml, which is the fold's point: the
+# folded rules ride the next dev -> main release PR into production.
+#
+# The ephemeral GITHUB_TOKEN does the writing (contents: write) and opens a
+# failure issue (issues: write) — no new secrets. main/dev are unprotected, so
+# the direct dev push works (see PLAN-CUSTOM-ITEMS.md §8 Phase A).
+#
+# Trigger gotchas (both documented, see PLAN-CUSTOM-ITEMS.md §6.6):
+#   • A `push` trigger only fires if THIS workflow file exists on the branch
+#     being pushed — character-data is a data-only branch, so this file must be
+#     committed there too (once; later worker PUT commits inherit it in the
+#     tree). Until it is, the auto-fold on save does not run.
+#   • The manual "Run workflow" button (workflow_dispatch) only appears once
+#     this file is on the DEFAULT branch (`main`) — i.e. after the release PR.
+#   • The job checks out `dev` explicitly: the fold script runs the same code
+#     version dev serves, and the pushed branch (character-data) has no
+#     tools/ or engine/ to run.
+
+on:
+  push:
+    branches: [character-data]
+    paths: [data/custom-items.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+# Serialize folds; a second fold waits rather than cancelling the first (both
+# would race the same rules file on dev).
+concurrency:
+  group: fold-custom-items
+  cancel-in-progress: false
+
+jobs:
+  fold:
+    runs-on: ubuntu-latest
+    steps:
+      # The fold script talks to the GitHub contents API (never inspects the
+      # working tree), but the script + shared validator must EXIST on the
+      # runner — hence the checkout of dev, which is also the branch the folded
+      # file must agree with.
+      # checkout@v5 runs on the Node 24 runtime — GitHub deprecates node20-based
+      # actions (the "old Node.js 20 [deprecated]" warning on the fold job).
+      - name: Check out dev (fold script + shared validator)
+        uses: actions/checkout@v5
+        with:
+          ref: dev
+      - name: Fold custom items to dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: Odenson
+          GITHUB_REPO: ed-charSheet
+        run: node tools/fold-custom-items.mjs

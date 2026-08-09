@@ -10,6 +10,7 @@ import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engi
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent } from './engine/legend-spent.js';
+import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
   defense,
@@ -20,6 +21,7 @@ import {
   unconsciousnessRating,
   deathRating,
   recoveryTests,
+  woundThreshold,
   carryingCapacity,
   initiative,
   knockdown,
@@ -28,6 +30,7 @@ import {
   karmaUse,
   talentKarmaUse,
 } from './engine/characteristics.js';
+import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
 // Discipline — so they count as "required" (Discipline) talents, not options.
@@ -155,6 +158,40 @@ export async function loadCharacters() {
   return loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
 }
 
+const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-items.json?ref=${CHARACTER_BRANCH}`;
+const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/custom-items.json`;
+
+/**
+ * Load the player-created custom-item catalog (ed-items/2, PLAN-CUSTOM-ITEMS).
+ * Mirrors loadCharacters: on Pages read `data/custom-items.json` LIVE from the
+ * character-data branch — contents API first (git-consistent, reflects the
+ * latest /save-items commit), raw CDN cache-busted fallback — and the bundled
+ * `rules/custom-items.json` as the offline fallback (unlike the character store
+ * the bundle may carry a folded copy). Elsewhere read the gitignored
+ * `./data/custom-items.json` working copy, then the bundled catalog. Never
+ * throws: a missing/unreadable catalog is an empty one.
+ */
+export async function loadCustomItems() {
+  const bundled = () => loadJSONOptional('./rules/custom-items.json', { schema: 'ed-items/2', items: {} });
+  if (!onPages()) return (await loadJSONOptional('./data/custom-items.json', null)) ?? bundled();
+  try {
+    const res = await fetch(CUSTOM_ITEMS_API_URL, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return await res.json(); // git-consistent: reflects the latest save
+  } catch {
+    /* network/CORS hiccup — fall through to the CDN */
+  }
+  try {
+    const res = await fetch(`${CUSTOM_ITEMS_RAW_URL}?t=${Date.now()}`);
+    if (res.ok) return await res.json();
+  } catch {
+    /* fall through to the bundled catalog */
+  }
+  return bundled();
+}
+
 // --- Persistence (Phase 2) -------------------------------------------------
 // ARCHITECTURE §7/§10: localStorage now, file export/import later. We store an
 // *edits overlay* — only the inputs the player changed — not a whole character
@@ -209,9 +246,23 @@ export function saveWealthEdits(wealth, id) {
   return edits;
 }
 
+/**
+ * Persist the character's health inputs to the edits overlay. Health is pure
+ * input — current Damage, Wounds, and Recovery tests used today — so the object
+ * is stored as-is; the ratings and the conscious/dead standing are derived by
+ * the engine (store.js + engine/health.js), never stored. "Store only inputs,
+ * never derived" holds.
+ */
+export function saveHealthEdits(health, id) {
+  const edits = loadEdits(id);
+  edits.health = health;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -240,12 +291,21 @@ export function reconcileOverlay(categories = SAVED_CATEGORIES, id) {
 }
 
 /** Apply the saved edits overlay onto a freshly-fetched character. */
-function applyEdits(character, edits) {
+export function applyEdits(character, edits) {
   if (!edits) return character;
   let next = character;
   if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
   if (edits.items) next = { ...next, items: edits.items };
   if (edits.wealth) next = { ...next, wealth: edits.wealth };
+  if (edits.health) {
+    next = {
+      ...next,
+      resources: {
+        ...(next.resources || {}),
+        health: { ...(next.resources?.health || {}), ...edits.health },
+      },
+    };
+  }
   return next;
 }
 
@@ -276,10 +336,18 @@ export async function loadCharacter(id, { store } = {}) {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
+  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
+  // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
+  // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
+  // while the `ed-custom-items` overlay (pending, unsaved edits) is applied on
+  // top as `customItemsFile` so a pending item renders and survives until its
+  // confirmed save.
+  const customItemsCommittedFile = await loadCustomItems();
+  const customItemsFile = applyCustomEdits(customItemsCommittedFile, loadCustomEdits());
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -288,7 +356,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -387,7 +455,14 @@ export function deriveModel(character, rules) {
   // *equipped* items so they fold onto armour/defence/initiative exactly like
   // racial and discipline effects. Unknown names degrade gracefully (kept, but
   // contribute nothing) so a typo or a future custom item never breaks the sheet.
-  const itemCatalog = itemsFile?.items ?? {};
+  const canonItems = itemsFile?.items ?? {};
+  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS) merge LAST so a player-created
+  // item wins over a canon entry of the same name. The merged map is what owned
+  // items and the add-picker resolve against; the raw custom map is exposed
+  // separately as `customCatalog` for the manager modal to edit (and already
+  // carries any pending `ed-custom-items` overlay edits from loadCharacter).
+  const customItems = customItemsFile?.items ?? {};
+  const itemCatalog = { ...canonItems, ...customItems };
   const threadItemsCatalog = threadItemsFile?.items ?? {};
   // A thread item resolves from rules/thread-items.json (schema ed-thread-items/1):
   // its `effects` are the unthreaded `base` effects plus the effects of each Thread
@@ -487,17 +562,29 @@ export function deriveModel(character, rules) {
     durabilityRank: (d.talents ?? []).find((t) => t.name === 'Durability')?.rank ?? 0,
   }));
   const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
+  // Knocked Down is a live condition, not a stored/derived static number: it
+  // shows in Active Effects and is applied as a roll-time −3 to every test
+  // (PG p.389), and its −3 to Physical/Mystic Defense folds into the derived
+  // ratings below. It exists purely because the input is set — clear
+  // `knockedDown` and it folds back out of every derived readout.
+  const conditionEffects = character.resources?.health?.knockedDown
+    ? [{ ...KNOCKED_DOWN_EFFECT, origin: { kind: 'condition', name: 'Knocked Down' } }]
+    : [];
+  const conditionDefenseEffects = character.resources?.health?.knockedDown
+    ? KNOCKED_DOWN_DEFENSE_EFFECTS.map((e) => ({ ...e, origin: { kind: 'condition', name: 'Knocked Down' } }))
+    : [];
   const touVal = attrVal('Toughness');
 
   const characteristics = {
-    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), activeEffects, lookupChar),
-    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), activeEffects, lookupChar),
+    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), [...activeEffects, ...conditionDefenseEffects], lookupChar),
+    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), [...activeEffects, ...conditionDefenseEffects], lookupChar),
     socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
     physicalArmor: physicalArmor(activeEffects),
     mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),
     unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
     death: deathRating(touVal, healthEffects, lookupChar),
     recoveries: recoveryTests(touVal, healthEffects, lookupChar),
+    woundThreshold: woundThreshold(touVal, healthEffects, lookupChar),
     carryingCapacity: carryingCapacity(attrVal('Strength'), activeEffects, lookupChar),
     initiative: initiative(dexStep, activeEffects),
     knockdown: knockdown(strStep, activeEffects),
@@ -604,6 +691,15 @@ export function deriveModel(character, rules) {
     stepByNumber,
     items,
     itemCatalog,
+    // Player-created items only (ed-items/2) — the manager modal's edit set.
+    // The add-picker still sees them: `itemCatalog` merges canon + custom, custom
+    // winning on a name collision.
+    customCatalog: customItems,
+    // The branch-truth custom set (pre-overlay) and the canon item names — the
+    // manager modal's delta baseline and collision-warning list respectively
+    // (docs/PLAN-CUSTOM-ITEMS.md §5.2 / §5.4).
+    customCommittedCatalog: customItemsCommittedFile?.items ?? {},
+    customCanonKeys: Object.keys(canonItems),
     // Thread-item catalogue (rules/thread-items.json) — the add-picker offers its
     // entries just like items; the resolved `items` carry the `thread` metadata.
     threadItemCatalog,
@@ -613,5 +709,13 @@ export function deriveModel(character, rules) {
     skills,
     knacks,
     traits: character.traits ?? [],
+    // Health standing: the stored damage/wounds inputs, run through the pure
+    // engine (engine/health.js) against the derived Unconsciousness/Death ratings
+    // — conscious/unconscious/dead state + headroom. Derived, never stored.
+    healthState: damageState(character.resources?.health ?? {}, characteristics),
+    // Every active effect for the Active Effects panel: the always-on fold
+    // (race/discipline/equipped items, each tagged with its origin) plus any
+    // live condition effect (Knocked Down). All derived, never stored.
+    activeEffects: [...activeEffects, ...conditionEffects],
   };
 }

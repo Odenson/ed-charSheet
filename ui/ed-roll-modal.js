@@ -2,12 +2,16 @@
 // die's result, exploding dice chained as the same die again, and the total.
 import { LitElement, html, css } from 'lit';
 import { rollStep } from '../engine/dice.js';
+import { knockdownOutcome } from '../engine/health.js';
 
 export class EdRollModal extends LitElement {
   static properties = {
     label: {},
     stepRow: { attribute: false },
     karma: { attribute: false }, // { grants:[{scope,via,summary}], available, stepRow } | null
+    apply: { attribute: false }, // { action, label } | undefined — show an "Apply" button
+    difficulty: { attribute: false }, // { value } | null — "vs Difficulty N" comparison
+    mods: { attribute: false }, // [{ label, value }] | null — roll-time modifiers
     _result: { state: true },
     _karmaResult: { state: true },
     _karmaOn: { state: true },
@@ -45,11 +49,17 @@ export class EdRollModal extends LitElement {
     .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
     .hint { font-size: 0.68rem; color: light-dark(#8a93a3, #6b7688); }
     button.again { font: inherit; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#c9ccd3, #3a4150); background: none; color: inherit; cursor: pointer; }
+    button.appbtn { font: inherit; font-size: 0.8rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#d9944e, #d9944e); background: light-dark(#f6e9dc, #3a2a17); color: var(--accent, #b26a00); cursor: pointer; }
+    .appfoot { display: flex; align-items: center; gap: 8px; }
     .karma-grp .glbl { color: var(--karma); }
     .karma-ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
     .kbtn { font: inherit; font-size: 0.78rem; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--karma); background: none; color: var(--karma); cursor: pointer; }
     .kbtn.on { background: var(--karma-bg); font-weight: 500; }
     .kavail { font-size: 0.7rem; color: light-dark(#8a93a3, #6b7688); }
+    .modchip { font-size: 0.68rem; font-weight: 500; color: light-dark(#5a6472, #93a0b3); background: light-dark(#f1f2f5, #1b1f27); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+    .outcome { margin-top: 8px; font-size: 0.78rem; font-weight: 500; text-align: right; }
+    .outcome.ok { color: light-dark(#3d6b4a, #82c39a); }
+    .outcome.fail { color: light-dark(#a63a2b, #e0846f); }
   `;
 
   connectedCallback() {
@@ -79,6 +89,10 @@ export class EdRollModal extends LitElement {
     this._result = rollStep(this.stepRow);
     // Re-roll the Karma die too if it's currently spent.
     this._karmaResult = this._karmaOn && this.karma?.stepRow ? rollStep(this.karma.stepRow) : null;
+    // A Knockdown test resolves itself: the moment the dice land, the outcome
+    // is decided and applied — there is no verify button. A failed test knocks
+    // the character down; the app re-derives that state from this result.
+    if (this.apply?.action === 'knockdown-result') this._apply();
   }
 
   _toggleKarma() {
@@ -99,6 +113,53 @@ export class EdRollModal extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
+  // When the roll carries an apply context (e.g. a Recovery test), hand the
+  // total result back up with that action so the app can apply it. The result
+  // is the full total including any roll-time modifiers; the difficulty (when
+  // the roll is against one) rides along so the app re-derives the outcome
+  // through the engine — the view never decides game state.
+  _apply() {
+    this.dispatchEvent(
+      new CustomEvent('ed-roll-apply', {
+        detail: {
+          action: this.apply?.action ?? null,
+          result: this._grandTotal(),
+          difficulty: this.difficulty?.value ?? null,
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  // The full total: dice + Karma die + any roll-time modifiers.
+  _grandTotal() {
+    const r = this._result;
+    if (!r) return 0;
+    const modSum = (this.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
+    return r.total + (this._karmaResult?.total ?? 0) + modSum;
+  }
+
+  // The comparison against a difficulty, when one is set. For a Knockdown test
+  // it uses the engine's outcome wording (Stayed up / Knocked down); any other
+  // difficulty roll reads Success / Failure. Display only — the app re-derives
+  // the real outcome from the apply event.
+  _outcome() {
+    const d = this.difficulty?.value;
+    if (d == null || !this._result) return null;
+    const total = this._grandTotal();
+    if (this.apply?.action === 'knockdown-result') {
+      return knockdownOutcome(total, d) === 'down' ? { word: 'Knocked down', ok: false } : { word: 'Stayed up', ok: true };
+    }
+    return total >= d ? { word: 'Success', ok: true } : { word: 'Failure', ok: false };
+  }
+
+  _applyLabel() {
+    const o = this._outcome();
+    if (this.apply?.action === 'knockdown-result' && o) return o.word;
+    return this.apply?.label ?? 'Apply result';
+  }
+
   render() {
     const r = this._result;
     if (!this.stepRow || !r) return html``;
@@ -108,7 +169,7 @@ export class EdRollModal extends LitElement {
           <div class="head">
             <div>
               <div class="title">⚄ ${this.label}</div>
-              <div class="sub">Step ${r.step} · ${r.dice ?? ''} · exploding</div>
+              <div class="sub">Step ${r.step} · ${r.dice ?? ''} · exploding${this.difficulty?.value != null ? html` · vs Difficulty ${this.difficulty.value}` : ''}</div>
             </div>
             <button class="x" @click=${this._close} aria-label="Close">✕</button>
           </div>
@@ -147,11 +208,23 @@ export class EdRollModal extends LitElement {
                   <span class="gsub">${this._karmaResult.total}</span>
                 </div>`
               : ''}
+            ${(this.mods ?? []).length
+              ? html`<div class="grp">
+                  <span class="glbl">Mods</span>
+                  <span class="chain">
+                    ${(this.mods ?? []).map(
+                      (m) => html`<span class="modchip" title=${m.label}>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}</span>`,
+                    )}
+                  </span>
+                  <span class="gsub">${(this.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0)}</span>
+                </div>`
+              : ''}
           </div>
           <div class="total">
             <span class="sub">Total</span>
-            <span class="n">${r.total + (this._karmaResult?.total ?? 0)}</span>
+            <span class="n">${this._grandTotal()}</span>
           </div>
+          ${this._outcome() ? html`<div class="outcome ${this._outcome().ok ? 'ok' : 'fail'}">vs Difficulty ${this.difficulty.value} — ${this._outcome().word}</div>` : ''}
           ${this.karma?.grants?.length
             ? html`<div class="karma-ctl">
                 <button
@@ -164,7 +237,12 @@ export class EdRollModal extends LitElement {
             : ''}
           <div class="foot">
             <span class="hint">Max on a die explodes: reroll and add.</span>
-            <button class="again" @click=${this._roll}>Roll again</button>
+            ${this.apply && this.apply.action !== 'knockdown-result'
+              ? html`<span class="appfoot">
+                  <button class="appbtn" @click=${this._apply}>${this._applyLabel()}</button>
+                  <button class="again" @click=${this._roll}>Roll again</button>
+                </span>`
+              : html`<button class="again" @click=${this._roll}>Roll again</button>`}
           </div>
         </div>
       </div>

@@ -13,13 +13,11 @@
 // healing-aid / thread-item); it is never a stored per-item flag. Item detail
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
+import { pickItemKeys, PICKER_LABELS } from './picker.js';
 
 const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid', 'thread-item']);
-const KLABEL = {
-  weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
-  gear: 'Gear', 'magic-item': 'Magic item', 'blood-charm': 'Blood charm', 'healing-aid': 'Healing aid',
-  'thread-item': 'Thread item',
-};
+// Kind labels shared with the pure picker module (ui/picker.js).
+const KLABEL = PICKER_LABELS;
 // Sections group items by function; magic is a property that can appear in any of
 // them (a thread weapon glows in Weapons, a light quartz glows in Gear). Thread
 // items get their own section so the woven rank is legible across all of them.
@@ -87,12 +85,19 @@ export class EdEquipment extends LitElement {
   static properties = {
     model: { attribute: false },
     editMode: { attribute: false },
-    _modal: { state: true },      // owned item name whose detail is open
-    _addOpen: { state: true },    // searchable picker visible
-    _query: { state: true },      // picker search text
-    _hi: { state: true },         // highlighted picker result index
-    _coinMenu: { state: true },   // "add coin" menu open
-    _shownCoins: { state: true }, // coin keys pinned visible at 0 (edit mode)
+    // Custom-item manager modal inputs (data flows down from ed-app): the
+    // branch-truth custom catalog, the pending `ed-custom-items` delta, and the
+    // canon item names for the collision warning.
+    customCommitted: { attribute: false },
+    customOverlay: { attribute: false },
+    customCanonKeys: { attribute: false },
+    _modal: { state: true },          // owned item name whose detail is open
+    _addOpen: { state: true },        // searchable picker visible
+    _query: { state: true },          // picker search text
+    _hi: { state: true },             // highlighted picker result index
+    _coinMenu: { state: true },       // "add coin" menu open
+    _shownCoins: { state: true },     // coin keys pinned visible at 0 (edit mode)
+    _customItemsOpen: { state: true }, // custom-item manager modal open
   };
 
   constructor() {
@@ -103,18 +108,30 @@ export class EdEquipment extends LitElement {
     this._hi = 0;
     this._coinMenu = false;
     this._shownCoins = new Set();
+    this._customItemsOpen = false;
     this._onKeydown = (e) => {
       if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
+      else if (e.key === 'Escape' && this._addOpen) { e.stopPropagation(); this._closePicker(); }
+    };
+    this._onPointerDown = (e) => {
+      // A pointerdown outside the picker closes it (composedPath spans the shadow
+      // root, so shadow-internal clicks are seen too); clicking the search input
+      // or a result row keeps it open for typing / multi-add.
+      if (!this._addOpen) return;
+      const combo = this.renderRoot.querySelector('.combo');
+      if (!combo || !e.composedPath().includes(combo)) this._closePicker();
     };
   }
 
   connectedCallback() {
     super.connectedCallback();
     document.addEventListener('keydown', this._onKeydown);
+    document.addEventListener('pointerdown', this._onPointerDown);
   }
 
   disconnectedCallback() {
     document.removeEventListener('keydown', this._onKeydown);
+    document.removeEventListener('pointerdown', this._onPointerDown);
     super.disconnectedCallback();
   }
 
@@ -124,6 +141,15 @@ export class EdEquipment extends LitElement {
   _closeModal() {
     this.renderRoot.activeElement?.blur();
     this._modal = null;
+  }
+
+  // Closing the add-picker (Done / Escape / click outside) resets it so the next
+  // open starts clean, and blurs so an Escape close leaves no :focus-visible ring.
+  _closePicker() {
+    this._addOpen = false;
+    this._query = '';
+    this._hi = 0;
+    this.renderRoot.activeElement?.blur();
   }
 
   updated(changed) {
@@ -341,6 +367,8 @@ export class EdEquipment extends LitElement {
   // --- picker ---
   // Thread items live in their own catalogue (rules/thread-items.json); the picker
   // offers both catalogues, tagging each with its kind for the left-hand label.
+  // Selection lives in the pure ui/picker.js module — custom items sort first so
+  // a freshly saved item surfaces within the 50-result cap (PLAN-CUSTOM-ITEMS §6.6 P8.4).
   _catalogs() {
     return {
       ...(this.model?.itemCatalog ?? {}),
@@ -348,31 +376,18 @@ export class EdEquipment extends LitElement {
     };
   }
   _matches() {
-    const q = this._query.trim().toLowerCase();
-    const catalog = this._catalogs();
-    return Object.keys(catalog)
-      .filter((n) => {
-        if (!q) return true;
-        const it = catalog[n];
-        // Effect entries are objects carrying a `summary`; reduce every catalog
-        // shape (plain `effects`, thread `base`/`threadRanks`) to strings first,
-        // so the search always compares text.
-        const summaries = [
-          ...(it.effects ?? []).map((e) => e.summary ?? ''),
-          ...(it.base?.effects ?? []).map((e) => e.summary ?? ''),
-          ...(it.threadRanks ?? []).flatMap((r) => r.effects ?? []).map((e) => e.summary ?? ''),
-        ];
-        return n.toLowerCase().includes(q) || (KLABEL[it.kind] || '').toLowerCase().includes(q) ||
-          summaries.some((s) => s.toLowerCase().includes(q));
-      })
-      .slice(0, 50);
+    return pickItemKeys({
+      catalog: this._catalogs(),
+      customNames: Object.keys(this.model?.customCatalog ?? {}),
+      query: this._query,
+    });
   }
   _pickKeydown(e) {
     const list = this._matches();
     if (e.key === 'ArrowDown') { this._hi = Math.min(this._hi + 1, list.length - 1); e.preventDefault(); }
     else if (e.key === 'ArrowUp') { this._hi = Math.max(this._hi - 1, 0); e.preventDefault(); }
     else if (e.key === 'Enter' && list[this._hi]) { this._add(list[this._hi]); }
-    else if (e.key === 'Escape') { this._addOpen = false; }
+    else if (e.key === 'Escape') { this._closePicker(); }
   }
 
   _itemRow(it) {
@@ -627,9 +642,10 @@ export class EdEquipment extends LitElement {
                           : html`<div class="nores">No item matches “${this._query}”.</div>`}
                       </div>
                     </div>
-                    <button class="addbtn" @click=${() => { this._addOpen = false; this._query = ''; }}>Done</button>
+                    <button class="addbtn" @click=${() => this._closePicker()}>Done</button>
                   `
                 : html`<button class="addbtn" @click=${() => { this._addOpen = true; this._query = ''; this._hi = 0; }}>＋ Add item</button>`}
+              <button class="addbtn" @click=${() => (this._customItemsOpen = true)}>＋ Custom items</button>
             </div>
           `
         : ''}
@@ -640,6 +656,15 @@ export class EdEquipment extends LitElement {
       </div>
 
       ${modalItem ? this._detailModal(modalItem) : ''}
+
+      ${this._customItemsOpen
+        ? html`<ed-custom-item
+            .committed=${this.customCommitted ?? {}}
+            .overlay=${this.customOverlay}
+            .canonKeys=${this.customCanonKeys ?? []}
+            @close=${() => (this._customItemsOpen = false)}
+          ></ed-custom-item>`
+        : ''}
     `;
   }
 }

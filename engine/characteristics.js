@@ -325,6 +325,19 @@ export function recoveryTests(toughnessValue, effects, lookup) {
   return healthRating('RecoveryTests', row.recovery, effects);
 }
 
+/**
+ * Wound Threshold (the table `wound` column), from Toughness. No adept bonus in
+ * the core rules; effects can still adjust it (taxonomy `WoundThreshold`). The
+ * Threshold is the amount of damage a *single attack* must deal to Wound the
+ * character — the rating itself, compared against damage, not a current value.
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ */
+export function woundThreshold(toughnessValue, effects, lookup) {
+  const row = lookup(toughnessValue);
+  if (!row || typeof row.wound !== 'number') return null;
+  return healthRating('WoundThreshold', row.wound, effects);
+}
+
 // --- Carrying Capacity (Strength-driven) --------------------------------------
 
 // Strength drives Carrying Capacity.

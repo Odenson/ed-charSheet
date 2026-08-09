@@ -14,10 +14,15 @@ app**.
 
 ## 1. What it is
 
-One tiny write endpoint — a single Cloudflare Worker (the decided host, §4.1;
-Deno Deploy and a Vercel function are portability alternatives) — that commits
-`data/character.json` to the repo **on the app's behalf**, so the GitHub
-credential never enters the browser.
+Two tiny write endpoints — a single Cloudflare Worker (the decided host, §4.1;
+Deno Deploy and a Vercel function are portability alternatives) — that commit
+`data/character.json` (via `/save`) **and** the shared custom-item catalog
+`data/custom-items.json` (via `/save-items`) to the repo **on the app's
+behalf**, so the GitHub credential never enters the browser. The `/save-items`
+route (docs/PLAN-CUSTOM-ITEMS.md) mirrors `/save` exactly: same CORS, same
+fail-closed `x-save-key`, same GET-sha → PUT bounded-409-retry write to the
+`character-data` branch, with every item validated by the shared
+`engine/validate-item.js` gate before the commit.
 
 This is now the app's **one primary Save** (v1.5.0): the app `POST`s the merged,
 inputs-only character; the worker does the GitHub API round-trip to a dedicated
@@ -104,19 +109,39 @@ the only offline path; this is strictly an additional option.
    matches the app's selection. Both `/` and
    `/dev/` read the same branch, so the two environments show the same character.
 
+**The companion write — `/save-items`.** The same flow, for the player-created
+custom-item catalog (`data/custom-items.json`, `ed-items/2`) instead of the
+character store: the app POSTs a delta `{ items: { "<name>": <item> }, delete?:
+[…] }`; the worker validates every item and the *merged* file through the shared
+`engine/validate-item.js` gate (fail-closed → `400 invalid_items`), merges the
+items onto the branch catalog (custom wins on a canon-name collision), applies
+the deletes, and commits the whole file — the same bounded 409 retry. The
+catalog is shared by all characters and both environments, and a CI fold job
+(tools/fold-custom-items.mjs) mirrors it into `rules/custom-items.json` on `dev`
+for durability/versioning (PLAN-CUSTOM-ITEMS.md §3).
+
 ### 3.2 Request / response contract
 
 | | Value |
 |---|---|
-| Endpoint | `POST https://<worker>/save` |
+| Endpoint | `POST https://<worker>/save` — character store (`data/characters.json`) |
 | Headers | `Content-Type: application/json`; `x-save-key` (required — fail-closed, §5) |
 | Body | `{ "character": <inputs-only ed-character/1 JSON>, "id": <required store key> }` |
 | 200 | `{ "ok": true, "commit": { "sha": "…", "url": "https://github.com/…/commit/…" } }` |
 | 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "invalid_id", "message": "…" } }` |
 | 401 | `{ "ok": false, "error": { "code": "unauthorized", "message": "bad save key" } }` |
-| 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save only" } }` |
+| 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save or POST /save-items only" } }` |
 | 409 | Retried internally (bounded, 3 attempts); only surfaced if retries exhaust |
 | 502/504 | Upstream GitHub failure; `{ "ok": false, "error": { "code": "upstream", "message": "…" } }` |
+
+| | Value |
+|---|---|
+| Endpoint | `POST https://<worker>/save-items` — custom-item catalog (`data/custom-items.json`, `ed-items/2`) |
+| Headers | Same as `/save` (`x-save-key` required, fail-closed) |
+| Body | `{ "items": { "<name>": <item> }, "delete"?: ["<name>", …] }` |
+| 200 | `{ "ok": true, "commit": { "sha": "…", "url": "…" } }` |
+| 400 | `{ "ok": false, "error": { "code": "invalid_items", "message": "…" } }` — every item and the merged file pass the shared `engine/validate-item.js` gate before any PUT |
+| 401 / 404 / 409 / 502 | Same as `/save` |
 
 CORS: the worker must answer cross-origin calls from the Pages origin, including
 an `OPTIONS` preflight for the JSON `POST` (and the `x-save-key` header when
@@ -172,9 +197,11 @@ A single ES-module handler. Design sketch:
 ```js
 // worker.js — GitHub serverless save endpoint (design sketch, not shipped)
 // POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": <required store key> }
-// Shipped worker differs: SAVE_KEY fail-closed auth (§5), and the write upserts
-// into the grouped store (GET store -> replace characters[id] -> PUT whole
-// store); the legacy single-file PUT shown below was removed at v1.6.0.
+// POST /save-items  { "items": { "<name>": <item> }, "delete"?: ["<name>", …] }  (shipped worker)
+// Shipped worker differs: SAVE_KEY fail-closed auth (§5), the two routes above,
+// and the write upserts into the grouped store (GET store -> replace
+// characters[id] -> PUT whole store); the legacy single-file PUT shown below was
+// removed at v1.6.0.
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const GITHUB = "https://api.github.com";
 const MAX_BYTES = 512 * 1024;                 // character.json is a few KB; cap generously
@@ -271,6 +298,12 @@ Key properties:
   does not recur per-save.
 - **Retry is server-side.** The client sees one `200` or one final error; the
   `409` loop lives in the worker.
+- **Two routes, one gate.** The shipped worker routes both `/save` and
+  `/save-items` through the same CORS + fail-closed auth + bounded-409 machinery.
+  `/save-items` additionally validates the delta with the shared
+  `engine/validate-item.js` (PLAN-CUSTOM-ITEMS.md §3), and re-validates the whole
+  merged catalog before its PUT — this endpoint is the first gate between the
+  open `/save-items` surface and the deployed rules.
 
 ### 4.3 Secrets
 
@@ -282,6 +315,7 @@ created by the repo owner, never committed and never in the app:
 | `GITHUB_TOKEN` | **Fine-grained PAT**, scoped to this repo only, `Contents: read/write`. Created once by the repo owner in GitHub → Settings → Developer settings → Fine-grained tokens. |
 | `GITHUB_OWNER` / `GITHUB_REPO` | The repo that hosts the app (e.g. `odenson` / `ed-charSheet`). |
 | `GITHUB_STORE` | The grouped store, default `data/characters.json` — `{ "schema": "ed-characters/1", "characters": { "<id>": { … } } }`; saves upsert `characters[id]` here. The only save target since v1.6.0 (the legacy `GITHUB_PATH` single-file target was removed at promotion). |
+| `GITHUB_ITEMS_PATH` | The custom-item catalog, default `data/custom-items.json` — `{ "schema": "ed-items/2", "items": { "<name>": <item> } }`; `/save-items` merges + deletes here. |
 | `GITHUB_BRANCH` | Default `character-data` — a data-only branch the deploy workflow does not watch, so saves never rebuild the app. |
 | `SAVE_KEY` | **Required** shared endpoint key — fail-closed (see §5). |
 
@@ -411,6 +445,13 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
   feedback paths. Also assert `store.js` reads the live branch on a Pages-like
   origin and throws a clear load error when the branch is unreachable (there is
   no deployed copy to fall back to).
+- **`/save-items`.** The worker tests cover the second route the same way:
+  auth → 401, invalid item/delta → `400 invalid_items` with no PUT, a valid
+  upsert merges + deletes and PUTs the whole `ed-items/2` file, a missing
+  catalog (404) is created fresh, over-cap merged files → 400, 409-retry, and
+  env-pinned `GITHUB_ITEMS_PATH`. The fold job (`tools/fold-custom-items.mjs`)
+  has its own suite (create / update / skip-identical / validation-abort /
+  409-retry / missing-file no-op).
 
 ---
 
@@ -431,7 +472,10 @@ server-side, plus honest limits:
   1. **Blast radius.** The worst a junk caller can do is a malformed or junk
      `character.json` commit on the `character-data` branch — the app's live read
      shows a bad character, trivially recovered by a real save. This bounded blast
-     radius is why an open endpoint was even *considered* safe.
+     radius is why an open endpoint was even *considered* safe. The `/save-items`
+     twin is bounded the same way — junk items land only on `data/custom-items.json`
+     and are undone by one real save — and is additionally filtered by the shared
+     validator (worker) and the fold job's diff-guard (PLAN-CUSTOM-ITEMS.md §9).
   2. **`SAVE_KEY` — required as shipped (fail-closed).** This design floated the
      key as optional, but the shipped build **requires** it: the worker rejects a
      missing/wrong key, or an unconfigured one (runbook §2.1). Single-user sheet,
@@ -474,6 +518,8 @@ server-side, plus honest limits:
 |---|---|
 | `store-server.js` | A save-target module (feature-detected, opt-in) |
 | `store.js` live read | On the Pages site the grouped store (all characters) is fetched from the `character-data` branch; local runs read the gitignored working copies |
+| `store-custom-items.js` | The `/save-items` twin — custom-item delta POST + the `ed-custom-items` overlay (PLAN-CUSTOM-ITEMS.md §4.2) |
+| `data/custom-items.json` | Shared player-created catalog on `character-data` (`ed-items/2`), folded into `rules/custom-items.json` on `dev` by CI (PLAN-CUSTOM-ITEMS.md §3) |
 | Settings toggle | "Save to GitHub (server)" — enables the target and holds the required `SAVE_KEY` for the session |
 | Save action entry | A third target alongside web store + file, in edit mode |
 | Worker + secrets | Deployed outside the repo; owner-only setup |
@@ -500,7 +546,10 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
   grouping wrapper (`characters[id]`) whose entries are unchanged
   `ed-character/1` files, plus `meta.id` set inside each entry. The legacy
   single-file `data/character.json` and the worker's no-`id` path were **removed
-  at the v1.6.0 promotion** — the grouped store is the only save target.
+  at the v1.6.0 promotion** — the grouped store is the only save target. The
+  custom-item feature adds `ed-items/2` (`data/custom-items.json` +
+  `rules/custom-items.json`) — a new file *within* the taxonomy's grammar, not a
+  vocabulary change (Tier 3, PLAN-CUSTOM-ITEMS.md §7).
 
 ---
 

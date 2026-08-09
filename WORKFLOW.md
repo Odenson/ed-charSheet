@@ -21,17 +21,18 @@ the build**:
 |--------|------|----------|
 | `main` | Production app | ✅ → root |
 | `dev` | Testing app | ✅ → `/dev/` |
-| `character-data` | File store for the grouped character store `data/characters.json` **and the portrait image** `data/chakka.jpg` | ❌ never deployed |
+| `character-data` | File store for the grouped character store `data/characters.json`, the portrait image `data/chakka.jpg`, **and the shared custom-item catalog `data/custom-items.json`** | ❌ never deployed |
 
 The deploy workflow listens to `main` and `dev` only, so nothing committed to
 `character-data` ever triggers a rebuild or a Pages deployment. The branch exists
-for one reason: to hold the character data — the grouped store
+for one reason: to hold the live data — the grouped store
 `data/characters.json` (`{ schema: "ed-characters/1", characters: { "<id>": { …
-} } }`) — committed by the serverless save target
-(docs/GITHUB-SERVERLESS-SAVE.md) on the app's behalf, alongside the portrait
-image each entry references via `meta.portrait`. The legacy single-file
-`data/character.json` was **removed at the v1.6.0 promotion**; the grouped store
-is the only save target.
+} } }`) and the custom-item catalog `data/custom-items.json` (`ed-items/2`) —
+committed by the serverless save target (docs/GITHUB-SERVERLESS-SAVE.md) on the
+app's behalf, alongside the portrait image each entry references via
+`meta.portrait`. The legacy single-file `data/character.json` was **removed at
+the v1.6.0 promotion**; the grouped store is the only character save target, and
+`data/custom-items.json` is the only custom-item target.
 
 Both environments **source the character detail from this one branch**: on the
 Pages site the app reads `data/characters.json` live from `character-data` —
@@ -41,8 +42,29 @@ immediately), falling back to the raw CDN
 copy (see "Local character copies" below). The portrait is read live from the
 same branch's raw CDN. Because `/` and `/dev/` read the same branch, a save
 shows up identically in both — and a save never rebuilds either one. The app
-bundles ship **no character data**: `data/characters.json` and the portrait are
-gitignored so they stay out of every deploy (local working copies only).
+bundles ship **no character data**: `data/characters.json`, `data/custom-items.json`
+and the portrait are gitignored so they stay out of every deploy (local working
+copies only).
+
+**The fold job — the one exception to "never a build input."** The workflow
+[`.github/workflows/fold-custom-items.yml`](.github/workflows/fold-custom-items.yml)
+runs on a push to `character-data` touching `data/custom-items.json` (or
+manually) and mirrors that file into **`rules/custom-items.json` on `dev`** — a
+real rule file, part of the build input. The consequence is deliberate and
+`dev`-only (docs/PLAN-CUSTOM-ITEMS.md §3): a custom-item save triggers one extra
+`dev` rebuild (so `/dev/` bundles the catalog as a durability fallback), while
+`main`'s tree is untouched — production never rebuilds from a custom-item save.
+The fold validates every item and the merged catalog through the shared
+`engine/validate-item.js` gate and only writes when the mirrored file would
+change.
+
+**The fold's dev push makes local `dev` go stale.** Because the fold commits
+`rules/custom-items.json` straight to `dev`, `origin/dev` can advance after a
+custom-item save while your local clone sits behind — so a later `git push`
+from a stale clone is rejected ("fetch first"). This is expected, not a
+conflict: the fold only ever touches `rules/custom-items.json`, so a
+`git pull --rebase origin dev` replays your commits on top cleanly. Do it
+before starting work and again before pushing (see "Everyday development").
 
 ## One-time setup (repo owner)
 
@@ -60,9 +82,18 @@ Enable Pages with the Actions source — this only you can do:
 
 ```bash
 git switch dev
+git pull --rebase origin dev   # a fold auto-commit may have landed on origin/dev
 # ...make changes, commit...
-git push            # auto-deploys the DEV instance (/dev/)
+git pull --rebase origin dev   # re-check before pushing (a fold may have landed mid-work)
+git push                       # auto-deploys the DEV instance (/dev/)
 ```
+
+The pull-before-push is the fold's side effect (see the fold section above): a
+custom-item save appends a CI commit to `dev`, so `origin/dev` can move while
+you work and a plain `git push` would be rejected. `git pull --rebase` replays
+your local commits on top of the fold's — safe, because the fold only touches
+`rules/custom-items.json`. Rebase (not merge) keeps the log linear; never
+`--force`.
 
 Test at the `/dev/` URL. The dev instance uses the same data and code paths as
 production, just served from a subpath.
@@ -136,14 +167,19 @@ entirely while reconnecting the histories, then push.
 - **Saves never rebuild the app.** The serverless save target upserts
   `characters[id]` in `data/characters.json` on the dedicated `character-data`
   branch — a file store, not a build input (see "The `character-data` branch"
-  above and docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed.
-- **Local character copies.** `data/characters.json` and the portrait image
-  (`data/chakka.jpg`) are gitignored (see `.gitignore`): they live on
-  `character-data`, not in the bundle. Local dev / `file://` reads the working
-  copies from the working tree. After a fresh clone, fetch the latest with
-  `git show character-data:data/characters.json > data/characters.json` (and
-  likewise for the portrait) — or just rely on the branch live-read on the Pages
-  site.
+  above and docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed. The one
+  exception: a **custom-item** save (via `/save-items`) triggers the fold job,
+  which mirrors the catalog into `rules/custom-items.json` **on `dev`** — a
+  build input — so `/dev/` rebuilds while `main` stays untouched
+  (docs/PLAN-CUSTOM-ITEMS.md §3).
+- **Local character copies.** `data/characters.json`, `data/custom-items.json`
+  and the portrait image (`data/chakka.jpg`) are gitignored (see `.gitignore`):
+  they live on `character-data`, not in the bundle. Local dev / `file://` reads
+  the working copies from the working tree. After a fresh clone, fetch the latest
+  with `git show character-data:data/characters.json > data/characters.json` (and
+  likewise for `data/custom-items.json` and the portrait) — or just rely on the
+  branch live-read on the Pages site. Local custom-item editing works off the
+  working copy exactly like character editing; a save commits it to the branch.
 - **What gets deployed:** the static app (`index.html`, `ui/`, `engine/`,
   `data/`, `rules/`, assets). Excluded: `tools/`, `node_modules/`, `package*.json`,
   `*.xlsx`, and anything gitignored (source spreadsheet, rulebook extracts,
