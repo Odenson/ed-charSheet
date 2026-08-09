@@ -418,9 +418,10 @@ original rollout above. Work top-to-bottom; status boxes track it.
 > *where* depends on the trigger you want. None of the code is committed yet —
 > C0 is the first thing to do.
 
-- [ ] **C0. Deploy the change.** Commit + push everything to `dev` (workflow
-      file, `tools/fold-custom-items.mjs`, `engine/validate-item.js`, the
-      UI/store modules). Verify:
+- [ ] **C0. Deploy the change.** Pull first — a fold auto-commit may have landed
+      on `origin/dev`: `git pull --rebase origin dev`. Then commit + push
+      everything to `dev` (workflow file, `tools/fold-custom-items.mjs`,
+      `engine/validate-item.js`, the UI/store modules). Verify:
       `gh api "repos/Odenson/ed-charSheet/contents/.github/workflows/fold-custom-items.yml?ref=dev" --jq '.sha'`
 - [ ] **C1. (Pre-main) put the workflow on `character-data`** — a `push` trigger
       only fires if this file exists on the branch being pushed, and the

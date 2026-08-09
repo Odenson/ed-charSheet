@@ -516,6 +516,16 @@ actions): `actions/checkout@v4` ran on the node20 runtime. Bumped to
 `actions/checkout@v5` (Node 24). The `run: node …` step uses the runner's
 preinstalled default (Node 24 on `ubuntu-latest`) and needs no change.
 
+**P8.4 fold auto-commit — `dev` goes stale under local clones.** The fold
+commits `rules/custom-items.json` straight to `dev`, so `origin/dev` advances
+after a custom-item save and a later local `git push` from a stale clone is
+rejected (hit live). Expected, not a conflict — the fold only touches that one
+file, so `git pull --rebase origin dev` replays local commits cleanly. Written
+into WORKFLOW.md (fold section + Everyday development) and §8 C0 in this plan
+and the runbook; the character-data workflow copy was also bumped to
+`checkout@v5` via the C1 temp-branch procedure so auto-folds lose the node20
+warning too.
+
 ---
 
 ## 7. Guardrail classification
@@ -609,8 +619,10 @@ look like `<THIS>`.
 >     verification is via the auto-trigger or a local run of
 >     `node tools/fold-custom-items.mjs` with a token.
 
-- [x] **C0. Deploy the change.** Commit + push `dev` (the whole custom-items
-      change). Verify the workflow file is in the pushed commit:
+- [x] **C0. Deploy the change.** Pull first — a fold auto-commit may have landed
+      on `origin/dev`: `git pull --rebase origin dev`. Then commit + push `dev`
+      (the whole custom-items change). Verify the workflow file is in the pushed
+      commit:
       `gh api "repos/Odenson/ed-charSheet/contents/.github/workflows/fold-custom-items.yml?ref=dev" --jq '.sha'`.
 - [x] **C1. (Pre-main) fold exists on `character-data`** so a custom-item save
       auto-folds. Once done, push a test save through `/save-items` (Phase B3c)
@@ -702,6 +714,7 @@ look like `<THIS>`.
 | 2026-08-09 | Test on Dev | HUMAN | Testing workflow to fold passed, but I found that it is running the action on an older version of node, this needs to be upgraded |
 | 2026-08-09 | Test on Dev | HUMAN | D3: The UI test in dev has one major issue, the initial create in the modal works and created the custom item in char-data and the workflow correctly pushes the change to dev.  However the item does not appear in the add item search until a refresh was tiggered.  This is a bug and will need to be addressed. |
 | 2026-08-09 | D3 + Node-20 fixes done | CLAUDE | D3 root cause: picker capped results at 50 and custom items merge last (position ~180 of 180 canon) → invisible in browse. Fixed via new pure `ui/picker.js` (custom-first sort, `PICKER_CAP`) + deferred overlay reconcile in `_refreshCustomItems` (reconcile only when the re-read reflects the saved delta). Fold action node20 deprecation: `actions/checkout@v4` → `@v5` (Node 24). New `picker.test.js` (5 tests, real 179-item catalog) + probe §2b; §6.6 P8.4 note |
+| 2026-08-09 | Fold auto-commit staleness documented | CLAUDE | The fold's `dev` push makes local `dev` fall behind `origin/dev`; a plain `git push` gets rejected (hit live during the D3-fix push). Documented the pull-before-push (`git pull --rebase origin dev`) habit in WORKFLOW.md (fold section + Everyday development) and amended §8 C0 in plan + runbook |
 
 ---
  

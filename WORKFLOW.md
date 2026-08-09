@@ -58,6 +58,14 @@ The fold validates every item and the merged catalog through the shared
 `engine/validate-item.js` gate and only writes when the mirrored file would
 change.
 
+**The fold's dev push makes local `dev` go stale.** Because the fold commits
+`rules/custom-items.json` straight to `dev`, `origin/dev` can advance after a
+custom-item save while your local clone sits behind — so a later `git push`
+from a stale clone is rejected ("fetch first"). This is expected, not a
+conflict: the fold only ever touches `rules/custom-items.json`, so a
+`git pull --rebase origin dev` replays your commits on top cleanly. Do it
+before starting work and again before pushing (see "Everyday development").
+
 ## One-time setup (repo owner)
 
 Enable Pages with the Actions source — this only you can do:
@@ -74,9 +82,18 @@ Enable Pages with the Actions source — this only you can do:
 
 ```bash
 git switch dev
+git pull --rebase origin dev   # a fold auto-commit may have landed on origin/dev
 # ...make changes, commit...
-git push            # auto-deploys the DEV instance (/dev/)
+git pull --rebase origin dev   # re-check before pushing (a fold may have landed mid-work)
+git push                       # auto-deploys the DEV instance (/dev/)
 ```
+
+The pull-before-push is the fold's side effect (see the fold section above): a
+custom-item save appends a CI commit to `dev`, so `origin/dev` can move while
+you work and a plain `git push` would be rejected. `git pull --rebase` replays
+your local commits on top of the fold's — safe, because the fold only touches
+`rules/custom-items.json`. Rebase (not merge) keeps the log linear; never
+`--force`.
 
 Test at the `/dev/` URL. The dev instance uses the same data and code paths as
 production, just served from a subpath.
