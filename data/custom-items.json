@@ -52,7 +52,7 @@
         "weight": "0.1",
         "availability": "Very Rare",
         "range": "Touch",
-        "description": "Chakka's travelling beer mug, it gives him both great tasting beer regardless of teh quality in the inn and if there is a brawl provides bonus to holder"
+        "description": "Chakka's travelling beer mug, it gives him both great tasting beer regardless of the quality in the inn and if there is a brawl provides bonus to holder ability to brawl"
       },
       "presentation": {
         "shortEffect": "+1 attack in brawls"
