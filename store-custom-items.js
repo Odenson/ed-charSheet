@@ -120,3 +120,16 @@ export function applyCustomEdits(file, delta) {
   for (const name of delta.delete ?? []) delete next.items[name];
   return next;
 }
+
+/**
+ * Apply a pending delta onto an items *map* `{ name: item }` (the shape
+ * `deriveModel.customCommittedCatalog` and the manager modal's `committed` prop
+ * carry, vs the ed-items file shape applyCustomEdits takes). Same semantics:
+ * custom wins on a collision, delete applied last. Pure — returns a new object.
+ */
+export function applyCustomItemsMap(base, delta) {
+  const items = { ...(base ?? {}) };
+  for (const [name, item] of Object.entries(delta?.items ?? {})) items[name] = item;
+  for (const name of delta?.delete ?? []) delete items[name];
+  return items;
+}

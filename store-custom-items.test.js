@@ -18,6 +18,7 @@ import {
   saveCustomEdits,
   reconcileCustomEdits,
   applyCustomEdits,
+  applyCustomItemsMap,
   DEFAULT_ITEMS_ENDPOINT,
 } from './store-custom-items.js';
 import { SaveError } from './store-server.js';
@@ -171,6 +172,15 @@ test('applyCustomEdits merges edits, custom wins, delete applies last', () => {
 test('applyCustomEdits with no delta returns the file unchanged', () => {
   const file = { schema: 'ed-items/2', items: {} };
   assert.equal(applyCustomEdits(file, null), file);
+});
+
+test('applyCustomItemsMap keeps every committed item unless the overlay deletes it (modal seed baseline, D8)', () => {
+  const map = { Old: ITEM };
+  assert.deepEqual(applyCustomItemsMap(map, null), map, 'no overlay keeps the committed map as-is');
+  const next = applyCustomItemsMap(map, { items: { New: ITEM }, delete: [] });
+  assert.deepEqual(Object.keys(next), ['Old', 'New'], 'creating a new item keeps the existing one');
+  assert.deepEqual(applyCustomItemsMap(map, { items: {}, delete: ['Old'] }), {}, 'only an explicit overlay delete removes an item');
+  assert.deepEqual(map, { Old: ITEM }, 'input map is never mutated');
 });
 
 // --- store integration: custom item flows through deriveModel ------------------

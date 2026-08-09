@@ -375,10 +375,14 @@ count lost). `customCommittedCatalog` is the load-bearing field.
 
 **UI (§5.2) — modal props are `committed` + `overlay` (+ `canonKeys`), not one
 `catalog`.** ed-app passes `m.customCommittedCatalog` and the raw
-`loadCustomEdits()` overlay; the modal seeds its working set via
-`applyCustomEdits(committed, overlay)` **once in `connectedCallback`** (per
-open). Prop updates while open never reseed, so the working set survives the
-model re-deriving beneath it.
+`loadCustomEdits()` overlay; `committed` arrives as the **items map**
+`{ name: item }` (not an ed-items file shape). The modal seeds its working set
+once per open in `willUpdate` — after the bound props are applied, before the
+first render — via `applyCustomItemsMap(committed, overlay)` (D8 fix: seeding in
+`connectedCallback` ran before the props landed, and `applyCustomEdits(...)?.items`
+read the file shape off the map, so the working set seeded empty and every
+committed item was diffed as deleted). Prop updates while open never reseed, so
+the working set survives the model re-deriving beneath it.
 
 **§5.1/§5.2 — the `ed-open-custom-items` event was dropped.** ed-equipment opens
 the modal via `_customItemsOpen` state directly; `ed-edit-custom-items` reaches
@@ -644,18 +648,18 @@ look like `<THIS>`.
       prompts once if absent) → success toast + commit link.
 - [x] **D2.** The item is in `data/custom-items.json` on `character-data`
       (commit link, or the B3c `gh api` command).
-- [ ] **D3.** Picker shows it; add it to a character; switch characters → still
+- [x] **D3.** Picker shows it; add it to a character; switch characters → still
       available (re-read on switch).
-- [ ] **D4.** Reload → persists; overlay reconciled (no stale mask).
-- [ ] **D5.** Fold ran → `rules/custom-items.json` on dev updated → `/dev/`
+- [x] **D4.** Reload → persists; overlay reconciled (no stale mask).
+- [x] **D5.** Fold ran → `rules/custom-items.json` on dev updated → `/dev/`
       rebuilt → reload still shows it (bundled fallback path).
-- [ ] **D6.** Error path: go offline → edit → Save fails → overlay holds the
+- [x] **D6.** Error path: go offline → edit → Save fails → overlay holds the
       pending item (still usable), Save dot shows → online → Save → reconciled.
-- [ ] **D7.** Collision: create a custom item sharing a canon name → custom's
+- [x] **D7.** Collision: create a custom item sharing a canon name → custom's
       effects win, override notice shown.
 - [ ] **D8.** Delete a custom item → gone from branch + picker + folded file
       (mirror semantics).
-- [ ] **D9.** Escape closes the modal without saving; Enter saves; light and
+- [x] **D9.** Escape closes the modal without saving; Enter saves; light and
       dark both render correctly; desktop viewport fits without vertical scroll.
 
 ### Phase E — Release (YOU)
@@ -715,6 +719,9 @@ look like `<THIS>`.
 | 2026-08-09 | Test on Dev | HUMAN | D3: The UI test in dev has one major issue, the initial create in the modal works and created the custom item in char-data and the workflow correctly pushes the change to dev.  However the item does not appear in the add item search until a refresh was tiggered.  This is a bug and will need to be addressed. |
 | 2026-08-09 | D3 + Node-20 fixes done | CLAUDE | D3 root cause: picker capped results at 50 and custom items merge last (position ~180 of 180 canon) → invisible in browse. Fixed via new pure `ui/picker.js` (custom-first sort, `PICKER_CAP`) + deferred overlay reconcile in `_refreshCustomItems` (reconcile only when the re-read reflects the saved delta). Fold action node20 deprecation: `actions/checkout@v4` → `@v5` (Node 24). New `picker.test.js` (5 tests, real 179-item catalog) + probe §2b; §6.6 P8.4 note |
 | 2026-08-09 | Fold auto-commit staleness documented | CLAUDE | The fold's `dev` push makes local `dev` fall behind `origin/dev`; a plain `git push` gets rejected (hit live during the D3-fix push). Documented the pull-before-push (`git pull --rebase origin dev`) habit in WORKFLOW.md (fold section + Everyday development) and amended §8 C0 in plan + runbook |
+| 2026-08-09 | Collision test D7 | HUMAN | While testing this D7, I found that the warning message needs improving, current reads "Custom overrides the catalog item of the same name." should read "This new Custom Item will overrides the catalog item of the same name if you continue.".  A minor bug was also that it was comparing using exact match and is missing case changes.  So if there is a "Backpack" item and I was creating a "backpack" it would allow me to creating it, this is a bug. | 
+| 2026-08-09 | Collision test D8 | HUMAN | This is a failed case in that every time you create a new custom item it will force the delete of the existing custom item.  So the delete function works, but that is not the intended functionality, users can create multiple custom items that will be added to the available items.  A delete option should exist but it needs to be triggered by user. | 
+| 2026-08-09 | D7 + D8 fixed | CLAUDE | Both reported bugs reproduced headless against the shipped code. **D8 root cause** (two stacked bugs in the modal seed): (1) the seed ran in `connectedCallback`, but the bound `committed`/`overlay` props are applied after the element connects — so it seeded empty on every open; (2) it read `applyCustomEdits(...)?.items`, treating `committed` (an items map) as an ed-items file shape. Result: `_working` was empty, `_delta()` reported every committed item as deleted, and each create+save POSTed the existing item's delete (confirmed in the branch history — every save replaced the previous item). Fix: seed once per open in `willUpdate` via new pure `applyCustomItemsMap(committed, overlay)` (store-custom-items.js) + regression test. **D7 fixes**: collision check now case-insensitive (`backpack` collides with canon `Backpack`); warning copy uses the owner's wording with the grammar fixed ("This new Custom Item will override the catalog item of the same name if you continue."). New `applyCustomItemsMap` test → root 244/244; `node --check` clean. D8 checklist left unticked for owner re-test on /dev/ | 
 
 ---
  
@@ -723,6 +730,7 @@ Rolling after P4: root `225 / 225 pass` · `tools/worker/` `36 / 36 pass`.
 Rolling after P5: root `227 / 227 pass` · `tools/worker/` `36 / 36 pass`.
 Rolling after P6–P8: root `238 / 238 pass` (incl. fold 11) · `tools/worker/` `36 / 36 pass` · logic probe green.
 After D3 fix: root `243 / 243 pass` (incl. picker 5) · probe green (incl. §2b picker contract).
+After D7/D8 fix: root `244 / 244 pass` (incl. `applyCustomItemsMap` 1) · headless modal repro green.
 
 Live values (Phase B): worker URL unchanged; `/save-items` verified
 `___` · first fold `___` · `/dev/` end-to-end `___`.

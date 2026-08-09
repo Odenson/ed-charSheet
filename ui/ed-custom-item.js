@@ -19,7 +19,7 @@
 
 import { LitElement, html, css, nothing } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
-import { applyCustomEdits } from '../store-custom-items.js';
+import { applyCustomItemsMap } from '../store-custom-items.js';
 
 const KLABEL = {
   weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
@@ -139,6 +139,7 @@ export class EdCustomItem extends LitElement {
     // draft — never the overlay-applied set, so re-deriving the model on each
     // draft can't wipe the pending count.
     this._working = new Map();
+    this._seeded = false;
     this._summaryOverride = new Set(); // effects whose summary the user typed
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
@@ -152,12 +153,18 @@ export class EdCustomItem extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     document.addEventListener('keydown', this._onKeydown);
-    this._seed();
   }
 
   disconnectedCallback() {
     document.removeEventListener('keydown', this._onKeydown);
     super.disconnectedCallback();
+  }
+
+  willUpdate(changedProps) {
+    // The bound `committed`/`overlay` properties are applied after the element
+    // connects, so a seed in connectedCallback sees empty values and flags every
+    // committed item as deleted. Seed before the first render instead.
+    if (!this._seeded && (changedProps.has('committed') || changedProps.has('overlay'))) this._seed();
   }
 
   firstUpdated() {
@@ -168,7 +175,8 @@ export class EdCustomItem extends LitElement {
   // Open (or reopen) with the committed catalog + any pending overlay delta as
   // the working set. Runs once per mount — prop updates while open never reseed.
   _seed() {
-    this._working = new Map(Object.entries(applyCustomEdits(this.committed, this.overlay)?.items ?? {}));
+    this._seeded = true;
+    this._working = new Map(Object.entries(applyCustomItemsMap(this.committed, this.overlay)));
     this._summaryOverride = new Set();
     this._form = null;
     this._confirmClose = false;
@@ -412,7 +420,7 @@ export class EdCustomItem extends LitElement {
     const kind = item.kind;
     const errors = this._formErrors();
     const isNew = f.originalName == null;
-    const collides = !isNew ? false : this.canonKeys?.includes(f.name?.trim());
+    const collides = !isNew ? false : this.canonKeys?.some((k) => k.toLowerCase() === f.name?.trim().toLowerCase());
     const refFields = REF_FIELDS[kind] ?? [];
     const templates = QUICK_TEMPLATES[kind] ?? [];
 
@@ -437,7 +445,7 @@ export class EdCustomItem extends LitElement {
           </span>
         </div>
         ${collides
-          ? html`<p class="warn">Custom overrides the catalog item of the same name.</p>`
+          ? html`<p class="warn">This new Custom Item will override the catalog item of the same name if you continue.</p>`
           : ''}
 
         <div class="fgroup">

@@ -111,16 +111,27 @@ export class EdEquipment extends LitElement {
     this._customItemsOpen = false;
     this._onKeydown = (e) => {
       if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
+      else if (e.key === 'Escape' && this._addOpen) { e.stopPropagation(); this._closePicker(); }
+    };
+    this._onPointerDown = (e) => {
+      // A pointerdown outside the picker closes it (composedPath spans the shadow
+      // root, so shadow-internal clicks are seen too); clicking the search input
+      // or a result row keeps it open for typing / multi-add.
+      if (!this._addOpen) return;
+      const combo = this.renderRoot.querySelector('.combo');
+      if (!combo || !e.composedPath().includes(combo)) this._closePicker();
     };
   }
 
   connectedCallback() {
     super.connectedCallback();
     document.addEventListener('keydown', this._onKeydown);
+    document.addEventListener('pointerdown', this._onPointerDown);
   }
 
   disconnectedCallback() {
     document.removeEventListener('keydown', this._onKeydown);
+    document.removeEventListener('pointerdown', this._onPointerDown);
     super.disconnectedCallback();
   }
 
@@ -130,6 +141,15 @@ export class EdEquipment extends LitElement {
   _closeModal() {
     this.renderRoot.activeElement?.blur();
     this._modal = null;
+  }
+
+  // Closing the add-picker (Done / Escape / click outside) resets it so the next
+  // open starts clean, and blurs so an Escape close leaves no :focus-visible ring.
+  _closePicker() {
+    this._addOpen = false;
+    this._query = '';
+    this._hi = 0;
+    this.renderRoot.activeElement?.blur();
   }
 
   updated(changed) {
@@ -367,7 +387,7 @@ export class EdEquipment extends LitElement {
     if (e.key === 'ArrowDown') { this._hi = Math.min(this._hi + 1, list.length - 1); e.preventDefault(); }
     else if (e.key === 'ArrowUp') { this._hi = Math.max(this._hi - 1, 0); e.preventDefault(); }
     else if (e.key === 'Enter' && list[this._hi]) { this._add(list[this._hi]); }
-    else if (e.key === 'Escape') { this._addOpen = false; }
+    else if (e.key === 'Escape') { this._closePicker(); }
   }
 
   _itemRow(it) {
@@ -622,7 +642,7 @@ export class EdEquipment extends LitElement {
                           : html`<div class="nores">No item matches “${this._query}”.</div>`}
                       </div>
                     </div>
-                    <button class="addbtn" @click=${() => { this._addOpen = false; this._query = ''; }}>Done</button>
+                    <button class="addbtn" @click=${() => this._closePicker()}>Done</button>
                   `
                 : html`<button class="addbtn" @click=${() => { this._addOpen = true; this._query = ''; this._hi = 0; }}>＋ Add item</button>`}
               <button class="addbtn" @click=${() => (this._customItemsOpen = true)}>＋ Custom items</button>
