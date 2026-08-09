@@ -4,14 +4,15 @@
   "source": "custom",
   "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
   "items": {
-    "[TEST] - Custom Item": {
-      "kind": "gear",
+    "Beer Mug of Brawling": {
+      "kind": "magic-item",
       "effects": [],
       "ref": {
-        "cost": 0,
-        "weight": "0",
-        "availability": "0",
-        "description": "0"
+        "cost": 500,
+        "weight": "0.1",
+        "availability": "Very Rare",
+        "range": "Touch",
+        "description": "Chakka's travelling beer mug, it gives him both great tasting beer regardless of teh quality in the inn and if there is a brawl provides bonus to holder"
       }
     }
   }
