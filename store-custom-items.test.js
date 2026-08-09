@@ -183,6 +183,18 @@ test('applyCustomItemsMap keeps every committed item unless the overlay deletes 
   assert.deepEqual(map, { Old: ITEM }, 'input map is never mutated');
 });
 
+test('applyCustomItemsMap lets the overlay win over a committed item of the same name (edit-form freshest-copy seed)', () => {
+  // A save whose branch re-read lags the PUT leaves the edited item pending in
+  // the overlay; reopening the modal must seed the *edited* copy, not the stale
+  // committed one — this is the copy the edit form opens with (§6.6 edit fix).
+  const map = { 'Boar Hide': { kind: 'armor', effects: [{ type: 'note', summary: 'Old copy.' }] } };
+  const edited = { kind: 'armor', ref: { cost: 55 }, effects: [{ type: 'note', summary: 'Fresh copy.' }] };
+  const next = applyCustomItemsMap(map, { items: { 'Boar Hide': edited }, delete: [] });
+  assert.deepEqual(next['Boar Hide'], edited, 'the overlay edit replaces the committed item');
+  assert.equal(Object.keys(next).length, 1, 'same name means upsert, not a second row');
+  assert.deepEqual(map['Boar Hide'], { kind: 'armor', effects: [{ type: 'note', summary: 'Old copy.' }] }, 'input map is never mutated');
+});
+
 // --- store integration: custom item flows through deriveModel ------------------
 
 const read = (p) => JSON.parse(readFileSync(new URL(`./rules/${p}`, import.meta.url)));

@@ -188,7 +188,12 @@ export class EdCustomItem extends LitElement {
     this._onWorkingChange();
   }
   _editItem(name) {
-    const item = this.committed?.[name] ?? this._working.get(name);
+    // The working set is seeded from committed ∪ overlay (overlay wins), so it is
+    // always the freshest copy — a just-saved edit stays pending in the overlay
+    // until the branch re-read reflects the PUT, and reading `committed` first
+    // showed that stale copy in the form until a page refresh (PLAN-CUSTOM-ITEMS
+    // §6.6). `committed` is only a fallback for a name the overlay never touched.
+    const item = this._working.get(name) ?? this.committed?.[name];
     if (!item) return;
     this._form = { name, item: JSON.parse(JSON.stringify(item)), originalName: name };
     this._summaryOverride = new Set();

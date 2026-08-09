@@ -4,7 +4,8 @@
   "unreleased": {
     "changes": [
       { "type": "fixed", "text": "Custom items you create now keep their effects. Before, changing an effect's type while creating an item could make that effect silently disappear from the saved item — the sheet now always saves the effects you add, with each effect's summary auto-generated from its fields (edit the summary to override it, and pick a different type and the summary re-forms to match)." },
-      { "type": "added", "text": "Custom items can now carry a short one-line label for the equipped tile: a Short effect field in the item form, with a live character counter and a 32-character cap so the label stays short. Leave it empty and the tile shows the item's main bonus instead." }
+      { "type": "added", "text": "Custom items can now carry a short one-line label for the equipped tile: a Short effect field in the item form, with a live character counter and a 32-character cap so the label stays short. Leave it empty and the tile shows the item's main bonus instead." },
+      { "type": "fixed", "text": "Editing an existing custom item now shows it with the latest saved changes. Before, reopening the edit form right after a save could show the older version of the item until a page refresh — the sheet now always opens the freshest copy." }
     ]
   },
   "releases": [
