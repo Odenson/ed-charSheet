@@ -4,14 +4,14 @@
   "source": "custom",
   "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
   "items": {
-    "Beer Mug of Brawling": {
+    "New Test Item": {
       "kind": "gear",
       "effects": [],
       "ref": {
-        "cost": 500,
-        "weight": "0.1",
-        "availability": "Very Rare",
-        "description": "Chakka's travelling beer mug that never breaks and improves his bar brawling skills"
+        "cost": 0,
+        "weight": "0",
+        "availability": "0",
+        "description": "0"
       }
     }
   }
