@@ -776,6 +776,22 @@
         {
           "name": "Horror Fend",
           "equipped": true
+        },
+        {
+          "name": "Beer Mug of Brawling",
+          "equipped": true
+        },
+        {
+          "name": "TEST - Beer Mug of Brawling",
+          "equipped": true
+        },
+        {
+          "name": "Padded Cloth",
+          "equipped": true
+        },
+        {
+          "name": "[TEST] - Custom Item",
+          "equipped": true
         }
       ],
       "wealth": {
