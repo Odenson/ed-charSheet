@@ -2,17 +2,22 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": [
-      { "type": "added", "text": "Track your character's current damage right on the Overview: the Health panel now shows Current Damage with a conscious / unconscious / dead readout, your Wound Threshold, how many of today's Recovery Tests you've used, and any wounds you've taken. An Edit button (and, while running the game, a compact damage button on the panel) opens the damage controls where you can take damage, heal it, or step through wounds. A Recovery test button rolls the open-ended Effect test at your Toughness step and heals exactly what you roll — using one of your Recovery Tests for the day." },
-      { "type": "added", "text": "Wounds and Knockdown while you're running the game: take damage through the damage button and the sheet records a Wound whenever a single hit meets your Wound Threshold. A hit five or more over it triggers a Knockdown test — an open-ended Strength test against a Difficulty of the hit minus your threshold — and the roll tells you whether you stay on your feet or are Knocked Down." },
-      { "type": "added", "text": "A new Active Effects panel on the Overview lists everything currently shaping your character — race abilities, discipline circle abilities, and your equipped item and thread effects. Live conditions live here too: while Knocked Down the condition sits on the panel with a Stand up button that clears it, and a small button beside Recoveries lets you start a new day by resetting today's Recovery Tests to zero." },
-      { "type": "changed", "text": "The Knocked Down condition now follows the rulebook precisely: while you're on the ground every test you roll takes a −3 penalty (Initiative included, as the book's own example shows) and your Physical and Mystic Defence both drop by 3. The affected Defence numbers turn red with a small −3 badge until you get back up, so you can see at a glance what being prone is costing you." },
-      { "type": "changed", "text": "A Knockdown test settles itself the moment the dice land — there's no Apply button to press. Fail, and the roll modal stays open over your now-prone character showing the outcome, ready to dismiss or roll again." },
-      { "type": "fixed", "text": "Editing one health field (e.g. just damage) no longer risks dropping your other health values on the next reload — the sheet always stores your full health inputs." },
-      { "type": "added", "text": "Create custom items in the Equipment tab: a new Custom items section lets you build your own weapons, armour, gear, and more (name, kind, and the effects they grant), save them to the cloud alongside your character, and add them to any of your characters with the normal picker. Custom items are shared across all your characters, and the catalogue is folded into the rule files on the dev site so nothing is lost if the cloud copy ever goes missing." }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.8.0",
+      "date": "2026-08-09",
+      "changes": [
+        { "type": "added", "text": "Track your character's current damage right on the Overview: the Health panel now shows Current Damage with a conscious / unconscious / dead readout, your Wound Threshold, how many of today's Recovery Tests you've used, and any wounds you've taken. An Edit button (and, while running the game, a compact damage button on the panel) opens the damage controls where you can take damage, heal it, or step through wounds. A Recovery test button rolls the open-ended Effect test at your Toughness step and heals exactly what you roll — using one of your Recovery Tests for the day." },
+        { "type": "added", "text": "Wounds and Knockdown while you're running the game: take damage through the damage button and the sheet records a Wound whenever a single hit meets your Wound Threshold. A hit five or more over it triggers a Knockdown test — an open-ended Strength test against a Difficulty of the hit minus your threshold — and the roll tells you whether you stay on your feet or are Knocked Down." },
+        { "type": "added", "text": "A new Active Effects panel on the Overview lists everything currently shaping your character — race abilities, discipline circle abilities, and your equipped item and thread effects. Live conditions live here too: while Knocked Down the condition sits on the panel with a Stand up button that clears it, and a small button beside Recoveries lets you start a new day by resetting today's Recovery Tests to zero." },
+        { "type": "changed", "text": "The Knocked Down condition now follows the rulebook precisely: while you're on the ground every test you roll takes a −3 penalty (Initiative included, as the book's own example shows) and your Physical and Mystic Defence both drop by 3. The affected Defence numbers turn red with a small −3 badge until you get back up, so you can see at a glance what being prone is costing you." },
+        { "type": "changed", "text": "A Knockdown test settles itself the moment the dice land — there's no Apply button to press. Fail, and the roll modal stays open over your now-prone character showing the outcome, ready to dismiss or roll again." },
+        { "type": "fixed", "text": "Editing one health field (e.g. just damage) no longer risks dropping your other health values on the next reload — the sheet always stores your full health inputs." },
+        { "type": "added", "text": "Create custom items in the Equipment tab: a new Custom items section lets you build your own weapons, armour, gear, and more (name, kind, and the effects they grant), save them to the cloud alongside your character, and add them to any of your characters with the normal picker. Custom items are shared across all your characters, and the catalogue is folded into the rule files on the dev site so nothing is lost if the cloud copy ever goes missing." }
+      ]
+    },
     {
       "version": "1.7.0",
       "date": "2026-08-08",
