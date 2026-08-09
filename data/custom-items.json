@@ -1,0 +1,16 @@
+{
+  "schema": "ed-items/2",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "source": "custom",
+  "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
+  "items": {
+    "Smoke Cloak": {
+      "kind": "gear",
+      "ref": {
+        "cost": 5,
+        "description": "test"
+      },
+      "effects": []
+    }
+  }
+}
