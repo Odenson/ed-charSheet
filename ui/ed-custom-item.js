@@ -17,9 +17,13 @@
 // Enter confirms (primary buttons are autofocused); Escape closes the form first,
 // then the modal; theme-aware via light-dark().
 
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
 import { applyCustomItemsMap } from '../store-custom-items.js';
+import {
+  MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, OPERATIONS, MEASURES, CONDITIONS,
+  cap, prettyName, summaryFor, blankEffect, finishEffect, cleanItemForm,
+} from './custom-item-builder.js';
 
 const KLABEL = {
   weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
@@ -48,21 +52,6 @@ const REF_FIELDS = {
   'healing-aid': [{ k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }],
 };
 
-// §6.4 — type → target/measure constraints (mirrors engine/validate-item.js).
-// `open` names allow a free-text target name (a named ability / natural appendage).
-const TYPE_META = {
-  'armor-modifier': { domain: 'armor', names: ['Physical', 'Mystic'], measure: 'rating', label: 'Armour' },
-  'defense-modifier': { domain: 'defense', names: ['Physical', 'Mystic', 'Social'], measure: 'rating', label: 'Defence' },
-  'attack-modifier': { domain: 'attack', names: ['Damage'], measure: 'step', label: 'Damage', open: true },
-  'test-modifier': { domain: 'test', names: ['Action', 'Attack', 'Damage', 'Effect', 'Initiative', 'Recovery'], measure: 'result', label: 'Test', open: true },
-  'characteristic-modifier': { domain: 'characteristic', names: ['WoundThreshold', 'DeathRating', 'UnconsciousnessRating', 'RecoveryTests', 'Initiative', 'Movement', 'CarryingCapacity'], measure: 'rating', label: '' },
-  'attribute-modifier': { domain: 'attribute', names: ['Dexterity', 'Strength', 'Toughness', 'Perception', 'Willpower', 'Charisma'], measure: 'value', label: '' },
-};
-const TYPE_ORDER = Object.keys(TYPE_META);
-const OPERATIONS = ['add', 'subtract', 'set'];
-const MEASURES = ['rating', 'step', 'result', 'value', 'points', 'rank'];
-const CONDITIONS = ['always', 'situational'];
-
 // §6.2 — per-kind effect quick-templates. Each builds a raw effect; the builder
 // sets source/condition/summary.
 const QUICK_TEMPLATES = {
@@ -80,44 +69,8 @@ const QUICK_TEMPLATES = {
   'healing-aid': [{ label: '＋ Recovery Result', build: () => ({ type: 'test-modifier', operation: 'add', value: 1, measure: 'result', target: { domain: 'test', name: 'Recovery' }, condition: 'always' }) }],
 };
 
-// Presentation-only formatters (no game values computed here).
-const prettyName = (n) => (n ?? '').replace(/([a-z])([A-Z])/g, '$1 $2');
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-const absVal = (v) => Math.abs(Number(v) || 0);
-const effectLabel = (e) => {
-  const meta = TYPE_META[e.type];
-  const name = prettyName(e.target?.name ?? '');
-  const suffix = meta?.label ?? '';
-  return `${name}${suffix ? ` ${suffix}` : ''}`.trim();
-};
-const summaryFor = (e) => {
-  if (e.type === 'note') return e.summary ?? '';
-  const m = e.measure && e.measure !== 'rating' ? ` ${e.measure}` : '';
-  if (e.operation === 'subtract') return `Reduces ${effectLabel(e)} by ${absVal(e.value)}${m}`;
-  if (e.operation === 'set') return `Sets ${effectLabel(e)} to ${Number(e.value) || 0}${m}`;
-  return `Adds +${absVal(e.value)} ${effectLabel(e)}${m}`;
-};
-const finishEffect = (e, summary) => ({
-  ...e,
-  source: 'item',
-  condition: e.condition ?? 'always',
-  summary: summary ?? summaryFor(e),
-});
-
 // Build the editable item object the form works on.
 const blankItem = (kind) => ({ kind, effects: [] });
-const blankEffect = (type = 'armor-modifier') => {
-  const meta = TYPE_META[type];
-  return {
-    type,
-    operation: 'add',
-    value: 1,
-    measure: meta.measure,
-    target: meta ? { domain: meta.domain, name: meta.names[0] } : undefined,
-    condition: 'always',
-    summary: '',
-  };
-};
 
 export class EdCustomItem extends LitElement {
   static properties = {
@@ -262,26 +215,8 @@ export class EdCustomItem extends LitElement {
   // --- the item form ---
   _cleanForm() {
     const { name, item } = this._form;
-    const trimmed = (name ?? '').trim();
-    if (!trimmed) return null;
-    const effects = (item.effects ?? [])
-      .map((e) => {
-        const { _openTarget, ...rest } = e;
-        return rest;
-      })
-      .filter((e) => e.summary && e.summary.trim());
-    const clean = { kind: item.kind, effects };
-    const ref = {};
-    for (const [k, v] of Object.entries(item.ref ?? {})) {
-      if (k === 'cost') {
-        if (typeof v === 'number' && v >= 0) ref.cost = v;
-      } else if (v !== undefined && v !== '' && v !== false && v !== 0) {
-        ref[k] = v;
-      }
-    }
-    if (Object.keys(ref).length) clean.ref = ref;
-    const checked = validateItem(trimmed, clean);
-    return checked.ok ? { ok: true, name: trimmed, item: clean } : { ok: false, errors: checked.errors };
+    if (!(name ?? '').trim()) return null;
+    return cleanItemForm(name, item);
   }
   _formErrors() {
     const { name } = this._form;
@@ -302,16 +237,30 @@ export class EdCustomItem extends LitElement {
       item: { ...this._form.item, ref: { ...(this._form.item.ref ?? {}), [k]: value } },
     };
   }
+  _setShortEffect(value) {
+    this._form = {
+      ...this._form,
+      item: { ...this._form.item, presentation: { ...(this._form.item.presentation ?? {}), shortEffect: value } },
+    };
+  }
   _setEffect(i, patch) {
     const effects = (this._form.item.effects ?? []).map((e, j) => (j === i ? { ...e, ...patch } : e));
-    // A type change resets target/measure to that type's defaults.
+    // A type change resets target/measure to that type's defaults — and drops any
+    // override, since a typed summary described the previous type.
     if (patch.type && patch.type !== this._form.item.effects[i]?.type) {
+      this._summaryOverride.delete(i);
       effects[i] = { ...effects[i], ...blankEffect(patch.type), value: effects[i].value };
+    }
+    // Keep the auto summary in sync with the fields unless the user typed one.
+    // (Fix: the old reset blanked the summary, and the clean step then silently
+    // dropped the effect on save — docs/PLAN-CUSTOM-ITEMS.md §6.6.)
+    if (effects[i].type !== 'note' && !this._summaryOverride.has(i)) {
+      effects[i] = { ...effects[i], summary: summaryFor(effects[i]) };
     }
     this._setFormItem({ effects });
   }
   _setEffectSummary(i, summary) {
-    this._summaryOverride.add((this._form.item.effects ?? [])[i]);
+    this._summaryOverride.add(i);
     this._setEffect(i, { summary });
   }
   _addEffect(template) {
@@ -323,6 +272,10 @@ export class EdCustomItem extends LitElement {
     this._addEffect({ build: () => blankEffect('armor-modifier') });
   }
   _removeEffect(i) {
+    // Indices above the removed row shift down — keep the override set in step.
+    const next = new Set();
+    for (const idx of this._summaryOverride) next.add(idx < i ? idx : idx - 1);
+    this._summaryOverride = next;
     this._setFormItem({ effects: (this._form.item.effects ?? []).filter((_, j) => j !== i) });
   }
   _setTargetName(i, name) {
@@ -423,6 +376,7 @@ export class EdCustomItem extends LitElement {
     const collides = !isNew ? false : this.canonKeys?.some((k) => k.toLowerCase() === f.name?.trim().toLowerCase());
     const refFields = REF_FIELDS[kind] ?? [];
     const templates = QUICK_TEMPLATES[kind] ?? [];
+    const shortEffect = item.presentation?.shortEffect ?? '';
 
     return html`
       <div class="mhead">
@@ -460,6 +414,13 @@ export class EdCustomItem extends LitElement {
                   : html`<span class="fld"><label>${rf.label}</label><input type=${rf.type === 'number' ? 'number' : 'text'} .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => this._setRef(rf.k, rf.type === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} /></span>`,
             )}
             <span class="fld desc"><label>Description</label><textarea .value=${item.ref?.description ?? ''} @input=${(e) => this._setRef('description', e.target.value)}></textarea></span>
+            <span class="fld desc">
+              <label for="f-short">Short effect</label>
+              <input id="f-short" type="text" maxlength=${MAX_SHORT_EFFECT} .value=${shortEffect}
+                placeholder="e.g. Holds ~50 lb"
+                @input=${(e) => this._setShortEffect(e.target.value)} />
+              <span class="hint">${shortEffect.length}/${MAX_SHORT_EFFECT} — the one-line label on the equipped tile.</span>
+            </span>
           </div>
         </div>
 
@@ -491,7 +452,6 @@ export class EdCustomItem extends LitElement {
 
   _effectRow(e, i) {
     const meta = TYPE_META[e.type];
-    const overridden = this._summaryOverride.has(e);
     const value = e.value ?? '';
     return html`
       <div class="erow">
@@ -521,9 +481,6 @@ export class EdCustomItem extends LitElement {
           <label>Summary</label>
           <input type="text" .value=${e.summary ?? ''} placeholder="Auto-generated — edit to override"
             @input=${(ev) => this._setEffectSummary(i, ev.target.value)} />
-          ${e.type !== 'note' && !overridden && e.summary && e.summary !== summaryFor(e)
-            ? html`<span class="hint">Auto: “${summaryFor(e)}”</span>`
-            : ''}
         </span>
       </div>
     `;

@@ -2,7 +2,10 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      { "type": "fixed", "text": "Custom items you create now keep their effects. Before, changing an effect's type while creating an item could make that effect silently disappear from the saved item — the sheet now always saves the effects you add, with each effect's summary auto-generated from its fields (edit the summary to override it, and pick a different type and the summary re-forms to match)." },
+      { "type": "added", "text": "Custom items can now carry a short one-line label for the equipped tile: a Short effect field in the item form, with a live character counter and a 32-character cap so the label stays short. Leave it empty and the tile shows the item's main bonus instead." }
+    ]
   },
   "releases": [
     {

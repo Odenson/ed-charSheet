@@ -63,6 +63,9 @@ const TARGET_RULES = {
   'test-modifier': { domain: 'test', names: null },
 };
 
+/** Max chars for the equipped tile's one-line `presentation.shortEffect` label
+ * (rules/items.json presentation legend: a "3-4 word" label). */
+export const MAX_SHORT_EFFECT = 32;
 /** Per-item size cap (bytes, UTF-8). */
 export const MAX_ITEM_BYTES = 4096;
 /** Per-file item-count cap for the custom-items catalog. */
@@ -157,8 +160,15 @@ export function validateItem(name, item) {
       }
     }
   }
-  if (item.presentation !== undefined && (!isPlainObject(item.presentation) || (item.presentation.shortEffect !== undefined && typeof item.presentation.shortEffect !== 'string')))
-    push(errors, `presentation: must be an object with an optional string shortEffect`);
+  if (item.presentation !== undefined) {
+    if (!isPlainObject(item.presentation)) push(errors, `presentation: must be an object`);
+    else if (item.presentation.shortEffect !== undefined) {
+      if (typeof item.presentation.shortEffect !== 'string')
+        push(errors, `presentation: shortEffect must be a string`);
+      else if (item.presentation.shortEffect.length > MAX_SHORT_EFFECT)
+        push(errors, `presentation: shortEffect must be at most ${MAX_SHORT_EFFECT} chars`);
+    }
+  }
 
   if (!Array.isArray(item.effects)) {
     push(errors, `effects: must be an array`);
