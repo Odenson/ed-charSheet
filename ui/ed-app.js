@@ -1,12 +1,14 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { saveServer, SaveError } from '../store-server.js';
+import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits } from '../store-custom-items.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
+import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-edit-meta.js';
@@ -55,6 +57,9 @@ export class EdApp extends LitElement {
   // The SAVE_KEY for GitHub saves. Held in memory for the session only — never
   // localStorage (runbook §0). A plain field, not reactive state.
   _saveKey = null;
+  // A custom-item save interrupted by the key prompt (saveKey absent). Replayed
+  // once the prompt confirms; cleared on any prompt close.
+  _pendingCustomSave = null;
 
   static styles = css`
     :host {
@@ -204,11 +209,22 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
+    // A custom-item save paused for the key replays first; otherwise retry the
+    // character save. The pending is consumed either way.
     this.addEventListener('ed-save-key', (e) => {
       this._saveKey = e.detail?.key || null;
       this._keyPrompt = false;
-      if (this._saveKey) this._save();
+      const pending = this._pendingCustomSave;
+      this._pendingCustomSave = null;
+      if (!this._saveKey) return;
+      if (pending) this._saveCustomItems(pending.items, pending.delete);
+      else this._save();
     });
+    // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3).
+    // 'draft' writes the overlay instantly (resilient) and re-derives so pending
+    // items resolve this session; 'save' POSTs to /save-items with the session
+    // key (re-prompting via ed-save-key if absent), reconciles on success.
+    this.addEventListener('ed-edit-custom-items', (e) => this._editCustomItems(e.detail));
     // The character picker dispatched a choice — load that character.
     this.addEventListener('load-character', (e) => {
       if (e.detail?.id) this._loadCharacter(e.detail.id);
@@ -254,7 +270,7 @@ export class EdApp extends LitElement {
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
-      this._dirty = hasPendingEdits(id);
+      this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
       this._picker = false;
       this._noSelection = false;
       this._error = null;
@@ -326,6 +342,79 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
+  // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3). The
+  // view only dispatches the delta; this handler owns persistence.
+  //   'draft' — write the `ed-custom-items` overlay instantly (a pending item
+  //     survives a reload and an offline worker) and re-derive so the picker /
+  //     catalog resolve it this session. Data still flows down through render.
+  //   'save'  — POST the delta to /save-items with the session save key (re-prompt
+  //     if absent, replaying on confirm); on success reconcile the overlay (the
+  //     branch read becomes the truth), re-read the catalog, and toast the commit.
+  _editCustomItems({ items, delete: deleteNames, action }) {
+    if (!this._character) return;
+    if (action === 'draft') {
+      // Overlay write is instant and resilient; the committed catalog is
+      // unchanged, so re-apply the overlay to it in place (no network fetch).
+      // A net-empty delta (add-then-remove) clears the overlay — nothing pending.
+      const delta = { items: items ?? {}, delete: deleteNames ?? [] };
+      if (Object.keys(delta.items).length || delta.delete.length) saveCustomEdits(delta);
+      else reconcileCustomEdits();
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      this._rules = {
+        ...this._rules,
+        customItemsFile: applyCustomEdits(this._rules.customItemsCommittedFile, loadCustomEdits()),
+      };
+      this._model = deriveModel(this._character, this._rules);
+      return;
+    }
+    if (action !== 'save') return;
+    if (!Object.keys(items ?? {}).length && !(deleteNames ?? []).length) return;
+    if (!this._saveKey) {
+      this._pendingCustomSave = { items: items ?? {}, delete: deleteNames ?? [] };
+      this._keyPrompt = true;
+      return;
+    }
+    this._saveCustomItems(items ?? {}, deleteNames ?? []);
+  }
+
+  // The /save-items POST + reconcile + catalog re-read (shared by the modal's
+  // Save and the key-prompt replay). Typed errors surface in the app toast; the
+  // overlay keeps the delta on failure so nothing is lost.
+  async _saveCustomItems(items, deleteNames) {
+    this._saving = true;
+    this._saveError = null;
+    this._saveOk = null;
+    try {
+      const commit = await saveCustomItems(items, { saveKey: this._saveKey, deleteNames });
+      reconcileCustomEdits();
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      this._saveOk = commit; // { sha, url }
+      await this._refreshCustomItems();
+    } catch (e) {
+      if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
+      this._saveError = e?.message ? String(e.message) : String(e);
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  // Re-read the custom-item catalog from the branch and re-derive the model with
+  // the (possibly pending) overlay applied — keeps the picker, the merged
+  // itemCatalog and the manager modal's committed baseline consistent.
+  async _refreshCustomItems() {
+    try {
+      const committed = await loadCustomItems();
+      this._rules = {
+        ...this._rules,
+        customItemsCommittedFile: committed,
+        customItemsFile: applyCustomEdits(committed, loadCustomEdits()),
+      };
+      this._model = deriveModel(this._character, this._rules);
+    } catch (e) {
+      this._saveError = `Couldn't refresh custom items: ${e?.message ? String(e.message) : String(e)}`;
+    }
+  }
+
   // Roll-time modifiers from live conditions. While Knocked Down every test
   // takes the condition's −3 (PG p.389: "suffers a –3 penalty to his tests" —
   // the worked example includes the next Initiative test, so there are no
@@ -352,14 +441,24 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     try {
-      const commit = await saveServer(this._character, { saveKey: this._saveKey, id: this._characterId });
+      let commit = await saveServer(this._character, { saveKey: this._saveKey, id: this._characterId });
       reconcileOverlay(undefined, this._characterId);
-      this._dirty = false;
+      // The save dot also reflects a pending custom-item delta, so a confirmed
+      // Save commits that too — /save-items POST, reconcile, re-read the catalog.
+      const pending = loadCustomEdits();
+      if (pending && (Object.keys(pending.items ?? {}).length || (pending.delete ?? []).length)) {
+        const customCommit = await saveCustomItems(pending.items ?? {}, { saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
+        reconcileCustomEdits();
+        commit = customCommit; // last commit link wins
+        await this._refreshCustomItems();
+      }
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
       this._saveOk = commit; // { sha, url }
     } catch (e) {
       // A rejected key: drop it so the next Save re-prompts.
       if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
       this._saveError = e?.message ? String(e.message) : String(e);
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
     } finally {
       this._saving = false;
     }
@@ -393,7 +492,9 @@ export class EdApp extends LitElement {
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
-      this._dirty = false;
+      // Discarding clears the character overlay only; a pending custom-item delta
+      // is a separate, global overlay and survives.
+      this._dirty = hasCustomPendingEdits();
       this._saveError = null;
     } catch (e) {
       this._saveError = `Couldn't reload the saved version: ${e?.message ? String(e.message) : String(e)}`;
@@ -421,7 +522,13 @@ export class EdApp extends LitElement {
       case 'spells':
         return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
       case 'equipment':
-        return html`<ed-equipment .model=${m} .editMode=${this._editMode}></ed-equipment>`;
+        return html`<ed-equipment
+          .model=${m}
+          .editMode=${this._editMode}
+          .customCommitted=${m.customCommittedCatalog}
+          .customOverlay=${loadCustomEdits()}
+          .customCanonKeys=${m.customCanonKeys}
+        ></ed-equipment>`;
       case 'notes':
         return html`<div class="stub"><span class="big">❋</span>Notes — a running history of the character. Coming soon.</div>`;
       default:
@@ -537,7 +644,7 @@ export class EdApp extends LitElement {
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}
-      ${this._keyPrompt ? html`<ed-save-key @close=${() => (this._keyPrompt = false)}></ed-save-key>` : ''}
+      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; }}></ed-save-key>` : ''}
       ${this._confirmDiscard
         ? html`<ed-confirm
             heading="Discard local changes?"

@@ -87,12 +87,19 @@ export class EdEquipment extends LitElement {
   static properties = {
     model: { attribute: false },
     editMode: { attribute: false },
-    _modal: { state: true },      // owned item name whose detail is open
-    _addOpen: { state: true },    // searchable picker visible
-    _query: { state: true },      // picker search text
-    _hi: { state: true },         // highlighted picker result index
-    _coinMenu: { state: true },   // "add coin" menu open
-    _shownCoins: { state: true }, // coin keys pinned visible at 0 (edit mode)
+    // Custom-item manager modal inputs (data flows down from ed-app): the
+    // branch-truth custom catalog, the pending `ed-custom-items` delta, and the
+    // canon item names for the collision warning.
+    customCommitted: { attribute: false },
+    customOverlay: { attribute: false },
+    customCanonKeys: { attribute: false },
+    _modal: { state: true },          // owned item name whose detail is open
+    _addOpen: { state: true },        // searchable picker visible
+    _query: { state: true },          // picker search text
+    _hi: { state: true },             // highlighted picker result index
+    _coinMenu: { state: true },       // "add coin" menu open
+    _shownCoins: { state: true },     // coin keys pinned visible at 0 (edit mode)
+    _customItemsOpen: { state: true }, // custom-item manager modal open
   };
 
   constructor() {
@@ -103,6 +110,7 @@ export class EdEquipment extends LitElement {
     this._hi = 0;
     this._coinMenu = false;
     this._shownCoins = new Set();
+    this._customItemsOpen = false;
     this._onKeydown = (e) => {
       if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
     };
@@ -630,6 +638,7 @@ export class EdEquipment extends LitElement {
                     <button class="addbtn" @click=${() => { this._addOpen = false; this._query = ''; }}>Done</button>
                   `
                 : html`<button class="addbtn" @click=${() => { this._addOpen = true; this._query = ''; this._hi = 0; }}>＋ Add item</button>`}
+              <button class="addbtn" @click=${() => (this._customItemsOpen = true)}>＋ Custom items</button>
             </div>
           `
         : ''}
@@ -640,6 +649,15 @@ export class EdEquipment extends LitElement {
       </div>
 
       ${modalItem ? this._detailModal(modalItem) : ''}
+
+      ${this._customItemsOpen
+        ? html`<ed-custom-item
+            .committed=${this.customCommitted ?? {}}
+            .overlay=${this.customOverlay}
+            .canonKeys=${this.customCanonKeys ?? []}
+            @close=${() => (this._customItemsOpen = false)}
+          ></ed-custom-item>`
+        : ''}
     `;
   }
 }

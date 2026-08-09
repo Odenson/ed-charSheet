@@ -30,6 +30,7 @@ import {
   karmaUse,
   talentKarmaUse,
 } from './engine/characteristics.js';
+import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
 // Discipline — so they count as "required" (Discipline) talents, not options.
@@ -155,6 +156,40 @@ export async function loadCharacters() {
     /* network/CORS hiccup — fall through to the CDN */
   }
   return loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
+}
+
+const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-items.json?ref=${CHARACTER_BRANCH}`;
+const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/custom-items.json`;
+
+/**
+ * Load the player-created custom-item catalog (ed-items/2, PLAN-CUSTOM-ITEMS).
+ * Mirrors loadCharacters: on Pages read `data/custom-items.json` LIVE from the
+ * character-data branch — contents API first (git-consistent, reflects the
+ * latest /save-items commit), raw CDN cache-busted fallback — and the bundled
+ * `rules/custom-items.json` as the offline fallback (unlike the character store
+ * the bundle may carry a folded copy). Elsewhere read the gitignored
+ * `./data/custom-items.json` working copy, then the bundled catalog. Never
+ * throws: a missing/unreadable catalog is an empty one.
+ */
+export async function loadCustomItems() {
+  const bundled = () => loadJSONOptional('./rules/custom-items.json', { schema: 'ed-items/2', items: {} });
+  if (!onPages()) return (await loadJSONOptional('./data/custom-items.json', null)) ?? bundled();
+  try {
+    const res = await fetch(CUSTOM_ITEMS_API_URL, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return await res.json(); // git-consistent: reflects the latest save
+  } catch {
+    /* network/CORS hiccup — fall through to the CDN */
+  }
+  try {
+    const res = await fetch(`${CUSTOM_ITEMS_RAW_URL}?t=${Date.now()}`);
+    if (res.ok) return await res.json();
+  } catch {
+    /* fall through to the bundled catalog */
+  }
+  return bundled();
 }
 
 // --- Persistence (Phase 2) -------------------------------------------------
@@ -301,10 +336,18 @@ export async function loadCharacter(id, { store } = {}) {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
+  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
+  // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
+  // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
+  // while the `ed-custom-items` overlay (pending, unsaved edits) is applied on
+  // top as `customItemsFile` so a pending item renders and survives until its
+  // confirmed save.
+  const customItemsCommittedFile = await loadCustomItems();
+  const customItemsFile = applyCustomEdits(customItemsCommittedFile, loadCustomEdits());
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -313,7 +356,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -412,7 +455,14 @@ export function deriveModel(character, rules) {
   // *equipped* items so they fold onto armour/defence/initiative exactly like
   // racial and discipline effects. Unknown names degrade gracefully (kept, but
   // contribute nothing) so a typo or a future custom item never breaks the sheet.
-  const itemCatalog = itemsFile?.items ?? {};
+  const canonItems = itemsFile?.items ?? {};
+  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS) merge LAST so a player-created
+  // item wins over a canon entry of the same name. The merged map is what owned
+  // items and the add-picker resolve against; the raw custom map is exposed
+  // separately as `customCatalog` for the manager modal to edit (and already
+  // carries any pending `ed-custom-items` overlay edits from loadCharacter).
+  const customItems = customItemsFile?.items ?? {};
+  const itemCatalog = { ...canonItems, ...customItems };
   const threadItemsCatalog = threadItemsFile?.items ?? {};
   // A thread item resolves from rules/thread-items.json (schema ed-thread-items/1):
   // its `effects` are the unthreaded `base` effects plus the effects of each Thread
@@ -641,6 +691,15 @@ export function deriveModel(character, rules) {
     stepByNumber,
     items,
     itemCatalog,
+    // Player-created items only (ed-items/2) — the manager modal's edit set.
+    // The add-picker still sees them: `itemCatalog` merges canon + custom, custom
+    // winning on a name collision.
+    customCatalog: customItems,
+    // The branch-truth custom set (pre-overlay) and the canon item names — the
+    // manager modal's delta baseline and collision-warning list respectively
+    // (docs/PLAN-CUSTOM-ITEMS.md §5.2 / §5.4).
+    customCommittedCatalog: customItemsCommittedFile?.items ?? {},
+    customCanonKeys: Object.keys(canonItems),
     // Thread-item catalogue (rules/thread-items.json) — the add-picker offers its
     // entries just like items; the resolved `items` carry the `thread` metadata.
     threadItemCatalog,

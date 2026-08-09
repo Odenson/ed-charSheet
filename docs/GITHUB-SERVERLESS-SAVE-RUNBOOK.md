@@ -65,9 +65,10 @@ the worker's secret store.
 | `GITHUB_OWNER` | var | `odenson` | `wrangler.toml [vars]` |
 | `GITHUB_REPO` | var | `ed-charSheet` | `wrangler.toml [vars]` |
 | `GITHUB_STORE` | var | `data/characters.json` — grouped store (`ed-characters/1`); saves upsert `characters[id]` here (the only save target since v1.6.0) | `wrangler.toml [vars]` |
+| `GITHUB_ITEMS_PATH` | var | `data/custom-items.json` — the custom-item catalog (`ed-items/2`) written by `/save-items` (PLAN-CUSTOM-ITEMS.md) | `wrangler.toml [vars]` |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
-Only the two **secrets** are sensitive; the four vars are plain config and live
+Only the two **secrets** are sensitive; the five vars are plain config and live
 in `wrangler.toml`. **No secret is ever committed or placed in the app.**
 
 ---
@@ -267,10 +268,11 @@ enabled = true
 head_sampling_rate = 1
 
 [vars]
-GITHUB_OWNER   = "odenson"
-GITHUB_REPO    = "ed-charSheet"
-GITHUB_STORE   = "data/characters.json"
-GITHUB_BRANCH  = "character-data"
+GITHUB_OWNER    = "odenson"
+GITHUB_REPO     = "ed-charSheet"
+GITHUB_STORE    = "data/characters.json"
+GITHUB_ITEMS_PATH = "data/custom-items.json"
+GITHUB_BRANCH   = "character-data"
 ```
 
 Secrets (`GITHUB_TOKEN`, `SAVE_KEY`) are **not** in this file — they're set with
@@ -345,12 +347,129 @@ character.
 | Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
 | Multi-character store | `GITHUB_STORE` + `id` upsert shipped (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
 | v1.6.0 promotion | Released 2026-08-07 — grouped store is the only save target; legacy `GITHUB_PATH`/`data/character.json` and the worker no-`id` path removed. **Redeploy the worker after this release** (`npx wrangler deploy`). |
+| Custom items (`/save-items`) | Built (PLAN-CUSTOM-ITEMS.md P1–P6); worker route + `GITHUB_ITEMS_PATH` shipped. **Phase B verified 2026-08-09** — all four smoke curls passed (401 / 400 invalid_items / 200 upsert + branch file / 200 delete). Owner rollout runsheet: §8 below. |
+
+---
+
+## 8. Custom items — build & rollout runsheet
+
+The companion write endpoint (`/save-items`) and the CI fold job
+(docs/PLAN-CUSTOM-ITEMS.md). Claude built the code and tests (Phases 1–6 of the
+plan); the **owner** deploys the worker and verifies live, exactly like the
+original rollout above. Work top-to-bottom; status boxes track it.
+
+### Phase A — Prereqs check (YOU)
+
+- [x] **A1. Branch protection** stays off on `main`/`dev` (the fold's
+      ephemeral-token direct push to `dev` depends on it):
+  ```bash
+  gh api repos/Odenson/ed-charSheet/branches/main/protection --jq .message  # expect: Branch not protected
+  gh api repos/Odenson/ed-charSheet/branches/dev/protection   --jq .message  # expect: Branch not protected
+  ```
+- [x] **A2. Cloudflare session.**
+  ```bash
+  cd tools/worker && npm install && npx wrangler whoami
+  ```
+  **No new PAT, no new SAVE_KEY** — both existing secrets are reused as-is; the
+  only new config is the `GITHUB_ITEMS_PATH` var already in `wrangler.toml`.
+
+### Phase B — Worker update (YOU)
+
+- [x] **B1. Get the code.** `git switch dev && git pull` — sync only; run after
+      your dev work is committed and pushed, skip if local dev is current. (A
+      `git pull` never overwrites untracked files or uncommitted edits — it
+      aborts rather than clobber. See PLAN-CUSTOM-ITEMS.md §6.6.)
+- [x] **B2. Deploy.** `npx wrangler deploy` — `/save-items` ships beside `/save`;
+      URL unchanged; no new secrets.
+- [ ] **B3. Smoke-test `/save-items`** (from the repo root):
+  ```bash
+  WORKER="https://ed-charsheet-save.edsavechar.workers.dev"
+  KEY="<your-save-key>"
+
+  # (a) No key → expect 401
+  curl -sS -X POST "$WORKER/save-items" -H 'Content-Type: application/json' \
+    -d '{"items":{}}' -w '\n%{http_code}\n'
+
+  # (b) Invalid item (bad kind) → expect 400 invalid_items
+  curl -sS -X POST "$WORKER/save-items" -H 'Content-Type: application/json' \
+    -H "x-save-key: $KEY" \
+    -d '{"items":{"Junk":{"kind":"nope","effects":[]}}}' -w '\n%{http_code}\n'
+
+  # (c) Valid upsert → expect 200 + commit.url; verify the branch file
+  curl -sS -X POST "$WORKER/save-items" -H 'Content-Type: application/json' \
+    -H "x-save-key: $KEY" \
+    -d '{"items":{"Smoke Cloak":{"kind":"gear","ref":{"cost":5,"description":"test"},"effects":[]}}}' -w '\n%{http_code}\n'
+  gh api "repos/Odenson/ed-charSheet/contents/data/custom-items.json?ref=character-data" \
+    --jq '.content' | base64 -d | head -c 400; echo
+
+  # (d) Delete propagates → expect 200; branch file no longer has "Smoke Cloak"
+  curl -sS -X POST "$WORKER/save-items" -H 'Content-Type: application/json' \
+    -H "x-save-key: $KEY" \
+    -d '{"items":{},"delete":["Smoke Cloak"]}' -w '\n%{http_code}\n'
+  ```
+  Failures → `npx wrangler tail` while re-running the failing curl.
+- [x] **B3. Smoke-test `/save-items`** — all four curls passed 2026-08-09.
+- [x] **B4. Record** in the plan's Progress log: route verified, date (done).
+
+### Phase C — Fold job (YOU)
+
+> **Read this first — Phase C has hard prerequisites Phase B didn't** (plan §6.6
+> P6 note): the fold cannot run until the workflow file exists on GitHub, and
+> *where* depends on the trigger you want. None of the code is committed yet —
+> C0 is the first thing to do.
+
+- [ ] **C0. Deploy the change.** Commit + push everything to `dev` (workflow
+      file, `tools/fold-custom-items.mjs`, `engine/validate-item.js`, the
+      UI/store modules). Verify:
+      `gh api "repos/Odenson/ed-charSheet/contents/.github/workflows/fold-custom-items.yml?ref=dev" --jq '.sha'`
+- [ ] **C1. (Pre-main) put the workflow on `character-data`** — a `push` trigger
+      only fires if this file exists on the branch being pushed, and the
+      worker's `/save-items` writes only `data/custom-items.json`. Commit the
+      file to `character-data` once (later worker PUTs inherit it). Then push a
+      test save via Phase B3c and confirm **Actions** → **Fold custom items**
+      ran → verify: `gh api "…/contents/rules/custom-items.json?ref=dev" --jq '.sha'`.
+      (Post-main, skip C1 — the manual button below works instead.)
+- [ ] **C2. (Post-main) manual run.** Actions → **Fold custom items** → **Run
+      workflow**; verify: `gh api "…/contents/rules/custom-items.json?ref=dev" --jq '.sha'`.
+- [ ] **C3.** **Deploy to GitHub Pages** ran from the fold's dev push; `/dev/`
+      rebuilt (both instances rebuild; main's tree unchanged).
+
+### Phase D — End-to-end (YOU drive, CLAUDE checks)
+
+> Use the deployed dev site `https://odenson.github.io/dev/` — the worker's CORS
+> allows the `odenson.github.io` origin only.
+
+- [ ] **D1.** Edit mode (✎) → Equipment → **Custom items** → create
+      (name/kind/effect via the form) → **Save** (reuses the SAVE_KEY session;
+      prompts once if absent) → success toast + commit link.
+- [ ] **D2.** The item is in `data/custom-items.json` on `character-data`
+      (commit link, or the B3c `gh api` command).
+- [ ] **D3.** Picker shows it; add it to a character; switch characters → still
+      available (re-read on switch).
+- [ ] **D4.** Reload → persists; overlay reconciled (no stale mask).
+- [ ] **D5.** Fold ran → `rules/custom-items.json` on dev updated → `/dev/`
+      rebuilt → reload still shows it (bundled fallback path).
+- [ ] **D6.** Error path: go offline → edit → Save fails → overlay holds the
+      pending item (still usable), Save dot shows → online → Save → reconciled.
+- [ ] **D7.** Collision: create a custom item sharing a canon name → custom's
+      effects win, override notice shown.
+- [ ] **D8.** Delete a custom item → gone from branch + picker + folded file
+      (mirror semantics).
+- [ ] **D9.** Escape closes the modal without saving; Enter saves; light and
+      dark both render correctly; desktop viewport fits without vertical scroll.
+
+### Phase E — Release (YOU)
+
+- [ ] **E1.** Nothing special: the feature + first `rules/custom-items.json` ride
+      the next normal dev→main squash release PR (WORKFLOW.md §2). A fold landing
+      mid-release just joins that PR's diff (expected).
 
 ---
 
 ## References
 
 - [GITHUB-SERVERLESS-SAVE.md](GITHUB-SERVERLESS-SAVE.md) — design (why/how it works)
+- [PLAN-CUSTOM-ITEMS.md](PLAN-CUSTOM-ITEMS.md) — the custom-items feature the `/save-items` fold/rollout implements (§8 of the runbook = the plan's owner phases)
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — §7.4/§7.5 save targets, §10 status
 - [WORKFLOW.md](../WORKFLOW.md) — deploy model; why `character-data` never rebuilds
 - [store.js](../store.js) — the live read this write half pairs with
