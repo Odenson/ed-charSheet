@@ -13,13 +13,11 @@
 // healing-aid / thread-item); it is never a stored per-item flag. Item detail
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
+import { pickItemKeys, PICKER_LABELS } from './picker.js';
 
 const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid', 'thread-item']);
-const KLABEL = {
-  weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
-  gear: 'Gear', 'magic-item': 'Magic item', 'blood-charm': 'Blood charm', 'healing-aid': 'Healing aid',
-  'thread-item': 'Thread item',
-};
+// Kind labels shared with the pure picker module (ui/picker.js).
+const KLABEL = PICKER_LABELS;
 // Sections group items by function; magic is a property that can appear in any of
 // them (a thread weapon glows in Weapons, a light quartz glows in Gear). Thread
 // items get their own section so the woven rank is legible across all of them.
@@ -349,6 +347,8 @@ export class EdEquipment extends LitElement {
   // --- picker ---
   // Thread items live in their own catalogue (rules/thread-items.json); the picker
   // offers both catalogues, tagging each with its kind for the left-hand label.
+  // Selection lives in the pure ui/picker.js module — custom items sort first so
+  // a freshly saved item surfaces within the 50-result cap (PLAN-CUSTOM-ITEMS §6.6 P8.4).
   _catalogs() {
     return {
       ...(this.model?.itemCatalog ?? {}),
@@ -356,24 +356,11 @@ export class EdEquipment extends LitElement {
     };
   }
   _matches() {
-    const q = this._query.trim().toLowerCase();
-    const catalog = this._catalogs();
-    return Object.keys(catalog)
-      .filter((n) => {
-        if (!q) return true;
-        const it = catalog[n];
-        // Effect entries are objects carrying a `summary`; reduce every catalog
-        // shape (plain `effects`, thread `base`/`threadRanks`) to strings first,
-        // so the search always compares text.
-        const summaries = [
-          ...(it.effects ?? []).map((e) => e.summary ?? ''),
-          ...(it.base?.effects ?? []).map((e) => e.summary ?? ''),
-          ...(it.threadRanks ?? []).flatMap((r) => r.effects ?? []).map((e) => e.summary ?? ''),
-        ];
-        return n.toLowerCase().includes(q) || (KLABEL[it.kind] || '').toLowerCase().includes(q) ||
-          summaries.some((s) => s.toLowerCase().includes(q));
-      })
-      .slice(0, 50);
+    return pickItemKeys({
+      catalog: this._catalogs(),
+      customNames: Object.keys(this.model?.customCatalog ?? {}),
+      query: this._query,
+    });
   }
   _pickKeydown(e) {
     const list = this._matches();

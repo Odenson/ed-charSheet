@@ -492,6 +492,30 @@ verify via the auto-trigger or `GITHUB_TOKEN=… node tools/fold-custom-items.mj
 run locally. Runbook §8 Phase C and this §8 were amended to carry the C0 commit
 prerequisite.
 
+**P8.4 D3 — the add-picker hid fresh custom items behind its 50-result cap.**
+Found in owner Phase D (dev): after creating and saving a custom item, it did
+not appear in the "＋ Add item" picker. Root cause: `_matches()` sliced to 50
+results, and the merged `itemCatalog` appends customs after the real **179**
+canon entries (`{ ...canonItems, ...customItems }`), so a custom item sat at
+position ~180 — invisible while browsing (a typed search still found it).
+Fix: the picker's selection moved into a pure, DOM-free module
+(`ui/picker.js`, `pickItemKeys`), which sorts custom items **first** before the
+`.slice(0, PICKER_CAP)` — a fresh item always surfaces, and the rule is now
+unit-tested against the real catalog (`picker.test.js`). The store merge
+stays canon-first/custom-wins by design. Second, a git-consistent read that
+lags the `/save-items` PUT could briefly blank the item (only a page refresh
+recovered it): `_refreshCustomItems` now reconciles the overlay only once the
+re-read **reflects** the just-saved delta (item present, deletes applied) —
+otherwise the overlay keeps the item visible and reconciles on the next
+confirmed read. Guardrail: Tier 3 (bug fixes restoring documented behavior;
+new pure presentation module; no Tier-1 rule touched).
+
+**P8.4 fold action — Node.js 20 deprecation warning.** The fold job showed
+"running on old Node.js 20 [deprecated]" (GitHub deprecates node20-based
+actions): `actions/checkout@v4` ran on the node20 runtime. Bumped to
+`actions/checkout@v5` (Node 24). The `run: node …` step uses the runner's
+preinstalled default (Node 24 on `ubuntu-latest`) and needs no change.
+
 ---
 
 ## 7. Guardrail classification
@@ -534,7 +558,7 @@ look like `<THIS>`.
 - [x] **B1. Get the code.** `git fetch && git switch dev && git pull`.
 - [x] **B2. Deploy.** `npx wrangler deploy` — `/save-items` ships beside `/save`;
       URL unchanged; no new secrets.
-- [ ] **B3. Smoke-test `/save-items`** (from the repo root):
+- [x] **B3. Smoke-test `/save-items`** (from the repo root):
   ```bash
   WORKER="https://ed-charsheet-save.edsavechar.workers.dev"
   KEY="<your-save-key>"
@@ -585,28 +609,28 @@ look like `<THIS>`.
 >     verification is via the auto-trigger or a local run of
 >     `node tools/fold-custom-items.mjs` with a token.
 
-- [ ] **C0. Deploy the change.** Commit + push `dev` (the whole custom-items
+- [x] **C0. Deploy the change.** Commit + push `dev` (the whole custom-items
       change). Verify the workflow file is in the pushed commit:
       `gh api "repos/Odenson/ed-charSheet/contents/.github/workflows/fold-custom-items.yml?ref=dev" --jq '.sha'`.
-- [ ] **C1. (Pre-main) fold exists on `character-data`** so a custom-item save
+- [x] **C1. (Pre-main) fold exists on `character-data`** so a custom-item save
       auto-folds. Once done, push a test save through `/save-items` (Phase B3c)
       and watch **Actions** → **Fold custom items** fire → then verify:
       `gh api "repos/Odenson/ed-charSheet/contents/rules/custom-items.json?ref=dev" --jq '.sha'`
       (post-main, skip C1 — the manual button is available instead.)
-- [ ] **C2. (Post-main) manual run.** Actions → **Fold custom items** → **Run
+- [x] **C2. (Post-main) manual run.** Actions → **Fold custom items** → **Run
       workflow** → verify `rules/custom-items.json` on dev updated
       (`gh api "…/contents/rules/custom-items.json?ref=dev" --jq '.sha'`).
-- [ ] **C3.** **Deploy to GitHub Pages** ran from the fold's dev push; `/dev/`
+- [x] **C3.** **Deploy to GitHub Pages** ran from the fold's dev push; `/dev/`
       rebuilt (both instances rebuild; main's tree unchanged).
 
 ### Phase D — End-to-end (YOU drive, CLAUDE checks)
 > Use the deployed dev site `https://odenson.github.io/dev/` — the worker's CORS
 > allows the `odenson.github.io` origin only.
 
-- [ ] **D1.** Edit mode (✎) → Equipment → **Custom items** → create
+- [x] **D1.** Edit mode (✎) → Equipment → **Custom items** → create
       (name/kind/effect via the form) → **Save** (reuses the SAVE_KEY session;
       prompts once if absent) → success toast + commit link.
-- [ ] **D2.** The item is in `data/custom-items.json` on `character-data`
+- [x] **D2.** The item is in `data/custom-items.json` on `character-data`
       (commit link, or the B3c `gh api` command).
 - [ ] **D3.** Picker shows it; add it to a character; switch characters → still
       available (re-read on switch).
@@ -675,11 +699,17 @@ look like `<THIS>`.
 | 2026-08-09 | P8 done | CLAUDE | Verify: root 238/238 + `node --check` clean + `tools/probe-custom-items.mjs` logic probe green (P8.2 had **no** existing pattern → owner chose logic-level + defer UI checks to Phase D); guardrail self-check passed; status flipped to built & verified (logic level) |
 | 2026-08-09 | Phase B done | OWNER | Worker deployed; all four `/save-items` smoke curls passed (401 / 400 / 200+commit / 200 delete) |
 | 2026-08-09 | Fold rollout gaps found | CLAUDE | Workflow had no checkout step (job would fail on a bare runner) + push trigger requires the workflow file on the `character-data` branch (data-only branch lacks it) + manual Run-workflow needs `main`. Workflow fixed (checkout `dev`); §6.6 note + §8 Phase C amended with the C0 commit prerequisite |
+| 2026-08-09 | Test on Dev | HUMAN | Testing workflow to fold passed, but I found that it is running the action on an older version of node, this needs to be upgraded |
+| 2026-08-09 | Test on Dev | HUMAN | D3: The UI test in dev has one major issue, the initial create in the modal works and created the custom item in char-data and the workflow correctly pushes the change to dev.  However the item does not appear in the add item search until a refresh was tiggered.  This is a bug and will need to be addressed. |
+| 2026-08-09 | D3 + Node-20 fixes done | CLAUDE | D3 root cause: picker capped results at 50 and custom items merge last (position ~180 of 180 canon) → invisible in browse. Fixed via new pure `ui/picker.js` (custom-first sort, `PICKER_CAP`) + deferred overlay reconcile in `_refreshCustomItems` (reconcile only when the re-read reflects the saved delta). Fold action node20 deprecation: `actions/checkout@v4` → `@v5` (Node 24). New `picker.test.js` (5 tests, real 179-item catalog) + probe §2b; §6.6 P8.4 note |
 
+---
+ 
 Baseline tests at 1.1: root `176 / 176 pass` · `tools/worker/` `21 / 21 pass`.
 Rolling after P4: root `225 / 225 pass` · `tools/worker/` `36 / 36 pass`.
 Rolling after P5: root `227 / 227 pass` · `tools/worker/` `36 / 36 pass`.
 Rolling after P6–P8: root `238 / 238 pass` (incl. fold 11) · `tools/worker/` `36 / 36 pass` · logic probe green.
+After D3 fix: root `243 / 243 pass` (incl. picker 5) · probe green (incl. §2b picker contract).
 
 Live values (Phase B): worker URL unchanged; `/save-items` verified
 `___` · first fold `___` · `/dev/` end-to-end `___`.

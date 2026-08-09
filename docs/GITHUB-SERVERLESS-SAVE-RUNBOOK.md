@@ -438,6 +438,9 @@ original rollout above. Work top-to-bottom; status boxes track it.
 
 > Use the deployed dev site `https://odenson.github.io/dev/` — the worker's CORS
 > allows the `odenson.github.io` origin only.
+>
+> D3 was fixed (2026-08-09, §8 P8.4): pull the D3 fix onto `dev` and let
+> `/dev/` rebuild before re-running the checks below.
 
 - [ ] **D1.** Edit mode (✎) → Equipment → **Custom items** → create
       (name/kind/effect via the form) → **Save** (reuses the SAVE_KEY session;

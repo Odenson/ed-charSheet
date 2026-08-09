@@ -377,19 +377,19 @@ export class EdApp extends LitElement {
     this._saveCustomItems(items ?? {}, deleteNames ?? []);
   }
 
-  // The /save-items POST + reconcile + catalog re-read (shared by the modal's
-  // Save and the key-prompt replay). Typed errors surface in the app toast; the
-  // overlay keeps the delta on failure so nothing is lost.
+  // The /save-items POST + catalog re-read (shared by the modal's Save and the
+  // key-prompt replay). The overlay reconciles inside the re-read once the
+  // branch reflects the delta (see _refreshCustomItems); on failure the overlay
+  // keeps the delta so nothing is lost.
   async _saveCustomItems(items, deleteNames) {
     this._saving = true;
     this._saveError = null;
     this._saveOk = null;
     try {
       const commit = await saveCustomItems(items, { saveKey: this._saveKey, deleteNames });
-      reconcileCustomEdits();
-      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
       this._saveOk = commit; // { sha, url }
-      await this._refreshCustomItems();
+      await this._refreshCustomItems({ savedItems: items, deletedNames: deleteNames });
+      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
     } catch (e) {
       if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
       this._saveError = e?.message ? String(e.message) : String(e);
@@ -401,9 +401,17 @@ export class EdApp extends LitElement {
   // Re-read the custom-item catalog from the branch and re-derive the model with
   // the (possibly pending) overlay applied — keeps the picker, the merged
   // itemCatalog and the manager modal's committed baseline consistent.
-  async _refreshCustomItems() {
+  // A just-confirmed save passes its delta here: the overlay is reconciled only
+  // once the re-read actually reflects it, so a git-consistent read that lags
+  // the PUT never blanks a freshly saved item (PLAN-CUSTOM-ITEMS §6.6 P8.4).
+  async _refreshCustomItems({ savedItems, deletedNames } = {}) {
     try {
       const committed = await loadCustomItems();
+      const committedItems = committed?.items ?? {};
+      const reflected =
+        (!savedItems || Object.keys(savedItems).every((n) => committedItems[n] != null)) &&
+        (!deletedNames || deletedNames.every((n) => committedItems[n] == null));
+      if (reflected) reconcileCustomEdits();
       this._rules = {
         ...this._rules,
         customItemsCommittedFile: committed,
@@ -448,9 +456,8 @@ export class EdApp extends LitElement {
       const pending = loadCustomEdits();
       if (pending && (Object.keys(pending.items ?? {}).length || (pending.delete ?? []).length)) {
         const customCommit = await saveCustomItems(pending.items ?? {}, { saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
-        reconcileCustomEdits();
         commit = customCommit; // last commit link wins
-        await this._refreshCustomItems();
+        await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
       this._saveOk = commit; // { sha, url }

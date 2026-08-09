@@ -46,8 +46,10 @@ jobs:
       # working tree), but the script + shared validator must EXIST on the
       # runner — hence the checkout of dev, which is also the branch the folded
       # file must agree with.
+      # checkout@v5 runs on the Node 24 runtime — GitHub deprecates node20-based
+      # actions (the "old Node.js 20 [deprecated]" warning on the fold job).
       - name: Check out dev (fold script + shared validator)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: dev
       - name: Fold custom items to dev

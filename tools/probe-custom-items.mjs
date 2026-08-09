@@ -12,7 +12,9 @@
 //      endpoint and the deployed rules) — P8.2's "picker lists a custom item"
 //      premise: nothing invalid can ever be listed or folded;
 //   2. the catalog merge the picker reads from (store.js:465) — custom entries
-//      appear, and custom wins on a canon-name collision;
+//      appear, and custom wins on a canon-name collision; plus the picker's own
+//      selection rule (ui/picker.js) — a fresh custom item surfaces within the
+//      50-result cap despite the real 179-item canon catalog (D3 regression);
 //   3. engine/characteristics.js resolution — "adding it to a character
 //      resolves its effects" (an armor-modifier lands on Physical/Mystic Armor);
 //   4. the manager modal's working-set delta — applyCustomEdits (custom wins,
@@ -25,6 +27,7 @@ import { readFileSync } from 'node:fs';
 import { validateItem, validateItemsFile, MAX_ITEMS, MAX_FILE_BYTES } from '../engine/validate-item.js';
 import { makeCharacteristics, physicalArmor, mysticArmor } from '../engine/characteristics.js';
 import { applyCustomEdits, loadCustomEdits, saveCustomEdits, reconcileCustomEdits, hasCustomPendingEdits } from '../store-custom-items.js';
+import { pickItemKeys } from '../ui/picker.js';
 
 // --- fixtures -----------------------------------------------------------------
 
@@ -102,6 +105,18 @@ const itemCatalog = { ...canonItems, ...customItems };
 
 assert.equal(itemCatalog['Smoke Cloak'], SMOKE_CLOAK, 'a custom item is listed in the merged picker catalog');
 assert.equal(itemCatalog['Bracers of Aras'], CUSTOM_ARMOR, 'custom wins on a canon-name collision');
+
+// --- 2b. the add-picker's 50-result cap cannot hide a fresh custom item ---------
+// D3 regression (§6.6 P8.4): the merged catalog appends custom items after the
+// real 179-item canon catalog, so without custom-first prioritisation a saved
+// item would sit past the picker's .slice(0, 50) and never appear in the browse
+// list. pickItemKeys (ui/picker.js) sorts custom items first — assert against
+// the REAL rules file, exactly as the picker sees it.
+const realCanon = JSON.parse(readFileSync(new URL('../rules/items.json', import.meta.url), 'utf8')).items;
+const withCustom = { ...realCanon, 'Smoke Cloak': SMOKE_CLOAK };
+const pickerKeys = pickItemKeys({ catalog: withCustom, customNames: ['Smoke Cloak'] });
+assert.ok(Object.keys(realCanon).length > 50, 'canon catalog exceeds the picker cap (179 items) — regression precondition');
+assert.ok(pickerKeys.includes('Smoke Cloak'), 'a fresh custom item appears within the first 50 browse results');
 
 // --- 3. adding it to a character resolves its effects --------------------------
 
