@@ -17,12 +17,12 @@
             {
               "times": ["talent|Durability|Rank", "attribute|Toughness|Step"],
               "sign": "add",
-              "note": "Durability Rank × Toughness Step."
+              "note": "Term1: Durability Rank × Toughness Step."
             },
             {
               "ref": "characteristics|uncon",
               "sign": "add",
-              "note": "The standard Unconsciousness base from the characteristics table."
+              "note": "Term2: The standard Unconsciousness base from the characteristics table."
             }
           ]
         },
@@ -32,17 +32,17 @@
             {
               "times": ["talent|Durability|Rank", "attribute|Toughness|Step"],
               "sign": "add",
-              "note": "Durability Rank × Toughness."
+              "note": "Term1: Durability Rank × Toughness."
             },
             {
               "ref": "attribute|Toughness|Step",
               "sign": "add",
-              "note": "The Toughness Step."
+              "note": "Term2: The Toughness Step."
             },
             {
               "ref": "characteristics|death",
               "sign": "add",
-              "note": "The standard Death base from the characteristics table."
+              "note": "Term3: The standard Death base from the characteristics table."
             }
           ]
         }

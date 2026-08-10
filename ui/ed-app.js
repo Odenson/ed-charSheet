@@ -13,6 +13,7 @@ import './ed-equipment.js';
 import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
+import './ed-homebrew.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
@@ -751,7 +752,7 @@ export class EdApp extends LitElement {
             @close=${() => (this._confirmSwitch = false)}
           ></ed-confirm>`
         : ''}
-      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog></footer>
+      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog><ed-homebrew .rules=${this._model?.homebrewRules ?? []}></ed-homebrew></footer>
       ${this._saveError
         ? html`<div class="toast error" role="alert" @click=${() => (this._saveError = null)}>
             Couldn't save: ${this._saveError}

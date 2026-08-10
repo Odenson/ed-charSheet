@@ -871,5 +871,10 @@ export function deriveModel(character, rules) {
     // live condition effects (Knocked Down, and the encumbrance stage's). All
     // derived, never stored.
     activeEffects: [...activeEffects, ...conditionEffects, ...encumbranceConditionEffects],
+    // The enabled homebrew rules (rules/homebrew.json — docs/HOMEBREW-RULES.md),
+    // passed through as pure data for the footer pill + modal: { id, name,
+    // overrides, summary, formula }. Nothing derived; the rule payloads are
+    // inputs only.
+    homebrewRules,
   };
 }

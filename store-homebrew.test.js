@@ -146,3 +146,14 @@ test('a rule referencing an untrained talent treats its rank as 0', () => {
   assert.equal(model.characteristics.unconsciousness.value, 34);
   assert.equal(model.characteristics.death.value, 50);
 });
+
+test('deriveModel exposes only the enabled homebrew rules for the footer pill', () => {
+  const model = deriveModel(character(), rulesWith(homebrewRule));
+  assert.equal(model.homebrewRules.length, 1);
+  assert.deepEqual(model.homebrewRules[0], homebrewRule.rules[0]); // pure data, untouched
+  // Disabled rules stay out of the list — nothing shows when none are enabled.
+  const off = deriveModel(character(), rulesWith({ schema: 'ed-homebrew/1', rules: [{ ...homebrewRule.rules[0], enabled: false }] }));
+  assert.deepEqual(off.homebrewRules, []);
+  // Absent file → no list at all (the app renders no pill).
+  assert.deepEqual(deriveModel(character(), baseRules).homebrewRules, []);
+});
