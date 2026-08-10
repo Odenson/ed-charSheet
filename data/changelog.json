@@ -4,6 +4,15 @@
   "unreleased": { "changes": [] },
   "releases": [
     {
+      "version": "1.10.0",
+      "date": "2026-08-10",
+      "changes": [
+        { "type": "added", "text": "A Notes tab to keep your game notes and history: it now holds four views behind a segmented control. Notes are free-form cards you curate (NPCs, locations, quest threads, table reminders); History is a dated, newest-first timeline of what happened and when; Legend lists every amount of Legend you've earned and adds the running total; and Roll Log keeps the last rolls from your sessions — each with the step, the dice, what each die actually rolled (an exploding die shows its chain, like 6↦3), the difficulty it beat, its outcome, and any Karma or roll-time modifiers that went into the total." },
+        { "type": "added", "text": "Roll Log is a game-time view that lives on this device only: it records every roll you make — initial roll, Roll again, and Karma spends each update the same row — and stays capped at a keep-last count you choose (10, 20, or 50). It's deliberately never exported or written to a cloud save, so it follows your session but not your character across devices." },
+        { "type": "added", "text": "Record Legend as you earn it: a + button beside the total on the Overview, and a Legend view on the Notes tab, open the same form to add an amount and a short description. The running Total Legend earned is derived from that log (plus your recorded starting total), so the Overview's total and your Available Legend stay in step with what you've actually earned." }
+      ]
+    },
+    {
       "version": "1.9.0",
       "date": "2026-08-10",
       "changes": [

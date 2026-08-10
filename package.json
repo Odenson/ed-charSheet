@@ -6,6 +6,8 @@
   "license": "GPL-3.0",
   "private": true,
   "scripts": {
+    "lint:imports": "node tools/check-imports.mjs",
+    "pretest": "node tools/check-imports.mjs",
     "test": "node --test",
     "start": "bash scripts/start-local.sh",
     "dev": "node tools/dev-server.mjs",
