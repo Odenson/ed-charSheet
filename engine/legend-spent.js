@@ -154,6 +154,57 @@ export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowest
   return { cost, tier, rank1 };
 }
 
+/**
+ * The Legend cost of the single rank step that brings a talent TO `toRank`
+ * (the step from `toRank-1` to `toRank`). For an increase, call it with
+ * `toRank = rank + 1`; for the refund of a decrease (rank → rank-1), call it
+ * with `toRank = rank` — the step that bought the current rank.
+ *
+ * Built from the same cumulative functions the audit uses (talentRanksCost for
+ * the first Discipline, additionalDisciplineTalentCost otherwise), so a step
+ * cost always equals `audit(after) − audit(before)` for that one rank change.
+ * Returns null when the step is unpriceable (missing tier, a rank beyond the
+ * cost table, an unresolvable additional-Discipline tier) — flagged, never
+ * fabricated. `toRank <= 0` (e.g. refunding down to Rank 0) costs nothing.
+ *
+ * @param {{tier: string, circle?: number}} t  the raw character talent input
+ * @param {number} ordinal  1-based position of the Discipline in the character
+ * @param {number|null} lowestCircle  lowestDisciplineCircle(character.disciplines)
+ * @param {object} costs  rules/legend.json `costs` block
+ * @param {number} toRank  the rank the step brings the talent to
+ */
+export function talentRankStepCost(t, ordinal, lowestCircle, costs, toRank) {
+  if (!toRank || toRank <= 0) return 0;
+  if (ordinal <= 1) {
+    const hi = talentRanksCost(toRank, t?.tier, costs?.talentRank);
+    const lo = talentRanksCost(toRank - 1, t?.tier, costs?.talentRank);
+    return hi == null || lo == null ? null : hi - lo;
+  }
+  const hi = additionalDisciplineTalentCost(toRank, t?.circle ?? 1, ordinal, lowestCircle, costs).cost;
+  const lo = additionalDisciplineTalentCost(toRank - 1, t?.circle ?? 1, ordinal, lowestCircle, costs).cost;
+  return hi == null || lo == null ? null : hi - lo;
+}
+
+/**
+ * The Legend cost of the single skill rank step that brings the skill TO
+ * `toRank` (the step from `toRank-1` to `toRank`). Increase = `toRank = rank+1`;
+ * the refund of a decrease = the same call at `toRank = rank`. A missing tier
+ * defaults to Novice, exactly as the audit prices it (engine/legend-spent.js —
+ * skills section). Returns null when the step is unpriceable (rank beyond the
+ * Skill Training Table's Rank 10).
+ *
+ * @param {{tier?: string}} s  the raw character skill input
+ * @param {object} costs  rules/legend.json `costs` block
+ * @param {number} toRank  the rank the step brings the skill to
+ */
+export function skillRankStepCost(s, costs, toRank) {
+  if (!toRank || toRank <= 0) return 0;
+  const tier = s?.tier ?? 'Novice';
+  const hi = skillRanksCost(toRank, tier, costs?.skillRank);
+  const lo = skillRanksCost(toRank - 1, tier, costs?.skillRank);
+  return hi == null || lo == null ? null : hi - lo;
+}
+
 // Sum a section's line costs, ignoring any null (unpriced) lines.
 function sumLines(lines) {
   return lines.reduce((s, l) => s + (typeof l.cost === 'number' ? l.cost : 0), 0);

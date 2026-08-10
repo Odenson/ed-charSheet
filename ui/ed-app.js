@@ -1,7 +1,9 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveAdvancementEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
+import { auditLegendSpent } from '../engine/legend-spent.js';
+import { legendAvailable } from '../engine/legend.js';
 import { saveServer, SaveError, DEFAULT_ENDPOINT } from '../store-server.js';
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { exportCharacter } from '../store-export.js';
@@ -208,6 +210,8 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
+    this.addEventListener('ed-edit-talent-rank', (e) => this._editTalentRank(e.detail));
+    this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
     // A custom-item save paused for the key replays first; otherwise retry the
     // character save. The pending is consumed either way.
@@ -338,6 +342,70 @@ export class EdApp extends LitElement {
       },
     };
     saveHealthEdits(merged, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // Rank editing guard (PLAN-RANK-EDITING §3.3): re-audit a *clone* carrying the
+  // tentative rank and reject an increase that would push Available Legend below
+  // 0. Defense-in-depth — the view only offers steps that fit — so a multi-step
+  // or programmatic increase can never overdraw the sheet. Decreases always
+  // pass (they refund). Mirrors deriveModel's audit inputs (resolved knacks).
+  _canAffordRank(character) {
+    const totalEarnt = character.resources?.legend?.totalEarnt;
+    if (totalEarnt == null) return false;
+    const spent = auditLegendSpent(character, this._rules.legendFile?.costs, {
+      knacks: this._model?.knacks ?? [],
+    });
+    return legendAvailable(totalEarnt, spent.total) >= 0;
+  }
+
+  // A view bumped a talent's rank (edit mode). Ranks are inputs; the Legend
+  // change is derived, so this handler owns the guard above plus persistence.
+  // The overlay stores the FULL ranked disciplines/skills arrays — a partial
+  // patch must never drop the other recorded ranks on replay.
+  _editTalentRank({ discipline, name, rank }) {
+    if (!this._character || !discipline || !name || !(rank >= 1)) return;
+    const disc = (this._character.disciplines ?? []).find((d) => d.name === discipline);
+    const talent = disc?.talents?.find((t) => t.name === name);
+    if (!talent || rank === talent.rank) return;
+    const increasing = rank > talent.rank;
+    const nextCharacter = {
+      ...this._character,
+      disciplines: (this._character.disciplines ?? []).map((d) =>
+        d.name === discipline
+          ? { ...d, talents: (d.talents ?? []).map((t) => (t.name === name ? { ...t, rank } : t)) }
+          : d,
+      ),
+    };
+    if (increasing && !this._canAffordRank(nextCharacter)) return;
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view bumped a skill's rank (edit mode). Same inputs-only flow as talents:
+  // guard increases against the derived Available Legend, persist the full
+  // arrays, mark the file dirty, and re-derive.
+  _editSkillRank({ name, rank }) {
+    if (!this._character || !name || !(rank >= 1)) return;
+    const skill = (this._character.skills ?? []).find((s) => s.name === name);
+    if (!skill || rank === skill.rank) return;
+    const increasing = rank > skill.rank;
+    const nextCharacter = {
+      ...this._character,
+      skills: (this._character.skills ?? []).map((s) => (s.name === name ? { ...s, rank } : s)),
+    };
+    if (increasing && !this._canAffordRank(nextCharacter)) return;
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
     this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
   }
@@ -535,7 +603,7 @@ export class EdApp extends LitElement {
       case 'overview':
         return html`<ed-overview .model=${m} .editMode=${this._editMode}></ed-overview>`;
       case 'disciplines':
-        return html`<ed-disciplines .model=${m}></ed-disciplines>`;
+        return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
         return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
       case 'equipment':

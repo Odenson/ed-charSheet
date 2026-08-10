@@ -82,6 +82,32 @@ see docs/PLAN-HOMEBREW.md) ship with these **deliberate scope decisions**:
 
 ---
 
+## 🎲 Talent & skill rank editing — scope notes (2026-08-10)
+
+Talent/Skill rank editing (docs/PLAN-RANK-EDITING.md) ships with these
+**deliberate scope decisions**:
+
+- **Pre-existing skill-tier numeric/string quirk — deliberately NOT fixed.**
+  `rules/skills.json` records each skill's `tier` as a **number** (1/2/3), while
+  the Legend cost tables in `rules/legend.json` and the audit's tier lookups are
+  keyed by the **string** names ("Novice", "Journeyman", …). Rank editing reads
+  the character's **raw stored tier** — exactly as the audit does — and, like
+  the audit, a missing tier falls back to `"Novice"`. A character skill whose
+  stored tier were *numeric* would price as unpriceable (null). Normalizing
+  `rules/skills.json` tiers to strings is a separate data task, out of scope.
+- **Step cost is audit-diff by construction.** `talentRankStepCost` /
+  `skillRankStepCost` are built from the same cumulative functions the audit
+  sums, so a step's cost is always `audit(after) − audit(before)`; the tests
+  prove it for first- and additional-Discipline talents, skills, and the null
+  paths. No new pricing logic that could drift from the sheet's own readout.
+- **The guard is belt-and-suspenders.** The view only offers affordable steps;
+  the app-layer guard re-audits a clone and rejects any increase that would
+  drive Available Legend below 0. Decreases always pass (they refund).
+- **No Legend-earned editor in this change.** A character with no recorded
+  `totalEarnt` can't price anything; the tab blocks the steppers with a hint.
+
+---
+
 ## 🐛 B1 — Broken talent reference in disciplines data
 
 **Status:** ✅ RESOLVED (2026-08-07, manual data edit) · **Tier:** 3
@@ -353,3 +379,4 @@ dangling refs: see R1.)
 | 2026-08-07 | T1 fixed (`engine/derive.test.js` + `engine/dice.test.js` added) | 24 new tests over the pure derivation/dice helpers, incl. the real steps.json round-trip (locks the `ed-steps/1` shape). Suite 62 → **84, all passing**. T1 → RESOLVED |
 | 2026-08-09 | Weight & encumbrance shipped (engine/weight.js + engine/encumbrance.js, `movementRate` derivation, Gear-tab banner + section totals, Active Effects condition rows) | Taxonomy v3 vocabulary only — no bump/migration. Deliberate scope recorded in §"Weight & encumbrance — scope notes" (all-owned counting, coins/gems excluded, Strong Back + race weight modifiers deferred, weight parsing conventions). Suite 290 → **320, all passing** |
 | 2026-08-10 | Homebrew Rules shipped (rules/homebrew.json `hb-uncon-death` disabled, engine/formula.js, rating formula override, store wiring, engine/homebrew.test.js + store-homebrew.test.js) | No Tier-1/2 surface touched; rules file + engine module are new. Scope decisions recorded in §"Homebrew rules — scope notes" (races.json health-modifier gap → Homebrew is the vehicle; talent rank = highest owned, untrained = 0). Suite 320 → **336, all passing** |
+| 2026-08-10 | Talent & skill rank editing built (engine step-cost helpers, `advancements` overlay + `pricing` on the model, ed-app guard, edit-mode steppers + Available Legend chip) | Tier 3 only; no schema/taxonomy/UI-guideline change. Scope decisions in §"Talent & skill rank editing — scope notes" (skills.json numeric-tier quirk deliberately not fixed; step == audit-diff by construction; guard is defense-in-depth; no Legend-earned editor). Work left **local** for owner testing. Suite 336 → **353, all passing** |

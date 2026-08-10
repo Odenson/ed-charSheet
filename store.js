@@ -9,7 +9,7 @@
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
-import { auditLegendSpent } from './engine/legend-spent.js';
+import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle } from './engine/legend-spent.js';
 import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
@@ -263,9 +263,25 @@ export function saveHealthEdits(health, id) {
   return edits;
 }
 
+/**
+ * Persist the character's advancement inputs (ranked talents + skills) to the
+ * edits overlay. Both arrays are pure input — each discipline's circle and its
+ * talents' { name, rank, tier, circle }, and each skill's { name, rank, tier } —
+ * so the whole arrays are stored as-is; every step and dice figure is derived
+ * by the engine, never stored. "Store only inputs, never derived" holds, and a
+ * later save replaces the whole arrays (items/wealth precedent — a partial
+ * patch must never drop the recorded ranks on replay).
+ */
+export function saveAdvancementEdits({ disciplines, skills }, id) {
+  const edits = loadEdits(id);
+  edits.advancements = { disciplines, skills };
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'advancements'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -308,6 +324,9 @@ export function applyEdits(character, edits) {
         health: { ...(next.resources?.health || {}), ...edits.health },
       },
     };
+  }
+  if (edits.advancements) {
+    next = { ...next, disciplines: edits.advancements.disciplines, skills: edits.advancements.skills };
   }
   return next;
 }
@@ -389,7 +408,7 @@ export function deriveModel(character, rules) {
 
   // Disciplines -> talents with derived step/dice, plus reference detail
   // (durability, half-magic, artisan skills, per-circle abilities) from rules.
-  const disciplines = (character.disciplines ?? []).map((d) => {
+  let disciplines = (character.disciplines ?? []).map((d) => {
     const ref = discByName[d.name] ?? {};
     // "Required" (Discipline) talents = every talent the Discipline grants at any
     // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
@@ -696,7 +715,7 @@ export function deriveModel(character, rules) {
   const skillCatalog = Object.fromEntries((skillsFile.skills ?? []).map((s) => [s.name, s]));
   const skillRef = (name) =>
     skillCatalog[name] ?? skillCatalog[String(name).replace(/\s*\([^)]*\)\s*$/, '').trim()] ?? null;
-  const skills = (character.skills ?? []).map((s) => {
+  let skills = (character.skills ?? []).map((s) => {
     const cat = skillRef(s.name) ?? {};
     const attribute = cat.attribute ?? null;
     const aStep = attribute ? attrStepByName[attribute] : undefined;
@@ -752,6 +771,52 @@ export function deriveModel(character, rules) {
           spent,
         }
       : null;
+
+  // Rank-editing pricing (PLAN-RANK-EDITING, Tier 3): attach to every derived
+  // talent/skill the Legend cost of the step up (`increaseCost`), the refund for
+  // one step down (`refund` — null at Rank 1, the decrease floor), and
+  // `affordable` = the next step fits in the derived Available Legend. All three
+  // come from the same pure engine the audit prices with, so a step's cost
+  // always equals audit(after) − audit(before); unpriceable steps (missing tier,
+  // a rank beyond the cost tables) are null — flagged, never fabricated. The
+  // helper reads the *raw* character inputs (tier/circle), exactly as the audit
+  // does. Derived, never stored.
+  if (legendFile?.costs) {
+    const costs = legendFile.costs;
+    const available = legend?.available ?? null;
+    const discInputs = character.disciplines ?? [];
+    const lowestCircle = lowestDisciplineCircle(discInputs);
+    disciplines = disciplines.map((disc, di) => ({
+      ...disc,
+      talents: disc.talents.map((t, ti) => {
+        const raw = discInputs[di]?.talents?.[ti] ?? {};
+        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1);
+        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank) : null;
+        return {
+          ...t,
+          pricing: {
+            increaseCost,
+            refund,
+            affordable: available != null && increaseCost != null && increaseCost <= available,
+          },
+        };
+      }),
+    }));
+    const skillInputs = character.skills ?? [];
+    skills = skills.map((s, si) => {
+      const raw = skillInputs[si] ?? {};
+      const increaseCost = skillRankStepCost(raw, costs, s.rank + 1);
+      const refund = s.rank > 1 ? skillRankStepCost(raw, costs, s.rank) : null;
+      return {
+        ...s,
+        pricing: {
+          increaseCost,
+          refund,
+          affordable: available != null && increaseCost != null && increaseCost <= available,
+        },
+      };
+    });
+  }
 
   return {
     meta: character.meta ?? {},
