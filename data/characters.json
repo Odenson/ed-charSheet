@@ -368,11 +368,11 @@
         },
         {
           "name": "Desperate Spell",
-          "equipped": true
+          "equipped": false
         },
         {
           "name": "Horror Fend",
-          "equipped": true
+          "equipped": false
         }
       ],
       "wealth": {
