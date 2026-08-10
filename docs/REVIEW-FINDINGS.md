@@ -59,6 +59,29 @@ recorded so a later change knows they were made on purpose, not overlooked.
 
 ---
 
+## 🏠 Homebrew rules — scope notes (2026-08-10)
+
+Homebrew Rules (rules/homebrew.json, engine/formula.js, docs/HOMEBREW-RULES.md —
+see docs/PLAN-HOMEBREW.md) ship with these **deliberate scope decisions**:
+
+- **Pre-existing `rules/races.json` health-modifier gap (PG p.64 "Some races
+  receive special modifiers…").** The standard app applies no race-level
+  modifiers to the Unconsciousness/Death ratings. Homebrew is the **sanctioned
+  vehicle** for such campaign adjustments (an enabled rule's `formula`/`effects`
+  on the health ratings) — the races file itself is untouched.
+- **`talent|<name>|<Rank>` resolves to the highest owned rank** across
+  Disciplines (a single talent, shared), and an untrained talent is **rank 0**
+  — the term contributes 0 rather than nulling the rating. Deferred: a
+  per-Discipline sum or a lowest-rank convention.
+- **Rule `effects` are global like the formula** (no per-character opt-in), and
+  an enabled rule with only `effects` (no `formula`) folds them onto the
+  standard derived ratings — the "adjust, don't replace" path.
+- **A formula's base replaces the adept synthesis too** (`adeptHealthEffects`
+  is skipped for the overridden rating at the store — `effectsForRating`), so
+  the rule's own terms carry the intended scaling; nothing double-counts.
+
+---
+
 ## 🐛 B1 — Broken talent reference in disciplines data
 
 **Status:** ✅ RESOLVED (2026-08-07, manual data edit) · **Tier:** 3
@@ -329,3 +352,4 @@ dangling refs: see R1.)
 | 2026-08-07 | R2 fixed (design doc §4.3 `SAVE_KEY` → required) | §3.2 contract, §4.3 secrets table, §4.4 deploy snippet, §6.2 settings row all updated to "required/fail-closed"; §4.2 design sketch intentionally left as the historical "floated as optional" baseline (runbook §5.2 quotes it). R2 → RESOLVED |
 | 2026-08-07 | T1 fixed (`engine/derive.test.js` + `engine/dice.test.js` added) | 24 new tests over the pure derivation/dice helpers, incl. the real steps.json round-trip (locks the `ed-steps/1` shape). Suite 62 → **84, all passing**. T1 → RESOLVED |
 | 2026-08-09 | Weight & encumbrance shipped (engine/weight.js + engine/encumbrance.js, `movementRate` derivation, Gear-tab banner + section totals, Active Effects condition rows) | Taxonomy v3 vocabulary only — no bump/migration. Deliberate scope recorded in §"Weight & encumbrance — scope notes" (all-owned counting, coins/gems excluded, Strong Back + race weight modifiers deferred, weight parsing conventions). Suite 290 → **320, all passing** |
+| 2026-08-10 | Homebrew Rules shipped (rules/homebrew.json `hb-uncon-death` disabled, engine/formula.js, rating formula override, store wiring, engine/homebrew.test.js + store-homebrew.test.js) | No Tier-1/2 surface touched; rules file + engine module are new. Scope decisions recorded in §"Homebrew rules — scope notes" (races.json health-modifier gap → Homebrew is the vehicle; talent rank = highest owned, untrained = 0). Suite 320 → **336, all passing** |

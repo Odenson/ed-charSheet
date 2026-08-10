@@ -13,6 +13,12 @@
 // the effect applier, and the shape of the return value are all general, so the
 // remaining characteristics are added by repeating the pattern, not new design.
 
+// Homebrew rules (docs/HOMEBREW-RULES.md): an optional `formula` replaces a
+// rating's table base. The formula's own refs (Durability ranks, Circle, etc.)
+// already encode the adept synthesis, so overridden ratings do NOT also fold
+// the synthesized adept effects — the caller passes the effect set without them.
+import { evalFormula } from './formula.js';
+
 /**
  * Index the Characteristics Table by attribute value.
  * Values above the table's max (30 in the core book) clamp to the last row.
@@ -295,9 +301,19 @@ function healthRating(name, base, effects) {
 /**
  * Unconsciousness Rating = 2 × Toughness value (the table `uncon` column) plus
  * Durability. (PG, Health Ratings.)
- * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ *
+ * A homebrew `formula` (docs/HOMEBREW-RULES.md) overrides the table base: the
+ * base becomes `evalFormula(formula, resolve)` — null (placeholder pill) if any
+ * ref is unresolvable — and the provided `effects` still fold on top.
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table or
+ *   the formula cannot be evaluated.
  */
-export function unconsciousnessRating(toughnessValue, effects, lookup) {
+export function unconsciousnessRating(toughnessValue, effects, lookup, formula, resolve) {
+  if (formula) {
+    const base = evalFormula(formula, resolve);
+    if (base == null) return null;
+    return healthRating('UnconsciousnessRating', base, effects);
+  }
   const row = lookup(toughnessValue);
   if (!row || typeof row.uncon !== 'number') return null;
   return healthRating('UnconsciousnessRating', row.uncon, effects);
@@ -306,9 +322,17 @@ export function unconsciousnessRating(toughnessValue, effects, lookup) {
 /**
  * Death Rating = Unconsciousness + Toughness Step (the table `death` column) plus
  * Durability plus the adept's highest Circle. (PG, Health Ratings.)
- * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ *
+ * A homebrew `formula` overrides the table base, as on Unconsciousness.
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table or
+ *   the formula cannot be evaluated.
  */
-export function deathRating(toughnessValue, effects, lookup) {
+export function deathRating(toughnessValue, effects, lookup, formula, resolve) {
+  if (formula) {
+    const base = evalFormula(formula, resolve);
+    if (base == null) return null;
+    return healthRating('DeathRating', base, effects);
+  }
   const row = lookup(toughnessValue);
   if (!row || typeof row.death !== 'number') return null;
   return healthRating('DeathRating', row.death, effects);

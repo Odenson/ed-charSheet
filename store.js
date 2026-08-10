@@ -339,6 +339,9 @@ export async function loadCharacter(id, { store } = {}) {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md)
+  // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
+  const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
   // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
@@ -350,7 +353,7 @@ export async function loadCharacter(id, { store } = {}) {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -359,7 +362,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -523,6 +526,22 @@ export function deriveModel(character, rules) {
     };
   });
 
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md):
+  // a file-based, data-only list of rating overrides + effects. Only `enabled`
+  // rules apply; the last enabled rule wins per rating (no merge). A rule's own
+  // `effects` fold like any always-on effect, tagged `kind: 'homebrew'` so a
+  // tooltip can name the rule. Rules ship disabled.
+  const homebrewRules = (homebrewFile?.rules ?? []).filter((r) => r.enabled !== false);
+  const homebrewEffects = homebrewRules.flatMap((rule) =>
+    (rule.effects ?? []).map((e) => ({ ...e, origin: { kind: 'homebrew', name: rule.name } })),
+  );
+  const homebrewOverrides = {};
+  for (const rule of homebrewRules) {
+    for (const [rating, formula] of Object.entries(rule.formula ?? {})) {
+      homebrewOverrides[rating] = formula;
+    }
+  }
+
   // Each effect carries an `origin` so a modifier can name its exact source
   // (e.g. distinguish an Archer bonus from a Nethermancer one in a tooltip).
   const activeEffects = [
@@ -549,6 +568,7 @@ export function deriveModel(character, rules) {
             : { kind: 'item', name: it.name },
         })),
       ),
+    ...homebrewEffects,
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -570,6 +590,11 @@ export function deriveModel(character, rules) {
     durabilityRank: (d.talents ?? []).find((t) => t.name === 'Durability')?.rank ?? 0,
   }));
   const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
+  // A homebrew formula (docs/HOMEBREW-RULES.md) replaces a rating's base AND its
+  // adept synthesis — the formula's refs (Durability rank, Step, Circle) already
+  // account for them, so overridden ratings fold the always-on effects only and
+  // nothing is double-counted. Rule `effects` are inside `activeEffects`.
+  const effectsForRating = (name) => (homebrewOverrides[name] ? activeEffects : healthEffects);
   // Knocked Down is a live condition, not a stored/derived static number: it
   // shows in Active Effects and is applied as a roll-time −3 to every test
   // (PG p.389), and its −3 to Physical/Mystic Defense folds into the derived
@@ -582,6 +607,33 @@ export function deriveModel(character, rules) {
     ? KNOCKED_DOWN_DEFENSE_EFFECTS.map((e) => ({ ...e, origin: { kind: 'condition', name: 'Knocked Down' } }))
     : [];
   const touVal = attrVal('Toughness');
+
+  // Refs for homebrew formulas (docs/HOMEBREW-RULES.md §4) resolve against the
+  // stored inputs — an attribute's value/step, the highest owned rank of a named
+  // talent (an untrained talent is rank 0), or a column of the Characteristics
+  // table at the character's Toughness. An unresolvable ref (e.g. a missing
+  // attribute) makes the rating null — a placeholder pill, never a guess.
+  const resolveRef = (ref) => {
+    const [domain, a, b] = String(ref).split('|');
+    if (domain === 'attribute') {
+      if (a == null) return undefined;
+      if (b === 'Step') return attrStepByName[a];
+      if (b === 'Value') return attrVal(a);
+      return undefined;
+    }
+    if (domain === 'talent') {
+      if (a == null) return undefined;
+      const rank = (character.disciplines ?? [])
+        .flatMap((d) => (d.talents ?? []).filter((t) => t.name === a).map((t) => t.rank))
+        .reduce((highest, r) => Math.max(highest, r ?? 0), 0);
+      return rank;
+    }
+    if (domain === 'characteristics') {
+      const row = lookupChar(touVal);
+      return row?.[a];
+    }
+    return undefined;
+  };
 
   // Carrying Capacity drives encumbrance, so it derives before the rest. The
   // carried total counts every owned item — equipped and stored alike, a stowed
@@ -604,8 +656,8 @@ export function deriveModel(character, rules) {
     socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), foldedEffects, lookupChar),
     physicalArmor: physicalArmor(activeEffects),
     mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),
-    unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
-    death: deathRating(touVal, healthEffects, lookupChar),
+    unconsciousness: unconsciousnessRating(touVal, effectsForRating('unconsciousness'), lookupChar, homebrewOverrides.unconsciousness ?? null, resolveRef),
+    death: deathRating(touVal, effectsForRating('death'), lookupChar, homebrewOverrides.death ?? null, resolveRef),
     recoveries: recoveryTests(touVal, healthEffects, lookupChar),
     woundThreshold: woundThreshold(touVal, healthEffects, lookupChar),
     carryingCapacity: carryingCapacityResult,
