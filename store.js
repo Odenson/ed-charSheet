@@ -279,9 +279,49 @@ export function saveAdvancementEdits({ disciplines, skills }, id) {
   return edits;
 }
 
+/**
+ * Persist the character's hand-written notes to the edits overlay (PLAN-NOTES-
+ * TAB). Notes are pure input — free-form `{ id, text, updatedAt }` cards — so
+ * the whole array is stored as-is; nothing is derived from it.
+ */
+export function saveNotesEdits(notes, id) {
+  const edits = loadEdits(id);
+  edits.notes = notes;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
+ * Persist the character's event timeline to the edits overlay (PLAN-NOTES-TAB).
+ * History entries are pure input — dated `{ id, date, text }` events — so the
+ * whole array is stored as-is; reverse-chronological ordering is a render
+ * concern, never stored.
+ */
+export function saveHistoryEdits(history, id) {
+  const edits = loadEdits(id);
+  edits.history = history;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
+ * Persist the character's Legend-earned entries to the edits overlay (PLAN-
+ * NOTES-TAB, decisions #1/#6). Only the real `{ id, amount, description, date }`
+ * entries ride the overlay — the legacy `totalEarnt` input stays in the branch
+ * file (surfaced as a derived virtual "Starting total" row by deriveModel) and
+ * is never written here. The overlay stores the FULL `earned` array (items/
+ * wealth/advancements precedent — a partial patch must never drop entries).
+ */
+export function saveLegendEdits(earned, id) {
+  const edits = loadEdits(id);
+  edits.legend = { earned };
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'advancements'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'advancements', 'notes', 'history', 'legend'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -327,6 +367,17 @@ export function applyEdits(character, edits) {
   }
   if (edits.advancements) {
     next = { ...next, disciplines: edits.advancements.disciplines, skills: edits.advancements.skills };
+  }
+  if (edits.notes) next = { ...next, notes: edits.notes };
+  if (edits.history) next = { ...next, history: edits.history };
+  if (edits.legend) {
+    next = {
+      ...next,
+      resources: {
+        ...(next.resources || {}),
+        legend: { ...(next.resources?.legend || {}), ...edits.legend },
+      },
+    };
   }
   return next;
 }
@@ -760,13 +811,31 @@ export function deriveModel(character, rules) {
   // input. Unpriced sinks (spells) stay in the reconciliation delta.
   const threadItemCatalog = threadItemsFile?.items ?? {};
   const spent = auditLegendSpent(character, legendFile?.costs, { knacks, threadItemCatalog });
+  // Legend-earned log (PLAN-NOTES-TAB, decisions #1/#6): `totalEarnt` is the PURE
+  // SUM of a display list — one synthesized, non-persisted virtual "Starting
+  // total" row (amount = any legacy `totalEarnt` still in the branch file;
+  // `virtual: true`, so the UI renders it read-only / non-deletable) followed by
+  // the real `earned` entries in order. Single derivation path: no separate
+  // legacy-fallback branch. Nothing recomputable is stored — `totalEarnt` is
+  // never written to the overlay (saveLegendEdits writes `earned` only).
+  const legacyTotal = typeof legendInput.totalEarnt === 'number' ? legendInput.totalEarnt : null;
+  const earned = Array.isArray(legendInput.earned) ? legendInput.earned : [];
+  const legendEarned = [
+    ...(legacyTotal != null
+      ? [{ id: '__starting_total__', amount: legacyTotal, description: 'Starting total', date: null, virtual: true }]
+      : []),
+    ...earned,
+  ];
+  const totalEarnt = legendEarned.length
+    ? legendEarned.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+    : null;
   const legend =
-    legendInput.totalEarnt != null
+    totalEarnt != null
       ? {
-          totalEarnt: legendInput.totalEarnt,
+          totalEarnt,
           totalSpent: legendInput.totalSpent ?? 0,
-          available: legendAvailable(legendInput.totalEarnt, spent.total),
-          status: legendaryStatus(legendInput.totalEarnt, legendBands),
+          available: legendAvailable(totalEarnt, spent.total),
+          status: legendaryStatus(totalEarnt, legendBands),
           bands: legendBands,
           spent,
         }
@@ -876,5 +945,12 @@ export function deriveModel(character, rules) {
     // overrides, summary, formula }. Nothing derived; the rule payloads are
     // inputs only.
     homebrewRules,
+    // Notes-tab data (PLAN-NOTES-TAB): pure pass-through of the hand-written
+    // notes and the dated history timeline, plus the Legend-earned display list
+    // (virtual "Starting total" row + real entries — see Phase B above). All
+    // inputs (or the derived display list); nothing recomputed into new stores.
+    notes: character.notes ?? [],
+    history: character.history ?? [],
+    legendEarned,
   };
 }

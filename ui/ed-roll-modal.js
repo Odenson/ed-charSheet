@@ -6,6 +6,7 @@ import { knockdownOutcome } from '../engine/health.js';
 
 export class EdRollModal extends LitElement {
   static properties = {
+    rollId: {}, // per-interaction id (PLAN-NOTES-TAB decision #5) — ed-app's, for the log upsert
     label: {},
     stepRow: { attribute: false },
     karma: { attribute: false }, // { grants:[{scope,via,summary}], available, stepRow } | null
@@ -93,11 +94,36 @@ export class EdRollModal extends LitElement {
     // is decided and applied — there is no verify button. A failed test knocks
     // the character down; the app re-derives that state from this result.
     if (this.apply?.action === 'knockdown-result') this._apply();
+    this._log();
   }
 
   _toggleKarma() {
     this._karmaOn = !this._karmaOn;
     this._karmaResult = this._karmaOn && this.karma?.stepRow ? rollStep(this.karma.stepRow) : null;
+    this._log();
+  }
+
+  // Log this completed roll interaction (PLAN-NOTES-TAB, decision #5): fire on
+  // every landing — initial roll, "Roll again", Karma on/off, and the
+  // auto-resolved Knockdown/Recovery tests. The event carries ONLY the dice
+  // result the modal just computed (`_result`, the resolved `_karmaResult`,
+  // the derived outcome) plus the ed-app-owned `rollId`; ed-app merges those
+  // with the roll config it already holds (label/step/difficulty/mods) and
+  // upserts one Roll Log entry per interaction. The modal never writes storage.
+  _log() {
+    if (this.rollId == null || !this._result) return;
+    this.dispatchEvent(
+      new CustomEvent('ed-roll-logged', {
+        detail: {
+          rollId: this.rollId,
+          result: this._result,
+          karmaResult: this._karmaResult,
+          outcome: this._outcome(),
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   // "Spend Karma" for unscoped grants; "Spend Karma (if …)" when every grant is

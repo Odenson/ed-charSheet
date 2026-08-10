@@ -4,6 +4,9 @@
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty } from '../engine/health.js';
+import './ed-edit-meta.js';
+import './ed-confirm.js';
+import './ed-add-legend.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
@@ -17,6 +20,7 @@ export class EdOverview extends LitElement {
     _portraitBroken: { state: true },
     _healthModal: { state: true },
     _resetRecoveries: { state: true },
+    _addLegend: { state: true },
   };
 
   static styles = css`
@@ -73,9 +77,14 @@ export class EdOverview extends LitElement {
     /* Sized so the Attributes/Legend row keeps its original ~130px height — the
        total's font and the panel's internal spacing are tuned to fit, not grow. */
     .legend h4 { margin-bottom: 3px; }
-    .ltotal { text-align: center; padding: 1px 0 2px; }
+    .ltotal { position: relative; text-align: center; padding: 1px 0 2px; }
     .ltotal .lnum { display: block; font-size: 1.25rem; font-weight: 500; line-height: 1; }
     .ltotal .lsub { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    /* Add-Legend affordance: shares the .info hover-reveal (it never clutters the
+       read view; touch always shows it), but is absolutely positioned so the
+       centered block .lnum doesn't wrap an inline button and the panel keeps its
+       fixed height. Sits at the total's top-right, clear of the centred number. */
+    .ltotal .lplus { position: absolute; right: 0; top: 0; padding: 0 3px; font-size: 0.9rem; }
     .llines { border-top: 1px solid var(--border); padding-top: 4px; margin-top: auto; }
     .legend .line { padding: 0; }
     .lstatus { font-size: 0.72rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
@@ -482,6 +491,7 @@ export class EdOverview extends LitElement {
     super.connectedCallback();
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
+      if (this._addLegend) this._addLegend = false;
       if (this._healthModal) this._closeHealthModal();
       if (this._modal) this._closeModal();
       if (this._lightbox) this._lightbox = false;
@@ -495,6 +505,10 @@ export class EdOverview extends LitElement {
   }
 
   _openModal(title, body) { this._modal = { title, body }; }
+  // Opens the shared add-Legend form (Phase F) — the same <ed-add-legend> the
+  // Notes tab's Legend view uses, so both surfaces add through one identical
+  // form and one dispatch contract (ed-edit-legend-earned → ed-app persists).
+  _openAddLegend() { this._addLegend = true; }
   _closeModal() {
     // Drop keyboard focus from the trigger (the ⓘ button) so an Escape close ends
     // the same way a mouse close does. Otherwise the ⓘ keeps :focus-visible (the
@@ -691,6 +705,7 @@ export class EdOverview extends LitElement {
           ${l?.totalEarnt != null
             ? html`<span class="lnum" title="Total Legend Points earned">${l.totalEarnt.toLocaleString()}</span>`
             : html`<span class="lnum">${this._pend()}</span>`}
+          <button class="info lplus" title="Add Legend earned" aria-label="Add Legend earned" @click=${() => this._openAddLegend()}>✚</button>
           <span class="lsub">total earned</span>
         </div>
         <div class="llines">
@@ -970,6 +985,9 @@ export class EdOverview extends LitElement {
         ? html`<div class="overlay" @click=${() => (this._lightbox = false)}>
             <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />
           </div>`
+        : ''}
+      ${this._addLegend
+        ? html`<ed-add-legend .earned=${(m.resources?.legend?.earned ?? []).filter((x) => !x.virtual)} @close=${() => (this._addLegend = false)}></ed-add-legend>`
         : ''}
       ${this._edit
         ? html`<ed-edit-meta .meta=${meta} @close=${() => (this._edit = false)}></ed-edit-meta>`

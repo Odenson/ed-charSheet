@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveAdvancementEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
@@ -14,10 +14,12 @@ import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-homebrew.js';
+import './ed-notes.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
 import './ed-character-picker.js';
+import { saveRollLog } from '../store-rolllog.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -26,6 +28,11 @@ const TABS = [
   { id: 'equipment', label: 'Equipment', icon: '⚔' },
   { id: 'notes', label: 'Notes', icon: '❋' },
 ];
+
+// Id for one roll interaction (PLAN-NOTES-TAB decision #5): generated when the
+// roll modal opens, owned by ed-app, and passed down — so Karma toggles / "Roll
+// again" upsert the same Roll Log row instead of stacking a duplicate.
+const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 export class EdApp extends LitElement {
   static properties = {
@@ -179,6 +186,7 @@ export class EdApp extends LitElement {
           ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
           : null;
       this._roll = {
+        rollId: uid(),
         label,
         stepRow,
         karma: karmaCtx,
@@ -186,6 +194,40 @@ export class EdApp extends LitElement {
         difficulty: difficulty ?? null,
         mods: this._rollTimeMods({ kind, apply }),
       };
+    });
+    // A completed roll in the modal (PLAN-NOTES-TAB, decision #5): the modal
+    // sends ONLY the dice result it just computed — `_result`, the resolved
+    // `_karmaResult`, the derived outcome, and the per-open `rollId`. This
+    // listener merges them with the roll config it already holds (`this._roll`)
+    // and saves one Roll Log entry per interaction, upserted by rollId — so
+    // Karma toggles / "Roll again" replace the row, never duplicate it. The log
+    // is device-local (decision #2) and never rides the overlay or an export.
+    this.addEventListener('ed-roll-logged', (e) => {
+      if (!this._roll || !this._characterId) return;
+      const { rollId, result, karmaResult, outcome } = e.detail ?? {};
+      const r = result;
+      if (!r || !rollId) return;
+      saveRollLog(
+        {
+          rollId,
+          at: new Date().toISOString(),
+          label: this._roll.label,
+          step: r.step,
+          dice: r.dice,
+          groups: r.groups,
+          modifier: r.modifier,
+          // The full displayed number the modal showed: dice + Karma die +
+          // roll-time mods — so the log matches what the player saw, and the
+          // recorded `mods`/`karma` sub-objects explain a total that isn't the
+          // raw dice sum without double-counting on render (decision #8).
+          total: r.total + (karmaResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0),
+          difficulty: this._roll.difficulty?.value ?? null,
+          outcome: outcome ?? null,
+          karma: karmaResult ? { step: karmaResult.step, dice: karmaResult.dice, total: karmaResult.total } : null,
+          mods: this._roll.mods ?? [],
+        },
+        this._characterId,
+      );
     });
     // A roll modal with an apply context (e.g. a Recovery test) hands its total
     // back up; apply it to the character's inputs via the pure engine and
@@ -213,6 +255,13 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     this.addEventListener('ed-edit-talent-rank', (e) => this._editTalentRank(e.detail));
     this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
+    // Notes-tab surfaces (PLAN-NOTES-TAB): the player's hand-written notes and
+    // dated history replace their top-level arrays; Legend-earned entries replace
+    // resources.legend.earned only — the legacy totalEarnt is never written
+    // (decision #1) and re-derives from the log (Phase B).
+    this.addEventListener('ed-edit-notes', (e) => this._editNotes(e.detail));
+    this.addEventListener('ed-edit-history', (e) => this._editHistory(e.detail));
+    this.addEventListener('ed-edit-legend-earned', (e) => this._editLegendEarned(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
     // A custom-item save paused for the key replays first; otherwise retry the
     // character save. The pending is consumed either way.
@@ -347,18 +396,73 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
+  // A view replaced the character's hand-written notes. Same inputs-only flow:
+  // replace the top-level `notes` array, persist the overlay, re-derive (the
+  // Notes tab just shows the inputs through — nothing derived feeds on them).
+  _editNotes(notes) {
+    if (!this._character || !Array.isArray(notes)) return;
+    this._character = { ...this._character, notes };
+    saveNotesEdits(notes, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view replaced the character's dated history timeline. Same flow as notes.
+  _editHistory(history) {
+    if (!this._character || !Array.isArray(history)) return;
+    this._character = { ...this._character, history };
+    saveHistoryEdits(history, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view replaced the character's Legend-earned entries (PLAN-NOTES-TAB,
+  // decisions #1/#6). The earned log is now the source of truth for Total
+  // Legend Earned: this merges the real entries into the legend inputs and
+  // NEVER touches `totalEarnt` — the legacy branch value stays put and the
+  // derived total is the pure sum (Phase B). The overlay stores `earned` only.
+  _editLegendEarned(earned) {
+    if (!this._character || !Array.isArray(earned)) return;
+    this._character = {
+      ...this._character,
+      resources: {
+        ...(this._character.resources || {}),
+        legend: { ...(this._character.resources?.legend || {}), earned },
+      },
+    };
+    saveLegendEdits(earned, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
   // Rank editing guard (PLAN-RANK-EDITING §3.3): re-audit a *clone* carrying the
   // tentative rank and reject an increase that would push Available Legend below
   // 0. Defense-in-depth — the view only offers steps that fit — so a multi-step
   // or programmatic increase can never overdraw the sheet. Decreases always
   // pass (they refund). Mirrors deriveModel's audit inputs (resolved knacks).
+  // Total Earned prices from the same derived total the Legend panel shows —
+  // legacy `totalEarnt` plus the earned log (PLAN-NOTES-TAB Phase B) — so the
+  // guard and the visible `available` can never disagree about affordability.
   _canAffordRank(character) {
-    const totalEarnt = character.resources?.legend?.totalEarnt;
+    const totalEarnt = this._legendTotalEarnt(character);
     if (totalEarnt == null) return false;
     const spent = auditLegendSpent(character, this._rules.legendFile?.costs, {
       knacks: this._model?.knacks ?? [],
     });
     return legendAvailable(totalEarnt, spent.total) >= 0;
+  }
+
+  // The derived Total Legend Earned for a (possibly tentative) character:
+  // the pure sum of the earned log plus any legacy `totalEarnt` input — the
+  // single derivation path of PLAN-NOTES-TAB Phase B, mirrored here so the rank
+  // guard prices off the same total the Legend panel derives. Null when neither
+  // exists (nothing earned yet — the placeholder-pill case, never 0).
+  _legendTotalEarnt(character) {
+    const legend = character?.resources?.legend ?? {};
+    const legacy = typeof legend.totalEarnt === 'number' ? legend.totalEarnt : null;
+    const earned = Array.isArray(legend.earned) ? legend.earned : [];
+    if (legacy == null && earned.length === 0) return null;
+    return (legacy ?? 0) + earned.reduce((s, e) => s + (Number(e.amount) || 0), 0);
   }
 
   // A view bumped a talent's rank (edit mode). Ranks are inputs; the Legend
@@ -616,7 +720,11 @@ export class EdApp extends LitElement {
           .customCanonKeys=${m.customCanonKeys}
         ></ed-equipment>`;
       case 'notes':
-        return html`<div class="stub"><span class="big">❋</span>Notes — a running history of the character. Coming soon.</div>`;
+        return html`<ed-notes
+          .model=${m}
+          .editMode=${this._editMode}
+          .characterId=${this._characterId}
+        ></ed-notes>`;
       default:
         return html``;
     }
@@ -721,6 +829,7 @@ export class EdApp extends LitElement {
         : ''}
       ${this._roll
         ? html`<ed-roll-modal
+            .rollId=${this._roll.rollId}
             .label=${this._roll.label}
             .stepRow=${this._roll.stepRow}
             .karma=${this._roll.karma}
