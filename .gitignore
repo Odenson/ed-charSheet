@@ -28,6 +28,7 @@ npm-debug.log*
 # (The legacy data/character.json line was removed with its file at v1.6.0.)
 data/characters.json
 data/chakka.jpg
+data/kolon.jpeg
 
 # Custom-item working copy — gitignored for the same reason as characters.json
 # (read live from the character-data branch; local copy only for dev / file://).

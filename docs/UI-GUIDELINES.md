@@ -71,6 +71,16 @@ Every modal/overlay follows the same keyboard contract:
   the current roll and ability modals) have no primary action, so Enter is a
   no-op there; wire it as soon as a modal gains an accept action.
 
+## Gear tab — one armour worn
+A character can wear **one set of armour**: equipping a second armour (from the
+picker, the row toggle, or the item modal) asks for confirmation first —
+Escape/backdrop/✕ keeps the current armour as-is, **Swap** (Enter confirms)
+equips the new armour and stores every other armour. The single-slot rule is
+decided by the item's kind (`armor`, incl. player-created custom armour); a
+shield or any non-armour never blocks. Storing the worn armour needs no prompt.
+The rule is enforced at input time (`ui/item-equip-state.js`); the engine stays
+agnostic and folds whatever ends up equipped.
+
 ## Other conventions
 - **Roll affordance:** every rollable stat (attributes, initiative, knockdown,
   karma, talents) carries a small dice button. Rolling itself is wired in Phase 4.

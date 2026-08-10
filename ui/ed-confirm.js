@@ -1,7 +1,11 @@
-// ui/ed-confirm.js — a small reusable confirmation modal for destructive
-// actions (first use: "Discard local changes"). Presentational only: it renders
-// a message and two buttons, and dispatches `confirm` or `close` up — it never
-// performs the action itself (Tier-1 golden rule: views dispatch, ed-app acts).
+// ui/ed-confirm.js — a small reusable confirmation modal for actions with a
+// clear yes/no (first use: "Discard local changes"; also armour swaps and the
+// recovery-test reset). Presentational only: it renders a message and two
+// buttons, and dispatches `confirm` or `close` up — it never performs the
+// action itself (Tier-1 golden rule: views dispatch, ed-app acts).
+//
+// The confirm button's `tone` is 'danger' by default (destructive actions) and
+// 'accent' for non-destructive choices like the armour swap.
 //
 // Tier-1 modal rules: Escape / Cancel / backdrop close (= cancel); Enter confirms
 // (the primary button is autofocused, so Enter triggers it); theme-aware.
@@ -12,6 +16,7 @@ export class EdConfirm extends LitElement {
     heading: { type: String },
     message: { type: String },
     confirmLabel: { type: String },
+    tone: { type: String }, // 'danger' (default) | 'accent'
   };
 
   static styles = css`
@@ -20,6 +25,7 @@ export class EdConfirm extends LitElement {
       --border: light-dark(#e2e5ea, #2c313b);
       --muted: light-dark(#5a6472, #93a0b3);
       --accent: light-dark(#7a3e12, #d9944e);
+      --accent-bg: light-dark(#f6e9dc, #3a2a17);
       --danger: light-dark(#c0392b, #e06557);
       --danger-bg: light-dark(#fbe9e7, #3a1f1c);
       --text: light-dark(#111418, #f0f3f7);
@@ -32,6 +38,7 @@ export class EdConfirm extends LitElement {
     .actions { display: flex; justify-content: flex-end; gap: 8px; }
     button.btn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
     button.btn.danger { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); font-weight: 500; }
+    button.btn.accent { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
   `;
 
   connectedCallback() {
@@ -47,9 +54,10 @@ export class EdConfirm extends LitElement {
     super.disconnectedCallback();
   }
 
-  // Focus the primary (confirm) button so Enter confirms.
+  // Focus the primary (confirm) button so Enter confirms. The button carries a
+  // tone class (`danger` by default, `accent` for non-destructive choices).
   firstUpdated() {
-    this.renderRoot.querySelector('.btn.danger')?.focus();
+    this.renderRoot.querySelector('.btn.danger, .btn.accent')?.focus();
   }
 
   _close() {
@@ -71,7 +79,7 @@ export class EdConfirm extends LitElement {
           <p class="msg">${this.message}</p>
           <div class="actions">
             <button type="button" class="btn" @click=${this._close}>Cancel</button>
-            <button type="button" class="btn danger" @click=${this._confirm}>${this.confirmLabel || 'Confirm'}</button>
+            <button type="button" class="btn ${this.tone === 'accent' ? 'accent' : 'danger'}" @click=${this._confirm}>${this.confirmLabel || 'Confirm'}</button>
           </div>
         </div>
       </div>

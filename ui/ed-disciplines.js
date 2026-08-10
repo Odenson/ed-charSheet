@@ -13,6 +13,7 @@ import { LitElement, html, css } from 'lit';
 export class EdDisciplines extends LitElement {
   static properties = {
     model: { attribute: false },
+    editMode: { type: Boolean },
     _sel: { state: true },
     _modal: { state: true },
   };
@@ -76,6 +77,21 @@ export class EdDisciplines extends LitElement {
     .cbadge { font-size: 0.62rem; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
     .section-gap { margin-top: 14px; }
 
+    /* Rank editing (edit mode): the Rank cell becomes a − rank + stepper. The
+       grid widens its column to fit; the wide column swaps back on mobile. Only
+       400/500 weights, theme-aware. */
+    .trow.edit { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 96px 100px 76px 24px; }
+    .stepctl { display: inline-flex; align-items: center; gap: 5px; justify-self: end; }
+    .step { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); font: inherit; font-size: 0.9rem; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .step:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .step:disabled { opacity: 0.35; cursor: default; }
+    .srank { min-width: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+    .legendbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .lchip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+    .lchip b { font-weight: 500; color: var(--accent); font-family: var(--mono); }
+    .hint { font-size: 0.72rem; color: var(--karma); }
+    .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
        row beneath the row that governs them. */
@@ -115,6 +131,7 @@ export class EdDisciplines extends LitElement {
 
     @media (max-width: 620px) {
       .trow { grid-template-columns: minmax(0, 1fr) 40px 92px 24px; }
+      .trow.edit { grid-template-columns: minmax(0, 1fr) 88px 92px 24px; }
       .trow .action, .effcol { display: none; }
       .meta { flex-direction: column; }
       .mcell.dur, .mcell.half, .mcell.art { flex: 1 1 auto; }
@@ -140,7 +157,7 @@ export class EdDisciplines extends LitElement {
     super.disconnectedCallback();
   }
 
-  _talentRow(t) {
+  _talentRow(t, discName) {
     // Karma context for the roll modal: talents are Karma-eligible by default, so
     // t.karma carries the grant. Pull the pool's amount/die step from the derived
     // Karma characteristic, exactly like the Overview.
@@ -153,7 +170,7 @@ export class EdDisciplines extends LitElement {
       : null;
     const status = t.required ? 'required Discipline talent' : 'chosen Talent option';
     return html`
-      <div class="trow ${t.required ? '' : 'opt'}">
+      <div class="trow ${t.required ? '' : 'opt'}${this.editMode ? ' edit' : ''}">
         <span class="tname">
           <button
             class="tinfo ${t.required ? 'req' : 'opt'}"
@@ -164,7 +181,7 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${t.name}</span>
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
-        <span class="num">${t.rank}</span>
+        ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}</span>`}
         <span class="sd">${t.step != null ? `${t.step} · ${t.dice}` : '—'}</span>
         <span class="action sd">${t.action ?? ''}</span>
         <button
@@ -179,6 +196,52 @@ export class EdDisciplines extends LitElement {
         >⚄</button>
       </div>
     `;
+  }
+
+  // Edit-mode rank stepper for one talent/skill row. The prices come off the
+  // derived `pricing` (increaseCost/refund/affordable); `+` needs the step priced
+  // AND affordable, `−` needs a refund (Rank 1 is the floor and refunds null).
+  // Tooltips name the Legend amount; when no Total Legend is recorded yet, every
+  // increase is blocked and the hint explains why (UI-GUIDELINES §5: unpriceable
+  // shows —, never a fabricated cost).
+  _rankCtl(t, discName) {
+    const p = t.pricing ?? null;
+    const up = !!(p && p.increaseCost != null);
+    const affordable = !!(p && p.affordable);
+    const down = !!(p && p.refund != null);
+    const noLegend = this.model?.legend == null;
+    const upTitle = !up
+      ? 'Cannot price this step'
+      : noLegend
+        ? `Costs ${p.increaseCost} Legend — enter Total Legend earned to enable`
+        : affordable
+          ? `Costs ${p.increaseCost} Legend (${t.rank} → ${t.rank + 1})`
+          : `Costs ${p.increaseCost} Legend — not enough Available Legend`;
+    const downTitle = !down
+      ? t.rank <= 1
+        ? 'Rank can’t go below 1'
+        : 'Cannot price this step'
+      : `Refunds ${p.refund} Legend (${t.rank} → ${t.rank - 1})`;
+    return html`
+      <span class="stepctl" role="group" aria-label="Edit ${t.name} rank">
+        <button class="step" ?disabled=${!down} title=${downTitle} aria-label="Decrease ${t.name} rank" @click=${() => this._stepRank(t, discName, -1)}>−</button>
+        <span class="srank">${t.rank}</span>
+        <button class="step" ?disabled=${!up || !affordable} title=${upTitle} aria-label="Increase ${t.name} rank" @click=${() => this._stepRank(t, discName, 1)}>+</button>
+      </span>
+    `;
+  }
+
+  // One rank step, dispatched up to ed-app (data flows up, never mutated here).
+  // Talents carry their Discipline name so the app can locate the row's input.
+  _stepRank(t, discName, delta) {
+    const talent = discName != null;
+    this.dispatchEvent(
+      new CustomEvent(talent ? 'ed-edit-talent-rank' : 'ed-edit-skill-rank', {
+        detail: { name: t.name, rank: t.rank + delta, ...(talent ? { discipline: discName } : {}) },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   _talentModal(t) {
@@ -216,7 +279,7 @@ export class EdDisciplines extends LitElement {
   // lives in the detail modal, matching how talents show their tier.
   _skillRow(s) {
     return html`
-      <div class="trow">
+      <div class="trow${this.editMode ? ' edit' : ''}">
         <span class="tname">
           <button
             class="sinfo"
@@ -227,7 +290,7 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${s.name}</span>
         </span>
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
-        <span class="num">${s.rank}</span>
+        ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}</span>`}
         <span class="sd">${s.step != null ? `${s.step} · ${s.dice}` : '—'}</span>
         <span class="action sd">${s.action ?? ''}</span>
         <button
@@ -259,7 +322,7 @@ export class EdDisciplines extends LitElement {
     }
     return html`
       <div class="card">
-        <div class="trow h">
+        <div class="trow h${this.editMode ? ' edit' : ''}">
           <span class="thpad">Skill</span>
           <span class="effcol">Effect</span>
           <span class="num">Rank</span>
@@ -352,6 +415,25 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // Edit-mode budget bar: Available Legend (derived, never stored) as a chip at
+  // the tab top, so a player sees how many Legend points rank changes can burn.
+  // No Total Legend earned yet → the chip falls back to the muted dashed
+  // placeholder pill (UI-GUIDELINES §5) and a hint explains why the steppers are
+  // locked. Unpriced sinks (spells) don't leak into the number: it's the same
+  // derived available the audit backs.
+  _legendBar() {
+    const legend = this.model?.legend ?? null;
+    const available = legend?.available ?? null;
+    return html`
+      <div class="legendbar">
+        <span class="lchip">Available Legend
+          ${available != null ? html`<b>${available}</b>` : html`<span class="pend">—</span>`}
+        </span>
+        ${legend == null ? html`<span class="hint">Enter Total Legend earned to price rank changes.</span>` : ''}
+      </div>
+    `;
+  }
+
   render() {
     const list = this.model?.disciplines ?? [];
     if (!list.length) return html`<p>No disciplines.</p>`;
@@ -386,6 +468,8 @@ export class EdDisciplines extends LitElement {
         <span class="circle">${showSkills ? `${skills.length} skill${skills.length === 1 ? '' : 's'}` : `Circle ${d.circle}`}</span>
       </div>
 
+      ${this.editMode ? this._legendBar() : ''}
+
       ${showSkills
         ? this._skillsView(skills, this.model?.knacks ?? [])
         : html`
@@ -399,7 +483,7 @@ export class EdDisciplines extends LitElement {
               <span class="li">click a circle for details</span>
             </div>
             <div class="card">
-              <div class="trow h">
+              <div class="trow h${this.editMode ? ' edit' : ''}">
                 <span class="thpad">Talent</span>
                 <span class="effcol">Effect</span>
                 <span class="num">Rank</span>
@@ -409,7 +493,7 @@ export class EdDisciplines extends LitElement {
               </div>
               ${d.talents.map(
                 (t) => html`
-                  ${this._talentRow(t)}
+                  ${this._talentRow(t, d.name)}
                   ${(knacksByTalent.get(t.name) ?? []).map((k) => this._knackRow(k))}
                 `,
               )}

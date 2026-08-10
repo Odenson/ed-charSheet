@@ -15,6 +15,8 @@ import {
   equivalentTier,
   newDisciplineRank1Cost,
   additionalDisciplineTalentCost,
+  talentRankStepCost,
+  skillRankStepCost,
   auditLegendSpent,
 } from './legend-spent.js';
 
@@ -168,6 +170,93 @@ test('additionalDisciplineTalentCost = Rank-1 table + equivalent-tier ranks 2+',
   assert.equal(rank1, 500);
   assert.equal(tier, 'Journeyman');
   assert.equal(cost, 500 + 300 + 500); // 1300
+});
+
+// --- rank-step costs (rank editing: increase consumes, decrease refunds) ------
+
+test('talentRankStepCost: the step into a rank equals the single table step', () => {
+  const t = { name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 };
+  // Raising R5 → R6 costs the 6th Novice step (1300); raising R4 → R5 costs 800.
+  assert.equal(talentRankStepCost(t, 1, null, costs, 6), 1300);
+  assert.equal(talentRankStepCost(t, 1, null, costs, 5), 800);
+  // The refund for dropping R5 → R4 is the step that bought Rank 5 (800).
+  assert.equal(talentRankStepCost(t, 1, null, costs, 5), 800);
+  // toRank 0/negative — nothing below Rank 1 to refund.
+  assert.equal(talentRankStepCost(t, 1, null, costs, 0), 0);
+});
+
+test('talentRankStepCost == audit(after) − audit(before) for a first-Discipline talent', () => {
+  const char = (rank) => ({
+    attributes: {},
+    disciplines: [{ name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank, tier: 'Novice', circle: 1 }] }],
+    skills: [],
+    resources: { legend: { totalEarnt: 10000 } },
+  });
+  const t = { name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 };
+  assert.equal(talentRankStepCost(t, 1, 4, costs, 6), auditLegendSpent(char(6), costs).total - auditLegendSpent(char(5), costs).total);
+  assert.equal(talentRankStepCost(t, 1, 4, costs, 5), auditLegendSpent(char(5), costs).total - auditLegendSpent(char(4), costs).total);
+});
+
+test('talentRankStepCost: an additional-Discipline talent uses the surcharge tables', () => {
+  // 2nd Discipline (equiv tier Journeyman), lowest Circle 3.
+  const t = { name: 'Spellcasting', rank: 3, tier: 'Novice', circle: 1 };
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 1), 500); // New Discipline Rank-1 (lowest 3)
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 2), 300); // Journeyman R2
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 3), 500); // Journeyman R3
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 4), 800); // Journeyman R4
+  // Matches the section subtotal: Rank 3 = 500 + 300 + 500 = 1300 (see the audit test above).
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 1) + talentRankStepCost(t, 2, 3, costs, 2) + talentRankStepCost(t, 2, 3, costs, 3), 1300);
+});
+
+test('talentRankStepCost == audit(after) − audit(before) for an additional-Discipline talent', () => {
+  const char = (rank) => ({
+    attributes: {},
+    disciplines: [
+      { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
+      { name: 'Nethermancer', circle: 3, talents: [{ name: 'Spellcasting', rank, tier: 'Novice', circle: 1 }] },
+    ],
+    skills: [],
+    resources: { legend: { totalEarnt: 10000 } },
+  });
+  const t = { name: 'Spellcasting', rank: 3, tier: 'Novice', circle: 1 };
+  assert.equal(
+    talentRankStepCost(t, 2, 3, costs, 4),
+    auditLegendSpent(char(4), costs).total - auditLegendSpent(char(3), costs).total,
+  );
+  assert.equal(
+    talentRankStepCost(t, 2, 3, costs, 3),
+    auditLegendSpent(char(3), costs).total - auditLegendSpent(char(2), costs).total,
+  );
+});
+
+test('skillRankStepCost: the step into a rank equals the Skill Training step', () => {
+  const s = { name: 'Tracking', rank: 3, tier: 'Novice' };
+  assert.equal(skillRankStepCost(s, costs, 4), 800); // Novice R4
+  assert.equal(skillRankStepCost(s, costs, 3), 500); // the step that bought R3
+  // Missing tier defaults to Novice, exactly as the audit prices it.
+  assert.equal(skillRankStepCost({ name: 'Tracking', rank: 3 }, costs, 4), 800);
+  assert.equal(skillRankStepCost(s, costs, 0), 0);
+});
+
+test('skillRankStepCost == audit(after) − audit(before)', () => {
+  const char = (rank) => ({
+    attributes: {},
+    disciplines: [],
+    skills: [{ name: 'Tracking', rank, tier: 'Novice' }],
+    resources: { legend: { totalEarnt: 5000 } },
+  });
+  const s = { name: 'Tracking', rank: 3, tier: 'Novice' };
+  assert.equal(skillRankStepCost(s, costs, 4), auditLegendSpent(char(4), costs).total - auditLegendSpent(char(3), costs).total);
+  assert.equal(skillRankStepCost(s, costs, 3), auditLegendSpent(char(3), costs).total - auditLegendSpent(char(2), costs).total);
+});
+
+test('rank-step costs flag unpriceable steps with null', () => {
+  const noTier = { name: 'Missile Weapon', rank: 5, circle: 1 }; // no stored tier
+  assert.equal(talentRankStepCost(noTier, 1, null, costs, 6), null);
+  const beyondTable = { name: 'Missile Weapon', rank: 15, tier: 'Novice', circle: 1 };
+  assert.equal(talentRankStepCost(beyondTable, 1, null, costs, 16), null); // table stops at 15
+  const skill = { name: 'Tracking', rank: 10, tier: 'Novice' };
+  assert.equal(skillRankStepCost(skill, costs, 11), null); // skills stop at Rank 10
 });
 
 test('auditLegendSpent prices a 2nd Discipline with the surcharge', () => {

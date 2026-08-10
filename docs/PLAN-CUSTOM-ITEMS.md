@@ -279,6 +279,7 @@ the defaults for generated effects.
 │   Cost [___] sp   Weight [______]   Availability [______]  │
 │   …kind-specific fields…                                   │
 │   Description [______________________________________]     │
+│   Short effect [________________] (n/32 — tile label)      │
 │                                                            │
 │ ▸ Effects (§6.3)                                           │
 │   [＋ Armour +N] [＋ Mystic Armour +N] [＋ Initiative −N] [＋ Note]   ← quick templates (kind-scoped)
@@ -307,6 +308,10 @@ the defaults for generated effects.
 
 Common to all: Cost (sp, number), Weight (text), Availability (free text — it is
 display-only reference, not a controlled vocabulary), Description (textarea),
+Short effect (a text input with a live `n/32` counter and hard `maxlength` — it
+authors the equipped tile's one-line `presentation.shortEffect` label, kept
+short so the tile's right-hand space never overflows; empty is fine, then the
+tile derives its label from the first numeric effect),
 and an auto summary derived from the templates.
 
 Build note (§6.6): quick-templates shipped for **weapon / armor / shield /
@@ -326,7 +331,7 @@ One repeatable row per effect. Fields:
 | **Value** | Number input (hidden for `note` — only the summary input renders) |
 | **Measure** | Defaulted by type — §6.4 — editable: `rating` / `step` / `result` / `value` |
 | **Condition** | `always` (default) / `situational` (the validator's optional `scope` string is not surfaced as a form field — see §6.6) |
-| **Summary** | Auto-generated from the fields (mirrors the tile/modal chip formatting); editable override |
+| **Summary** | Auto-generated from the fields and kept in sync as the row's fields change (mirrors the tile/modal chip formatting); typing an override freezes it, and changing the **Type** resets the row to the new type's auto summary. Rows are never silently dropped for having an empty summary — an effect the user added always saves (see §6.6) |
 
 A "＋ Add effect row" appends a pre-filled `armor-modifier` default row. Rows are
 **not reorderable** (build note §6.6); remove via ✕.
@@ -530,6 +535,68 @@ and the runbook; the character-data workflow copy was also bumped to
 `checkout@v5` via the C1 temp-branch procedure so auto-folds lose the node20
 warning too.
 
+### Post-release (v1.8.0) updates
+
+**Effects were silently dropped on save — root cause found and fixed.** A saved
+custom item always landed with `effects: []` (confirmed in every commit of
+`data/custom-items.json` on `character-data`). Two stacked bugs in the modal:
+(1) changing an effect's **Type** reset the row via `blankEffect(newType)`,
+whose `summary` is `''` — so the old summary was wiped; (2) the clean step
+(`_cleanForm`) filtered out every row with an empty summary. Net: add an effect,
+change its type, save → the effect vanished. Fix: `_setEffect` now regenerates
+the summary from the row's fields after a type reset (and keeps it in sync on
+any field change unless the user typed an override), and the clean step
+auto-fills a missing summary instead of filtering the row out — a row the user
+added always saves, and an invalid row (e.g. a `note` with no summary) surfaces
+a validator error rather than disappearing. The effect-building/cleaning logic
+moved into a pure, DOM-free module (`ui/custom-item-builder.js`,
+`summaryFor`/`blankEffect`/`finishEffect`/`cleanEffects`/`cleanItemForm`,
+mirroring the `ui/picker.js` precedent) so the form's save semantics are pinned
+by `custom-item-builder.test.js`. The override set is tracked by **index** now
+(was object identity, which never survived the immutable-effect re-render); it
+also shifts when a row above is removed. Side fix: `attack-modifier`'s type
+label was `"Damage"` while its default target name is `"Damage"`, so auto
+summaries read "Adds +2 Damage Damage"; the label is now `''` (matches the
+equipment tile, which already used an empty suffix for `attack-modifier`).
+
+**`presentation.shortEffect` is now authorable, capped at 32 chars.** The
+Reference group gained a "Short effect" input with a live `n/32` counter and a
+hard `maxlength` — the equipped tile's one-line label. Empty is fine (the tile
+then derives its label from the first numeric effect). The shared validator
+(`engine/validate-item.js`) gained `MAX_SHORT_EFFECT = 32` and now rejects
+over-long `shortEffect` at the same gate the UI/worker/fold all use, so the cap
+holds even against a direct `/save-items` POST. `cleanItemForm` persists
+`presentation.shortEffect` trimmed and only when non-empty. Guardrail: Tier 3 —
+new form field within the existing `ed-items/2` shape (`presentation` with an
+optional string was already validated), a bug fix restoring documented
+behavior, no taxonomy/UI-GUIDELINES change.
+
+**Editing a custom item showed the stale copy — effects missing on re-edit —
+until a page refresh — fixed.** Reported: on an **edit** of a custom item, the
+changes added in the previous save (in particular freshly added **effects**)
+were not pulled back into the modal until a refresh. First pass traced it to
+`_editItem` reading `committed[name]` before the working set (`committed ??
+working`) — after a save whose branch re-read lags the `/save-items` PUT, the
+edit stays pending in the overlay and the working set (seeded via
+`applyCustomItemsMap(committed, overlay)`) holds the **fresh** copy, so the form
+opened with the stale branch copy. That half-fix (`working ?? committed`) was
+right but incomplete. The **real** root cause was upstream of the modal in
+`_refreshCustomItems` (ui/ed-app.js): the reflection check that decides when to
+reconcile the overlay away was **content-agnostic** — it only verified each
+saved item *existed* in the re-read (`committedItems[n] != null`), never that
+its **content** matched. A git-consistent read that lags the PUT returns the
+*previous* commit's file: same item name, **old content** (no effects). The
+presence check passed, the overlay was reconciled away, and the stale read
+became the committed baseline — so the modal re-seeded the old item and the
+just-saved effects were gone from the form until a full refresh finally read the
+new content. Fix: extracted a pure, content-aware check `isItemsReflected(saved,
+deleted, committed)` (store-custom-items.js) — a saved item must come back
+**deep-equal** (the same `JSON.stringify` comparison the modal's `_delta()`
+uses), and a delete must be gone. When the read is stale the overlay is kept and
+the fresh copy wins on the next seed. Both fixes pinned by regression tests:
+`applyCustomItemsMap` overlay-wins upsert + `isItemsReflected` lagged-read
+cases → `store-custom-items.test.js` 17/17; root 257/257.
+
 ---
 
 ## 7. Guardrail classification
@@ -686,7 +753,8 @@ look like `<THIS>`.
 
 | Suite | File | Covers |
 |---|---|---|
-| Validator units | `engine/validate-item.test.js` | shape/name/kind/effects/size failures |
+| Validator units | `engine/validate-item.test.js` | shape/name/kind/effects/size failures; `shortEffect` cap |
+| Custom-item form builders | `custom-item-builder.test.js` | summary auto-gen, effects never dropped on save, `shortEffect` persistence |
 | Worker | `tools/worker/worker.test.js` | 401 / 400 / upsert / delete / 404-create / 409 / 502 / path-pin |
 | Fold job | `tools/fold-custom-items.test.js` | create / update / skip / abort / 409 / missing-file |
 | Store + integration | root `node --test` | merge, custom-wins, overlay reconcile, `armor-modifier` lands |
@@ -722,6 +790,9 @@ look like `<THIS>`.
 | 2026-08-09 | Collision test D7 | HUMAN | While testing this D7, I found that the warning message needs improving, current reads "Custom overrides the catalog item of the same name." should read "This new Custom Item will overrides the catalog item of the same name if you continue.".  A minor bug was also that it was comparing using exact match and is missing case changes.  So if there is a "Backpack" item and I was creating a "backpack" it would allow me to creating it, this is a bug. | 
 | 2026-08-09 | Collision test D8 | HUMAN | This is a failed case in that every time you create a new custom item it will force the delete of the existing custom item.  So the delete function works, but that is not the intended functionality, users can create multiple custom items that will be added to the available items.  A delete option should exist but it needs to be triggered by user. | 
 | 2026-08-09 | D7 + D8 fixed | CLAUDE | Both reported bugs reproduced headless against the shipped code. **D8 root cause** (two stacked bugs in the modal seed): (1) the seed ran in `connectedCallback`, but the bound `committed`/`overlay` props are applied after the element connects — so it seeded empty on every open; (2) it read `applyCustomEdits(...)?.items`, treating `committed` (an items map) as an ed-items file shape. Result: `_working` was empty, `_delta()` reported every committed item as deleted, and each create+save POSTed the existing item's delete (confirmed in the branch history — every save replaced the previous item). Fix: seed once per open in `willUpdate` via new pure `applyCustomItemsMap(committed, overlay)` (store-custom-items.js) + regression test. **D7 fixes**: collision check now case-insensitive (`backpack` collides with canon `Backpack`); warning copy uses the owner's wording with the grammar fixed ("This new Custom Item will override the catalog item of the same name if you continue."). New `applyCustomItemsMap` test → root 244/244; `node --check` clean. D8 checklist left unticked for owner re-test on /dev/ | 
+| 2026-08-09 | Post-1.8.0 owner requests | CLAUDE | Two updates to custom-item creation. (1) **Effects-save bug fixed**: every saved item landed with `effects: []` — a Type change blanked the summary (`blankEffect(newType).summary === ''`) and the clean step filtered summary-less rows out. Effect-building/cleaning moved to pure `ui/custom-item-builder.js`; `_setEffect` now keeps the auto summary in sync (index-tracked override), clean never drops a row, and a missing summary is auto-filled. (2) **`presentation.shortEffect` authoring added**: Reference group "Short effect" input with live `n/32` counter + hard `maxlength`; validator gained `MAX_SHORT_EFFECT = 32` so the cap holds through the UI/worker/fold gate. Side fix: `attack-modifier` summary no longer doubles ("Damage Damage" → "Damage"). New `custom-item-builder.test.js` (9) + validator cap test → root 254/254; §6.1/§6.2/§6.3/§6.6 + §10 updated; changelog unreleased entries added |
+| 2026-08-09 | Edit-visibility bug fixed | CLAUDE | **Edit of a custom item showed the pre-save copy until a page refresh.** Root cause: `_editItem` read `committed[name]` before the working set — after a save whose branch re-read lags the PUT, the overlay keeps the edit pending and `_working` (seeded committed ∪ overlay, overlay wins) holds the fresh copy, but the form loaded the stale `committed` one. Fix: `_editItem` now reads the working set first (working is always ≥ fresh; committed stays the delta baseline). Regression test: new `applyCustomItemsMap` overlay-wins-upsert case → root 255/255 |
+| 2026-08-09 | Effects missing on re-edit: real root cause found | CLAUDE | First fix was incomplete. Re-edit after a save still showed the old item — freshly saved **effects** absent until a refresh. Real root cause: `_refreshCustomItems`' reflection check was **content-agnostic** (each saved item just had to *exist* in the re-read). A lagged git-consistent read returns the previous commit's file (same name, old content) → the check passed, the overlay was reconciled away, and the stale read became the baseline → modal re-seeded the old item. Fix: pure content-aware `isItemsReflected` (deep-equal per saved item, delete-gone per name) in store-custom-items.js; ed-app uses it; a stale read keeps the overlay and the fresh copy wins on the next seed. +2 tests → root 257/257; §6.6 note corrected |
 
 ---
  
@@ -731,6 +802,9 @@ Rolling after P5: root `227 / 227 pass` · `tools/worker/` `36 / 36 pass`.
 Rolling after P6–P8: root `238 / 238 pass` (incl. fold 11) · `tools/worker/` `36 / 36 pass` · logic probe green.
 After D3 fix: root `243 / 243 pass` (incl. picker 5) · probe green (incl. §2b picker contract).
 After D7/D8 fix: root `244 / 244 pass` (incl. `applyCustomItemsMap` 1) · headless modal repro green.
+After post-1.8.0 updates: root `254 / 254 pass` (incl. custom-item-builder 9 + shortEffect cap 1).
+After edit-visibility fix: root `255 / 255 pass` (incl. applyCustomItemsMap overlay-wins 2).
+After effects-re-edit root cause: root `257 / 257 pass` (incl. isItemsReflected 2).
 
 Live values (Phase B): worker URL unchanged; `/save-items` verified
 `___` · first fold `___` · `/dev/` end-to-end `___`.

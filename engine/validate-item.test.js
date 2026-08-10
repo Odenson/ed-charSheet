@@ -5,7 +5,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateItem, validateItemsFile, ITEM_KINDS, EFFECT_TYPES } from './validate-item.js';
+import { validateItem, validateItemsFile, ITEM_KINDS, EFFECT_TYPES, MAX_SHORT_EFFECT } from './validate-item.js';
 
 const ok = (r) => ({ pass: r.ok, errors: r.errors });
 
@@ -80,6 +80,19 @@ test('ref is display-only but shape-checked', () => {
   assert.ok(badCost.errors.some((e) => e.includes('ref.cost')));
   const badType = validateItem('Bad', { kind: 'gear', ref: [1, 2], effects: [] });
   assert.equal(badType.ok, false);
+});
+
+test('presentation.shortEffect is an optional string capped at MAX_SHORT_EFFECT', () => {
+  const gear = { kind: 'gear', effects: [] };
+  assert.equal(validateItem('Plain', gear).ok, true, 'no presentation is fine');
+  assert.equal(validateItem('Tag', { ...gear, presentation: { shortEffect: 'Holds ~50 lb' } }).ok, true);
+  const notString = validateItem('Bad', { ...gear, presentation: { shortEffect: 5 } });
+  assert.equal(notString.ok, false);
+  assert.ok(notString.errors.some((e) => e.includes('shortEffect')));
+  assert.equal(validateItem('At', { ...gear, presentation: { shortEffect: 'x'.repeat(MAX_SHORT_EFFECT) } }).ok, true);
+  const tooLong = validateItem('Over', { ...gear, presentation: { shortEffect: 'x'.repeat(MAX_SHORT_EFFECT + 1) } });
+  assert.equal(tooLong.ok, false);
+  assert.ok(tooLong.errors.some((e) => e.includes(`at most ${MAX_SHORT_EFFECT} chars`)));
 });
 
 // --- effect grammar ----------------------------------------------------------

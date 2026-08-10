@@ -66,7 +66,41 @@ not run — see its header).
 
 The app must be served over **HTTP** — opening `index.html` as a `file://` URL
 won't work, because ES modules and `fetch()` of the JSON data are blocked on the
-`file://` origin. Serve the project root with any static server; two options:
+`file://` origin.
+
+**One command — the local dev server (saves work, fully offline):**
+
+```bash
+npm start
+```
+to ensure save uses local data remember to pass the url params:
+```
+http://localhost:8000/dev/?save=http://localhost:8000/save&save-items=http://localhost:8000/save-items
+```
+
+`scripts/start-local.sh` boots `tools/dev-server.mjs` on port 8000 (`PORT=9000 npm start`
+to override), syncing the gitignored working copies in `data/` from
+`origin/character-data` first if they're missing (`npm run dev:sync` forces a
+re-sync). The server:
+
+- serves the repo root statically (MIME types, path-traversal guard), including
+  the `/dev/` self-symlink it creates if missing;
+- implements the worker's two save routes on the same origin —
+  `POST /save` (upsert `data/characters.json`, `ed-characters/1`) and
+  `POST /save-items` (merge `data/custom-items.json`, `ed-items/2`) — with the
+  same validation and error codes, so the app's `SaveError` handling runs
+  unchanged (the save-key prompt still appears — type anything);
+- writes land in the gitignored local working copies that `store.js` already
+  reads off-Pages, so the full save → read-after-write loop runs with no GitHub,
+  Cloudflare, or network;
+- accepts `--lag <ms>` for a one-shot stale-read simulation
+  (`tools/dev-server.test.js`, PLAN-CUSTOM-ITEMS.md §6.6).
+
+Because the app and the save endpoints are same-origin, no `?save=`/`?save-items=`
+override is needed — the query-param override exists for cross-origin test rigs
+(see below) and just works against this server too.
+
+**Or any static server** (viewing only — no save loop):
 
 **Python** (no install needed on macOS/Linux):
 
@@ -93,6 +127,8 @@ can reproduce the real `/dev/` instance locally without changing any code:
 ln -s . dev              # one-time: self-referential symlink (add to .gitignore)
 python3 -m http.server 8000
 ```
+
+(`npm start` creates the symlink for you.)
 
 - <http://localhost:8000/> — production-like (no DEV pill, dev-only UI off)
 - <http://localhost:8000/dev/> — dev instance (`isDev` true, dev-only UI on)

@@ -160,6 +160,9 @@ rules/
   skills.json
   races.json          # racial abilities, each carrying effects[] (+ movement, karma)
   spells.json         # (loaded only when the Magic view opens)
+  homebrew.json       # OPTIONAL campaign rules (ed-homebrew/1): data-only `formula`
+                      #   overrides + effects. Loaded only when present; each rule
+                      #   ships `enabled: false`. docs/HOMEBREW-RULES.md
 ```
 
 Adding a talent = one entry in `talents.json`. No code change.
@@ -178,6 +181,14 @@ arithmetic — and Carrying Capacity is non-linear, so no formula would do. The
 data is the table; a thin code module (`engine/characteristics.js`) holds the
 *logic* — which attribute drives which characteristic, +Circle on Death Rating,
 and applying the taxonomy `effects` on top. **Table as data, logic as code.**
+
+**Homebrew rules are data, not code.** An optional `rules/homebrew.json` (loaded
+only when present, `ed-homebrew/1`) lets a campaign rule override a rating's
+computed base with a data-only `formula` — a flat list of signed monomials whose
+refs resolve against the character — and/or layer taxonomy `effects`. Evaluation
+lives in `engine/formula.js` (pure, DOM-free): an unresolvable ref makes the
+rating `null` (placeholder pill), never a fabricated number. Format authority:
+[docs/HOMEBREW-RULES.md](docs/HOMEBREW-RULES.md).
 
 ### 4.3 The property store (in-memory, runtime)
 At load, character + rules are flattened into a single map keyed exactly like

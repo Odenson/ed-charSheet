@@ -97,6 +97,7 @@ it for AI sessions; humans use the checklist below):
 | UI/UX rules | [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md) |
 | Effect vocabulary / schema of `effects` | [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md) |
 | Thread-item data model, engine fold, pricing | [docs/THREAD-ITEMS.md](docs/THREAD-ITEMS.md) |
+| Homebrew rules format, term/ref grammar, authoring | [docs/HOMEBREW-RULES.md](docs/HOMEBREW-RULES.md) |
 | Dev → prod deploy, relative-path rule | [WORKFLOW.md](WORKFLOW.md) |
 | Serverless save feature design | [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md) |
 

@@ -13,6 +13,12 @@
 // the effect applier, and the shape of the return value are all general, so the
 // remaining characteristics are added by repeating the pattern, not new design.
 
+// Homebrew rules (docs/HOMEBREW-RULES.md): an optional `formula` replaces a
+// rating's table base. The formula's own refs (Durability ranks, Circle, etc.)
+// already encode the adept synthesis, so overridden ratings do NOT also fold
+// the synthesized adept effects — the caller passes the effect set without them.
+import { evalFormula } from './formula.js';
+
 /**
  * Index the Characteristics Table by attribute value.
  * Values above the table's max (30 in the core book) clamp to the last row.
@@ -295,9 +301,19 @@ function healthRating(name, base, effects) {
 /**
  * Unconsciousness Rating = 2 × Toughness value (the table `uncon` column) plus
  * Durability. (PG, Health Ratings.)
- * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ *
+ * A homebrew `formula` (docs/HOMEBREW-RULES.md) overrides the table base: the
+ * base becomes `evalFormula(formula, resolve)` — null (placeholder pill) if any
+ * ref is unresolvable — and the provided `effects` still fold on top.
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table or
+ *   the formula cannot be evaluated.
  */
-export function unconsciousnessRating(toughnessValue, effects, lookup) {
+export function unconsciousnessRating(toughnessValue, effects, lookup, formula, resolve) {
+  if (formula) {
+    const base = evalFormula(formula, resolve);
+    if (base == null) return null;
+    return healthRating('UnconsciousnessRating', base, effects);
+  }
   const row = lookup(toughnessValue);
   if (!row || typeof row.uncon !== 'number') return null;
   return healthRating('UnconsciousnessRating', row.uncon, effects);
@@ -306,9 +322,17 @@ export function unconsciousnessRating(toughnessValue, effects, lookup) {
 /**
  * Death Rating = Unconsciousness + Toughness Step (the table `death` column) plus
  * Durability plus the adept's highest Circle. (PG, Health Ratings.)
- * @returns {{base,value,modifiers}|null} null if Toughness is off the table.
+ *
+ * A homebrew `formula` overrides the table base, as on Unconsciousness.
+ * @returns {{base,value,modifiers}|null} null if Toughness is off the table or
+ *   the formula cannot be evaluated.
  */
-export function deathRating(toughnessValue, effects, lookup) {
+export function deathRating(toughnessValue, effects, lookup, formula, resolve) {
+  if (formula) {
+    const base = evalFormula(formula, resolve);
+    if (base == null) return null;
+    return healthRating('DeathRating', base, effects);
+  }
   const row = lookup(toughnessValue);
   if (!row || typeof row.death !== 'number') return null;
   return healthRating('DeathRating', row.death, effects);
@@ -371,6 +395,34 @@ export function carryingCapacity(strengthValue, effects, lookup) {
     (e.measure ?? 'rating') === 'rating';
   const result = applyModifiers(row.carry, effects, match);
   return { ...result, lift: result.value * 2 - 1 };
+}
+
+// --- Movement Rate (race-based, foldable) --------------------------------------
+
+/**
+ * Movement Rate in yards: the race's base walk movement (rules/races.json
+ * `movement.walk`) plus any always-on effects targeting the Movement
+ * characteristic (EFFECT-TAXONOMY §3 — `{characteristic, Movement}` with
+ * optional `property: Walk`). This is what encumbrance folds into (PG p.405:
+ * "their Movement Rate is halved" / "reduced to 2"), and it is derived here so
+ * the fold lands on a real number instead of a silent no-op. Rates are
+ * integers; a halved odd rate rounds down (floor).
+ *
+ * @param {number} baseWalk  race base movement (yards)
+ * @param {Array<object>} effects  active effects (race/discipline/items/conditions)
+ * @returns {{base:number, value:number, modifiers:Array<object>}|null} null if
+ *          the race has no movement data
+ */
+export function movementRate(baseWalk, effects) {
+  if (typeof baseWalk !== 'number') return null;
+  const match = (e) =>
+    e.type === 'characteristic-modifier' &&
+    e.target?.domain === 'characteristic' &&
+    e.target?.name === 'Movement' &&
+    (e.target?.property == null || e.target?.property === 'Walk') &&
+    (e.measure ?? 'rating') === 'rating';
+  const result = applyModifiers(baseWalk, effects, match);
+  return { ...result, value: Math.floor(result.value) };
 }
 
 // --- Combat characteristics (step-based; rolled, not static ratings) ----------

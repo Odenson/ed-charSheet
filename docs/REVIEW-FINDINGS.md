@@ -32,6 +32,82 @@ and add a line to [Re-review log](#re-review-log)**.
 
 ---
 
+## ⚖️ Weight & encumbrance — scope notes (2026-08-09)
+
+Carried weight and encumbrance (engine/weight.js, engine/encumbrance.js, the
+Equipment tab banner, PG p.405) ship with these **deliberate scope decisions** —
+recorded so a later change knows they were made on purpose, not overlooked.
+
+- **All owned items count**, equipped and stored alike — a stowed load still
+  rests on the back. This differs from the effect fold, which is equipped-only
+  by design (`store.js` — an unequipped item's *effects* don't apply, but its
+  *weight* still does).
+- **Coins/gems are excluded.** They live in `character.wealth`, not the owned
+  items, so they never reach the carried total (PG gives coin weights, e.g.
+  copper 1/3 oz — excluded by scope).
+- **Dwarf Strong Back is not auto-applied.** It is `condition: situational` +
+  `scope: carryingCapacity` in rules/races.json, so the engine surfaces it and
+  never bakes it in (EFFECT-TAXONOMY §6). The banner judges against the raw
+  table capacity. *Deferred*: applying Strong Back to the displayed capacity.
+- **Race weight modifiers (PG p.404) are deferred.** Troll/obsidiman armour and
+  clothing ×1.25, windling ×0.2, t'skrang tail ×1.1 are not applied — weights
+  fold in as recorded. *Deferred*: per-race modifiers on the carried total.
+- **Weight parsing conventions** (engine/weight.js): "N lb" as written; "N oz" ÷
+  16; bare numbers (custom items) read as lb; ranges ("8-10 lb") use the
+  midpoint; "Neg."/"—" are negligible (0); "NA"/unrecorded are **unknown** —
+  skipped and counted in the banner's "unweighed" note, never fabricated.
+
+---
+
+## 🏠 Homebrew rules — scope notes (2026-08-10)
+
+Homebrew Rules (rules/homebrew.json, engine/formula.js, docs/HOMEBREW-RULES.md —
+see docs/PLAN-HOMEBREW.md) ship with these **deliberate scope decisions**:
+
+- **Pre-existing `rules/races.json` health-modifier gap (PG p.64 "Some races
+  receive special modifiers…").** The standard app applies no race-level
+  modifiers to the Unconsciousness/Death ratings. Homebrew is the **sanctioned
+  vehicle** for such campaign adjustments (an enabled rule's `formula`/`effects`
+  on the health ratings) — the races file itself is untouched.
+- **`talent|<name>|<Rank>` resolves to the highest owned rank** across
+  Disciplines (a single talent, shared), and an untrained talent is **rank 0**
+  — the term contributes 0 rather than nulling the rating. Deferred: a
+  per-Discipline sum or a lowest-rank convention.
+- **Rule `effects` are global like the formula** (no per-character opt-in), and
+  an enabled rule with only `effects` (no `formula`) folds them onto the
+  standard derived ratings — the "adjust, don't replace" path.
+- **A formula's base replaces the adept synthesis too** (`adeptHealthEffects`
+  is skipped for the overridden rating at the store — `effectsForRating`), so
+  the rule's own terms carry the intended scaling; nothing double-counts.
+
+---
+
+## 🎲 Talent & skill rank editing — scope notes (2026-08-10)
+
+Talent/Skill rank editing (docs/PLAN-RANK-EDITING.md) ships with these
+**deliberate scope decisions**:
+
+- **Pre-existing skill-tier numeric/string quirk — deliberately NOT fixed.**
+  `rules/skills.json` records each skill's `tier` as a **number** (1/2/3), while
+  the Legend cost tables in `rules/legend.json` and the audit's tier lookups are
+  keyed by the **string** names ("Novice", "Journeyman", …). Rank editing reads
+  the character's **raw stored tier** — exactly as the audit does — and, like
+  the audit, a missing tier falls back to `"Novice"`. A character skill whose
+  stored tier were *numeric* would price as unpriceable (null). Normalizing
+  `rules/skills.json` tiers to strings is a separate data task, out of scope.
+- **Step cost is audit-diff by construction.** `talentRankStepCost` /
+  `skillRankStepCost` are built from the same cumulative functions the audit
+  sums, so a step's cost is always `audit(after) − audit(before)`; the tests
+  prove it for first- and additional-Discipline talents, skills, and the null
+  paths. No new pricing logic that could drift from the sheet's own readout.
+- **The guard is belt-and-suspenders.** The view only offers affordable steps;
+  the app-layer guard re-audits a clone and rejects any increase that would
+  drive Available Legend below 0. Decreases always pass (they refund).
+- **No Legend-earned editor in this change.** A character with no recorded
+  `totalEarnt` can't price anything; the tab blocks the steppers with a hint.
+
+---
+
 ## 🐛 B1 — Broken talent reference in disciplines data
 
 **Status:** ✅ RESOLVED (2026-08-07, manual data edit) · **Tier:** 3
@@ -301,3 +377,6 @@ dangling refs: see R1.)
 | 2026-08-07 | R1 fixed (runbook cross-refs rewritten) | wrangler.toml: `§2.4`→§4 Phase 2 step 2.4, `§2.3`→§2.2, bogus "runsheet §2.5"→§4 Phase 2 step 2.5; worker.test.js: `§4.1`→Phase 4; runbook's own "Phase 4 (§4.1)"→"(step 4.1)". All runbook citations now resolve; 62/62 tests pass. R1 → RESOLVED |
 | 2026-08-07 | R2 fixed (design doc §4.3 `SAVE_KEY` → required) | §3.2 contract, §4.3 secrets table, §4.4 deploy snippet, §6.2 settings row all updated to "required/fail-closed"; §4.2 design sketch intentionally left as the historical "floated as optional" baseline (runbook §5.2 quotes it). R2 → RESOLVED |
 | 2026-08-07 | T1 fixed (`engine/derive.test.js` + `engine/dice.test.js` added) | 24 new tests over the pure derivation/dice helpers, incl. the real steps.json round-trip (locks the `ed-steps/1` shape). Suite 62 → **84, all passing**. T1 → RESOLVED |
+| 2026-08-09 | Weight & encumbrance shipped (engine/weight.js + engine/encumbrance.js, `movementRate` derivation, Gear-tab banner + section totals, Active Effects condition rows) | Taxonomy v3 vocabulary only — no bump/migration. Deliberate scope recorded in §"Weight & encumbrance — scope notes" (all-owned counting, coins/gems excluded, Strong Back + race weight modifiers deferred, weight parsing conventions). Suite 290 → **320, all passing** |
+| 2026-08-10 | Homebrew Rules shipped (rules/homebrew.json `hb-uncon-death` disabled, engine/formula.js, rating formula override, store wiring, engine/homebrew.test.js + store-homebrew.test.js) | No Tier-1/2 surface touched; rules file + engine module are new. Scope decisions recorded in §"Homebrew rules — scope notes" (races.json health-modifier gap → Homebrew is the vehicle; talent rank = highest owned, untrained = 0). Suite 320 → **336, all passing** |
+| 2026-08-10 | Talent & skill rank editing built (engine step-cost helpers, `advancements` overlay + `pricing` on the model, ed-app guard, edit-mode steppers + Available Legend chip) | Tier 3 only; no schema/taxonomy/UI-guideline change. Scope decisions in §"Talent & skill rank editing — scope notes" (skills.json numeric-tier quirk deliberately not fixed; step == audit-diff by construction; guard is defense-in-depth; no Legend-earned editor). Work left **local** for owner testing. Suite 336 → **353, all passing** |

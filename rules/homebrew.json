@@ -1,0 +1,52 @@
+{
+  "schema": "ed-homebrew/1",
+  "source": "Homebrew rules — optional campaign rules that override the standard Earthdawn 4E rulebooks. Authoring guide: docs/HOMEBREW-RULES.md. Each rule is pure data (inputs + plain-English notes); nothing here stores a derived value. A rule applies globally (every character) when `enabled` is true. The `formula` terms use refs resolved against the character (engine/characteristics.js), and any `effects` reuse the standard taxonomy (docs/EFFECT-TAXONOMY.md).",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "note": "This file is loaded optionally (knacks/thread-items precedent): if it is absent the app behaves exactly as before. Rules ship `enabled: false` until the owner turns them on.",
+  "rules": [
+    {
+      "id": "hb-uncon-death",
+      "name": "Durability-scaled Health Ratings",
+      "overrides": "Players' Guide p.64 — Health Ratings (Unconsciousness & Death)",
+      "summary": "These rules are added to better reflect a true unconsciousness & death rating based on a characters base Toughness and how much they train their Durability",
+      "enabled": true,
+      "formula": {
+        "unconsciousness": {
+          "note": "Term1 + Term2 = (Durability Rank × Toughness Step) + table uncon",
+          "terms": [
+            {
+              "times": ["talent|Durability|Rank", "attribute|Toughness|Step"],
+              "sign": "add",
+              "note": "Term1: Durability Rank × Toughness Step."
+            },
+            {
+              "ref": "characteristics|uncon",
+              "sign": "add",
+              "note": "Term2: The standard Unconsciousness base from the characteristics table."
+            }
+          ]
+        },
+        "death": {
+          "note": "Term1 + Term2 + Term3 (Durability Rank × Toughness Step) + Toughness Step + table death",
+          "terms": [
+            {
+              "times": ["talent|Durability|Rank", "attribute|Toughness|Step"],
+              "sign": "add",
+              "note": "Term1: Durability Rank × Toughness."
+            },
+            {
+              "ref": "attribute|Toughness|Step",
+              "sign": "add",
+              "note": "Term2: The Toughness Step."
+            },
+            {
+              "ref": "characteristics|death",
+              "sign": "add",
+              "note": "Term3: The standard Death base from the characteristics table."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

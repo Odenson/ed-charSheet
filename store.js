@@ -9,7 +9,7 @@
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
-import { auditLegendSpent } from './engine/legend-spent.js';
+import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle } from './engine/legend-spent.js';
 import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
@@ -23,6 +23,7 @@ import {
   recoveryTests,
   woundThreshold,
   carryingCapacity,
+  movementRate,
   initiative,
   knockdown,
   maxKarma,
@@ -30,6 +31,8 @@ import {
   karmaUse,
   talentKarmaUse,
 } from './engine/characteristics.js';
+import { carriedWeight, parseWeight } from './engine/weight.js';
+import { encumbranceStage, encumbranceEffects } from './engine/encumbrance.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -260,9 +263,25 @@ export function saveHealthEdits(health, id) {
   return edits;
 }
 
+/**
+ * Persist the character's advancement inputs (ranked talents + skills) to the
+ * edits overlay. Both arrays are pure input — each discipline's circle and its
+ * talents' { name, rank, tier, circle }, and each skill's { name, rank, tier } —
+ * so the whole arrays are stored as-is; every step and dice figure is derived
+ * by the engine, never stored. "Store only inputs, never derived" holds, and a
+ * later save replaces the whole arrays (items/wealth precedent — a partial
+ * patch must never drop the recorded ranks on replay).
+ */
+export function saveAdvancementEdits({ disciplines, skills }, id) {
+  const edits = loadEdits(id);
+  edits.advancements = { disciplines, skills };
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'advancements'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -306,6 +325,9 @@ export function applyEdits(character, edits) {
       },
     };
   }
+  if (edits.advancements) {
+    next = { ...next, disciplines: edits.advancements.disciplines, skills: edits.advancements.skills };
+  }
   return next;
 }
 
@@ -336,6 +358,9 @@ export async function loadCharacter(id, { store } = {}) {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md)
+  // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
+  const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
   // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
@@ -347,7 +372,7 @@ export async function loadCharacter(id, { store } = {}) {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -356,7 +381,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -383,7 +408,7 @@ export function deriveModel(character, rules) {
 
   // Disciplines -> talents with derived step/dice, plus reference detail
   // (durability, half-magic, artisan skills, per-circle abilities) from rules.
-  const disciplines = (character.disciplines ?? []).map((d) => {
+  let disciplines = (character.disciplines ?? []).map((d) => {
     const ref = discByName[d.name] ?? {};
     // "Required" (Discipline) talents = every talent the Discipline grants at any
     // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
@@ -484,6 +509,9 @@ export function deriveModel(character, rules) {
       ref: ref?.ref ?? {},
       effects: [...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])],
       presentation: {},
+      // The parsed carried weight in pounds (engine/weight.js), for the per-section
+      // totals. Derived, never stored.
+      weight: parseWeight(ref?.ref?.weight),
       thread: ref
         ? {
             tier: ref.tier ?? null,
@@ -511,9 +539,27 @@ export function deriveModel(character, rules) {
       // Display-only strings for the UI (never engine-read). See rules/items.json
       // notes.presentation — carries the tile's curated `shortEffect` for note items.
       presentation: ref?.presentation ?? {},
+      // The parsed carried weight in pounds (engine/weight.js) — derived, never stored.
+      weight: parseWeight(ref?.ref?.weight),
       thread: null,
     };
   });
+
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md):
+  // a file-based, data-only list of rating overrides + effects. Only `enabled`
+  // rules apply; the last enabled rule wins per rating (no merge). A rule's own
+  // `effects` fold like any always-on effect, tagged `kind: 'homebrew'` so a
+  // tooltip can name the rule. Rules ship disabled.
+  const homebrewRules = (homebrewFile?.rules ?? []).filter((r) => r.enabled !== false);
+  const homebrewEffects = homebrewRules.flatMap((rule) =>
+    (rule.effects ?? []).map((e) => ({ ...e, origin: { kind: 'homebrew', name: rule.name } })),
+  );
+  const homebrewOverrides = {};
+  for (const rule of homebrewRules) {
+    for (const [rating, formula] of Object.entries(rule.formula ?? {})) {
+      homebrewOverrides[rating] = formula;
+    }
+  }
 
   // Each effect carries an `origin` so a modifier can name its exact source
   // (e.g. distinguish an Archer bonus from a Nethermancer one in a tooltip).
@@ -541,6 +587,7 @@ export function deriveModel(character, rules) {
             : { kind: 'item', name: it.name },
         })),
       ),
+    ...homebrewEffects,
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -562,6 +609,11 @@ export function deriveModel(character, rules) {
     durabilityRank: (d.talents ?? []).find((t) => t.name === 'Durability')?.rank ?? 0,
   }));
   const healthEffects = [...activeEffects, ...adeptHealthEffects(healthDisciplines)];
+  // A homebrew formula (docs/HOMEBREW-RULES.md) replaces a rating's base AND its
+  // adept synthesis — the formula's refs (Durability rank, Step, Circle) already
+  // account for them, so overridden ratings fold the always-on effects only and
+  // nothing is double-counted. Rule `effects` are inside `activeEffects`.
+  const effectsForRating = (name) => (homebrewOverrides[name] ? activeEffects : healthEffects);
   // Knocked Down is a live condition, not a stored/derived static number: it
   // shows in Active Effects and is applied as a roll-time −3 to every test
   // (PG p.389), and its −3 to Physical/Mystic Defense folds into the derived
@@ -575,17 +627,60 @@ export function deriveModel(character, rules) {
     : [];
   const touVal = attrVal('Toughness');
 
+  // Refs for homebrew formulas (docs/HOMEBREW-RULES.md §4) resolve against the
+  // stored inputs — an attribute's value/step, the highest owned rank of a named
+  // talent (an untrained talent is rank 0), or a column of the Characteristics
+  // table at the character's Toughness. An unresolvable ref (e.g. a missing
+  // attribute) makes the rating null — a placeholder pill, never a guess.
+  const resolveRef = (ref) => {
+    const [domain, a, b] = String(ref).split('|');
+    if (domain === 'attribute') {
+      if (a == null) return undefined;
+      if (b === 'Step') return attrStepByName[a];
+      if (b === 'Value') return attrVal(a);
+      return undefined;
+    }
+    if (domain === 'talent') {
+      if (a == null) return undefined;
+      const rank = (character.disciplines ?? [])
+        .flatMap((d) => (d.talents ?? []).filter((t) => t.name === a).map((t) => t.rank))
+        .reduce((highest, r) => Math.max(highest, r ?? 0), 0);
+      return rank;
+    }
+    if (domain === 'characteristics') {
+      const row = lookupChar(touVal);
+      return row?.[a];
+    }
+    return undefined;
+  };
+
+  // Carrying Capacity drives encumbrance, so it derives before the rest. The
+  // carried total counts every owned item — equipped and stored alike, a stowed
+  // load still rests on the back (engine/weight.js); coins/gems are not items
+  // and never reach this sum. The stage's effects then fold into Movement and
+  // the Defences exactly like the Knocked Down condition and surface in the
+  // Active Effects panel — present only while the stage holds.
+  const carryingCapacityResult = carryingCapacity(attrVal('Strength'), activeEffects, lookupChar);
+  const { carried, unweighed } = carriedWeight(items);
+  const weightStanding = encumbranceStage(carried, carryingCapacityResult?.value ?? null);
+  const encumbranceConditionEffects = encumbranceEffects(weightStanding.stage).map((e) => ({
+    ...e,
+    origin: { kind: 'condition', name: weightStanding.label },
+  }));
+  const foldedEffects = [...activeEffects, ...conditionDefenseEffects, ...encumbranceConditionEffects];
+
   const characteristics = {
-    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), [...activeEffects, ...conditionDefenseEffects], lookupChar),
-    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), [...activeEffects, ...conditionDefenseEffects], lookupChar),
-    socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), activeEffects, lookupChar),
+    physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), foldedEffects, lookupChar),
+    mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), foldedEffects, lookupChar),
+    socialDefense: defense('Social', attrVal(DEFENSE_ATTRIBUTE.Social), foldedEffects, lookupChar),
     physicalArmor: physicalArmor(activeEffects),
     mysticArmor: mysticArmor(attrVal('Willpower'), activeEffects, lookupChar),
-    unconsciousness: unconsciousnessRating(touVal, healthEffects, lookupChar),
-    death: deathRating(touVal, healthEffects, lookupChar),
+    unconsciousness: unconsciousnessRating(touVal, effectsForRating('unconsciousness'), lookupChar, homebrewOverrides.unconsciousness ?? null, resolveRef),
+    death: deathRating(touVal, effectsForRating('death'), lookupChar, homebrewOverrides.death ?? null, resolveRef),
     recoveries: recoveryTests(touVal, healthEffects, lookupChar),
     woundThreshold: woundThreshold(touVal, healthEffects, lookupChar),
-    carryingCapacity: carryingCapacity(attrVal('Strength'), activeEffects, lookupChar),
+    carryingCapacity: carryingCapacityResult,
+    movementRate: movementRate(raceEntry?.movement?.walk, foldedEffects),
     initiative: initiative(dexStep, activeEffects),
     knockdown: knockdown(strStep, activeEffects),
     karma:
@@ -620,7 +715,7 @@ export function deriveModel(character, rules) {
   const skillCatalog = Object.fromEntries((skillsFile.skills ?? []).map((s) => [s.name, s]));
   const skillRef = (name) =>
     skillCatalog[name] ?? skillCatalog[String(name).replace(/\s*\([^)]*\)\s*$/, '').trim()] ?? null;
-  const skills = (character.skills ?? []).map((s) => {
+  let skills = (character.skills ?? []).map((s) => {
     const cat = skillRef(s.name) ?? {};
     const attribute = cat.attribute ?? null;
     const aStep = attribute ? attrStepByName[attribute] : undefined;
@@ -677,6 +772,52 @@ export function deriveModel(character, rules) {
         }
       : null;
 
+  // Rank-editing pricing (PLAN-RANK-EDITING, Tier 3): attach to every derived
+  // talent/skill the Legend cost of the step up (`increaseCost`), the refund for
+  // one step down (`refund` — null at Rank 1, the decrease floor), and
+  // `affordable` = the next step fits in the derived Available Legend. All three
+  // come from the same pure engine the audit prices with, so a step's cost
+  // always equals audit(after) − audit(before); unpriceable steps (missing tier,
+  // a rank beyond the cost tables) are null — flagged, never fabricated. The
+  // helper reads the *raw* character inputs (tier/circle), exactly as the audit
+  // does. Derived, never stored.
+  if (legendFile?.costs) {
+    const costs = legendFile.costs;
+    const available = legend?.available ?? null;
+    const discInputs = character.disciplines ?? [];
+    const lowestCircle = lowestDisciplineCircle(discInputs);
+    disciplines = disciplines.map((disc, di) => ({
+      ...disc,
+      talents: disc.talents.map((t, ti) => {
+        const raw = discInputs[di]?.talents?.[ti] ?? {};
+        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1);
+        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank) : null;
+        return {
+          ...t,
+          pricing: {
+            increaseCost,
+            refund,
+            affordable: available != null && increaseCost != null && increaseCost <= available,
+          },
+        };
+      }),
+    }));
+    const skillInputs = character.skills ?? [];
+    skills = skills.map((s, si) => {
+      const raw = skillInputs[si] ?? {};
+      const increaseCost = skillRankStepCost(raw, costs, s.rank + 1);
+      const refund = s.rank > 1 ? skillRankStepCost(raw, costs, s.rank) : null;
+      return {
+        ...s,
+        pricing: {
+          increaseCost,
+          refund,
+          affordable: available != null && increaseCost != null && increaseCost <= available,
+        },
+      };
+    });
+  }
+
   return {
     meta: character.meta ?? {},
     legend,
@@ -713,9 +854,27 @@ export function deriveModel(character, rules) {
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings
     // — conscious/unconscious/dead state + headroom. Derived, never stored.
     healthState: damageState(character.resources?.health ?? {}, characteristics),
+    // Carried weight and its encumbrance standing (engine/weight.js + engine/
+    // encumbrance.js): the pound total across every owned item, the count of
+    // items with unrecorded weight, the carrying capacity they're judged
+    // against, and the stage/label the banner renders. All derived, never stored.
+    weight: {
+      carried,
+      unweighed,
+      capacity: carryingCapacityResult?.value ?? null,
+      stage: weightStanding.stage,
+      label: weightStanding.label,
+      ratio: weightStanding.ratio,
+    },
     // Every active effect for the Active Effects panel: the always-on fold
     // (race/discipline/equipped items, each tagged with its origin) plus any
-    // live condition effect (Knocked Down). All derived, never stored.
-    activeEffects: [...activeEffects, ...conditionEffects],
+    // live condition effects (Knocked Down, and the encumbrance stage's). All
+    // derived, never stored.
+    activeEffects: [...activeEffects, ...conditionEffects, ...encumbranceConditionEffects],
+    // The enabled homebrew rules (rules/homebrew.json — docs/HOMEBREW-RULES.md),
+    // passed through as pure data for the footer pill + modal: { id, name,
+    // overrides, summary, formula }. Nothing derived; the rule payloads are
+    // inputs only.
+    homebrewRules,
   };
 }

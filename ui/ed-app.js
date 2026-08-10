@@ -1,9 +1,11 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveAdvancementEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
-import { saveServer, SaveError } from '../store-server.js';
-import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits } from '../store-custom-items.js';
+import { auditLegendSpent } from '../engine/legend-spent.js';
+import { legendAvailable } from '../engine/legend.js';
+import { saveServer, SaveError, DEFAULT_ENDPOINT } from '../store-server.js';
+import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
@@ -11,6 +13,7 @@ import './ed-equipment.js';
 import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
+import './ed-homebrew.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
@@ -208,6 +211,8 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
+    this.addEventListener('ed-edit-talent-rank', (e) => this._editTalentRank(e.detail));
+    this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
     // A custom-item save paused for the key replays first; otherwise retry the
     // character save. The pending is consumed either way.
@@ -342,6 +347,70 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
+  // Rank editing guard (PLAN-RANK-EDITING §3.3): re-audit a *clone* carrying the
+  // tentative rank and reject an increase that would push Available Legend below
+  // 0. Defense-in-depth — the view only offers steps that fit — so a multi-step
+  // or programmatic increase can never overdraw the sheet. Decreases always
+  // pass (they refund). Mirrors deriveModel's audit inputs (resolved knacks).
+  _canAffordRank(character) {
+    const totalEarnt = character.resources?.legend?.totalEarnt;
+    if (totalEarnt == null) return false;
+    const spent = auditLegendSpent(character, this._rules.legendFile?.costs, {
+      knacks: this._model?.knacks ?? [],
+    });
+    return legendAvailable(totalEarnt, spent.total) >= 0;
+  }
+
+  // A view bumped a talent's rank (edit mode). Ranks are inputs; the Legend
+  // change is derived, so this handler owns the guard above plus persistence.
+  // The overlay stores the FULL ranked disciplines/skills arrays — a partial
+  // patch must never drop the other recorded ranks on replay.
+  _editTalentRank({ discipline, name, rank }) {
+    if (!this._character || !discipline || !name || !(rank >= 1)) return;
+    const disc = (this._character.disciplines ?? []).find((d) => d.name === discipline);
+    const talent = disc?.talents?.find((t) => t.name === name);
+    if (!talent || rank === talent.rank) return;
+    const increasing = rank > talent.rank;
+    const nextCharacter = {
+      ...this._character,
+      disciplines: (this._character.disciplines ?? []).map((d) =>
+        d.name === discipline
+          ? { ...d, talents: (d.talents ?? []).map((t) => (t.name === name ? { ...t, rank } : t)) }
+          : d,
+      ),
+    };
+    if (increasing && !this._canAffordRank(nextCharacter)) return;
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
+  // A view bumped a skill's rank (edit mode). Same inputs-only flow as talents:
+  // guard increases against the derived Available Legend, persist the full
+  // arrays, mark the file dirty, and re-derive.
+  _editSkillRank({ name, rank }) {
+    if (!this._character || !name || !(rank >= 1)) return;
+    const skill = (this._character.skills ?? []).find((s) => s.name === name);
+    if (!skill || rank === skill.rank) return;
+    const increasing = rank > skill.rank;
+    const nextCharacter = {
+      ...this._character,
+      skills: (this._character.skills ?? []).map((s) => (s.name === name ? { ...s, rank } : s)),
+    };
+    if (increasing && !this._canAffordRank(nextCharacter)) return;
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+  }
+
   // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3). The
   // view only dispatches the delta; this handler owns persistence.
   //   'draft' — write the `ed-custom-items` overlay instantly (a pending item
@@ -386,7 +455,7 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     try {
-      const commit = await saveCustomItems(items, { saveKey: this._saveKey, deleteNames });
+      const commit = await saveCustomItems(items, { endpoint: this._endpointFor('save-items', DEFAULT_ITEMS_ENDPOINT), saveKey: this._saveKey, deleteNames });
       this._saveOk = commit; // { sha, url }
       await this._refreshCustomItems({ savedItems: items, deletedNames: deleteNames });
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
@@ -404,13 +473,14 @@ export class EdApp extends LitElement {
   // A just-confirmed save passes its delta here: the overlay is reconciled only
   // once the re-read actually reflects it, so a git-consistent read that lags
   // the PUT never blanks a freshly saved item (PLAN-CUSTOM-ITEMS §6.6 P8.4).
+  // The reflection check is content-aware (isItemsReflected): a lagged read that
+  // returns the previous commit's file (same names, old content) stays pending
+  // in the overlay instead of being reconciled away and masking the fresh edit.
   async _refreshCustomItems({ savedItems, deletedNames } = {}) {
     try {
       const committed = await loadCustomItems();
       const committedItems = committed?.items ?? {};
-      const reflected =
-        (!savedItems || Object.keys(savedItems).every((n) => committedItems[n] != null)) &&
-        (!deletedNames || deletedNames.every((n) => committedItems[n] == null));
+      const reflected = isItemsReflected(savedItems, deletedNames, committedItems);
       if (reflected) reconcileCustomEdits();
       this._rules = {
         ...this._rules,
@@ -421,6 +491,15 @@ export class EdApp extends LitElement {
     } catch (e) {
       this._saveError = `Couldn't refresh custom items: ${e?.message ? String(e.message) : String(e)}`;
     }
+  }
+
+  // Local dev save targets: point the POSTs somewhere else via
+  // `?save=<url>` / `?save-items=<url>` (tools/dev-server.mjs, README → Running
+  // locally). Absent → the deployed worker (default behaviour — no config needed
+  // to save). A bare origin or path resolves against the app's own origin.
+  _endpointFor(param, fallback) {
+    const raw = new URLSearchParams(location.search).get(param);
+    return raw ? new URL(raw, location.href).href : fallback;
   }
 
   // Roll-time modifiers from live conditions. While Knocked Down every test
@@ -449,13 +528,13 @@ export class EdApp extends LitElement {
     this._saveError = null;
     this._saveOk = null;
     try {
-      let commit = await saveServer(this._character, { saveKey: this._saveKey, id: this._characterId });
+      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId });
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
       // Save commits that too — /save-items POST, reconcile, re-read the catalog.
       const pending = loadCustomEdits();
       if (pending && (Object.keys(pending.items ?? {}).length || (pending.delete ?? []).length)) {
-        const customCommit = await saveCustomItems(pending.items ?? {}, { saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
+        const customCommit = await saveCustomItems(pending.items ?? {}, { endpoint: this._endpointFor('save-items', DEFAULT_ITEMS_ENDPOINT), saveKey: this._saveKey, deleteNames: pending.delete ?? [] });
         commit = customCommit; // last commit link wins
         await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
@@ -525,7 +604,7 @@ export class EdApp extends LitElement {
       case 'overview':
         return html`<ed-overview .model=${m} .editMode=${this._editMode}></ed-overview>`;
       case 'disciplines':
-        return html`<ed-disciplines .model=${m}></ed-disciplines>`;
+        return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
         return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
       case 'equipment':
@@ -673,7 +752,7 @@ export class EdApp extends LitElement {
             @close=${() => (this._confirmSwitch = false)}
           ></ed-confirm>`
         : ''}
-      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog></footer>
+      <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog><ed-homebrew .rules=${this._model?.homebrewRules ?? []}></ed-homebrew></footer>
       ${this._saveError
         ? html`<div class="toast error" role="alert" @click=${() => (this._saveError = null)}>
             Couldn't save: ${this._saveError}
