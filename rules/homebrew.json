@@ -9,7 +9,7 @@
       "name": "Durability-scaled Health Ratings",
       "overrides": "Players' Guide p.64 — Health Ratings (Unconsciousness & Death)",
       "summary": "These rules are added to better reflect a true unconsciousness & death rating based on a characters base Toughness and how much they train their Durability",
-      "enabled": false,
+      "enabled": true,
       "formula": {
         "unconsciousness": {
           "note": "Term1 + Term2 = (Durability Rank × Toughness Step) + table uncon",
