@@ -268,7 +268,7 @@ unknown column) makes the rating `null` (placeholder pill), never a guess.
       special modifiers…") and that Homebrew is the sanctioned vehicle.
 - [x] E3. `data/changelog.json` `unreleased` `added` entry (Homebrew Rules,
       rule #1 Unconscious/Death).
-- [ ] E4. Commit + push to `dev`.
+- [x] E4. Commit + push to `dev` (`8ed5a7d`).
 
 ---
 
@@ -298,3 +298,4 @@ unknown column) makes the rating `null` (placeholder pill), never a guess.
 | 2026-08-10 | C | Bug caught by tests: `characteristics|<column>` is a two-part ref, so the column lands in the second segment (`a`), not the third — `resolveRef` originally read `row?.[b]` and every overridden rating went `null`. Fixed to `row?.[a]`; the engine tests pin the term grammar. |
 | 2026-08-10 | D | Tests landed: `engine/homebrew.test.js` (grammar forms, defaults, null paths, rating overrides, effects fold) + `store-homebrew.test.js` (override + adept-skip, disabled-rule ignore, homebrew origin, formula-less rule, untrained talent = rank 0). Suite **320 → 336, all passing**; `node --check` clean on all touched JS. One test assertion fixed: for a non-overridden rating `base` is the table base (41), with the adept synthesis as modifiers. |
 | 2026-08-10 | E | Docs: `ARCHITECTURE.md` rules tree + "Homebrew rules are data, not code" paragraph; `docs/REVIEW-FINDINGS.md` homebrew scope-notes section (races.json health-modifier gap → Homebrew is the vehicle) + re-review log row; `data/changelog.json` `unreleased` entry. HOMEBREW-RULES.md + plan ref-grammar updated for the untrained-talent-→-0 rule. |
+| 2026-08-10 | E | Shipped: committed + pushed to `dev` as `8ed5a7d` ("Homebrew rules: data-only formula/effects overrides (rule #1 Unconscious/Death)"). Suite **336/336**; `rules/homebrew.json` still ships `enabled: false` — behavior unchanged until the owner flips the rule. |
