@@ -32,7 +32,7 @@ import {
   talentKarmaUse,
 } from './engine/characteristics.js';
 import { carriedWeight, parseWeight } from './engine/weight.js';
-import { encumbranceStage, encumbranceEffects } from './engine/encumbrance.js';
+import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -264,6 +264,20 @@ export function saveHealthEdits(health, id) {
 }
 
 /**
+ * Persist the character's Karma resource to the edits overlay. `resources.karma`
+ * is a stored *input* (its `available` balance is spent as Karma dice are rolled,
+ * app-wide) — the derived `max`/`step` are recomputed and never stored, so only
+ * the input object is written as-is. "Store only inputs" holds. A later save
+ * replaces the whole object (health precedent).
+ */
+export function saveKarmaEdits(karma, id) {
+  const edits = loadEdits(id);
+  edits.karma = karma;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
  * Persist the character's advancement inputs (ranked talents + skills) to the
  * edits overlay. Both arrays are pure input — each discipline's circle and its
  * talents' { name, rank, tier, circle }, and each skill's { name, rank, tier } —
@@ -321,7 +335,7 @@ export function saveLegendEdits(earned, id) {
 
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'advancements', 'notes', 'history', 'legend'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'karma', 'advancements', 'notes', 'history', 'legend'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -362,6 +376,15 @@ export function applyEdits(character, edits) {
       resources: {
         ...(next.resources || {}),
         health: { ...(next.resources?.health || {}), ...edits.health },
+      },
+    };
+  }
+  if (edits.karma) {
+    next = {
+      ...next,
+      resources: {
+        ...(next.resources || {}),
+        karma: { ...(next.resources?.karma || {}), ...edits.karma },
       },
     };
   }
@@ -412,6 +435,10 @@ export async function loadCharacter(id, { store } = {}) {
   // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md)
   // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
   const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
+  // Combat options + situational effects (rules/combat.json, ed-combat/1 —
+  // PLAN-COMBAT-TAB Phase A). The Combat tab renders its chips from these and
+  // feeds the selected bundles to engine/combat.js; they are never auto-folded.
+  const combatFile = await loadJSONOptional('./rules/combat.json', { options: [], situations: [] });
   // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
@@ -423,7 +450,7 @@ export async function loadCharacter(id, { store } = {}) {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile };
+  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
   return { character: applyEdits(character, loadEdits(id)), rules, store: s };
 }
 
@@ -432,7 +459,7 @@ export async function loadCharacter(id, { store } = {}) {
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -887,6 +914,53 @@ export function deriveModel(character, rules) {
     });
   }
 
+  // Combat surface (PLAN-COMBAT-TAB Phase C): the pieces the Combat tab renders,
+  // all derived from values already folded above — no new stored values. Attack
+  // talents resolve from the character's owned talents by canonical name (the
+  // singular catalog names the Disciplines actually grant); an unowned talent
+  // derives `step: null` so the tab shows a placeholder pill, never a fabricated
+  // number. Weapons come from the derived items restricted to the equipped
+  // `weapon` kind; melee weapons carry no range entry, so `shortRange`/`longRange`
+  // are null. The live combat conditions (Knocked Down / encumbrance Harried) are
+  // already folded into the sheet's derived ratings, so the tab can pre-select and
+  // lock those situation chips (B11) — the player must not add them a second time.
+  // `damageKarma` surfaces any Damage-test karma-use grant (B13) — e.g. the Archer
+  // ranged-weapon grant (rules/disciplines.json:57) — the way attribute tests do.
+  const COMBAT_ATTACK_TALENTS = ['Melee Weapon', 'Missile Weapon', 'Unarmed Combat', 'Throwing Weapon'];
+  const combat = {
+    attackTalents: COMBAT_ATTACK_TALENTS.map((name) => {
+      const owned = disciplines
+        .flatMap((d) => d.talents)
+        .filter((t) => t.name === name)
+        .reduce((best, t) => (best == null || t.rank > best.rank ? t : best), null);
+      return {
+        name,
+        known: owned != null,
+        rank: owned?.rank ?? null,
+        step: owned?.step ?? null,
+        dice: owned?.dice ?? '',
+        karma: owned?.karma ?? null,
+      };
+    }),
+    equippedWeapons: items
+      .filter((it) => it.equipped && it.kind === 'weapon')
+      .map((it) => ({
+        name: it.name,
+        known: it.known,
+        category: it.ref?.category ?? null,
+        damageStep: it.ref?.damageStep ?? null,
+        shortRange: it.ref?.shortRange ?? null,
+        longRange: it.ref?.longRange ?? null,
+        image: it.ref?.image ?? null,
+      })),
+    strengthStep: strStep,
+    conditions: {
+      knockedDown: character.resources?.health?.knockedDown === true,
+      harried: weightStanding.stage === ENCUMBRANCE.BURDENED,
+    },
+    damageKarma: karmaUse('Damage', activeEffects),
+  };
+
   return {
     meta: character.meta ?? {},
     legend,
@@ -923,6 +997,15 @@ export function deriveModel(character, rules) {
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings
     // — conscious/unconscious/dead state + headroom. Derived, never stored.
     healthState: damageState(character.resources?.health ?? {}, characteristics),
+    // Combat surface (PLAN-COMBAT-TAB Phase C): attack talents, equipped weapons,
+    // Strength step, live combat conditions and the Damage-test karma grant for
+    // the Combat tab (derived, never stored). Initiative/P-M Defense/Armor/Health
+    // live in `characteristics` and `healthState` above.
+    combat,
+    // The Combat tab's rule bundles (rules/combat.json, ed-combat/1) — the chips
+    // render from data, never hardcoded numbers. Selection happens in the tab;
+    // the effects feed engine/combat.js, never the static fold.
+    combatRules: { options: combatFile?.options ?? [], situations: combatFile?.situations ?? [] },
     // Carried weight and its encumbrance standing (engine/weight.js + engine/
     // encumbrance.js): the pound total across every owned item, the count of
     // items with unrecorded weight, the carrying capacity they're judged

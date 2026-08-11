@@ -1,0 +1,197 @@
+{
+  "schema": "ed-combat/1",
+  "source": "Earthdawn 4E Player's Guide — Combat Options (p.382-385) and the Situation Modifiers Table (p.386-390). Mechanics distilled into structured data; no verbatim rulebook prose. Where the local player-tables-narrative.txt disagreed with the Player's Guide (Called Shot strain; the Attacking to Stun / Attacking to Knockdown split; Physical & Mystic — not P/M/S — defence scope), the Player's Guide is authoritative.",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "notes": [
+    "Applied on demand by engine/combat.js when the player selects an option/situation on the Combat tab — never auto-folded into the character's static derived stats. Every effect is therefore condition:\"situational\" (the engine's auto-apply rule folds only condition:\"always\" effects into static values), and source:\"condition\" (the closest §9 provenance for a chosen combat maneuver / situation; combat options are not a §9 source, and adding one would be a taxonomy change).",
+    "Strain is a resource-modifier on { domain:\"resource\", name:\"Strain\" } (measure:\"points\") — the option declares its cost; combat.js sums the selected options' strain and applies it to the character as damage via ed-edit-health (Strain has no stored pool). See PLAN-COMBAT-TAB.md A9.",
+    "Test bonuses/penalties are test-modifier on test/Attack, test/Damage, or test/Action with measure:\"step\" (they change the dice Step) — except the Knocked Down Action penalty, which is measure:\"result\" to match engine/health.js KNOCKED_DOWN_EFFECT.",
+    "defense-modifier effects are Physical & Mystic only; Social Defence applies at the gamemaster's discretion (Situation Modifiers Table footnote). In the Combat tab these are informational only (PLAN-COMBAT-TAB.md B7): they are shown as 'derived Defence + toggled mods' and are never dispatched into the always-on derived defence.",
+    "note-type entries carry rules that have no machine-applicable taxonomy encoding (Full Cover 'unhittable', Surprised 'no tests allowed', Stun/Knockdown damage subtypes, movement maneuvers) — display-only riders.",
+    "excludes lists mutually-exclusive options (Aggressive Attack <-> Defensive Stance, PG p.382). mapsToCondition marks a situation the sheet already tracks (Knocked Down, encumbrance Harried); the tab pre-selects and locks those chips from the model so their effects are not double-counted."
+  ],
+
+  "options": [
+    {
+      "name": "Aggressive Attack",
+      "excludes": ["Defensive Stance"],
+      "summary": "+3 to Attack and Damage tests; −3 Physical & Mystic Defence; 1 Strain per attack.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" }, "operation": "add", "value": 3, "measure": "step", "condition": "situational", "source": "condition", "summary": "+3 to the Attack test." },
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Damage" }, "operation": "add", "value": 3, "measure": "step", "condition": "situational", "source": "condition", "summary": "+3 to the Damage test." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": -3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−3 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": -3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−3 Mystic Defence." },
+        { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain per attack." }
+      ]
+    },
+    {
+      "name": "Attacking to Knockdown",
+      "summary": "Possibly knocks the opponent down; inflicts no real damage.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "The attack may knock the opponent down but inflicts no real damage (PG p.383). Resolution is opponent-side; the sheet tracks no opponent, so this is a display-only rider." }
+      ]
+    },
+    {
+      "name": "Attacking to Stun",
+      "summary": "The Damage test inflicts Stun damage.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "The Damage test inflicts Stun damage — a damage subtype the sheet does not track separately (PG p.383)." }
+      ]
+    },
+    {
+      "name": "Called Shot",
+      "summary": "−3 to the Attack test; 1 Strain; on success hits a designated area (cannot increase damage).",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" }, "operation": "add", "value": -3, "measure": "step", "condition": "situational", "source": "condition", "summary": "−3 to the Attack test." },
+        { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
+        { "type": "note", "source": "condition", "summary": "On success the attack hits the designated area; a Called Shot cannot be used to increase the damage of an attack (PG p.384)." }
+      ]
+    },
+    {
+      "name": "Defensive Stance",
+      "excludes": ["Aggressive Attack"],
+      "summary": "+3 Physical & Mystic Defence; −3 to all tests except Knockdown.",
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "+3 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "+3 Mystic Defence." },
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -3, "measure": "step", "condition": "situational", "scope": "except-knockdown", "source": "condition", "summary": "−3 to all tests except Knockdown tests." }
+      ]
+    },
+    {
+      "name": "Jump Up",
+      "summary": "Knocked-down only: stand as a Simple action (2 Strain); on success stand and take a Standard action.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "Usable only while knocked down. Instead of standing as a Standard action, take 2 Strain and make a Dexterity (6) test as a Simple action, modified by any armour Initiative Penalty but not the −3 knocked-down penalty. On success, stand and take a Standard action (no other movement); on failure, still stand using a Standard action (PG p.385). Not part of the attack pool — its 2 Strain is applied when the maneuver is used." }
+      ]
+    },
+    {
+      "name": "Setting Against a Charge",
+      "summary": "Unhorse a charging opponent.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "Lets the character unhorse a charging mounted opponent; may be combined with Defensive Stance and Attacking to Knockdown (PG p.385)." }
+      ]
+    },
+    {
+      "name": "Shattering a Shield",
+      "summary": "Break the opponent's shield; 1 Strain.",
+      "effects": [
+        { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
+        { "type": "note", "source": "condition", "summary": "Breaks the opponent's shield (PG p.385)." }
+      ]
+    },
+    {
+      "name": "Splitting Movement",
+      "summary": "Move / act / move in one round; 1 Strain; the character becomes Harried.",
+      "effects": [
+        { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
+        { "type": "note", "source": "condition", "summary": "Split the round's movement around the action (move / act / move); the character is considered Harried for the round (see the Harried situation) (PG p.385)." }
+      ]
+    },
+    {
+      "name": "Tail Attack",
+      "restricted": "t'skrang",
+      "summary": "t'skrang only: an extra Unarmed Combat attack this round at −2 to all tests.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "t'skrang racial ability: make one additional Unarmed Combat attack this round at −2 to all tests. The extra attack is rolled separately, so it is a display-only rider in v1." }
+      ]
+    }
+  ],
+
+  "situations": [
+    {
+      "name": "Blindsided",
+      "summary": "−2 Physical & Mystic Defence (Social at the gamemaster's discretion).",
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": -2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−2 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": -2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−2 Mystic Defence." },
+        { "type": "note", "source": "condition", "summary": "In certain situations the gamemaster may also apply this −2 to Social Defence (PG p.386)." }
+      ]
+    },
+    {
+      "name": "Partial Cover",
+      "summary": "+2 Physical & Mystic Defence.",
+      "effects": [
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "+2 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "+2 Mystic Defence." }
+      ]
+    },
+    {
+      "name": "Full Cover",
+      "summary": "Cannot be targeted — Defence is not applicable.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "Full cover completely obscures the character; they cannot be attacked without special abilities or talents, so Defence is not applicable (PG p.387). 'Unhittable' has no machine-applicable taxonomy encoding, so this is a display-only rider." }
+      ]
+    },
+    {
+      "name": "Partial Darkness",
+      "summary": "−2 to sight-based Action tests.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "scope": "sight", "source": "condition", "summary": "−2 to any sight-based test." },
+        { "type": "note", "source": "condition", "summary": "Blindness / Dazzled are equivalent to darkness. Heat Sight ignores darkness; Low-Light Vision treats full darkness as partial and ignores partial (PG p.388)." }
+      ]
+    },
+    {
+      "name": "Full Darkness",
+      "summary": "−4 to sight-based Action tests.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -4, "measure": "step", "condition": "situational", "scope": "sight", "source": "condition", "summary": "−4 to any sight-based test." },
+        { "type": "note", "source": "condition", "summary": "Blindness / Dazzled are equivalent to darkness. Heat Sight ignores darkness; Low-Light Vision treats full darkness as partial (PG p.388)." }
+      ]
+    },
+    {
+      "name": "Harried",
+      "mapsToCondition": "harried",
+      "summary": "−2 to Action tests; −2 Physical & Mystic Defence.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 to Action tests." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": -2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−2 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": -2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−2 Mystic Defence." },
+        { "type": "note", "source": "condition", "summary": "Social Defence at the gamemaster's discretion. When the sheet already reports the character as Harried (e.g. from encumbrance), the tab pre-selects and locks this chip so its effects are not counted twice." }
+      ]
+    },
+    {
+      "name": "Impaired Movement — Light",
+      "summary": "−2 to Action tests.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 to Action tests (light impaired movement)." }
+      ]
+    },
+    {
+      "name": "Impaired Movement — Heavy",
+      "summary": "−4 to Action tests.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -4, "measure": "step", "condition": "situational", "source": "condition", "summary": "−4 to Action tests (heavy impaired movement)." }
+      ]
+    },
+    {
+      "name": "Knocked Down",
+      "mapsToCondition": "knockedDown",
+      "summary": "−3 to Action tests; −3 Physical & Mystic Defence.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -3, "measure": "result", "condition": "situational", "source": "condition", "summary": "−3 to all tests while knocked down." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": -3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−3 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": -3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−3 Mystic Defence." },
+        { "type": "note", "source": "condition", "summary": "Mirrors engine/health.js KNOCKED_DOWN_EFFECT (the Action penalty is measure:\"result\"). The sheet already folds this when the Knocked Down condition is set, so the tab pre-selects and locks this chip from the model to avoid double-counting; the roll-time −3 rides every roll (PLAN-WOUNDS-KNOCKDOWN Option B — no Action-only / Initiative / Knockdown / Recovery exemptions, Karma die only excluded)." }
+      ]
+    },
+    {
+      "name": "Range — Short",
+      "summary": "No modifier.",
+      "effects": []
+    },
+    {
+      "name": "Range — Long",
+      "summary": "−2 to Action tests.",
+      "effects": [
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 to Action tests at long range." }
+      ]
+    },
+    {
+      "name": "Surprised",
+      "summary": "No actions this round; −3 Physical & Mystic Defence.",
+      "effects": [
+        { "type": "note", "source": "condition", "summary": "A surprised character can take no actions this round and subtracts −3 from Physical & Mystic Defence (Social at the gamemaster's discretion) (PG p.390). 'No tests allowed' has no machine-applicable taxonomy encoding, so the whole situation is a display-only rider." }
+      ]
+    }
+  ]
+}

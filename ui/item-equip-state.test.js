@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { equipArmour, applyArmourSwap } from './item-equip-state.js';
+import { equipArmour, applyArmourSwap, unequipSpentCharms } from './item-equip-state.js';
 
 // kindOf mirrors how the UI resolves an item's kind (model items + catalog,
 // canon and player-created custom armour alike).
@@ -112,5 +112,47 @@ test('inputs are never mutated', () => {
   const start = [{ name: 'Hardened Leather', equipped: true }];
   equipArmour(start, kindOf(kinds), 'Hide Armor', 'add');
   applyArmourSwap(start, kindOf(kinds), 'Hide Armor', 'add');
+  unequipSpentCharms(start, ['Hardened Leather']);
   assert.deepEqual(start, [{ name: 'Hardened Leather', equipped: true }]);
+});
+
+// --- unequipSpentCharms (Combat tab blood-charm spend on the new-round
+//     Initiative roll) ---
+
+test('unequipSpentCharms stores the armed charms, keeps everything else equipped', () => {
+  const items = [
+    { name: 'Desperate Blow', equipped: true },
+    { name: 'Horn Needle', equipped: true },
+    { name: 'Ork Dagger', equipped: true },
+    { name: 'Broadsword', equipped: false },
+  ];
+  assert.deepEqual(unequipSpentCharms(items, ['Desperate Blow', 'Horn Needle']), [
+    { name: 'Desperate Blow', equipped: false },
+    { name: 'Horn Needle', equipped: false },
+    { name: 'Ork Dagger', equipped: true },
+    { name: 'Broadsword', equipped: false },
+  ]);
+});
+
+test('unequipSpentCharms returns the stored input shape (derived fields dropped, threadRank kept)', () => {
+  const items = [
+    { name: 'Desperate Blow', equipped: true, ref: { cost: 275 } },
+    { name: 'Bracers of Aras', equipped: true, thread: { threadRank: 2 }, ref: {} },
+  ];
+  assert.deepEqual(unequipSpentCharms(items, ['Desperate Blow']), [
+    { name: 'Desperate Blow', equipped: false },
+    { name: 'Bracers of Aras', equipped: true, threadRank: 2 },
+  ]);
+});
+
+test('unequipSpentCharms with nothing armed changes nothing (no-op input list)', () => {
+  const items = [{ name: 'Desperate Blow', equipped: true }];
+  assert.deepEqual(unequipSpentCharms(items, []), [{ name: 'Desperate Blow', equipped: true }]);
+  assert.deepEqual(unequipSpentCharms(items, undefined), [{ name: 'Desperate Blow', equipped: true }]);
+});
+
+test('unequipSpentCharms never removes an item, only stores it', () => {
+  const items = [{ name: 'Desperate Blow', equipped: true }, { name: 'Dagger', equipped: true }];
+  const next = unequipSpentCharms(items, ['Desperate Blow']);
+  assert.deepEqual(next.map((i) => i.name), ['Desperate Blow', 'Dagger']);
 });

@@ -126,7 +126,7 @@
           "summary": "Can strike with the tail as an unarmed attack (using an unarmed combat talent/skill), dealing Strength-Step damage. May instead attach a melee weapon of up to Size 2 to the tail (an Attached Weapon). Enables the Tail Attack combat option.",
           "effects": [
             { "type": "grant-attack", "target": { "domain": "attack", "name": "tail" }, "operation": "ref", "value": { "ref": "attribute|Strength|Step" }, "measure": "step", "condition": "always", "source": "race", "note": "may attach a melee weapon of up to Size 2", "summary": "Strike with the tail as an unarmed attack, dealing Strength-Step damage (may attach a melee weapon up to Size 2)." },
-            { "type": "enable-option", "target": { "domain": "option", "name": "TailAttack" }, "condition": "always", "source": "race", "summary": "Enables the Tail Attack combat option." }
+            { "type": "enable-option", "target": { "domain": "option", "name": "Tail Attack" }, "condition": "always", "source": "race", "summary": "Enables the Tail Attack combat option." }
           ]
         }
       ]

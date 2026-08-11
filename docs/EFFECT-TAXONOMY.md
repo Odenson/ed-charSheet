@@ -122,7 +122,7 @@ A path object, echoing `Target | Characteristic | Property`:
 | `attack` | `Damage` `Attack` \| natural attacks (`tail` `horns` `claws` `bite` …) |
 | `test` | `Action` `Attack` `Damage` `Effect` `Initiative` \| a named ability |
 | `sense` | `HeatSight` `LowLightVision` `AstralSight` |
-| `option` | a combat/action option, e.g. `TailAttack` |
+| `option` | a combat/action option, e.g. `Tail Attack` (the `name` must match the option's `name` in `rules/combat.json`) |
 
 `property` is an optional third segment for targets that need it (e.g.
 `Movement.Fly`, or an ability's `Step`/`Rank` when used inside a `ref`).

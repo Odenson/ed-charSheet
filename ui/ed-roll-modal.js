@@ -11,7 +11,7 @@ export class EdRollModal extends LitElement {
     stepRow: { attribute: false },
     karma: { attribute: false }, // { grants:[{scope,via,summary}], available, stepRow } | null
     apply: { attribute: false }, // { action, label } | undefined — show an "Apply" button
-    difficulty: { attribute: false }, // { value } | null — "vs Difficulty N" comparison
+    difficulty: { attribute: false }, // { value, win?, lose? } | null — "vs Difficulty N" comparison; win/lose override the default Success/Failure words (e.g. Hit/Miss)
     mods: { attribute: false }, // [{ label, value }] | null — roll-time modifiers
     _result: { state: true },
     _karmaResult: { state: true },
@@ -56,6 +56,7 @@ export class EdRollModal extends LitElement {
     .karma-ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
     .kbtn { font: inherit; font-size: 0.78rem; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--karma); background: none; color: var(--karma); cursor: pointer; }
     .kbtn.on { background: var(--karma-bg); font-weight: 500; }
+    .kbtn:disabled { opacity: 0.4; cursor: default; }
     .kavail { font-size: 0.7rem; color: light-dark(#8a93a3, #6b7688); }
     .modchip { font-size: 0.68rem; font-weight: 500; color: light-dark(#5a6472, #93a0b3); background: light-dark(#f1f2f5, #1b1f27); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
     .outcome { margin-top: 8px; font-size: 0.78rem; font-weight: 500; text-align: right; }
@@ -82,8 +83,17 @@ export class EdRollModal extends LitElement {
     if (changed.has('stepRow') && this.stepRow) {
       this._karmaOn = false;
       this._karmaResult = null;
+      // A fresh roll interaction may spend Karma once (see _toggleKarma). "Roll
+      // again" keeps the same rollId and never re-charges.
+      this._karmaCharged = false;
       this._roll();
     }
+  }
+
+  // Whether the character has a Karma point left to spend on this roll.
+  _canSpendKarma() {
+    const a = this.karma?.available;
+    return typeof a === 'number' && Number.isFinite(a) && a > 0;
   }
 
   _roll() {
@@ -98,8 +108,18 @@ export class EdRollModal extends LitElement {
   }
 
   _toggleKarma() {
-    this._karmaOn = !this._karmaOn;
+    const turningOn = !this._karmaOn;
+    // Block turning Karma on with no point to spend (guards a null/0 balance).
+    if (turningOn && !this._karmaCharged && !this._canSpendKarma()) return;
+    this._karmaOn = turningOn;
     this._karmaResult = this._karmaOn && this.karma?.stepRow ? rollStep(this.karma.stepRow) : null;
+    // Persist the spend ONCE per roll interaction (owner: charge, no refund) —
+    // toggling off then on again does not re-charge, "Roll again" does not
+    // re-charge. One Karma die = −1 Karma, applied app-wide via ed-app.
+    if (turningOn && !this._karmaCharged) {
+      this._karmaCharged = true;
+      this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { spend: 1 }, bubbles: true, composed: true }));
+    }
     this._log();
   }
 
@@ -168,8 +188,9 @@ export class EdRollModal extends LitElement {
 
   // The comparison against a difficulty, when one is set. For a Knockdown test
   // it uses the engine's outcome wording (Stayed up / Knocked down); any other
-  // difficulty roll reads Success / Failure. Display only — the app re-derives
-  // the real outcome from the apply event.
+  // difficulty roll honours the view's win/lose words (e.g. Hit/Miss), defaulting
+  // to Success / Failure. Display only — the app re-derives the real outcome from
+  // the apply event.
   _outcome() {
     const d = this.difficulty?.value;
     if (d == null || !this._result) return null;
@@ -177,7 +198,9 @@ export class EdRollModal extends LitElement {
     if (this.apply?.action === 'knockdown-result') {
       return knockdownOutcome(total, d) === 'down' ? { word: 'Knocked down', ok: false } : { word: 'Stayed up', ok: true };
     }
-    return total >= d ? { word: 'Success', ok: true } : { word: 'Failure', ok: false };
+    return total >= d
+      ? { word: this.difficulty?.win ?? 'Success', ok: true }
+      : { word: this.difficulty?.lose ?? 'Failure', ok: false };
   }
 
   _applyLabel() {
@@ -255,7 +278,8 @@ export class EdRollModal extends LitElement {
             ? html`<div class="karma-ctl">
                 <button
                   class="kbtn ${this._karmaOn ? 'on' : ''}"
-                  title=${this.karma.grants.map((g) => g.summary).filter(Boolean).join(' · ')}
+                  ?disabled=${!this._karmaOn && !this._canSpendKarma()}
+                  title=${!this._karmaOn && !this._canSpendKarma() ? 'No Karma left to spend' : this.karma.grants.map((g) => g.summary).filter(Boolean).join(' · ')}
                   @click=${this._toggleKarma}
                 >✦ ${this._karmaLabel()}${this._karmaOn ? '' : ' (+D6)'}</button>
                 <span class="kavail">${this.karma.available ?? '—'} Karma</span>

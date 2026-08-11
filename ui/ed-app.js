@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
@@ -10,6 +10,7 @@ import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
+import './ed-combat.js';
 import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
@@ -24,6 +25,7 @@ import { saveRollLog } from '../store-rolllog.js';
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
   { id: 'disciplines', label: 'Disciplines', icon: '◈' },
+  { id: 'combat', label: 'Combat', icon: '◎' },
   { id: 'spells', label: 'Spells', icon: '✦' },
   { id: 'equipment', label: 'Equipment', icon: '⚔' },
   { id: 'notes', label: 'Notes', icon: '❋' },
@@ -192,7 +194,10 @@ export class EdApp extends LitElement {
         karma: karmaCtx,
         apply: apply ?? null,
         difficulty: difficulty ?? null,
-        mods: this._rollTimeMods({ kind, apply }),
+        // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
+        // the universal Knocked Down −3 (every test, Karma die only excluded)
+        // is added after — it applies to every roll, combat or not.
+        mods: [...(e.detail.mods ?? []), ...this._rollTimeMods({ kind, apply })],
       };
     });
     // A completed roll in the modal (PLAN-NOTES-TAB, decision #5): the modal
@@ -253,6 +258,10 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
+    // A roll spent Karma (the shared roll modal, so this fires for ANY tab's
+    // roll). Decrement the stored `available` balance app-wide — charge, no
+    // refund (owner decision).
+    this.addEventListener('ed-edit-karma', (e) => this._editKarma(e.detail));
     this.addEventListener('ed-edit-talent-rank', (e) => this._editTalentRank(e.detail));
     this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
     // Notes-tab surfaces (PLAN-NOTES-TAB): the player's hand-written notes and
@@ -394,6 +403,30 @@ export class EdApp extends LitElement {
     saveHealthEdits(merged, this._characterId);
     this._dirty = true;
     this._model = deriveModel(this._character, this._rules);
+  }
+
+  // Spend Karma on a roll: subtract `spend` (default 1) from the stored
+  // `resources.karma.available` input, persist, and re-derive. Guards a
+  // null/absent balance (never writes NaN or a negative). Also refreshes the
+  // open roll's karma snapshot so the modal's "N Karma" readout decrements live
+  // (the modal holds `this._roll.karma`, taken when it opened).
+  _editKarma(detail) {
+    const spend = Number(detail?.spend) || 0;
+    if (!this._character || spend <= 0) return;
+    const cur = this._character.resources?.karma;
+    const available = cur?.available;
+    if (typeof available !== 'number' || !Number.isFinite(available) || available <= 0) return;
+    const nextKarma = { ...cur, available: Math.max(0, available - spend) };
+    this._character = {
+      ...this._character,
+      resources: { ...(this._character.resources || {}), karma: nextKarma },
+    };
+    saveKarmaEdits(nextKarma, this._characterId);
+    this._dirty = true;
+    this._model = deriveModel(this._character, this._rules);
+    if (this._roll?.karma) {
+      this._roll = { ...this._roll, karma: { ...this._roll.karma, available: nextKarma.available } };
+    }
   }
 
   // A view replaced the character's hand-written notes. Same inputs-only flow:
@@ -719,6 +752,12 @@ export class EdApp extends LitElement {
           .customOverlay=${loadCustomEdits()}
           .customCanonKeys=${m.customCanonKeys}
         ></ed-equipment>`;
+      case 'combat':
+        return html`<ed-combat
+          .model=${m}
+          .editMode=${this._editMode}
+          .characterId=${this._characterId}
+        ></ed-combat>`;
       case 'notes':
         return html`<ed-notes
           .model=${m}

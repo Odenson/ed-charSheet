@@ -21,15 +21,22 @@ top/bottom edges ("spaced within the dimensions of relative others") — e.g. on
 Overview the portrait, Movement, and Combat panels share one bottom edge.
 
 ## 4. Tabs
-Five tabs, each a distinct lens on the character:
+Six tabs, each a distinct lens on the character:
 
 | Tab | Contents |
 |-----|----------|
 | Overview | At-a-glance: hero portrait + header, attributes, defences, armour, movement, health, combat |
 | Disciplines | Per-discipline detail with a toggle between the character's disciplines (talents live here — there is no separate Talents tab) |
+| Combat | Per-encounter scratchpad: equipped weapon + attack talent, attack/damage/strain stat-lines with a target-# field, collapsible combat-option / situational / blood-charm chip sections, a damage-taken rail, and the device-local roll log |
 | Spells | Matrices and spells by circle (later) |
 | Gear | Weapons, armour, thread items, kit |
 | Notes | Running character history / log over time |
+
+*Sixth tab (Combat) added 2026-08-11 by owner sign-off
+([PLAN-COMBAT-TAB.md](PLAN-COMBAT-TAB.md) — six labels still fit the desktop
+tab bar on one row; the bar wraps to stacked rows on mobile). Reordered
+2026-08-11 by owner request to sit directly after Disciplines (Overview ·
+Disciplines · Combat · Spells · Gear · Notes).*
 
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,
