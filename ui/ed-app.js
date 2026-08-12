@@ -1,11 +1,12 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
-import { saveServer, SaveError, DEFAULT_ENDPOINT } from '../store-server.js';
+import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../store-server.js';
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
+import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
@@ -20,6 +21,7 @@ import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
 import './ed-character-picker.js';
+import './ed-conflict.js';
 import { saveRollLog } from '../store-rolllog.js';
 
 const TABS = [
@@ -53,6 +55,7 @@ export class EdApp extends LitElement {
     _confirmSwitch: { state: true },
     _picker: { state: true },
     _noSelection: { state: true },
+    _conflict: { state: true },
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -60,18 +63,31 @@ export class EdApp extends LitElement {
   // flows back down). Not reactive state — _model is the render trigger.
   _character = null;
   _rules = null;
-  // The selected character's map key in the grouped store (meta.id). Persisted
-  // to localStorage 'ed-character' so the same character loads next session.
+  // The selected character's id (its per-character file name). Persisted to
+  // localStorage 'ed-character' so the same character loads next session.
   _characterId = null;
-  // The fetched grouped store ({ schema, characters: { id: entry } }) — the
-  // character picker lists from it. Refreshed on each character load.
-  _characterStore = null;
+  // The per-character index rows [{ id, name, portrait }] — the character picker
+  // lists from them. Fetched at startup (and refreshed on each load path).
+  _characters = null;
+  // The last-seen blob sha of the loaded character's file (from the read ETag or
+  // the last save's commit sha) — the optimistic-concurrency `base` sent on the
+  // next /save. Null locally / on the CDN fallback (no ETag → overwrite path).
+  _baseSha = null;
   // The SAVE_KEY for GitHub saves. Held in memory for the session only — never
   // localStorage (runbook §0). A plain field, not reactive state.
   _saveKey = null;
   // A custom-item save interrupted by the key prompt (saveKey absent). Replayed
   // once the prompt confirms; cleared on any prompt close.
   _pendingCustomSave = null;
+  // A character save interrupted by the key prompt — whether it was silent
+  // (background) so the replay preserves the toast behaviour. Cleared on any
+  // prompt close.
+  _pendingSaveSilent = null;
+  // An open stale_base conflict ({ sha, silent }) — the worker rejected a save
+  // because the character changed on the branch; the modal resolves it. `sha` is
+  // the branch's current file sha (the acknowledged-overwrite base), `silent`
+  // whether the rejected save was a background auto-save.
+  _conflict = null;
 
   static styles = css`
     :host {
@@ -273,15 +289,23 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-legend-earned', (e) => this._editLegendEarned(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
     // A custom-item save paused for the key replays first; otherwise retry the
-    // character save. The pending is consumed either way.
+    // character save (preserving whether it was a silent background save). The
+    // pending is consumed either way.
     this.addEventListener('ed-save-key', (e) => {
       this._saveKey = e.detail?.key || null;
       this._keyPrompt = false;
       const pending = this._pendingCustomSave;
       this._pendingCustomSave = null;
+      const silent = this._pendingSaveSilent ?? false;
+      this._pendingSaveSilent = null;
       if (!this._saveKey) return;
       if (pending) this._saveCustomItems(pending.items, pending.delete);
-      else this._save();
+      else this._doSave({ silent });
+    });
+    // A stale_base conflict modal choice (keep-mine / take-theirs / cancel) —
+    // route it through the pure nextSaveAction helper (save-action.js).
+    this.addEventListener('ed-conflict', (e) => {
+      this._applyConflictChoice(e.detail?.choice);
     });
     // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3).
     // 'draft' writes the overlay instantly (resilient) and re-derives so pending
@@ -293,18 +317,18 @@ export class EdApp extends LitElement {
       if (e.detail?.id) this._loadCharacter(e.detail.id);
     });
     try {
-      const store = await loadCharacters();
-      const ids = Object.keys(store?.characters ?? {});
+      const characters = await listCharacters();
+      const ids = characters.map((c) => c.id);
       if (!ids.length) {
         this._error = 'No characters found in the character store.';
         return;
       }
-      const id = this._initialId(ids, store);
-      if (id) await this._loadCharacter(id, { store });
+      const id = this._initialId(ids, characters);
+      if (id) await this._loadCharacter(id, { characters });
       else {
-        // First run with no saved selection: keep the fetched store so the
+        // First run with no saved selection: keep the fetched index so the
         // picker has characters to list (only _loadCharacter sets it otherwise).
-        this._characterStore = store;
+        this._characters = characters;
         this._picker = true;
       }
     } catch (e) {
@@ -313,26 +337,29 @@ export class EdApp extends LitElement {
   }
 
   // Which character to load on startup: the saved 'ed-character' selection if
-  // it still exists in the store; the single entry if there's only one (no real
+  // it still exists in the index; the single entry if there's only one (no real
   // choice); otherwise null — the picker asks the user (first run).
-  _initialId(ids, store) {
+  _initialId(ids, characters) {
     const saved = localStorage.getItem('ed-character');
-    if (saved && store.characters?.[saved]) return saved;
+    if (saved && characters.some((c) => c.id === saved)) return saved;
     if (ids.length === 1) return ids[0];
     return null;
   }
 
-  // Load a character by id: fetch the store (unless passed in), apply its per-id
-  // overlay, derive the model. Persists the selection so the same character
-  // loads next session. Sets _dirty from the id's own overlay.
-  async _loadCharacter(id, { store } = {}) {
+  // Load a character by id: read its per-character file (unless the index was
+  // passed in), apply its per-id overlay, derive the model, and keep the file's
+  // current blob sha as `_baseSha` (the concurrency token for the next save).
+  // Persists the selection so the same character loads next session. Sets
+  // _dirty from the id's own overlay.
+  async _loadCharacter(id, { characters } = {}) {
     try {
-      const { character, rules, store: fresh } = await loadCharacter(id, store ? { store } : {});
+      const { character, rules, base } = await loadCharacter(id);
       this._characterId = id;
-      this._characterStore = fresh;
+      if (characters) this._characters = characters;
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
+      this._baseSha = base;
       this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
       this._picker = false;
       this._noSelection = false;
@@ -653,19 +680,39 @@ export class EdApp extends LitElement {
     return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
   }
 
+  // Manual Save button → a loud save (toast on success/failure). The background
+  // save path calls `_doSave({ silent: true })` — same store, no toast noise.
+  _save() {
+    this._doSave({ silent: false });
+  }
+
   // Save to GitHub: POST the merged, inputs-only character to the worker, which
   // commits it to the character-data branch (store-server.js). Requires a
   // SAVE_KEY — if none is set for the session, open the key prompt first; the
   // overlay already holds the edits, so nothing is lost meanwhile. On success,
   // reconcile the overlay so the branch read becomes the source of truth (§4.5).
-  async _save() {
+  //
+  // `base` is the optimistic-concurrency token: the file sha this client last
+  // saw (`_baseSha`). A `stale_base` rejection (the character changed on the
+  // branch) opens the conflict modal instead of an error toast — the modal's
+  // keep-mine re-save passes the branch's current sha as the acknowledged base.
+  // `silent` (background) suppresses the success/error toasts; a conflict still
+  // surfaces (never silently dropped).
+  async _doSave({ silent = false, base = this._baseSha } = {}) {
     if (!this._character || this._saving) return;
-    if (!this._saveKey) { this._keyPrompt = true; return; }
+    if (!this._saveKey) {
+      this._pendingSaveSilent = silent;
+      this._keyPrompt = true;
+      return;
+    }
     this._saving = true;
-    this._saveError = null;
-    this._saveOk = null;
+    if (!silent) {
+      this._saveError = null;
+      this._saveOk = null;
+    }
     try {
-      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId });
+      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base });
+      this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
       // Save commits that too — /save-items POST, reconcile, re-read the catalog.
@@ -676,14 +723,38 @@ export class EdApp extends LitElement {
         await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
-      this._saveOk = commit; // { sha, url }
+      if (!silent) this._saveOk = commit; // { sha, url }
     } catch (e) {
-      // A rejected key: drop it so the next Save re-prompts.
-      if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
-      this._saveError = e?.message ? String(e.message) : String(e);
-      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      // A stale base — the character changed on the branch since this client
+      // loaded (or last saved) it. Surface the conflict modal, never a toast:
+      // the overlay still holds the local draft, and the modal decides whether
+      // the branch version wins.
+      if (e instanceof SaveConflictError) {
+        this._conflict = { sha: e.sha, silent };
+      } else {
+        // A rejected key: drop it so the next Save re-prompts.
+        if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
+        if (!silent) this._saveError = e?.message ? String(e.message) : String(e);
+        this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      }
     } finally {
       this._saving = false;
+    }
+  }
+
+  // Route a conflict-modal choice through the pure nextSaveAction helper:
+  // keep-mine → re-save with the branch's current sha as the acknowledged base;
+  // take-theirs → discard the local draft and reload the branch version; cancel
+  // → close, the local overlay stays dirty and nothing is written.
+  _applyConflictChoice(choice) {
+    const step = nextSaveAction({ choice, conflictSha: this._conflict?.sha ?? null });
+    const silent = this._conflict?.silent ?? false;
+    this._conflict = null;
+    if (step.action === 'none') return;
+    if (step.action === 'resave') this._doSave({ silent, base: step.base });
+    else if (step.action === 'reload') {
+      reconcileOverlay(undefined, this._characterId); // clear the local draft
+      this._reloadSaved();
     }
   }
 
@@ -706,17 +777,23 @@ export class EdApp extends LitElement {
   // Discard the local autosave draft and reload the saved (GitHub) version of
   // the current character. Clears the overlay so it can't mask the branch, then
   // re-loads from source — the fix for a stale local draft leaking over a newer
-  // GitHub save.
-  async _discardLocal() {
+  // GitHub save. Also the "take theirs" half of a stale_base conflict.
+  _discardLocal() {
     this._confirmDiscard = false;
     reconcileOverlay(undefined, this._characterId); // clear every saved category from the overlay
+    this._reloadSaved();
+  }
+
+  // Reload the current character from the branch, refreshing `_baseSha` to the
+  // file's current sha. A pending custom-item delta is a separate, global overlay
+  // and survives.
+  async _reloadSaved() {
     try {
-      const { character, rules } = await loadCharacter(this._characterId);
+      const { character, rules, base } = await loadCharacter(this._characterId);
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
-      // Discarding clears the character overlay only; a pending custom-item delta
-      // is a separate, global overlay and survives.
+      this._baseSha = base;
       this._dirty = hasCustomPendingEdits();
       this._saveError = null;
     } catch (e) {
@@ -858,7 +935,7 @@ export class EdApp extends LitElement {
           : html`<p class="status">Loading character…</p>`}
       ${this._picker
         ? html`<ed-character-picker
-            .characters=${this._characterStore?.characters ?? {}}
+            .characters=${this._characters ?? []}
             .current=${this._characterId}
             @close=${() => {
               this._picker = false;
@@ -878,7 +955,10 @@ export class EdApp extends LitElement {
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}
-      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; }}></ed-save-key>` : ''}
+      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; this._pendingSaveSilent = null; }}></ed-save-key>` : ''}
+      ${this._conflict
+        ? html`<ed-conflict @close=${() => (this._conflict = null)}></ed-conflict>`
+        : ''}
       ${this._confirmDiscard
         ? html`<ed-confirm
             heading="Discard local changes?"

@@ -107,21 +107,44 @@ export function resolveKnack(owned, catalog = {}, skillNames = new Set(), talent
 // The character store is source info, not app code: a serverless save commits it
 // to the `character-data` branch, which the deploy workflow does not watch, so a
 // save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). The bundle
-// ships no character data — `data/characters.json` (the grouped ed-characters/1
-// store) and the portrait images live only on that branch. On the Pages site we
-// read them LIVE from the branch so a save shows up immediately; everywhere else
-// (local dev, file://) we read the local working copies, which are gitignored
-// (see .gitignore / WORKFLOW.md).
+// ships no character data — `data/characters/<id>.json` (one raw ed-character/1
+// file per character), the discovery index `data/characters/index.json`, and the
+// portrait images live only on that branch (PLAN-SAVE-CONCURRENCY). On the Pages
+// site we read them LIVE from the branch so a save shows up immediately;
+// everywhere else (local dev, file://) we read the local working copies, which
+// are gitignored (see .gitignore / WORKFLOW.md).
 const CHARACTER_OWNER = 'odenson';
 const CHARACTER_REPO = 'ed-charSheet';
 const CHARACTER_BRANCH = 'character-data';
+const CHARACTERS_DIR = 'data/characters';
 
 function onPages() {
   return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
 }
 
-const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/characters.json?ref=${CHARACTER_BRANCH}`;
-const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/characters.json`;
+const CONTENTS_API = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/${CHARACTERS_DIR}`;
+const RAW_CDN = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/${CHARACTERS_DIR}`;
+
+// Normalize a contents-API `Accept: raw` ETag to the bare git blob sha — the
+// ETag equals the blob sha (confirmed 2026-08-12), wrapped in HTTP framing
+// (`"sha"` or `W/"sha"`). Strip the framing; a missing/malformed ETag yields
+// null so the save degrades to the overwrite path — never an error (plan
+// Decision 3, ETag hardening).
+export function baseFromEtag(etag) {
+  if (typeof etag !== 'string') return null;
+  const bare = etag.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
+  return /^[0-9a-fA-F]{40}$/.test(bare) ? bare.toLowerCase() : null;
+}
+
+// Parse the discovery index (ed-characters-index/1) into the picker's row list
+// `[{ id, name, portrait }]`, sorted by id for a stable order. An entry's name
+// falls back to the id; portrait stays optional (absent → the UI's name-initial
+// placeholder). The index is discovery only — never trusted for save bases.
+export function indexToRows(index) {
+  return Object.entries(index?.characters ?? {})
+    .map(([id, entry]) => ({ id, name: entry?.name ?? id, portrait: entry?.portrait ?? null }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
 
 // Resolve a `meta.portrait` path (e.g. `data/chakka.jpg`) to a loadable URL.
 // On the Pages site the portrait lives on the character-data branch like the
@@ -136,29 +159,52 @@ export function portraitUrlFor(portrait) {
   return `./${portrait}`;
 }
 
-// On the Pages site, read the character store live from the character-data
-// branch. Prefer the GitHub **contents API** (`Accept: raw`): it reads the git
-// database directly, so a just-saved commit is visible immediately. The raw CDN
-// keys its ~5-minute cache on the *path* — the `?t=` query doesn't reliably bust
-// it — so a save-then-reload can race a stale edge copy (the read-after-write
-// bug that Phase 6 surfaced). Fallbacks keep it never-worse-than-before: if the
-// API is unreachable or rate-limited (60/hr per IP, unauthenticated) fall back
-// to the raw CDN (cache-busted, eventually consistent). There is deliberately no
-// deployed-bundle fallback — the bundle ships no character data, so a failure
-// here surfaces the load error rather than masking it with stale bytes. CORS is
-// open on both hosts; the browser sets the required User-Agent.
-export async function loadCharacters() {
-  if (!onPages()) return loadJSON('./data/characters.json');
+// Discover the available characters from the discovery index
+// (data/characters/index.json, ed-characters-index/1) → `[{ id, name, portrait }]`
+// — the picker's one-fetch list. On the Pages site, read the index LIVE from the
+// character-data branch: prefer the GitHub **contents API** (`Accept: raw`; it
+// reads the git database directly, so a just-saved commit is visible immediately)
+// with the **raw CDN** as a cache-busted fallback (its ~5-minute path-keyed
+// cache can race a save-then-reload; the `?t=` query doesn't reliably bust it,
+// so the API is the primary). Elsewhere read the gitignored
+// `./data/characters/index.json` working copy. There is deliberately **no legacy
+// grouped-store fallback** (plan Decision 6): a missing index is a
+// not-yet-migrated store and surfaces a clear error, never a silent legacy read.
+export async function listCharacters() {
+  let index;
+  if (!onPages()) return indexToRows(await loadJSON(`./${CHARACTERS_DIR}/index.json`));
   try {
-    const res = await fetch(CHARACTER_API_URL, {
+    const res = await fetch(`${CONTENTS_API}/index.json?ref=${CHARACTER_BRANCH}`, {
       headers: { Accept: 'application/vnd.github.raw' },
       cache: 'no-store',
     });
-    if (res.ok) return await res.json(); // git-consistent: reflects the latest save
+    if (res.ok) index = await res.json(); // git-consistent: reflects the latest save
   } catch {
     /* network/CORS hiccup — fall through to the CDN */
   }
-  return loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
+  if (!index) index = await loadJSON(`${RAW_CDN}/index.json?t=${Date.now()}`);
+  return indexToRows(index);
+}
+
+// Read one character file: `{ character, base }` (the raw ed-character/1 entry).
+// On Pages prefer the contents API (`Accept: raw` — git-consistent) and capture
+// the **base sha from the response ETag** (confirmed == blob sha) for the save's
+// optimistic-concurrency check; fall back to the cache-busted raw CDN, which
+// carries no usable ETag ⇒ `base = null` (the save then takes the overwrite
+// path — accepted caveat, plan Decision 5). A 404 from either is an "unknown
+// character" error (thrown), never a silent legacy read.
+async function readCharacterFile(id) {
+  if (!onPages()) return { character: await loadJSON(`./${CHARACTERS_DIR}/${id}.json`), base: null };
+  try {
+    const res = await fetch(`${CONTENTS_API}/${id}.json?ref=${CHARACTER_BRANCH}`, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return { character: await res.json(), base: baseFromEtag(res.headers.get('ETag')) };
+  } catch {
+    /* network/CORS hiccup — fall through to the CDN */
+  }
+  return { character: await loadJSON(`${RAW_CDN}/${id}.json?t=${Date.now()}`), base: null };
 }
 
 const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-items.json?ref=${CHARACTER_BRANCH}`;
@@ -406,17 +452,20 @@ export function applyEdits(character, edits) {
 }
 
 /**
- * Fetch the character store (with any saved edits for `id` overlaid) and the
- * rules files. Returns `{ character, rules, store }` — the raw *inputs* the app
- * layer holds and re-derives from. Keep this separate from deriveModel so an
- * edit can rebuild the model without re-fetching. Pass a pre-fetched `store`
- * (from loadCharacters) to avoid a second fetch when the caller already loaded
- * it (startup decides the id from the store first).
+ * Fetch one character file (with any saved edits for `id` overlaid) and the
+ * rules files. Returns `{ character, rules, base }` — the raw *inputs* the app
+ * layer holds and re-derives from, plus the file's blob sha (from the read's
+ * ETag; `null` when the read carried no usable ETag — see readCharacterFile) as
+ * the concurrency token the save layer sends as `base`. Keep this separate from
+ * deriveModel so an edit can rebuild the model without re-fetching.
  */
-export async function loadCharacter(id, { store } = {}) {
-  const s = store ?? (await loadCharacters());
-  const character = s?.characters?.[id];
-  if (!character) throw new Error(`Unknown character id: ${id}`);
+export async function loadCharacter(id) {
+  const { character: fileCharacter, base } = await readCharacterFile(id);
+  const rules = await loadRules();
+  return { character: applyEdits(fileCharacter, loadEdits(id)), rules, base };
+}
+
+async function loadRules() {
   const [stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile] = await Promise.all([
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
@@ -450,8 +499,7 @@ export async function loadCharacter(id, { store } = {}) {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
-  return { character: applyEdits(character, loadEdits(id)), rules, store: s };
+  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
 }
 
 /**

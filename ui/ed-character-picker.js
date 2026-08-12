@@ -1,10 +1,11 @@
-// ui/ed-character-picker.js — modal listing every character in the grouped
+// ui/ed-character-picker.js — modal listing every character in the per-character
 // store so the player can choose one to load.
 //
-// Presentational only (Tier-1 golden rule): it lists `characters` (the store's
-// id → entry map) and dispatches `load-character` up with the chosen id; ed-app
-// does the loading. It opens both on first-run startup (no saved selection) and
-// from the header icon, and it closes via `close` (Escape / backdrop / ✕).
+// Presentational only (Tier-1 golden rule): it lists `characters` (the index
+// rows [{ id, name, portrait }] from store.js `listCharacters`) and dispatches
+// `load-character` up with the chosen id; ed-app does the loading. It opens both
+// on first-run startup (no saved selection) and from the header icon, and it
+// closes via `close` (Escape / backdrop / ✕).
 //
 // Tier-1 modal rules: Escape / backdrop close; Enter confirms (the list rows are
 // native <button>s, the first is autofocused, so Enter activates it); theme-aware
@@ -16,7 +17,7 @@ import { portraitUrlFor } from '../store.js';
 
 export class EdCharacterPicker extends LitElement {
   static properties = {
-    characters: { type: Object },
+    characters: { type: Array },
     current: { type: String },
   };
 
@@ -63,7 +64,7 @@ export class EdCharacterPicker extends LitElement {
 
   constructor() {
     super();
-    this.characters = {};
+    this.characters = [];
     this.current = null;
     this._broken = new Set(); // ids whose portrait failed to load
   }
@@ -101,18 +102,17 @@ export class EdCharacterPicker extends LitElement {
 
   // A row's thumbnail: the character's portrait via portraitUrlFor, degrading to
   // a name-initial placeholder when the path is empty or the image fails.
-  _thumb(id, entry) {
-    const meta = entry?.meta ?? {};
-    const url = portraitUrlFor(meta.portrait);
+  _thumb(id, row) {
+    const url = portraitUrlFor(row?.portrait);
     if (!url || this._broken.has(id)) {
-      const initial = (meta.name ?? id).trim().charAt(0).toUpperCase();
+      const initial = (row?.name ?? id).trim().charAt(0).toUpperCase();
       return html`<div class="thumb fallback" aria-hidden="true">${initial || '?'}</div>`;
     }
     return html`<img class="thumb" src=${url} alt="" loading="lazy" @error=${() => this._portraitError(id)} />`;
   }
 
   render() {
-    const entries = Object.entries(this.characters ?? {}).sort(([a], [b]) => a.localeCompare(b));
+    const rows = [...(this.characters ?? [])].sort((a, b) => (a?.id ?? '').localeCompare(b?.id ?? ''));
     return html`
       <div class="overlay" @click=${this._close}>
         <div class="modal" role="dialog" aria-modal="true" aria-label="Load a character" @click=${(e) => e.stopPropagation()}>
@@ -122,16 +122,16 @@ export class EdCharacterPicker extends LitElement {
           </div>
           <p class="hint">Pick a character to load. The choice is remembered for the next visit.</p>
           <div class="list">
-            ${entries.map(([id, entry]) => html`
-              <button class="row ${id === this.current ? 'current' : ''}" @click=${() => this._pick(id)}>
-                ${this._thumb(id, entry)}
+            ${rows.map((row) => html`
+              <button class="row ${row.id === this.current ? 'current' : ''}" @click=${() => this._pick(row.id)}>
+                ${this._thumb(row.id, row)}
                 <span class="who">
-                  <span class="nm">${entry?.meta?.name ?? id}</span>
-                  <span class="id">${id}${id === this.current ? ' — loaded' : ''}</span>
+                  <span class="nm">${row?.name ?? row.id}</span>
+                  <span class="id">${row.id}${row.id === this.current ? ' — loaded' : ''}</span>
                 </span>
               </button>
             `)}
-            ${entries.length === 0 ? html`<p class="hint">No characters found.</p>` : ''}
+            ${rows.length === 0 ? html`<p class="hint">No characters found.</p>` : ''}
           </div>
         </div>
       </div>

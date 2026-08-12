@@ -14,6 +14,17 @@ in the log rather than editing the past.
   not started.
 - **Landed:** all phases A–E complete on `dev` (2026-08-07); **90/90 tests pass**.
 
+> **Superseded 2026-08-12 by the per-character split** (docs/PLAN-SAVE-CONCURRENCY.md,
+> Option C): the grouped store `data/characters.json` is retired in favor of one
+> raw `ed-character/1` file per character at `data/characters/<id>.json` plus a
+> create-only discovery index `data/characters/index.json` (`ed-characters-index/1`).
+> Decisions 1, 2, and 5 below (grouped single file, store keyed by `meta.id`, and
+> the legacy path) were superseded by that plan; the per-character layout removes
+> the whole-file rewrite cost that decision 1 accepted (each save now touches one
+> file, and the file sha is a usable per-character conflict base). This page stays
+> as the historical record of the multi-character feature and its picker/overlay
+> decisions (3, 4, 6) — which still hold.
+
 ---
 
 ## Guardrail classification

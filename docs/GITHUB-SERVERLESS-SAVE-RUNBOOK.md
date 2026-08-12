@@ -26,10 +26,11 @@ building it — including the manual steps the repo owner completes.
 ## 1. What we're building (recap)
 
 The **write** half of the serverless save. A tiny Cloudflare Worker exposes
-`POST /save`; the app sends the same inputs-only `character.json` bytes it would
-write to a file; the worker commits them to the `character-data` branch using a
-server-side GitHub token. The app already **reads** that branch live
-([store.js](../store.js)), so a save appears on next load with no rebuild.
+`POST /save`; the app sends the same inputs-only `ed-character/1` bytes it would
+write to a file; the worker commits them to `data/characters/<id>.json` on the
+`character-data` branch using a server-side GitHub token. The app already
+**reads** that branch live ([store.js](../store.js)), so a save appears on next
+load with no rebuild.
 
 Full flow and request/response contract: design doc §3. Worker handler sketch:
 design doc §4.2.
@@ -51,10 +52,10 @@ Unlike the design doc's optional key, this build **requires** `SAVE_KEY`:
 **Honest limit (and why it's bounded):** the key is typed into the browser at
 save time, so it lives in page memory for that session (never persisted). Even if
 it leaked, the blast radius is small and recoverable — an attacker could only
-write a schema-valid `character.json` to the data branch (undone by one real
-save) and could **never** reach the GitHub token or anything else, because the
-token is a repo-only, `Contents: read/write` fine-grained PAT that never leaves
-the worker's secret store.
+write a schema-valid character file to `data/characters/` on the data branch
+(undone by one real save) and could **never** reach the GitHub token or anything
+else, because the token is a repo-only, `Contents: read/write` fine-grained PAT
+that never leaves the worker's secret store.
 
 ### 2.2 Secrets & config inventory
 
@@ -64,7 +65,7 @@ the worker's secret store.
 | `SAVE_KEY` | **secret** | 64-char hex from `openssl rand -hex 32` | `wrangler secret put` |
 | `GITHUB_OWNER` | var | `odenson` | `wrangler.toml [vars]` |
 | `GITHUB_REPO` | var | `ed-charSheet` | `wrangler.toml [vars]` |
-| `GITHUB_STORE` | var | `data/characters.json` — grouped store (`ed-characters/1`); saves upsert `characters[id]` here (the only save target since v1.6.0) | `wrangler.toml [vars]` |
+| `GITHUB_CHARS_DIR` | var | `data/characters` — per-character files dir (`<id>.json`, raw `ed-character/1`) + create-only `index.json` (`ed-characters-index/1`); saves write one file per character (PLAN-SAVE-CONCURRENCY) | `wrangler.toml [vars]` |
 | `GITHUB_ITEMS_PATH` | var | `data/custom-items.json` — the custom-item catalog (`ed-items/2`) written by `/save-items` (PLAN-CUSTOM-ITEMS.md) | `wrangler.toml [vars]` |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
@@ -147,7 +148,7 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   npx wrangler secret put GITHUB_TOKEN     # paste the PAT from 1.1
   npx wrangler secret put SAVE_KEY         # paste the hex from 1.2
   ```
-  (The four `GITHUB_OWNER/REPO/STORE/BRANCH` vars are already in `wrangler.toml`;
+  (The four `GITHUB_OWNER/REPO/CHARS_DIR/BRANCH` vars are already in `wrangler.toml`;
   no action needed.)
 
 - [x] **2.4 [YOU] Deploy.**
@@ -158,8 +159,8 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   subdomain (one-time use `edsavechar`). Deploy prints the endpoint, e.g.
   `https://ed-charsheet-save.edsavechar.workers.dev`.
 
-- [x] **2.5 [YOU] Smoke-test.** The id is required (v1.6.0+); the save targets
-  `data/characters.json` in the repo root.
+- [x] **2.5 [YOU] Smoke-test.** The id is required (v1.6.0+); a save writes
+  `data/characters/<id>.json` in the repo root (one file per character).
   ```bash
   cd "$(git rev-parse --show-toplevel)"   # back to repo root — where data/ lives
   WORKER="https://ed-charsheet-save.edsavechar.workers.dev"
@@ -169,8 +170,8 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
     -d '{"schema":"ed-character/1"}' -w '\n%{http_code}\n'
 
-  # (b) Correct key + id → upserts characters[id] in data/characters.json
-  #     (grouped store); expect HTTP 200 + a commit URL. NOTE: the payload must
+  # (b) Correct key + id → writes/updates data/characters/chakka.json (raw
+  #     ed-character/1); expect HTTP 200 + a commit URL. NOTE: the payload must
   #     be a JSON body (not file bytes), so use -d with a quoted JSON here.
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
     -H "x-save-key: $KEY" \
@@ -192,9 +193,10 @@ retired. See ARCHITECTURE §7 and design §4.5.
 
 - [x] **3.1** `store-server.js` — `saveServer(character, { endpoint, saveKey, id })`
   POST to the endpoint (design §4.5), typed `SaveError` (incl. `no_key` /
-  `offline`). The body always carries `id`, so the worker upserts the grouped
-  store (id required since v1.6.0). `DEFAULT_ENDPOINT` = the deployed worker.
-  Tested (`store-server.test.js`).
+  `offline`). The body always carries `id` (required since v1.6.0); the worker
+  writes `data/characters/<id>.json` and the envelope adds `base` for the
+  optimistic-concurrency check (PLAN-SAVE-CONCURRENCY). `DEFAULT_ENDPOINT` = the
+  deployed worker. Tested (`store-server.test.js`).
 - [x] **3.2** **Save → GitHub is the one primary Save** (edit-mode icon, all
   browsers). `SAVE_KEY` via a lean **key-prompt on save** (`ed-save-key.js`), held
   **in memory only** (never `localStorage`); endpoint hardcoded (a Settings panel
@@ -211,14 +213,16 @@ retired. See ARCHITECTURE §7 and design §4.5.
 ### Phase 4 — Tests (CLAUDE)
 
 - [x] **4.1** `node --test` on the worker (mocked GitHub `fetch`): missing/wrong
-  key → 401; bad JSON / wrong schema / oversize → 400; grouped-store upsert PUTs
+  key → 401; bad JSON / wrong schema / oversize → 400; per-character file PUTs
   with the GET-returned `sha`; `409` → bounded retry → success.
   ✅ Done in 2.1 — `worker.test.js` ships with the scaffold (green). Also
   covers unconfigured-key → 401, branch-creation, and non-409 → 502 mapping. The
   missing/wrong-key cases exercise the constant-time `safeEqual` path (§5.2b).
-  Extended for multi-character: an `id` upserts `characters[id]` and preserves
-  the other entries, invalid ids → `400 invalid_id`, and a `404` store is
-  created fresh (docs/PLAN-MULTI-CHARACTER.md Phase E). Since v1.6.0 the id is
+  Extended for multi-character + concurrency: an `id` writes its own file
+  (`data/characters/<id>.json`), a stale `base` → `409 stale_base` + current sha
+  (no retry), invalid ids → `400 invalid_id`, a `404` file is created fresh, and
+  the create-only `index.json` row is ensured once (docs/PLAN-MULTI-CHARACTER.md
+  Phase E, docs/PLAN-SAVE-CONCURRENCY.md Phases A–C). Since v1.6.0 the id is
   **required** — the legacy no-id path and its tests were removed.
 
 ### Phase 5 — Docs & status flip (CLAUDE)
@@ -270,7 +274,7 @@ head_sampling_rate = 1
 [vars]
 GITHUB_OWNER    = "odenson"
 GITHUB_REPO     = "ed-charSheet"
-GITHUB_STORE    = "data/characters.json"
+GITHUB_CHARS_DIR = "data/characters"
 GITHUB_ITEMS_PATH = "data/custom-items.json"
 GITHUB_BRANCH   = "character-data"
 ```
@@ -312,12 +316,14 @@ why a save failed).
 
 ### 5.3 App save target
 
-`saveServer(character, { endpoint, saveKey, id })` per design §4.5 — POSTs
-`{ character, id }` (the id is **required** since v1.6.0 — the grouped store is
-the only save target) with the `x-save-key` header, returns `{ sha, url }` or
-throws a typed `SaveError`. The id keeps the app's per-character edits
-(`ed-character-edits:${id}` overlay) and branch writes aligned on the same
-character.
+`saveServer(character, { endpoint, saveKey, id, base })` per design §4.5 —
+POSTs `{ character, id, base? }` (the id is **required** since v1.6.0; `base`
+is the read's file sha for the optimistic-concurrency check) with the
+`x-save-key` header, returns `{ sha, url }` or throws a typed `SaveError`
+(incl. `SaveConflictError` for `409 stale_base`). The id keeps the app's
+per-character edits (`ed-character-edits:${id}` overlay) and branch writes
+aligned on the same character; each save advances the app's `base` to the
+commit's sha.
 
 ---
 
@@ -337,9 +343,10 @@ character.
 
 `npm start` boots `tools/dev-server.mjs` (README → Running locally). It mirrors
 the two worker routes on the same origin — `POST /save` →
-`data/characters.json`, `POST /save-items` → `data/custom-items.json` — writing
-to the gitignored working copies that `store.js` already reads off-Pages, so the
-whole save → read-after-write loop runs with no GitHub or Cloudflare in sight.
+`data/characters/<id>.json` (+ create-only `index.json`), `POST /save-items` →
+`data/custom-items.json` — writing to the gitignored working copies that
+`store.js` already reads off-Pages, so the whole save → read-after-write loop
+runs with no GitHub or Cloudflare in sight.
 Same-origin means no `?save=`/`?save-items=` override is needed; the query-param
 override (5.3) still works against it for cross-origin test rigs.
 
@@ -364,8 +371,9 @@ override (5.3) still works against it for cross-origin test rigs.
 | Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
 | App integration merged | 2026-08-06 on `dev` (commit `c2593e1`); read fix `7e6b8ab` |
 | Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
-| Multi-character store | `GITHUB_STORE` + `id` upsert shipped (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
+| Multi-character store | Grouped `GITHUB_STORE` + `id` upsert shipped (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
 | v1.6.0 promotion | Released 2026-08-07 — grouped store is the only save target; legacy `GITHUB_PATH`/`data/character.json` and the worker no-`id` path removed. **Redeploy the worker after this release** (`npx wrangler deploy`). |
+| Per-character split + concurrency | **PENDING — needs redeploy + smoke test.** Code shipped (PLAN-SAVE-CONCURRENCY D1, D1b); worker now reads `GITHUB_CHARS_DIR` (`data/characters`) instead of `GITHUB_STORE`. **Owner action:** push `data/characters/` to `character-data`, redeploy the worker (`npx wrangler deploy`), smoke-test §2.5 (b) → expect `200` writing `data/characters/chakka.json`. |
 | Custom items (`/save-items`) | Built (PLAN-CUSTOM-ITEMS.md P1–P6); worker route + `GITHUB_ITEMS_PATH` shipped. **Phase B verified 2026-08-09** — all four smoke curls passed (401 / 400 invalid_items / 200 upsert + branch file / 200 delete). Owner rollout runsheet: §8 below. |
 
 ---

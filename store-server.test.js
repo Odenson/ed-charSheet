@@ -1,10 +1,12 @@
 // store-server.test.js — run with `npm test` (node --test, no deps).
-// Verifies the GitHub save target: request shape, success unwrap, and the typed
-// SaveError mapping for the failure modes the UI feeds back to the player.
+// Verifies the GitHub save target: request shape (character + id + base
+// concurrency token), success unwrap, the typed SaveConflictError for
+// `stale_base`, and the SaveError mapping for the other failure modes the UI
+// feeds back to the player.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { saveServer, SaveError, DEFAULT_ENDPOINT } from './store-server.js';
+import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from './store-server.js';
 
 const CHAR = { schema: 'ed-character/1', meta: { name: 'Chakka' } };
 
@@ -22,16 +24,69 @@ function mockFetch(impl) {
   return { calls, restore: () => { globalThis.fetch = original; } };
 }
 
-test('happy path: POSTs { character, id } with the key header, returns the commit', async () => {
+test('happy path: POSTs { character, id, base } with the key header, returns the commit', async () => {
   const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: { sha: 'abc', url: 'https://gh/commit/abc' } } }));
   try {
-    const commit = await saveServer(CHAR, { saveKey: 'k', id: 'chakka' });
+    const commit = await saveServer(CHAR, { saveKey: 'k', id: 'chakka', base: 'base-sha' });
     assert.deepEqual(commit, { sha: 'abc', url: 'https://gh/commit/abc' });
     const { url, options } = mock.calls[0];
     assert.equal(url, DEFAULT_ENDPOINT);
     assert.equal(options.method, 'POST');
     assert.equal(options.headers['x-save-key'], 'k');
-    assert.deepEqual(JSON.parse(options.body), { character: CHAR, id: 'chakka' });
+    assert.deepEqual(JSON.parse(options.body), { character: CHAR, id: 'chakka', base: 'base-sha' });
+  } finally {
+    mock.restore();
+  }
+});
+
+test('no base → envelope still carries base: null (legacy overwrite path)', async () => {
+  const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: { sha: 'abc', url: 'u' } } }));
+  try {
+    await saveServer(CHAR, { saveKey: 'k', id: 'chakka' });
+    assert.deepEqual(JSON.parse(mock.calls[0].options.body), { character: CHAR, id: 'chakka', base: null });
+  } finally {
+    mock.restore();
+  }
+});
+
+test('success returns the new commit sha (the caller\'s next base)', async () => {
+  const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: { sha: 'new-blob-sha', url: 'u' } } }));
+  try {
+    const commit = await saveServer(CHAR, { saveKey: 'k', id: 'chakka' });
+    assert.equal(commit.sha, 'new-blob-sha');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('stale_base → SaveConflictError with the current sha (routes to the modal)', async () => {
+  const mock = mockFetch(() => ({ status: 409, body: { ok: false, error: { code: 'stale_base', message: 'changed', sha: 'current-sha' } } }));
+  try {
+    await assert.rejects(
+      saveServer(CHAR, { saveKey: 'k', id: 'chakka', base: 'old-sha' }),
+      (e) => e instanceof SaveConflictError && e instanceof SaveError && e.code === 'stale_base' && e.sha === 'current-sha',
+    );
+  } finally {
+    mock.restore();
+  }
+});
+
+test('stale_base without a sha in the payload → SaveConflictError with sha null (no fabricated base)', async () => {
+  const mock = mockFetch(() => ({ status: 409, body: { ok: false, error: { code: 'stale_base' } } }));
+  try {
+    await assert.rejects(saveServer(CHAR, { saveKey: 'k', id: 'chakka', base: 'old-sha' }), (e) => e instanceof SaveConflictError && e.sha === null);
+  } finally {
+    mock.restore();
+  }
+});
+
+test('exhausted no-base retry (code conflict) stays a plain SaveError → generic toast', async () => {
+  const mock = mockFetch(() => ({ status: 409, body: { ok: false, error: { code: 'conflict', message: 'sha kept moving' } } }));
+  try {
+    await assert.rejects(
+      saveServer(CHAR, { saveKey: 'k', id: 'chakka' }),
+      (e) => e instanceof SaveError && !(e instanceof SaveConflictError) && e.code === 'conflict',
+    );
   } finally {
     mock.restore();
   }

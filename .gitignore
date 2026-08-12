@@ -27,9 +27,13 @@ npm-debug.log*
 # keep local dev / file:// working; fresh clones read from the branch instead.
 # (The legacy data/character.json line was removed with its file at v1.6.0.)
 data/characters.json
+# Per-character files + discovery index (PLAN-SAVE-CONCURRENCY): the split
+# script's local output and local dev writes never reach dev/Pages — character
+# data stays on the character-data branch only.
+data/characters/
 data/chakka.jpg
 data/kolon.jpeg
 
-# Custom-item working copy — gitignored for the same reason as characters.json
+# Custom-item working copy — gitignored for the same reason as data/characters/
 # (read live from the character-data branch; local copy only for dev / file://).
 data/custom-items.json

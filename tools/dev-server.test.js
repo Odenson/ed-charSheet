@@ -94,7 +94,7 @@ test('path traversal is rejected — the docroot is never escaped', async () => 
 
 // --- POST /save ---------------------------------------------------------------
 
-test('/save upserts characters[id] into a fresh grouped store and reads back', async () => {
+test('/save writes the raw ed-character/1 file and indexes it; both read back', async () => {
   await withServer(async (srv) => {
     const res = await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('Chakka') });
     assert.equal(res.status, 200);
@@ -102,10 +102,14 @@ test('/save upserts characters[id] into a fresh grouped store and reads back', a
     assert.equal(res.body.commit.sha, 'local');
     assert.equal(res.body.commit.url, '', 'no link — the toast hides it');
 
-    const read = await srv.request('GET', '/data/characters.json');
-    assert.equal(read.status, 200);
-    assert.equal(read.body.schema, 'ed-characters/1');
-    assert.deepEqual(read.body.characters.chakka, CHARACTER('Chakka'));
+    const file = await srv.request('GET', '/data/characters/chakka.json');
+    assert.equal(file.status, 200);
+    assert.deepEqual(file.body, CHARACTER('Chakka'), 'the file holds the RAW character, no wrapper');
+
+    const index = await srv.request('GET', '/data/characters/index.json');
+    assert.equal(index.status, 200);
+    assert.equal(index.body.schema, 'ed-characters-index/1');
+    assert.deepEqual(index.body.characters.chakka, { name: 'Chakka', portrait: null });
   });
 });
 
@@ -114,12 +118,24 @@ test('/save preserves other characters and accepts any/missing save key', async 
     await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('Chakka') });
     const res = await srv.request('POST', '/save', { id: 'test-orc', character: CHARACTER('Test Orc') });
     assert.equal(res.status, 200, 'no x-save-key header is required locally');
-    const read = await srv.request('GET', '/data/characters.json');
-    assert.deepEqual(Object.keys(read.body.characters).sort(), ['chakka', 'test-orc']);
+    const index = await srv.request('GET', '/data/characters/index.json');
+    assert.deepEqual(Object.keys(index.body.characters).sort(), ['chakka', 'test-orc']);
+    const chakka = await srv.request('GET', '/data/characters/test-orc.json');
+    assert.deepEqual(chakka.body, CHARACTER('Test Orc'));
   });
 });
 
-test('/save re-validates: missing id, bad id, wrong schema, malformed JSON → 400', async () => {
+test('the index is create-only: re-saving an indexed character never rewrites it', async () => {
+  await withServer(async (srv) => {
+    await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('Chakka') });
+    const before = await srv.request('GET', '/data/characters/index.json');
+    await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('Renamed') });
+    const after = await srv.request('GET', '/data/characters/index.json');
+    assert.deepEqual(before.body, after.body, 'entry stays stale — the file is authoritative');
+  });
+});
+
+test('/save re-validates: missing id, bad id, wrong schema, malformed JSON, bad base → 400', async () => {
   await withServer(async (srv) => {
     const noId = await srv.request('POST', '/save', { character: CHARACTER('X') });
     assert.equal(noId.status, 400);
@@ -136,6 +152,10 @@ test('/save re-validates: missing id, bad id, wrong schema, malformed JSON → 4
     const badJson = await fetch(srv.base + '/save', { method: 'POST', body: '{not json' });
     assert.equal(badJson.status, 400);
     assert.equal((await badJson.json()).error.code, 'invalid_json');
+
+    const badBase = await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('X'), base: { not: 'a sha' } });
+    assert.equal(badBase.status, 400);
+    assert.equal(badBase.body.error.code, 'invalid_base', 'base must be a string or omitted — mirror-shape');
   });
 });
 
@@ -201,8 +221,8 @@ test('concurrent /save POSTs all land (serialized write queue)', async () => {
     const ids = ['a', 'b', 'c', 'd', 'e'];
     const results = await Promise.all(ids.map((id) => srv.request('POST', '/save', { id, character: CHARACTER(id) })));
     assert.ok(results.every((r) => r.status === 200));
-    const read = await srv.request('GET', '/data/characters.json');
-    assert.deepEqual(Object.keys(read.body.characters).sort(), ids);
+    const index = await srv.request('GET', '/data/characters/index.json');
+    assert.deepEqual(Object.keys(index.body.characters).sort(), ids);
   });
 });
 
@@ -223,10 +243,10 @@ test('--lag serves the previous file content on the first read after a write', a
     // the PREVIOUS content — the one-shot stale-read the Pages flow races.
     await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('Chakka', { lag: 2 }) });
 
-    const lagged = await srv.request('GET', '/data/characters.json');
-    assert.equal(lagged.body.characters.chakka.meta.lag, 1, 'lagged read returns the prior content');
+    const lagged = await srv.request('GET', '/data/characters/chakka.json');
+    assert.equal(lagged.body.meta.lag, 1, 'lagged read returns the prior content');
 
-    const fresh = await srv.request('GET', '/data/characters.json');
-    assert.equal(fresh.body.characters.chakka.meta.lag, 2, 'the next read is fresh again');
+    const fresh = await srv.request('GET', '/data/characters/chakka.json');
+    assert.equal(fresh.body.meta.lag, 2, 'the next read is fresh again');
   }, { lag: 5000 });
 });
