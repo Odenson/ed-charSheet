@@ -48,7 +48,7 @@ talent steps, etc.) render as real numbers.
 ## 6. Portrait is a repo image
 The hero portrait is an image file held on the `character-data` branch, like the
 character store (the bundle ships no character data), referenced by
-`meta.portrait` in each character's entry in `data/characters.json`
+`meta.portrait` in each character's file `data/characters/<id>.json`
 (e.g. `data/chakka.jpg`). On the Pages site the app reads it live from that
 branch's raw CDN; locally it uses the gitignored working copy. If the field is
 absent **or the image fails to load** the UI falls back to a placeholder icon.
@@ -60,8 +60,11 @@ that opens the character chooser. The chooser:
   (`localStorage 'ed-character'` is stale or absent) and the store holds more
   than one character; a single-entry store auto-loads instead.
 - Lists every character in the store, sorted by id, each row showing the portrait
-  thumbnail (`meta.portrait`, name-initial placeholder when absent/broken) and a
-  label of `meta.name` (falling back to the id).
+  thumbnail and a label of `meta.name` (falling back to the id). The rows come
+  from the **discovery index** (`data/characters/index.json`, one fetch) — the
+  create-only index row carries `{ name, portrait }` copied from `meta` at
+  creation, so a character renamed later still shows the original label/portrait
+  until the index is refreshed (accepted; the file is authoritative).
 - Is a modal: **Escape/backdrop closes** it, **Enter confirms** the focused row,
   and the first row is autofocused.
 - With pending unsaved edits, a switch asks for confirmation first (drafts stay in
@@ -77,6 +80,20 @@ Every modal/overlay follows the same keyboard contract:
   Enter triggers the primary action (Save / OK / Confirm). Read-only modals (like
   the current roll and ability modals) have no primary action, so Enter is a
   no-op there; wire it as soon as a modal gains an accept action.
+
+## 8. Save-conflict modal
+When a GitHub save finds the character changed on another device or player since
+you last loaded it (the save's `base` no longer matches the branch file), the app
+shows a conflict modal instead of silently overwriting (per-character optimistic
+concurrency — docs/PLAN-SAVE-CONCURRENCY.md):
+- Copy: **"This character changed on another device or player."**
+- **Keep mine** (primary, **Enter** confirms) — re-saves your draft over the
+  branch copy, knowingly overwriting the newer version.
+- **Take theirs** — reloads the branch version and clears the draft overlay.
+- **Cancel** — closes, leaving your unsaved draft intact.
+- Standard modal contract: **Escape/backdrop closes** (no action taken), theme-aware,
+  two font weights. The same modal surfaces for background auto-saves (silent
+  saves never suppress a conflict).
 
 ## Gear tab — one armour worn
 A character can wear **one set of armour**: equipping a second armour (from the

@@ -622,6 +622,9 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
 
 **Status: shipped** (v1.6.0, 2026-08-07; matches ARCHITECTURE §10). Worker live at
 `https://ed-charsheet-save.edsavechar.workers.dev`; app integration in `store-server.js`.
+The per-character split + concurrency check (PLAN-SAVE-CONCURRENCY) shipped to
+`dev` (`457e39d`) and verified on the dev site 2026-08-12 — branch migrated,
+worker redeployed, two-browser smoke passed.
 
 | Decision | Resolved as |
 |---|---|

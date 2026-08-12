@@ -102,7 +102,7 @@ new talents/spells becomes adding **data**, not code.
 │  - Action executor                                            │
 ├──────────────────────────────────────────────────────────────┤
 │  Data Layer                                                   │
-│  - character.json   (this character's data)                  │
+│  - data/characters/<id>.json + index (character inputs)       │
 │  - rules/*.json     (game reference: steps, talents, races…) │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -116,7 +116,7 @@ The golden rule: **data flows down through render; events flow up through
 
 Two kinds of data, kept strictly separate.
 
-### 4.1 Character data (`character.json`) — per character, editable
+### 4.1 Character data (`data/characters/<id>.json`) — per character, editable
 The character's own facts. Human-friendly nested JSON that the app flattens
 into the property store at load:
 
@@ -315,7 +315,7 @@ browser (Firefox / Safari / mobile), not just Chromium.
   syncs across devices; the export is a point-in-time copy the player keeps or
   re-imports. It carries no dirty tracking of its own.
 - **Formatting note.** Serializing normalizes JSON to 2-space, so hand-compacted
-  single-line objects in `character.json` re-expand once (semantically identical
+  single-line objects in a character file re-expand once (semantically identical
   — a one-time diff). Pre-normalizing the file removes that churn.
 
 > **Retired:** the earlier Chromium-only **File System Access** save
@@ -385,8 +385,10 @@ holds the repo-scoped GitHub token in the platform's secret store, does the
 GET-SHA → PUT-commit to the dedicated `character-data` branch, and the app reads
 the committed data live at runtime (`store.js`). The deploy workflow watches
 `main` and `dev` only, so a save never rebuilds the app. The client sees one
-`200` (with the commit URL) or one typed error; the `409` retry lives in the
-worker.
+`200` (with the commit URL) or one typed error; a conflicting save (`409
+stale_base`) is surfaced to the player as a keep-mine/take-theirs conflict
+rather than a retried or lost write (the worker's bounded retry applies only to
+legacy no-base callers).
 
 **Multi-character (shipped, v1.6.0; per-character files since the concurrency
 split).** Each character is its **own file** `data/characters/<id>.json` (a raw

@@ -373,7 +373,7 @@ override (5.3) still works against it for cross-origin test rigs.
 | Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
 | Multi-character store | Grouped `GITHUB_STORE` + `id` upsert shipped (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
 | v1.6.0 promotion | Released 2026-08-07 — grouped store is the only save target; legacy `GITHUB_PATH`/`data/character.json` and the worker no-`id` path removed. **Redeploy the worker after this release** (`npx wrangler deploy`). |
-| Per-character split + concurrency | **PENDING — needs redeploy + smoke test.** Code shipped (PLAN-SAVE-CONCURRENCY D1, D1b); worker now reads `GITHUB_CHARS_DIR` (`data/characters`) instead of `GITHUB_STORE`. **Owner action:** push `data/characters/` to `character-data`, redeploy the worker (`npx wrangler deploy`), smoke-test §2.5 (b) → expect `200` writing `data/characters/chakka.json`. |
+| Per-character split + concurrency | **Verified 2026-08-12.** `character-data` migrated (grouped file deleted; `data/characters/` per-character files + `index.json`), worker redeployed with `GITHUB_CHARS_DIR`, app shipped on `dev` (`457e39d`). Owner two-browser smoke passed (conflict modal, keep-mine/take-theirs, cross-character no false conflict). See docs/PLAN-SAVE-CONCURRENCY.md. |
 | Custom items (`/save-items`) | Built (PLAN-CUSTOM-ITEMS.md P1–P6); worker route + `GITHUB_ITEMS_PATH` shipped. **Phase B verified 2026-08-09** — all four smoke curls passed (401 / 400 invalid_items / 200 upsert + branch file / 200 delete). Owner rollout runsheet: §8 below. |
 
 ---
