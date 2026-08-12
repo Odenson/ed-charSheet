@@ -365,6 +365,43 @@ test('create does not rewrite the index when the entry already exists', async ()
   }
 });
 
+test('a create whose file PUT fails (non-409) is NOT indexed — no dangling entry', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsChar404(CHAR_PATH),
+    ...readsIndex404(),
+    [`PUT /contents/${CHAR_PATH}`]: () => ({ status: 500, body: {} }),
+  });
+  try {
+    const { status } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502, 'upstream failure surfaces as 502');
+    assert.ok(!mock.calls.some((c) => c.url.includes('index.json')), 'a failed create never touches the index');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('index PUT 409 (raced create) is retried and the entry lands', async () => {
+  let indexPuts = 0;
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsChar404(CHAR_PATH),
+    ...readsIndex404(),
+    ...putCharOk(CHAR_PATH),
+    [`PUT /contents/${INDEX_PATH}`]: () =>
+      ++indexPuts === 1
+        ? { status: 409, body: {} } // another create moved the index sha
+        : { status: 200, body: { content: { sha: 'index-commit' }, html_url: 'https://github.com/commit/index-commit' } },
+  });
+  try {
+    const { status } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 200, 'the character save still succeeds');
+    assert.equal(indexPuts, 2, 'the 409 index PUT is re-read and retried to success');
+  } finally {
+    mock.restore();
+  }
+});
+
 test('create indexes the portrait so the picker keeps its §6a thumbnails', async () => {
   const withPortrait = { ...CHAR, meta: { name: 'Chakka', portrait: 'data/chakka.jpg' } };
   const mock = mockGitHub({

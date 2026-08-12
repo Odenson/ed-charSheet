@@ -143,8 +143,11 @@ async function upsertCharacterFile(repo, branch, gh, charsDir, id, character, ba
     if (base && exists && base !== sha) return staleBase(cors, sha);
     const res = await putCharacterFile(repo, branch, gh, filePath, character, exists ? sha : undefined, cors);
     if (res) {
-      // Only a brand-new file (404 on read) touches the discovery index.
-      if (!exists) await ensureIndexEntry(repo, branch, gh, charsDir, id, character);
+      // Only a brand-new file that was ACTUALLY created (a 2xx PUT) touches the
+      // discovery index — never a non-409 upstream failure (`putCharacterFile`
+      // returns its 502 Response here), which would leave a dangling index entry
+      // for a file that was never written.
+      if (!exists && res.status < 300) await ensureIndexEntry(repo, branch, gh, charsDir, id, character);
       return res;
     }
     // PUT 409 — the file sha moved in the read→write window. A base-caller
@@ -204,37 +207,43 @@ async function putCharacterFile(repo, branch, gh, filePath, character, sha, cors
 // trusted for save bases.
 async function ensureIndexEntry(repo, branch, gh, charsDir, id, character) {
   const indexPath = `${charsDir}/index.json`;
-  let sha;
-  let file;
-  try {
-    const read = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}?ref=${branch}`, { headers: gh });
-    if (read.status === 404) {
-      file = { schema: 'ed-characters-index/1', characters: {} };
-    } else if (!read.ok) {
-      throw new Error(`index read ${read.status}`);
-    } else {
-      const obj = await read.json();
-      sha = obj.sha;
-      file = JSON.parse(base64ToString(obj.content));
+  // Bounded read→write retry: a concurrent create moves the index sha, so a PUT
+  // 409 is re-read and re-applied (without it, a raced create silently drops an
+  // entry that never self-heals — the file exists on the next save, so the create
+  // path never runs again). A non-409 failure is logged and tolerated.
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    let sha;
+    let file;
+    try {
+      const read = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}?ref=${branch}`, { headers: gh });
+      if (read.status === 404) {
+        file = { schema: 'ed-characters-index/1', characters: {} };
+      } else if (!read.ok) {
+        throw new Error(`index read ${read.status}`);
+      } else {
+        const obj = await read.json();
+        sha = obj.sha;
+        file = JSON.parse(base64ToString(obj.content));
+      }
+    } catch (err) {
+      console.error(JSON.stringify({ message: 'index ensure failed (read)', error: err instanceof Error ? err.message : String(err) }));
+      return;
     }
-  } catch (err) {
-    console.error(JSON.stringify({ message: 'index ensure failed (read)', error: err instanceof Error ? err.message : String(err) }));
-    return;
-  }
-  file.characters = file.characters ?? {};
-  if (file.characters[id]) return; // already indexed — nothing to write
-  file.characters[id] = { name: character.meta?.name ?? '', portrait: character.meta?.portrait ?? null };
-  const content = toBase64(JSON.stringify(file, null, 2) + '\n');
-  try {
+    file.characters = file.characters ?? {};
+    if (file.characters[id]) return; // already indexed — nothing to write
+    file.characters[id] = { name: character.meta?.name ?? '', portrait: character.meta?.portrait ?? null };
+    const content = toBase64(JSON.stringify(file, null, 2) + '\n');
     const res = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}`, {
       method: 'PUT',
       headers: { ...gh, 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: 'Index character (serverless)', content, sha, branch }),
     });
-    if (!res.ok) throw new Error(`index write ${res.status}`);
-  } catch (err) {
-    console.error(JSON.stringify({ message: 'index ensure failed (write)', error: err instanceof Error ? err.message : String(err) }));
+    if (res.ok) return;
+    if (res.status === 409) continue; // sha moved (raced create) — re-read and retry
+    console.error(JSON.stringify({ message: 'index ensure failed (write)', status: res.status }));
+    return; // non-409 upstream failure — tolerated (the file is truth)
   }
+  console.error(JSON.stringify({ message: 'index ensure gave up (sha kept moving)', id }));
 }
 
 // Upsert custom items into the shared catalog at `itemsPath` (ed-items/2): GET
