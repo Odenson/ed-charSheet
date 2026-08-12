@@ -668,7 +668,8 @@
         "weight": "3 lb",
         "availability": "average",
         "shatterThreshold": 17,
-        "description": "A small forearm shield that still lets the wearer draw a bow."
+        "description": "A small forearm shield that still lets the wearer draw a bow.",
+        "image": "data/Shield-Buckler.png"
       },
       "effects": [
         {
@@ -1054,7 +1055,8 @@
         "strMin": 12,
         "size": 3,
         "damageStep": 5,
-        "description": "A blade about three feet long, curved or straight, single- or double-edged."
+        "description": "A blade about three feet long, curved or straight, single- or double-edged.",
+        "image": "data/broadsword.png"
       },
       "effects": [
         {
@@ -1316,6 +1318,35 @@
         "size": 2,
         "damageStep": 4,
         "description": "A small, easy-to-use one-handed chopping axe."
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
+    "Ork Hand Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "3.5 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 8,
+        "size": 2,
+        "damageStep": 4,
+        "description": "A small burtal axe, easy-to-use one-handed built with hardwood and heavier than normal handaxe.",
+        "image": "data/Ork-handaxe.png"
       },
       "effects": [
         {
@@ -1839,7 +1870,8 @@
         "damageStep": 4,
         "shortRange": "2-10",
         "longRange": "11-20",
-        "description": "A short throwing-or-thrusting spear, often paired with a shield."
+        "description": "A short throwing-or-thrusting spear, often paired with a shield.",
+        "image": "data/spear.png"
       },
       "effects": [
         {
