@@ -1345,7 +1345,7 @@
         "strMin": 8,
         "size": 2,
         "damageStep": 4,
-        "description": "A small burtal axe, easy-to-use one-handed built with hardwood and heavier than normal handaxe.",
+        "description": "A small brutal axe, easy-to-use one-handed built with hardwood and heavier than normal handaxe.",
         "image": "data/Ork-handaxe.png"
       },
       "effects": [
