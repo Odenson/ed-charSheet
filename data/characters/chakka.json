@@ -1,0 +1,473 @@
+{
+  "schema": "ed-character/1",
+  "meta": {
+    "name": "Chakka",
+    "race": "Ork",
+    "description": "Ork Power, with no privilege, and a whole lot of fuckin' rage.",
+    "portrait": "data/chakka.jpg",
+    "age": 17,
+    "weight": "120 kg",
+    "sex": "Male",
+    "height": "6'10",
+    "skinTone": "Light Grey",
+    "background": "[LIVE] Chakka drew his first breath in a kaer that was meant to keep its people safe — until slavers cracked it open and dragged them into the light. Torn from his family before he was old enough to hold their faces in memory, he was shackled aboard a Theran airship and sold into slavery. For two years he laboured under a Theran dwarf, swallowing his rage and biding his time. When fate finally left the door to freedom unguarded, Chakka threw himself through it with everything he had — and he has never once looked back.",
+    "sourceSheetVersion": "7.13.2",
+    "id": "chakka"
+  },
+  "attributes": {
+    "Dexterity": {
+      "base": 10,
+      "points": 8,
+      "increases": 2
+    },
+    "Strength": {
+      "base": 13,
+      "points": 5,
+      "increases": 2
+    },
+    "Toughness": {
+      "base": 11,
+      "points": 4,
+      "increases": 2
+    },
+    "Perception": {
+      "base": 10,
+      "points": 3,
+      "increases": 1
+    },
+    "Willpower": {
+      "base": 8,
+      "points": 4,
+      "increases": 1
+    },
+    "Charisma": {
+      "base": 9,
+      "points": 2,
+      "increases": 2
+    }
+  },
+  "disciplines": [
+    {
+      "name": "Archer",
+      "circle": 4,
+      "talents": [
+        {
+          "name": "Avoid Blow",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Durability",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Karma Ritual",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Missile Weapon",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Mystic Aim",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Archer)",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "True Shot",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Awareness",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Mystic Pursuit",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Throwing Weapon",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Anticipate Blow",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 3
+        },
+        {
+          "name": "Stealthy Stride",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 3
+        },
+        {
+          "name": "Long Shot",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 4
+        },
+        {
+          "name": "First Impression",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 4
+        }
+      ]
+    },
+    {
+      "name": "Nethermancer",
+      "circle": 3,
+      "talents": [
+        {
+          "name": "Astral Sight",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Frighten",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Patterncraft",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Spellcasting",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Nethermancer)",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Dispel Magic",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Steel Thought",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Standard Matrix",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 2
+        },
+        {
+          "name": "Spirit Talk",
+          "rank": 1,
+          "tier": "Novice",
+          "circle": 3
+        },
+        {
+          "name": "Suppress Curse",
+          "rank": 1,
+          "tier": "Novice",
+          "circle": 3
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Speak Language (Ork)",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Theran)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Throalic)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Read/Write Language (Theran)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Navigation",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Tracking",
+      "rank": 3,
+      "tier": "Novice"
+    },
+    {
+      "name": "Air Sailing",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Public Speaking",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Tattooist",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Unarmed Combat",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Melee Weapon",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Wilderness Survival",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Horror Lore",
+      "rank": 1,
+      "tier": "Novice"
+    }
+  ],
+  "knacks": [
+    {
+      "name": "Anticipate Spell"
+    },
+    {
+      "name": "Skinning"
+    },
+    {
+      "name": "Hunting"
+    }
+  ],
+  "resources": {
+    "karma": {
+      "available": 17,
+      "converted": 123,
+      "spent": 105,
+      "fromRace": 7,
+      "legend": 861
+    },
+    "legend": {
+      "totalSpent": 45261,
+      "totalEarnt": 45915,
+      "available": 654,
+      "earned": [
+        {
+          "id": "msn2pwqv-xrh8a",
+          "amount": 500,
+          "description": "After completing the Horror Prison story line Chakka was able to reflect on the whole situation and make changes in his path",
+          "date": "2025-05-20"
+        }
+      ]
+    },
+    "health": {
+      "damage": 5,
+      "wounds": 0,
+      "recoveriesUsed": 0,
+      "knockedDown": false
+    },
+    "roundTracker": 218
+  },
+  "traits": [
+    {
+      "name": "Gahad trigger",
+      "type": "trigger",
+      "relatedTo": {
+        "type": "ability",
+        "name": "Gahad"
+      },
+      "summary": "Dwarves in amour carrying whips",
+      "description": "Comes from the Dwarf that had Chakka captured for two years on the airship. The slaver was very proud of the whip, and even more happy when he used it on the larger Orks."
+    }
+  ],
+  "items": [
+    {
+      "name": "Spear",
+      "equipped": true
+    },
+    {
+      "name": "Hardened Leather",
+      "equipped": false
+    },
+    {
+      "name": "Medium Crossbow",
+      "equipped": true
+    },
+    {
+      "name": "Broadsword",
+      "equipped": true
+    },
+    {
+      "name": "Backpack",
+      "equipped": true
+    },
+    {
+      "name": "Adventuring Kit (with tent)",
+      "equipped": true
+    },
+    {
+      "name": "Light Quartz, Small",
+      "equipped": true
+    },
+    {
+      "name": "Absorb Blow",
+      "equipped": true
+    },
+    {
+      "name": "Death Cheat",
+      "equipped": true
+    },
+    {
+      "name": "Desperate Blow",
+      "equipped": true
+    },
+    {
+      "name": "Water or Wine Skin",
+      "equipped": true
+    },
+    {
+      "name": "Desperate Spell",
+      "equipped": false
+    },
+    {
+      "name": "Horror Fend",
+      "equipped": false
+    },
+    {
+      "name": "Bracers of Aras",
+      "equipped": true,
+      "threadRank": 2
+    },
+    {
+      "name": "Artisan Tools: Carving",
+      "equipped": true
+    },
+    {
+      "name": "Artisan Tools: Embroidery/Sewing",
+      "equipped": true
+    },
+    {
+      "name": "Artisan Tools: Painting",
+      "equipped": true
+    },
+    {
+      "name": "Beer Mug of Brawling",
+      "equipped": true
+    },
+    {
+      "name": "Hide Armor",
+      "equipped": false
+    },
+    {
+      "name": "Climbing Kit",
+      "equipped": true
+    },
+    {
+      "name": "Beef Jurky",
+      "equipped": true
+    },
+    {
+      "name": "Ork Dagger",
+      "equipped": true
+    }
+  ],
+  "wealth": {
+    "coins": {
+      "copper": 5,
+      "silver": 458,
+      "gold": 205,
+      "earth": 0,
+      "water": 0,
+      "air": 0,
+      "fire": 0,
+      "orichalcum": 0
+    },
+    "gems": [
+      {
+        "name": "Ruby",
+        "valueSilver": 1300,
+        "qty": 1
+      },
+      {
+        "name": "Gem",
+        "valueSilver": 50,
+        "qty": 2
+      },
+      {
+        "name": "Gem",
+        "valueSilver": 400,
+        "qty": 3
+      },
+      {
+        "name": "Silver Broach",
+        "valueSilver": 15,
+        "qty": 1
+      }
+    ]
+  },
+  "notes": [
+    {
+      "id": "msn2bnuo-pheag",
+      "text": "Test Open Note"
+    },
+    {
+      "id": "msn2cmpf-bmyi9",
+      "text": "Test Open Note 2, this one is lllllllllllllllllllllllllllllllllllllllllllooooooooooooooooooooooooonnnnnnnnnnnnnnnnnnnnnnnggggggggggggggggggggg"
+    }
+  ],
+  "history": [
+    {
+      "id": "msn2df22-94wmr",
+      "date": "2024-08-20",
+      "text": "Testing History Note 1"
+    },
+    {
+      "id": "msn2dws0-mlqmi",
+      "date": "2024-08-22",
+      "text": "Testing history note 2"
+    }
+  ]
+}

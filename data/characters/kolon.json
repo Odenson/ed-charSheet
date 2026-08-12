@@ -1,0 +1,505 @@
+{
+  "schema": "ed-character/1",
+  "meta": {
+    "name": "Kolon",
+    "race": "Ork",
+    "description": "Black as pitch, Black as fuck, Ill kill your cat and fuck you up",
+    "portrait": "data/kolon.jpeg",
+    "age": 16,
+    "weight": "120 kg",
+    "sex": "Male",
+    "height": "6'8",
+    "sourceSheetVersion": "7.13.1",
+    "id": "kolon"
+  },
+  "attributes": {
+    "Dexterity": {
+      "base": 10,
+      "points": 6,
+      "increases": 3
+    },
+    "Strength": {
+      "base": 13,
+      "points": 6,
+      "increases": 3
+    },
+    "Toughness": {
+      "base": 11,
+      "points": 5,
+      "increases": 0
+    },
+    "Perception": {
+      "base": 10,
+      "points": 0,
+      "increases": 1
+    },
+    "Willpower": {
+      "base": 8,
+      "points": 5,
+      "increases": 0
+    },
+    "Charisma": {
+      "base": 9,
+      "points": 4,
+      "increases": 0
+    }
+  },
+  "disciplines": [
+    {
+      "name": "Thief",
+      "circle": 4,
+      "talents": [
+        {
+          "name": "Awareness",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Durability",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Karma Ritual",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Lock Pick",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Picking Pockets",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Stealthy Stride",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Thief)",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Taunt",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Disarm Trap",
+          "rank": 3,
+          "tier": "Journeyman",
+          "circle": 2
+        },
+        {
+          "name": "First Impression",
+          "rank": 1,
+          "tier": "Journeyman",
+          "circle": 2
+        },
+        {
+          "name": "Haggle",
+          "rank": 2,
+          "tier": "Journeyman",
+          "circle": 3
+        },
+        {
+          "name": "Surprise Strike",
+          "rank": 5,
+          "tier": "Journeyman",
+          "circle": 3
+        },
+        {
+          "name": "Conceal Object",
+          "rank": 1,
+          "tier": "Warden",
+          "circle": 4
+        },
+        {
+          "name": "Sprint",
+          "rank": 1,
+          "tier": "Warden",
+          "circle": 4
+        }
+      ]
+    },
+    {
+      "name": "Warrior",
+      "circle": 4,
+      "talents": [
+        {
+          "name": "Avoid Blow",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Melee Weapon",
+          "rank": 5,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Warrior)",
+          "rank": 2,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Tiger Spring",
+          "rank": 3,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Wood Skin",
+          "rank": 4,
+          "tier": "Novice",
+          "circle": 1
+        },
+        {
+          "name": "Anticipate Blow",
+          "rank": 4,
+          "tier": "Journeyman",
+          "circle": 2
+        },
+        {
+          "name": "Wound Balance",
+          "rank": 2,
+          "tier": "Journeyman",
+          "circle": 2
+        },
+        {
+          "name": "Unarmed Combat",
+          "rank": 2,
+          "tier": "Journeyman",
+          "circle": 2
+        },
+        {
+          "name": "Air Dance",
+          "rank": 4,
+          "tier": "Journeyman",
+          "circle": 3
+        },
+        {
+          "name": "Missile Weapon",
+          "rank": 2,
+          "tier": "Journeyman",
+          "circle": 3
+        },
+        {
+          "name": "Waterfall Slam",
+          "rank": 1,
+          "tier": "Warden",
+          "circle": 4
+        },
+        {
+          "name": "Maneuver",
+          "rank": 1,
+          "tier": "Warden",
+          "circle": 4
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Acrobatic Defense",
+      "rank": 4,
+      "tier": "Novice"
+    },
+    {
+      "name": "Air Sailing",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Animal Handling",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Read/Write Language (Throalic)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Ork)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Theran)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Throalic)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Swimming",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Tailor",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Wilderness Survival",
+      "rank": 3,
+      "tier": "Novice"
+    }
+  ],
+  "knacks": [
+    {
+      "name": "Lip Reading"
+    },
+    {
+      "name": "Animal Tracking"
+    },
+    {
+      "name": "Hunting"
+    },
+    {
+      "name": "Riding"
+    }
+  ],
+  "resources": {
+    "karma": {
+      "available": 35,
+      "converted": 140,
+      "spent": 105,
+      "legend": 980
+    },
+    "legend": {
+      "totalSpent": 43380,
+      "totalEarnt": 44386
+    },
+    "health": {
+      "damage": 1,
+      "wounds": 0,
+      "recoveriesUsed": 1
+    }
+  },
+  "traits": [
+    {
+      "name": "Gahad - Cats",
+      "type": "trigger",
+      "relatedTo": {
+        "type": "ability",
+        "name": "Gahad"
+      },
+      "summary": "Distracted and aggerssively reacts towards cats"
+    }
+  ],
+  "items": [
+    {
+      "name": "Light Quartz - Small",
+      "equipped": false
+    },
+    {
+      "name": "Heat Stone",
+      "equipped": true
+    },
+    {
+      "name": "Traveler's Mug",
+      "equipped": false
+    },
+    {
+      "name": "Divining Rod",
+      "equipped": false
+    },
+    {
+      "name": "Booster Potion",
+      "equipped": false
+    },
+    {
+      "name": "Healing Potion",
+      "equipped": false
+    },
+    {
+      "name": "Last Chance Salve",
+      "equipped": false
+    },
+    {
+      "name": "Death Cheat",
+      "equipped": true
+    },
+    {
+      "name": "Desperate Blow",
+      "equipped": true
+    },
+    {
+      "name": "Bloodied Great Cleaver",
+      "equipped": true
+    },
+    {
+      "name": "Dagger",
+      "equipped": true
+    },
+    {
+      "name": "Crystal Spear",
+      "equipped": true
+    },
+    {
+      "name": "Wrist Flick Blade",
+      "equipped": true
+    },
+    {
+      "name": "Crystal Spear - Thrown",
+      "equipped": true
+    },
+    {
+      "name": "Dagger - Thrown",
+      "equipped": true
+    },
+    {
+      "name": "Night Sting Armor",
+      "equipped": true
+    },
+    {
+      "name": "Wooden Bracers of Fury",
+      "equipped": true
+    },
+    {
+      "name": "Horror Fend",
+      "equipped": true
+    },
+    {
+      "name": "Urupa Port Skeleton Key",
+      "equipped": true
+    },
+    {
+      "name": "Bumble Bee Belt Buckle",
+      "equipped": false
+    },
+    {
+      "name": "Phoenix Feather",
+      "equipped": false
+    },
+    {
+      "name": "Black Mercy",
+      "equipped": false
+    },
+    {
+      "name": "Absorb Blow",
+      "equipped": true
+    },
+    {
+      "name": "Eyebite",
+      "equipped": false
+    },
+    {
+      "name": "Black Brine",
+      "equipped": false
+    },
+    {
+      "name": "Blanket",
+      "equipped": true
+    },
+    {
+      "name": "Wineskin",
+      "equipped": false
+    },
+    {
+      "name": "Leather Gloves",
+      "equipped": false
+    },
+    {
+      "name": "Guantlets of Strength",
+      "equipped": false
+    },
+    {
+      "name": "Silk Rope (50ft)",
+      "equipped": true
+    },
+    {
+      "name": "Thieves kit",
+      "equipped": false
+    },
+    {
+      "name": "Iopian Dagger",
+      "equipped": false
+    },
+    {
+      "name": "Compass",
+      "equipped": false
+    },
+    {
+      "name": "Adv Sewing kit +1",
+      "equipped": false
+    },
+    {
+      "name": "Tinder Box",
+      "equipped": false
+    },
+    {
+      "name": "Pirate River Boat Skrang Outfit (& pattern)",
+      "equipped": false
+    },
+    {
+      "name": "Master Thieves Tools",
+      "equipped": false
+    },
+    {
+      "name": "Snow Lepod Skin",
+      "equipped": false
+    },
+    {
+      "name": "Climbing Gear",
+      "equipped": false
+    },
+    {
+      "name": "Backpack",
+      "equipped": true
+    },
+    {
+      "name": "Rations",
+      "equipped": false
+    },
+    {
+      "name": "Urupan Port Skeleton Key",
+      "equipped": false
+    },
+    {
+      "name": "Honey Buckle",
+      "equipped": false
+    },
+    {
+      "name": "Small Whip",
+      "equipped": false
+    },
+    {
+      "name": "Potion",
+      "equipped": false
+    }
+  ],
+  "wealth": {
+    "coins": {
+      "copper": 5,
+      "silver": 575,
+      "gold": 280,
+      "earth": 0,
+      "water": 0,
+      "air": 0,
+      "fire": 0,
+      "orichalcum": 0
+    }
+  }
+}

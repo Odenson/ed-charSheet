@@ -1,0 +1,17 @@
+{
+  "schema": "ed-characters-index/1",
+  "characters": {
+    "chakka-test": {
+      "name": "Chakka-TEST",
+      "portrait": ""
+    },
+    "chakka": {
+      "name": "Chakka",
+      "portrait": "data/chakka.jpg"
+    },
+    "kolon": {
+      "name": "Kolon",
+      "portrait": "data/kolon.jpeg"
+    }
+  }
+}
