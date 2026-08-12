@@ -71,7 +71,7 @@ function messageForCode(code) {
  * ETag or the previous save) — the optimistic-concurrency token; omit/null it to
  * take the legacy overwrite path (local dev / CDN-fallback session).
  */
-export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey, id, base = null } = {}) {
+export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveKey, id, base = null, keepalive = false } = {}) {
   if (!saveKey) throw new SaveError('no_key', 'Enter your save key to save to GitHub.');
 
   let res;
@@ -80,6 +80,9 @@ export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveK
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-save-key': saveKey },
       body: JSON.stringify({ character, id, base }),
+      // A flush-on-hide autosave fires as the page is unloading; keepalive lets
+      // the request outlive the document so the last edits still reach the worker.
+      keepalive,
     });
   } catch {
     // The fetch itself failed — offline, DNS, CORS, or the worker is unreachable.

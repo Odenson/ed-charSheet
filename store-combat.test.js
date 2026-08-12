@@ -104,7 +104,7 @@ test('equipped weapons: only the equipped weapon kind, with category/damage/rang
   const crossbow = modelA.combat.equippedWeapons.find((w) => w.name === 'Medium Crossbow');
   assert.deepEqual(
     { category: crossbow.category, damageStep: crossbow.damageStep, shortRange: crossbow.shortRange, longRange: crossbow.longRange, image: crossbow.image },
-    { category: 'missile', damageStep: 5, shortRange: '2-40', longRange: '41-80', image: null },
+    { category: 'missile', damageStep: 5, shortRange: '2-40', longRange: '41-80', image: 'data/medium-crossbow.png' },
   );
 
   // Ork Dagger is a melee dagger (rules/items.json) — a melee weapon carries no

@@ -22,6 +22,7 @@ import './ed-save-key.js';
 import './ed-confirm.js';
 import './ed-character-picker.js';
 import './ed-conflict.js';
+import './ed-settings.js';
 import { saveRollLog } from '../store-rolllog.js';
 
 const TABS = [
@@ -56,6 +57,7 @@ export class EdApp extends LitElement {
     _picker: { state: true },
     _noSelection: { state: true },
     _conflict: { state: true },
+    _settings: { state: true }, // Settings modal open?
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -189,10 +191,27 @@ export class EdApp extends LitElement {
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     this._applyTheme();
+    this._settings = false;
+    // Autosave prefs (localStorage): on by default, 60s idle interval. Off = pure
+    // manual save (the always-visible Save icon). The idle timer coalesces a lull
+    // in edits into one background save; a max-wait cap bounds continuous activity;
+    // and visibilitychange/pagehide flush on leaving. See docs/PLAN-SAVE-VISIBILITY.
+    this._autosaveEnabled = localStorage.getItem('ed-autosave') !== 'off';
+    const secs = Number(localStorage.getItem('ed-autosave-seconds'));
+    this._autosaveSeconds = Number.isFinite(secs) && secs >= 10 ? secs : 60;
+    this._autosaveTimer = null; // idle debounce
+    this._autosaveMaxTimer = null; // max-wait cap
   }
 
   async connectedCallback() {
     super.connectedCallback();
+    // Flush a pending autosave when the tab is hidden or the page is unloading —
+    // the natural moment work would otherwise be stranded (a tab switch, a close,
+    // mobile backgrounding). keepalive lets the request outlive the document.
+    this._onHide = () => { if (document.visibilityState === 'hidden') this._flushSave(); };
+    this._onPageHide = () => this._flushSave();
+    document.addEventListener('visibilitychange', this._onHide);
+    window.addEventListener('pagehide', this._onPageHide);
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
       const { label, step, karma, apply, kind, difficulty } = e.detail;
@@ -203,6 +222,11 @@ export class EdApp extends LitElement {
         karma?.step != null && this._model?.stepByNumber?.[karma.step]
           ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
           : null;
+      // Rolling the Karma die IS spending a point of Karma: the Overview's Karma
+      // roll has no +D6 toggle (it is the die), so charge the spend here. Charge,
+      // no refund (owner decision) — each button click opens a fresh roll
+      // interaction, while the modal's "Roll again" never re-fires `ed-roll`.
+      if (kind === 'karma') this._editKarma({ spend: 1 });
       this._roll = {
         rollId: uid(),
         label,
@@ -384,7 +408,7 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, meta: { ...this._character.meta, ...patch } };
     saveMetaEdits(patch, this._characterId); // overlay: always-on autosave, instant, no permissions
     // Local edits are now ahead of the last GitHub commit until the next Save.
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -395,7 +419,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(items)) return;
     this._character = { ...this._character, items };
     saveItemEdits(items, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -406,7 +430,7 @@ export class EdApp extends LitElement {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -428,7 +452,7 @@ export class EdApp extends LitElement {
       },
     };
     saveHealthEdits(merged, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -449,7 +473,7 @@ export class EdApp extends LitElement {
       resources: { ...(this._character.resources || {}), karma: nextKarma },
     };
     saveKarmaEdits(nextKarma, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
     if (this._roll?.karma) {
       this._roll = { ...this._roll, karma: { ...this._roll.karma, available: nextKarma.available } };
@@ -463,7 +487,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(notes)) return;
     this._character = { ...this._character, notes };
     saveNotesEdits(notes, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -472,7 +496,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(history)) return;
     this._character = { ...this._character, history };
     saveHistoryEdits(history, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -491,7 +515,7 @@ export class EdApp extends LitElement {
       },
     };
     saveLegendEdits(earned, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -549,7 +573,7 @@ export class EdApp extends LitElement {
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
       this._characterId,
     );
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -571,7 +595,7 @@ export class EdApp extends LitElement {
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
       this._characterId,
     );
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -680,6 +704,65 @@ export class EdApp extends LitElement {
     return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
   }
 
+  disconnectedCallback() {
+    document.removeEventListener('visibilitychange', this._onHide);
+    window.removeEventListener('pagehide', this._onPageHide);
+    this._clearAutosaveTimers();
+    super.disconnectedCallback();
+  }
+
+  // A view edited an input: mark the local copy ahead of GitHub (the always-
+  // visible Save icon shows its dot) and (re)arm the idle autosave.
+  _markDirty() {
+    this._dirty = true;
+    this._scheduleAutosave();
+  }
+
+  // Debounced idle autosave: reset the idle timer on every change so a burst
+  // coalesces into one save after `_autosaveSeconds` of quiet; a max-wait cap
+  // (2× the interval) guarantees a save during continuous activity so a long
+  // fight never goes unsaved. No-op when autosave is off.
+  _scheduleAutosave() {
+    if (!this._autosaveEnabled) return;
+    clearTimeout(this._autosaveTimer);
+    this._autosaveTimer = setTimeout(() => this._autosaveFire(), this._autosaveSeconds * 1000);
+    if (!this._autosaveMaxTimer) {
+      this._autosaveMaxTimer = setTimeout(() => this._autosaveFire(), this._autosaveSeconds * 2000);
+    }
+  }
+  _clearAutosaveTimers() {
+    clearTimeout(this._autosaveTimer);
+    clearTimeout(this._autosaveMaxTimer);
+    this._autosaveTimer = null;
+    this._autosaveMaxTimer = null;
+  }
+  // Fire a background save — key-gated (never prompts) and silent (no toast). A
+  // conflict is deferred (see _doSave); failures keep the dot dirty and the next
+  // change re-arms the timer.
+  _autosaveFire() {
+    this._clearAutosaveTimers();
+    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving) return;
+    this._doSave({ silent: true });
+  }
+  // Flush on tab-hide / page-unload — key-gated + silent, with keepalive so the
+  // request survives the document going away. Best-effort: nothing is lost either
+  // way (the overlay persists locally).
+  _flushSave() {
+    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving) return;
+    this._doSave({ silent: true, keepalive: true });
+  }
+
+  // Persist the autosave preferences (Settings modal) and re-arm/cancel the timer.
+  _applySettings({ enabled, seconds } = {}) {
+    this._autosaveEnabled = enabled !== false;
+    if (Number.isFinite(seconds)) this._autosaveSeconds = seconds;
+    localStorage.setItem('ed-autosave', this._autosaveEnabled ? 'on' : 'off');
+    localStorage.setItem('ed-autosave-seconds', String(this._autosaveSeconds));
+    this._settings = false;
+    if (!this._autosaveEnabled) this._clearAutosaveTimers();
+    else if (this._dirty) this._scheduleAutosave();
+  }
+
   // Manual Save button → a loud save (toast on success/failure). The background
   // save path calls `_doSave({ silent: true })` — same store, no toast noise.
   _save() {
@@ -698,20 +781,23 @@ export class EdApp extends LitElement {
   // keep-mine re-save passes the branch's current sha as the acknowledged base.
   // `silent` (background) suppresses the success/error toasts; a conflict still
   // surfaces (never silently dropped).
-  async _doSave({ silent = false, base = this._baseSha } = {}) {
+  async _doSave({ silent = false, base = this._baseSha, keepalive = false } = {}) {
     if (!this._character || this._saving) return;
     if (!this._saveKey) {
+      // Never prompt for the key from a background/flush save — those are
+      // key-gated by the caller, so this only fires on a manual Save.
       this._pendingSaveSilent = silent;
       this._keyPrompt = true;
       return;
     }
+    this._clearAutosaveTimers(); // a save is happening now — cancel any pending one
     this._saving = true;
     if (!silent) {
       this._saveError = null;
       this._saveOk = null;
     }
     try {
-      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base });
+      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
       this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
@@ -730,7 +816,10 @@ export class EdApp extends LitElement {
       // the overlay still holds the local draft, and the modal decides whether
       // the branch version wins.
       if (e instanceof SaveConflictError) {
-        this._conflict = { sha: e.sha, silent };
+        // A LOUD (manual) save surfaces the conflict modal now. A SILENT
+        // (autosave / flush-on-hide) one must NOT interrupt play — leave the
+        // overlay dirty and defer the conflict to the next explicit Save.
+        if (!silent) this._conflict = { sha: e.sha, silent };
       } else {
         // A rejected key: drop it so the next Save re-prompts.
         if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
@@ -883,7 +972,7 @@ export class EdApp extends LitElement {
                   <path d="M3 4v4h4" />
                 </svg></button>`
           : ''}
-        ${this._editMode
+        ${this._characterId
           ? html`<button
                 class="icon-btn save ${this._dirty ? 'dirty' : ''}"
                 @click=${this._save}
@@ -894,8 +983,10 @@ export class EdApp extends LitElement {
                   <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
                   <circle cx="12" cy="14" r="2" />
                   <path d="M14 4v4h-6v-4" />
-                </svg></button>
-              <button
+                </svg></button>`
+          : ''}
+        ${this._editMode
+          ? html`<button
                 class="icon-btn export"
                 @click=${this._export}
                 title="Export a copy (download)"
@@ -914,6 +1005,15 @@ export class EdApp extends LitElement {
         ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 20h16a2 2 0 0 0 2 -2v-9a2 2 0 0 0 -2 -2h-7l-2 -3h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2" />
             <path d="M9.5 10v5" /><path d="M7 12.5h5" />
+          </svg></button>
+        <button
+          class="icon-btn settings"
+          @click=${() => (this._settings = true)}
+          title="Settings (autosave)"
+          aria-label="Settings"
+        ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg></button>
         <button
           class="icon-btn theme"
@@ -958,6 +1058,14 @@ export class EdApp extends LitElement {
       ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; this._pendingSaveSilent = null; }}></ed-save-key>` : ''}
       ${this._conflict
         ? html`<ed-conflict @close=${() => (this._conflict = null)}></ed-conflict>`
+        : ''}
+      ${this._settings
+        ? html`<ed-settings
+            .enabled=${this._autosaveEnabled}
+            .seconds=${this._autosaveSeconds}
+            @ed-settings=${(e) => this._applySettings(e.detail)}
+            @close=${() => (this._settings = false)}
+          ></ed-settings>`
         : ''}
       ${this._confirmDiscard
         ? html`<ed-confirm

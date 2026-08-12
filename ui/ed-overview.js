@@ -286,7 +286,10 @@ export class EdOverview extends LitElement {
     const k = this.model?.characteristics?.karma;
     if (!k) return html`${this._pend()}${this._rollBtn(label, null, undefined, true, 'karma')}`;
     const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma · die D6`;
-    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, k.step, null, true, 'karma')}`;
+    // Rolling the Karma die spends one point, so the roll is disabled with nothing
+    // left to spend (the same guard the roll modal applies to its +D6 toggle).
+    const spendable = typeof k.available === 'number' && Number.isFinite(k.available) && k.available > 0;
+    return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, spendable ? k.step : null, null, true, 'karma')}`;
   }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
   // Disabled when there's no step yet (e.g. engine-derived combat stats). If the

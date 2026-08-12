@@ -1,11 +1,11 @@
 // ui/ed-combat.js — the Combat tab (PLAN-COMBAT-TAB Phases D–F).
 //
 // A per-encounter scratchpad over the derived model: pick an equipped weapon (or
-// Unarmed) and an attack talent, toggle combat-option / situational / blood-charm
-// chips, and roll Attack / Damage / Initiative through the shared roll modal
-// (Phase E). The engine (engine/combat.js) composes the pool; the view only
-// dispatches `ed-roll` with the pool's `step` / `resultMods` / `difficulty` /
-// `karma`.
+// leave "None" for a free-action roll) and an attack talent, toggle combat-option
+// / situational / blood-charm chips, and roll Attack / Damage / Initiative through
+// the shared roll modal (Phase E). The engine (engine/combat.js) composes the
+// pool; the view only dispatches `ed-roll` with the pool's `step` / `resultMods` /
+// `difficulty` / `karma`.
 //
 // Golden rule (Tier 1): data flows down through render, events flow up through
 // dispatch. The view never mutates state or computes game values — every number
@@ -34,6 +34,16 @@ import './ed-confirm.js';
 // inputs holds). Only the selections are cached, not mid-action state (pending
 // apply / undo / open modals).
 const SCRATCH = new Map();
+
+// Collapsible chip sections default to EXPANDED on desktop, and to collapsed on
+// narrow (mobile) screens — the same 720px breakpoint as the .top layout grid.
+// Only the initial default is viewport-driven; the player's taps win afterwards,
+// and the per-character scratchpad preserves them across tab switches.
+const MOBILE_QUERY = '(max-width: 720px)';
+const defaultCollapsed = () =>
+  typeof matchMedia !== 'undefined' && matchMedia(MOBILE_QUERY).matches
+    ? ['opts', 'sits', 'charms']
+    : [];
 
 const MISSING_IMAGE = html`
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -215,7 +225,7 @@ export class EdCombat extends LitElement {
     this._sits = [];
     this._charmsOn = [];
     this._target = '';
-    this._collapsed = ['opts'];
+    this._collapsed = defaultCollapsed();
     this._undoStack = [];
     this._damageModal = false;
     this._confirmClear = false;
@@ -328,7 +338,7 @@ export class EdCombat extends LitElement {
     this._sits = [];
     this._charmsOn = [];
     this._target = '';
-    this._collapsed = ['opts'];
+    this._collapsed = defaultCollapsed();
     this._undoStack = [];
     this._damageModal = false;
     this._confirmClear = false;
@@ -354,7 +364,6 @@ export class EdCombat extends LitElement {
     return [
       { name: 'None', category: null, damageStep: null, shortRange: null, longRange: null, image: null },
       ...equipped,
-      { name: 'Unarmed', category: 'unarmed', damageStep: 0, shortRange: null, longRange: null, image: null },
     ];
   }
   _selWeapon() {
@@ -390,8 +399,8 @@ export class EdCombat extends LitElement {
     const all = this._allActions();
     const allowed = attackTalentNamesFor(this._selWeapon()?.category);
     const list = allowed == null ? all : all.filter((o) => allowed.includes(o.name));
-    // Attack-relevant first (the weapon's talents), then the rest by step.
-    return list.sort((a, b) => (b.step ?? -1) - (a.step ?? -1));
+    // Alphabetical by name (locale-aware).
+    return list.sort((a, b) => a.name.localeCompare(b.name));
   }
   _selTalent() {
     const list = this._attackOptions();
@@ -857,7 +866,7 @@ export class EdCombat extends LitElement {
                 </select>
                 <select aria-label="Attack talent or skill" .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
                   ${this._attackOptions().length
-                    ? this._attackOptions().map((o) => html`<option value=${o.id}>${o.name}${o.kind === 'skill' ? ' · skill' : ''}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
+                    ? this._attackOptions().map((o) => html`<option value=${o.id}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
                     : html`<option value="">${w.category == null ? 'No talents or skills' : 'No matching talent/skill'}</option>`}
                 </select>
               </div>

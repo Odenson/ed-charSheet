@@ -1464,7 +1464,8 @@
         "damageStep": 4,
         "shortRange": "2-32",
         "longRange": "33-64",
-        "description": "A small, concealable crossbow firing short bolts."
+        "description": "A small, concealable crossbow firing short bolts.",
+        "image":"data/light-crossbow.png"
       },
       "effects": [
         {
@@ -1581,7 +1582,8 @@
         "damageStep": 5,
         "shortRange": "2-40",
         "longRange": "41-80",
-        "description": "A larger crossbow firing twelve-inch bolts."
+        "description": "A larger crossbow firing twelve-inch bolts.",
+        "image":"data/medium-crossbow.png"
       },
       "effects": [
         {
@@ -1959,7 +1961,8 @@
         "damageStep": 2,
         "shortRange": "2-16",
         "longRange": "17-32",
-        "description": "A flat, thin dagger balanced for throwing."
+        "description": "A flat, thin dagger balanced for throwing.",
+        "image": "data/thrown-dagger.png"
       },
       "effects": [
         {
