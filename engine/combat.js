@@ -186,11 +186,12 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
  * @param {{options:object[], situations:object[]}} args.rules  rules/combat.json
  * @param {{knockedDown?:boolean, harried?:boolean}} args.conditions
  *   model.combat.conditions
- * @returns {{attackEffects:object[], damageEffects:object[], defenseMods:Array<{source:string, name:string, value:number}>}}
+ * @returns {{attackEffects:object[], damageEffects:object[], defenseMods:Array<{source:string, name:string, value:number}>, armorMods:Array<{source:string, name:string, value:number}>}}
  *   `attackEffects`/`damageEffects` feed `attackPool`/`damagePool` (a single
  *   effect list is fine for both — each pool's `appliesToTest` picks its own
- *   targets); `defenseMods` are the informational "derived Defence + toggled
- *   mods" figures the GM reference (never folded).
+ *   targets); `defenseMods`/`armorMods` are the toggled session modifiers the
+ *   Defence & Armour block folds into the sheet's derived ratings for display
+ *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
 export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
@@ -198,12 +199,17 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   const attackEffects = [];
   const damageEffects = [];
   const defenseMods = [];
+  const armorMods = [];
 
   const addBundle = (bundle, source) => {
     for (const e of bundle?.effects ?? []) {
       if (!e || typeof e !== 'object') continue;
       if (e.type === 'defense-modifier') {
         defenseMods.push({ source, name: e.target?.name ?? 'Defence', value: opValue(e) });
+        continue;
+      }
+      if (e.type === 'armor-modifier') {
+        armorMods.push({ source, name: e.target?.name ?? 'Armour', value: opValue(e) });
         continue;
       }
       attackEffects.push(e);
@@ -228,7 +234,52 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   // Knocked Down is deliberately absent: its −3 result-mod rides `_rollTimeMods`
   // and its defence mod is already folded — never fed here.
 
-  return { attackEffects, damageEffects, defenseMods };
+  return { attackEffects, damageEffects, defenseMods, armorMods };
+}
+
+/**
+ * Fold the toggled session modifiers (defenseMods + armorMods) into the sheet's
+ * derived ratings to produce a **live** combat figure for display — mirroring how
+ * the Overview folds condition mods into a rating. Pure and derived-only: the
+ * sheet's stored `characteristics.*.value` (which already include locked
+ * conditions and equipped armour) is taken as the base; the mods ride on top.
+ * The result is rendered by the view; it is never dispatched back into the
+ * derived defence (B7 — toggled modifiers stay informational).
+ *
+ * Every rating object is `{ base, mods, delta, value }`:
+ *   - `value === null` when the sheet has no derived rating → the view's
+ *     placeholder-pill rule applies.
+ *   - `mods` is the list of the toggled mods that affect that rating.
+ *   - `delta` is `sum(mods.value)`; `value` is `base + delta`.
+ *
+ * @param {object} derived `{ physicalDefense, mysticDefense, socialDefense, physicalArmor, mysticArmor }`
+ *   plain numbers from the sheet (or null when the sheet has no such rating).
+ * @param {Array<{source:string, name:string, value:number}>} defenseMods
+ *   `collectCombatEffects().defenseMods` — toggled Defence modifiers.
+ * @param {Array<{source:string, name:string, value:number}>} armorMods
+ *   `collectCombatEffects().armorMods` — toggled Armour modifiers.
+ * @returns {{defence:object, armour:object}} keyed by rating name
+ *   (`defence.Physical`, `defence.Mystic`, `defence.Social`,
+ *   `armour.Physical`, `armour.Mystic`).
+ */
+export function foldCombatRatings(derived = {}, defenseMods = [], armorMods = []) {
+  const fold = (key, name, mods) => {
+    const base = isFiniteNum(derived[key]) ? Number(derived[key]) : null;
+    const list = (mods ?? []).filter((m) => m?.name === name);
+    const delta = list.reduce((s, m) => s + (isFiniteNum(m?.value) ? Number(m.value) : 0), 0);
+    return { base, mods: list, delta, value: base == null ? null : base + delta };
+  };
+  return {
+    defence: {
+      Physical: fold('physicalDefense', 'Physical', defenseMods),
+      Mystic: fold('mysticDefense', 'Mystic', defenseMods),
+      Social: fold('socialDefense', 'Social', defenseMods),
+    },
+    armour: {
+      Physical: fold('physicalArmor', 'Physical', armorMods),
+      Mystic: fold('mysticArmor', 'Mystic', armorMods),
+    },
+  };
 }
 
 /**

@@ -20,7 +20,7 @@
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
-import { attackPool, damagePool, collectCombatEffects, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
+import { attackPool, damagePool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { portraitUrlFor } from '../store.js';
@@ -43,7 +43,7 @@ const SCRATCH = new Map();
 const MOBILE_QUERY = '(max-width: 720px)';
 const defaultCollapsed = () =>
   typeof matchMedia !== 'undefined' && matchMedia(MOBILE_QUERY).matches
-    ? ['opts', 'sits', 'charms']
+    ? ['dab', 'opts', 'sits', 'charms']
     : [];
 
 const MISSING_IMAGE = html`
@@ -157,14 +157,34 @@ export class EdCombat extends LitElement {
     .badge.neg { color: var(--danger); }
     .badge.strain { color: var(--danger); }
     .empty { background: var(--bg-card); border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; text-align: center; font-size: 0.72rem; color: var(--muted); line-height: 1.45; }
-    .defref { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.68rem; color: var(--muted); padding: 3px 8px; margin-bottom: 6px; background: var(--bg-card); border-radius: 6px; font-variant-numeric: tabular-nums; }
-    .defref em { font-style: normal; opacity: 0.8; }
-    .defref b { color: var(--fg); font-weight: 500; }
+
+    /* Live folded Defence/Armour figures (Overview-style): tinted with the
+       danger colour while toggled session mods are active (signed delta badge). */
+    .dval.cond { color: var(--danger); }
+    .dval .delt { margin-left: 3px; font-size: 0.58rem; font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: var(--danger-bg); color: var(--danger); vertical-align: 1px; white-space: nowrap; }
 
     /* Stand-up affordance — mirrors the Overview active-effect row (§2 Stand up). */
     .standrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.68rem; color: var(--danger); padding: 4px 8px; margin-bottom: 6px; background: var(--danger-bg); border-radius: 6px; }
     .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
+
+    /* Left column: the attack card, the Defence & Armour block, then Combat
+       Modifiers — three bordered cards, stacked (same flex pattern as .rail). */
+    .left { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+    /* Defence & Armour block: derived readouts only — a value the engine hasn't
+       produced yet renders as a placeholder pill, never a fabricated number
+       (UI-GUIDELINES §5). Collapsible like the chip sections; defaults to
+       collapsed on narrow screens (owner decision), expanded on desktop. */
+    .dabhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font: 500 0.62rem/1.4 inherit; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
+    .dabhead .chev { font-size: 0.66rem; }
+    .dabrow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 0.72rem; padding: 2px 0; font-variant-numeric: tabular-nums; }
+    .dabrow .k { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 52px; flex: none; }
+    .dabrow .v { font-weight: 500; }
+    .dabrow .v .sep { color: var(--muted); font-weight: 400; margin: 0 5px; }
+    .dablk.collapsed .dabbody { display: none; }
+    .dabbody { margin-top: 4px; }
+    .mods { display: flex; flex-direction: column; }
 
     /* Placeholder pill (UI-GUIDELINES §5) — a derived value the engine hasn't
        produced yet renders dashed, never as a fabricated number. */
@@ -601,24 +621,18 @@ export class EdCombat extends LitElement {
     this._collapsed = c.includes(id) ? c.filter((x) => x !== id) : [...c, id];
   }
 
-  // Informational defence figures (B7): toggled defence mods never change the
-  // derived Defence — shown for the GM's reference only. Locked live conditions
-  // are excluded (already folded into the derived values).
-  _defenseLine() {
-    const dm = this._poolEffects().defenseMods;
-    if (!dm.length) return '';
-    const sumFor = (name) => {
-      const v = dm.filter((x) => x.name === name).reduce((s, x) => s + x.value, 0);
-      if (!v) return '';
-      return html`<b>${v > 0 ? '+' : ''}${v}</b>`;
-    };
-    const pd = this.model?.characteristics?.physicalDefense?.value;
-    const md = this.model?.characteristics?.mysticDefense?.value;
-    return html`<div class="defref" title="Derived Defence + the toggled mods — informational only, Defence is never changed">
-      <span>Defence <em>(GM ref)</em></span>
-      <span>PD ${this._rating(pd)}${sumFor('Physical')}</span>
-      <span>MD ${this._rating(md)}${sumFor('Mystic')}</span>
-    </div>`;
+  // Live folded Defence/Armour figure (Overview-style, mirroring ed-overview's
+  // `_char`): the derived rating + toggled session mods folded by the pure engine
+  // (foldCombatRatings), tinted with a signed delta badge while mods are active.
+  // Informational only (B7) — toggled mods never touch the derived Defence.
+  _combatRating(r) {
+    if (r.value == null) return this._pend();
+    const title = `Base ${r.base}${r.mods.map((m) => ` ${m.value > 0 ? '+' : '-'}${Math.abs(m.value)} (${m.source})`).join('')}`;
+    if (!r.mods.length) return html`<span class="dval" title=${title}>${r.value}</span>`;
+    const net = r.delta || 0;
+    const badge = net ? (net > 0 ? `+${net}` : `\u2212${Math.abs(net)}`) : '';
+    const origins = r.mods.map((m) => `${m.source} ${m.value > 0 ? '+' : '-'}${Math.abs(m.value)}`).join('; ');
+    return html`<span class="dval cond" title=${title}>${r.value}${badge ? html`<span class="delt" title=${`Toggled: ${origins}`}>${badge}</span>` : ''}</span>`;
   }
 
   _optSection() {
@@ -632,7 +646,7 @@ export class EdCombat extends LitElement {
       'Situational',
       'sits',
       (this._sits ?? []).length + locked,
-      html`${this._defenseLine()}${this._standUpLine()}${this._chips(sits, this._sits, 'sits', 'sit')}`,
+      html`${this._standUpLine()}${this._chips(sits, this._sits, 'sits', 'sit')}`,
     );
   }
   // Knocked Down is a live condition already folded into the sheet — the Combat
@@ -662,6 +676,56 @@ export class EdCombat extends LitElement {
       ? this._chips(charms, this._charmsOn, 'charms', 'charm')
       : html`<div class="empty">No blood charms equipped. Combat-relevant magic implants appear here when worn.</div>`;
     return this._sec('Blood charms', 'charms', (this._charmsOn ?? []).length, body);
+  }
+
+  // Defence & Armour block (owner-agreed Combat-UI change): the derived Defence
+  // ratings and Armour values used in combat sit between the attack card and the
+  // Combat Modifiers group. Purely informational (defence isn't rolled; armour is
+  // a damage soak) — derived readouts only, placeholder pills until computed.
+  // Toggled session mods fold into the shown figures as Overview-style delta
+  // badges (foldCombatRatings) — never dispatched into the derived Defence (B7).
+  // Collapsible; defaults collapsed on narrow screens.
+  _defArmourSection() {
+    const c = this.model?.characteristics ?? {};
+    const { defenseMods, armorMods } = this._poolEffects();
+    const r = foldCombatRatings(
+      {
+        physicalDefense: c.physicalDefense?.value,
+        mysticDefense: c.mysticDefense?.value,
+        socialDefense: c.socialDefense?.value,
+        physicalArmor: c.physicalArmor?.value,
+        mysticArmor: c.mysticArmor?.value,
+      },
+      defenseMods,
+      armorMods,
+    );
+    const collapsed = (this._collapsed ?? []).includes('dab');
+    return html`
+      <div class="blk dablk ${collapsed ? 'collapsed' : ''}">
+        <button class="dabhead" aria-expanded=${!collapsed} @click=${() => this._toggleSec('dab')}>
+          <span>Defence &amp; Armour</span>
+          <span class="chev" aria-hidden="true">${collapsed ? '▸' : '▾'}</span>
+        </button>
+        <div class="dabbody">
+          <div class="dabrow"><span class="k">Defence</span><span class="v">PD ${this._combatRating(r.defence.Physical)}<span class="sep">·</span>MD ${this._combatRating(r.defence.Mystic)}<span class="sep">·</span>SD ${this._combatRating(r.defence.Social)}</span></div>
+          <div class="dabrow"><span class="k">Armour</span><span class="v">Phys ${this._combatRating(r.armour.Physical)}<span class="sep">·</span>Myst ${this._combatRating(r.armour.Mystic)}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Combat Modifiers group (owner-agreed Combat-UI change): the three collapsible
+  // chip sections — Combat options, Situational, Blood charms — share one bordered
+  // card, each keeping its own header, active count, and live chips.
+  _modsGroup() {
+    return html`
+      <div class="blk mods">
+        <div class="h"><span>Combat Modifiers</span></div>
+        ${this._optSection()}
+        ${this._sitSection()}
+        ${this._charmSection()}
+      </div>
+    `;
   }
 
   // Charge attack Strain immediately (no Apply gate): add it to Health damage.
@@ -820,45 +884,46 @@ export class EdCombat extends LitElement {
       : '';
     return html`
       <div class="top">
-        <div class="blk">
-          <div class="h">
-            <span>Your attack</span>
-            <span class="r">Initiative <b>${init?.value ?? this._pend()}</b>
-              <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
-            </span>
-          </div>
+        <div class="left">
+          <div class="blk">
+            <div class="h">
+              <span>Your attack</span>
+              <span class="r">Initiative <b>${init?.value ?? this._pend()}</b>
+                <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+              </span>
+            </div>
 
-          <div class="attacktop">
-            ${this._artBox()}
-            <div class="attackrows">
-              <div class="row2">
-                <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._artOk = true; }}>
-                  ${this._weapons().map((x) => html`<option value=${x.name}>${x.name}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
-                </select>
-                <select aria-label="Attack talent or skill" .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
-                  ${this._attackOptions().length
-                    ? this._attackOptions().map((o) => html`<option value=${o.id}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
-                    : html`<option value="">${w.category == null ? 'No talents or skills' : 'No matching talent/skill'}</option>`}
-                </select>
-              </div>
-              <div class="statline">
-                <span class="k">Attack</span>
-                <span class="v">${this._stepVal(ap.step)}</span>
-                <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
-                <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>⚄</button>
-              </div>
-              <div class="statline">
-                <span class="k">Damage</span>
-                <span class="v">${this._stepVal(dp.step)}${range}${this._damageBonusBadge()}</span>
-                <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>⚄</button>
-                <span class="strain-k">Strain</span><span class="strain">${ap.strain}</span>
+            <div class="attacktop">
+              ${this._artBox()}
+              <div class="attackrows">
+                <div class="row2">
+                  <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._artOk = true; }}>
+                    ${this._weapons().map((x) => html`<option value=${x.name}>${x.name}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
+                  </select>
+                  <select aria-label="Attack talent or skill" .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
+                    ${this._attackOptions().length
+                      ? this._attackOptions().map((o) => html`<option value=${o.id}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
+                      : html`<option value="">${w.category == null ? 'No talents or skills' : 'No matching talent/skill'}</option>`}
+                  </select>
+                </div>
+                <div class="statline">
+                  <span class="k">Attack</span>
+                  <span class="v">${this._stepVal(ap.step)}</span>
+                  <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
+                  <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>⚄</button>
+                </div>
+                <div class="statline">
+                  <span class="k">Damage</span>
+                  <span class="v">${this._stepVal(dp.step)}${range}${this._damageBonusBadge()}</span>
+                  <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>⚄</button>
+                  <span class="strain-k">Strain</span><span class="strain">${ap.strain}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          ${this._optSection()}
-          ${this._sitSection()}
-          ${this._charmSection()}
+          ${this._defArmourSection()}
+          ${this._modsGroup()}
         </div>
 
         <div class="rail">
