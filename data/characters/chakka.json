@@ -284,16 +284,13 @@
   ],
   "resources": {
     "karma": {
-      "available": 17,
       "converted": 123,
       "spent": 105,
-      "fromRace": 7,
-      "legend": 861
+      "rituals": []
     },
     "legend": {
       "totalSpent": 45261,
       "totalEarnt": 45915,
-      "available": 654,
       "earned": [
         {
           "id": "msn2pwqv-xrh8a",
