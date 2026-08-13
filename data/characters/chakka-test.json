@@ -278,16 +278,13 @@
   ],
   "resources": {
     "karma": {
-      "available": 18,
       "converted": 123,
       "spent": 105,
-      "fromRace": 7,
-      "legend": 861
+      "rituals": []
     },
     "legend": {
       "totalSpent": 44661,
-      "totalEarnt": 45315,
-      "available": 654
+      "totalEarnt": 45315
     },
     "health": {
       "damage": 39,
