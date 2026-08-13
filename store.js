@@ -32,7 +32,7 @@ import {
   talentKarmaUse,
 } from './engine/characteristics.js';
 import { carriedWeight, parseWeight } from './engine/weight.js';
-import { encumbranceStage, encumbranceEffects } from './engine/encumbrance.js';
+import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -107,21 +107,44 @@ export function resolveKnack(owned, catalog = {}, skillNames = new Set(), talent
 // The character store is source info, not app code: a serverless save commits it
 // to the `character-data` branch, which the deploy workflow does not watch, so a
 // save never rebuilds the app (docs/GITHUB-SERVERLESS-SAVE.md §3). The bundle
-// ships no character data — `data/characters.json` (the grouped ed-characters/1
-// store) and the portrait images live only on that branch. On the Pages site we
-// read them LIVE from the branch so a save shows up immediately; everywhere else
-// (local dev, file://) we read the local working copies, which are gitignored
-// (see .gitignore / WORKFLOW.md).
+// ships no character data — `data/characters/<id>.json` (one raw ed-character/1
+// file per character), the discovery index `data/characters/index.json`, and the
+// portrait images live only on that branch (PLAN-SAVE-CONCURRENCY). On the Pages
+// site we read them LIVE from the branch so a save shows up immediately;
+// everywhere else (local dev, file://) we read the local working copies, which
+// are gitignored (see .gitignore / WORKFLOW.md).
 const CHARACTER_OWNER = 'odenson';
 const CHARACTER_REPO = 'ed-charSheet';
 const CHARACTER_BRANCH = 'character-data';
+const CHARACTERS_DIR = 'data/characters';
 
 function onPages() {
   return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
 }
 
-const CHARACTER_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/characters.json?ref=${CHARACTER_BRANCH}`;
-const CHARACTER_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/characters.json`;
+const CONTENTS_API = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/${CHARACTERS_DIR}`;
+const RAW_CDN = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/${CHARACTERS_DIR}`;
+
+// Normalize a contents-API `Accept: raw` ETag to the bare git blob sha — the
+// ETag equals the blob sha (confirmed 2026-08-12), wrapped in HTTP framing
+// (`"sha"` or `W/"sha"`). Strip the framing; a missing/malformed ETag yields
+// null so the save degrades to the overwrite path — never an error (plan
+// Decision 3, ETag hardening).
+export function baseFromEtag(etag) {
+  if (typeof etag !== 'string') return null;
+  const bare = etag.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
+  return /^[0-9a-fA-F]{40}$/.test(bare) ? bare.toLowerCase() : null;
+}
+
+// Parse the discovery index (ed-characters-index/1) into the picker's row list
+// `[{ id, name, portrait }]`, sorted by id for a stable order. An entry's name
+// falls back to the id; portrait stays optional (absent → the UI's name-initial
+// placeholder). The index is discovery only — never trusted for save bases.
+export function indexToRows(index) {
+  return Object.entries(index?.characters ?? {})
+    .map(([id, entry]) => ({ id, name: entry?.name ?? id, portrait: entry?.portrait ?? null }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
 
 // Resolve a `meta.portrait` path (e.g. `data/chakka.jpg`) to a loadable URL.
 // On the Pages site the portrait lives on the character-data branch like the
@@ -136,29 +159,52 @@ export function portraitUrlFor(portrait) {
   return `./${portrait}`;
 }
 
-// On the Pages site, read the character store live from the character-data
-// branch. Prefer the GitHub **contents API** (`Accept: raw`): it reads the git
-// database directly, so a just-saved commit is visible immediately. The raw CDN
-// keys its ~5-minute cache on the *path* — the `?t=` query doesn't reliably bust
-// it — so a save-then-reload can race a stale edge copy (the read-after-write
-// bug that Phase 6 surfaced). Fallbacks keep it never-worse-than-before: if the
-// API is unreachable or rate-limited (60/hr per IP, unauthenticated) fall back
-// to the raw CDN (cache-busted, eventually consistent). There is deliberately no
-// deployed-bundle fallback — the bundle ships no character data, so a failure
-// here surfaces the load error rather than masking it with stale bytes. CORS is
-// open on both hosts; the browser sets the required User-Agent.
-export async function loadCharacters() {
-  if (!onPages()) return loadJSON('./data/characters.json');
+// Discover the available characters from the discovery index
+// (data/characters/index.json, ed-characters-index/1) → `[{ id, name, portrait }]`
+// — the picker's one-fetch list. On the Pages site, read the index LIVE from the
+// character-data branch: prefer the GitHub **contents API** (`Accept: raw`; it
+// reads the git database directly, so a just-saved commit is visible immediately)
+// with the **raw CDN** as a cache-busted fallback (its ~5-minute path-keyed
+// cache can race a save-then-reload; the `?t=` query doesn't reliably bust it,
+// so the API is the primary). Elsewhere read the gitignored
+// `./data/characters/index.json` working copy. There is deliberately **no legacy
+// grouped-store fallback** (plan Decision 6): a missing index is a
+// not-yet-migrated store and surfaces a clear error, never a silent legacy read.
+export async function listCharacters() {
+  let index;
+  if (!onPages()) return indexToRows(await loadJSON(`./${CHARACTERS_DIR}/index.json`));
   try {
-    const res = await fetch(CHARACTER_API_URL, {
+    const res = await fetch(`${CONTENTS_API}/index.json?ref=${CHARACTER_BRANCH}`, {
       headers: { Accept: 'application/vnd.github.raw' },
       cache: 'no-store',
     });
-    if (res.ok) return await res.json(); // git-consistent: reflects the latest save
+    if (res.ok) index = await res.json(); // git-consistent: reflects the latest save
   } catch {
     /* network/CORS hiccup — fall through to the CDN */
   }
-  return loadJSON(`${CHARACTER_RAW_URL}?t=${Date.now()}`);
+  if (!index) index = await loadJSON(`${RAW_CDN}/index.json?t=${Date.now()}`);
+  return indexToRows(index);
+}
+
+// Read one character file: `{ character, base }` (the raw ed-character/1 entry).
+// On Pages prefer the contents API (`Accept: raw` — git-consistent) and capture
+// the **base sha from the response ETag** (confirmed == blob sha) for the save's
+// optimistic-concurrency check; fall back to the cache-busted raw CDN, which
+// carries no usable ETag ⇒ `base = null` (the save then takes the overwrite
+// path — accepted caveat, plan Decision 5). A 404 from either is an "unknown
+// character" error (thrown), never a silent legacy read.
+async function readCharacterFile(id) {
+  if (!onPages()) return { character: await loadJSON(`./${CHARACTERS_DIR}/${id}.json`), base: null };
+  try {
+    const res = await fetch(`${CONTENTS_API}/${id}.json?ref=${CHARACTER_BRANCH}`, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return { character: await res.json(), base: baseFromEtag(res.headers.get('ETag')) };
+  } catch {
+    /* network/CORS hiccup — fall through to the CDN */
+  }
+  return { character: await loadJSON(`${RAW_CDN}/${id}.json?t=${Date.now()}`), base: null };
 }
 
 const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-items.json?ref=${CHARACTER_BRANCH}`;
@@ -264,6 +310,21 @@ export function saveHealthEdits(health, id) {
 }
 
 /**
+ * Persist the character's Karma resource to the edits overlay. `resources.karma`
+ * is a set of stored *inputs* (the ledger — `converted`, lifetime gained, and
+ * `spent`, lifetime spent; see PLAN-LEGEND-KARMA-RITUAL-LOG.md). The spendable
+ * balance and the `max`/`step` figures are derived and never stored, so only the
+ * input object is written as-is. "Store only inputs" holds. A later save
+ * replaces the whole object (health precedent).
+ */
+export function saveKarmaEdits(karma, id) {
+  const edits = loadEdits(id);
+  edits.karma = karma;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
  * Persist the character's advancement inputs (ranked talents + skills) to the
  * edits overlay. Both arrays are pure input — each discipline's circle and its
  * talents' { name, rank, tier, circle }, and each skill's { name, rank, tier } —
@@ -321,7 +382,7 @@ export function saveLegendEdits(earned, id) {
 
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'advancements', 'notes', 'history', 'legend'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'karma', 'advancements', 'notes', 'history', 'legend'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -365,6 +426,15 @@ export function applyEdits(character, edits) {
       },
     };
   }
+  if (edits.karma) {
+    next = {
+      ...next,
+      resources: {
+        ...(next.resources || {}),
+        karma: { ...(next.resources?.karma || {}), ...edits.karma },
+      },
+    };
+  }
   if (edits.advancements) {
     next = { ...next, disciplines: edits.advancements.disciplines, skills: edits.advancements.skills };
   }
@@ -383,17 +453,20 @@ export function applyEdits(character, edits) {
 }
 
 /**
- * Fetch the character store (with any saved edits for `id` overlaid) and the
- * rules files. Returns `{ character, rules, store }` — the raw *inputs* the app
- * layer holds and re-derives from. Keep this separate from deriveModel so an
- * edit can rebuild the model without re-fetching. Pass a pre-fetched `store`
- * (from loadCharacters) to avoid a second fetch when the caller already loaded
- * it (startup decides the id from the store first).
+ * Fetch one character file (with any saved edits for `id` overlaid) and the
+ * rules files. Returns `{ character, rules, base }` — the raw *inputs* the app
+ * layer holds and re-derives from, plus the file's blob sha (from the read's
+ * ETag; `null` when the read carried no usable ETag — see readCharacterFile) as
+ * the concurrency token the save layer sends as `base`. Keep this separate from
+ * deriveModel so an edit can rebuild the model without re-fetching.
  */
-export async function loadCharacter(id, { store } = {}) {
-  const s = store ?? (await loadCharacters());
-  const character = s?.characters?.[id];
-  if (!character) throw new Error(`Unknown character id: ${id}`);
+export async function loadCharacter(id) {
+  const { character: fileCharacter, base } = await readCharacterFile(id);
+  const rules = await loadRules();
+  return { character: applyEdits(fileCharacter, loadEdits(id)), rules, base };
+}
+
+async function loadRules() {
   const [stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile] = await Promise.all([
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
@@ -409,9 +482,13 @@ export async function loadCharacter(id, { store } = {}) {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md)
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md)
   // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
   const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
+  // Combat options + situational effects (rules/combat.json, ed-combat/1 —
+  // PLAN-COMBAT-TAB Phase A). The Combat tab renders its chips from these and
+  // feeds the selected bundles to engine/combat.js; they are never auto-folded.
+  const combatFile = await loadJSONOptional('./rules/combat.json', { options: [], situations: [] });
   // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
@@ -423,16 +500,20 @@ export async function loadCharacter(id, { store } = {}) {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  const rules = { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile };
-  return { character: applyEdits(character, loadEdits(id)), rules, store: s };
+  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
 }
+
+// Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
+// may only override these; any other target name is ignored. Kept here (not in a
+// rule file) so the code that consumes each target and the registry stay together.
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -596,7 +677,7 @@ export function deriveModel(character, rules) {
     };
   });
 
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md):
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md):
   // a file-based, data-only list of rating overrides + effects. Only `enabled`
   // rules apply; the last enabled rule wins per rating (no merge). A rule's own
   // `effects` fold like any always-on effect, tagged `kind: 'homebrew'` so a
@@ -609,6 +690,23 @@ export function deriveModel(character, rules) {
   for (const rule of homebrewRules) {
     for (const [rating, formula] of Object.entries(rule.formula ?? {})) {
       homebrewOverrides[rating] = formula;
+    }
+  }
+  // `set` overrides (ed-homebrew/2, docs/HOMEBREW-RULES.md): a flat or race-keyed
+  // value override for a named engine target. Only targets in this registry are
+  // honoured — an unknown target is ignored (never a silent override of the wrong
+  // thing). A race-keyed value resolves against the character's race; a race
+  // absent from the map leaves the target un-overridden. Last-enabled-wins.
+  const raceName = raceEntry?.name ?? character.meta?.race ?? null;
+  const homebrewSets = {};
+  for (const rule of homebrewRules) {
+    for (const [target, value] of Object.entries(rule.set ?? {})) {
+      if (!HOMEBREW_SET_TARGETS.has(target)) continue;
+      const resolved =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? (raceName != null ? value[raceName] : undefined) // race-keyed
+          : value; // scalar
+      if (resolved !== undefined) homebrewSets[target] = resolved;
     }
   }
 
@@ -720,6 +818,18 @@ export function deriveModel(character, rules) {
   }));
   const foldedEffects = [...activeEffects, ...conditionDefenseEffects, ...encumbranceConditionEffects];
 
+  // Karma ledger (docs/PLAN-LEGEND-KARMA-RITUAL-LOG.md): `available` is DERIVED from the
+  // stored inputs `resources.karma.converted` (lifetime gained) minus `spent` (lifetime
+  // spent rolling dice), clamped to `[0, max]` — never stored. Rule-off and legacy
+  // characters simply have no ledger inputs ⇒ 0. `karmaRitualCost` (rule on) feeds both
+  // the Legend sink and the Legend-log spend rows below.
+  const karmaMax = karmaMod != null ? maxKarma(karmaMod, highestCircle, homebrewSets['karma.maxCap'] ?? null) : null;
+  const karmaAvailable =
+    karmaMax != null
+      ? Math.max(0, Math.min(karmaMax, (Number(character.resources?.karma?.converted) || 0) - (Number(character.resources?.karma?.spent) || 0)))
+      : null;
+  const karmaRitualCost = homebrewSets['karma.ritualCost'] ?? null;
+
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), foldedEffects, lookupChar),
     mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), foldedEffects, lookupChar),
@@ -737,9 +847,16 @@ export function deriveModel(character, rules) {
     karma:
       karmaMod != null
         ? {
-            max: maxKarma(karmaMod, highestCircle),
-            available: character.resources?.karma?.available ?? null,
-            step: KARMA_STEP,
+            // Homebrew Karma economy (ed-homebrew/2, docs/PLAN-HOMEBREW-KARMA.md): a race
+            // `karma.maxCap` caps the max, `karma.step` overrides the die, and
+            // `karma.ritualCost` (when present) switches the ritual to the paid
+            // Legend buy-back flow. Absent overrides ⇒ the standard values. `available`
+            // is the derived ledger clamp (converted − spent); the stored `available`
+            // input was dropped with the ledger (PLAN-LEGEND-KARMA-RITUAL-LOG.md).
+            max: karmaMax,
+            available: karmaAvailable,
+            step: homebrewSets['karma.step'] ?? KARMA_STEP,
+            ritualCost: karmaRitualCost,
           }
         : null,
   };
@@ -810,7 +927,11 @@ export function deriveModel(character, rules) {
   // tracks the sheet's actual advancements rather than the recorded `totalSpent`
   // input. Unpriced sinks (spells) stay in the reconciliation delta.
   const threadItemCatalog = threadItemsFile?.items ?? {};
-  const spent = auditLegendSpent(character, legendFile?.costs, { knacks, threadItemCatalog });
+  const spent = auditLegendSpent(character, legendFile?.costs, {
+    knacks,
+    threadItemCatalog,
+    karmaRitualCost,
+  });
   // Legend-earned log (PLAN-NOTES-TAB, decisions #1/#6): `totalEarnt` is the PURE
   // SUM of a display list — one synthesized, non-persisted virtual "Starting
   // total" row (amount = any legacy `totalEarnt` still in the branch file;
@@ -829,6 +950,33 @@ export function deriveModel(character, rules) {
   const totalEarnt = legendEarned.length
     ? legendEarned.reduce((s, e) => s + (Number(e.amount) || 0), 0)
     : null;
+  // Karma-on-Legend display rows (PLAN-LEGEND-KARMA-RITUAL-LOG.md): display-only, never
+  // stored or summed into `totalEarnt`. With the rule on (`karmaRitualCost` present),
+  // derived from the ledger — one virtual historic seed row (converted before the dated
+  // ritual log) plus one row per dated ritual event, all at the current cost, so
+  // `Σ legend = converted × cost` (exactly the audit sink above). Rule off ⇒ []. Not on
+  // `legendEarned` (that list stays earned-only for the add/delete flows).
+  const convertedKarma = Number(character.resources?.karma?.converted) || 0;
+  const karmaRituals = Array.isArray(character.resources?.karma?.rituals) ? character.resources.karma.rituals : [];
+  const hasKarmaCost = () => Number.isFinite(Number(karmaRitualCost)) && Number(karmaRitualCost) > 0;
+  const legendSpends = () => {
+    if (!hasKarmaCost() || convertedKarma <= 0) return [];
+    const eventsPoints = karmaRituals.reduce((s, r) => s + (Number(r?.points) || 0), 0);
+    const historic = convertedKarma - eventsPoints;
+    const cost = Number(karmaRitualCost);
+    return [
+      ...(historic > 0
+        ? [{ id: '__karma_historic__', date: null, virtual: true, points: historic, cost, legend: historic * cost }]
+        : []),
+      ...karmaRituals.map((r) => ({
+        id: r.id,
+        date: r.date ?? null,
+        points: Number(r?.points) || 0,
+        cost,
+        legend: (Number(r?.points) || 0) * cost,
+      })),
+    ];
+  };
   const legend =
     totalEarnt != null
       ? {
@@ -838,6 +986,7 @@ export function deriveModel(character, rules) {
           status: legendaryStatus(totalEarnt, legendBands),
           bands: legendBands,
           spent,
+          spends: legendSpends(),
         }
       : null;
 
@@ -887,6 +1036,53 @@ export function deriveModel(character, rules) {
     });
   }
 
+  // Combat surface (PLAN-COMBAT-TAB Phase C): the pieces the Combat tab renders,
+  // all derived from values already folded above — no new stored values. Attack
+  // talents resolve from the character's owned talents by canonical name (the
+  // singular catalog names the Disciplines actually grant); an unowned talent
+  // derives `step: null` so the tab shows a placeholder pill, never a fabricated
+  // number. Weapons come from the derived items restricted to the equipped
+  // `weapon` kind; melee weapons carry no range entry, so `shortRange`/`longRange`
+  // are null. The live combat conditions (Knocked Down / encumbrance Harried) are
+  // already folded into the sheet's derived ratings, so the tab can pre-select and
+  // lock those situation chips (B11) — the player must not add them a second time.
+  // `damageKarma` surfaces any Damage-test karma-use grant (B13) — e.g. the Archer
+  // ranged-weapon grant (rules/disciplines.json:57) — the way attribute tests do.
+  const COMBAT_ATTACK_TALENTS = ['Melee Weapon', 'Missile Weapon', 'Unarmed Combat', 'Throwing Weapon'];
+  const combat = {
+    attackTalents: COMBAT_ATTACK_TALENTS.map((name) => {
+      const owned = disciplines
+        .flatMap((d) => d.talents)
+        .filter((t) => t.name === name)
+        .reduce((best, t) => (best == null || t.rank > best.rank ? t : best), null);
+      return {
+        name,
+        known: owned != null,
+        rank: owned?.rank ?? null,
+        step: owned?.step ?? null,
+        dice: owned?.dice ?? '',
+        karma: owned?.karma ?? null,
+      };
+    }),
+    equippedWeapons: items
+      .filter((it) => it.equipped && it.kind === 'weapon')
+      .map((it) => ({
+        name: it.name,
+        known: it.known,
+        category: it.ref?.category ?? null,
+        damageStep: it.ref?.damageStep ?? null,
+        shortRange: it.ref?.shortRange ?? null,
+        longRange: it.ref?.longRange ?? null,
+        image: it.ref?.image ?? null,
+      })),
+    strengthStep: strStep,
+    conditions: {
+      knockedDown: character.resources?.health?.knockedDown === true,
+      harried: weightStanding.stage === ENCUMBRANCE.BURDENED,
+    },
+    damageKarma: karmaUse('Damage', activeEffects),
+  };
+
   return {
     meta: character.meta ?? {},
     legend,
@@ -923,6 +1119,15 @@ export function deriveModel(character, rules) {
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings
     // — conscious/unconscious/dead state + headroom. Derived, never stored.
     healthState: damageState(character.resources?.health ?? {}, characteristics),
+    // Combat surface (PLAN-COMBAT-TAB Phase C): attack talents, equipped weapons,
+    // Strength step, live combat conditions and the Damage-test karma grant for
+    // the Combat tab (derived, never stored). Initiative/P-M Defense/Armor/Health
+    // live in `characteristics` and `healthState` above.
+    combat,
+    // The Combat tab's rule bundles (rules/combat.json, ed-combat/1) — the chips
+    // render from data, never hardcoded numbers. Selection happens in the tab;
+    // the effects feed engine/combat.js, never the static fold.
+    combatRules: { options: combatFile?.options ?? [], situations: combatFile?.situations ?? [] },
     // Carried weight and its encumbrance standing (engine/weight.js + engine/
     // encumbrance.js): the pound total across every owned item, the count of
     // items with unrecorded weight, the carrying capacity they're judged

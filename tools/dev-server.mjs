@@ -3,15 +3,20 @@
 // statically AND implements the worker's two save routes on the same origin, so
 // the full save → read-after-write loop runs offline:
 //
-//   POST /save        { character, id } → upsert data/characters.json  (ed-characters/1)
+//   POST /save        { character, id } → write data/characters/<id>.json (ed-character/1)
 //   POST /save-items  { items, delete } → merge  data/custom-items.json (ed-items/2)
 //
 // No Cloudflare, no GitHub, no secrets: writes land in the gitignored local
 // working copies that store.js already reads off-Pages, and any/missing
 // `x-save-key` is accepted. Validation and response shapes mirror
 // tools/worker/worker.js so the app's SaveError mapping runs unchanged (the key
-// prompt still appears locally — type anything). CORS is permissive `*` because
-// this is a local-only server that writes only local files.
+// prompt still appears locally — type anything). `/save` mirrors the worker's
+// create-only index maintenance: a brand-new character file also gets an entry
+// in `data/characters/index.json` (name + portrait). Local saves take the
+// legacy overwrite path — local reads carry no ETag, so the app never sends a
+// `base` here; a malformed base is still rejected 400 for mirror-shape.
+// CORS is permissive `*` because this is a local-only server that writes only
+// local files.
 //
 // Options (CLI):  --port <n>  or  PORT=<n>   listen port (default 8000)
 //                 --lag <ms>                 simulate the Pages read-after-write
@@ -58,7 +63,7 @@ const MIME = {
 
 const MAX_BYTES = 512 * 1024;          // mirrors worker.js isValidCharacter
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/; // mirrors worker.js isValidId
-const CHARACTER_STORE = 'data/characters.json';
+const CHARACTERS_DIR = 'data/characters';
 const ITEMS_STORE = 'data/custom-items.json';
 const FRESH_CATALOG = {
   schema: 'ed-items/2',
@@ -233,14 +238,27 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
     const id = body?.id;
     if (!isValidId(id))
       return writeJson(res, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
-    const storePath = join(resolvedRoot, CHARACTER_STORE);
+    const rawBase = body?.base;
+    if (rawBase !== undefined && rawBase !== null && typeof rawBase !== 'string')
+      return writeJson(res, 400, { ok: false, error: { code: 'invalid_base', message: 'base must be a file sha string or omitted' } });
+    // Local saves run the legacy overwrite path (local reads carry no ETag, so
+    // the app never sends a base here); `base` is validated for mirror-shape.
+    const filePath = join(resolvedRoot, CHARACTERS_DIR, `${id}.json`);
+    const indexPath = join(resolvedRoot, CHARACTERS_DIR, 'index.json');
     await enqueue(async () => {
-      const store = (await readJsonFile(storePath)) ?? { schema: 'ed-characters/1', characters: {} };
-      const prior = await readRaw(storePath);
-      store.characters = store.characters ?? {};
-      store.characters[id] = body.character;
-      await writePretty(storePath, store);
-      await recordWrite(storePath, prior);
+      const prior = await readRaw(filePath);
+      const created = prior === null;
+      await writePretty(filePath, body.character);
+      await recordWrite(filePath, prior);
+      if (!created) return; // index is create-only, mirroring the worker
+      const index = (await readJsonFile(indexPath)) ?? { schema: 'ed-characters-index/1', characters: {} };
+      index.characters = index.characters ?? {};
+      if (!index.characters[id]) {
+        index.characters[id] = { name: body.character.meta?.name ?? '', portrait: body.character.meta?.portrait ?? null };
+        const priorIndex = await readRaw(indexPath);
+        await writePretty(indexPath, index);
+        await recordWrite(indexPath, priorIndex);
+      }
     });
     return writeJson(res, 200, { ok: true, commit: { sha: 'local', url: '' } });
   }
@@ -348,7 +366,7 @@ if (isMain) {
   server.listen(port, () => {
     console.log(`EDCharSheet local dev server`);
     console.log(`  site:    http://localhost:${port}/  and  http://localhost:${port}/dev/`);
-    console.log(`  save:    POST http://localhost:${port}/save  (characters.json)`);
+    console.log(`  save:    POST http://localhost:${port}/save  (data/characters/<id>.json)`);
     console.log(`  save-it: POST http://localhost:${port}/save-items  (custom-items.json)`);
     if (lag > 0) console.log(`  lag:     ${lag}ms one-shot stale-read simulation on`);
     console.log(`  open the app with the endpoint override, e.g.`);

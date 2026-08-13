@@ -22,6 +22,11 @@
 //     talent ranks"). The tier is read off the thread-item catalog passed in as
 //     opts.threadItemCatalog (rules/thread-items.json items); an owned item matching a
 //     catalog name is a thread item, and an unknown tier stays unpriced (—).
+//   • Karma on Legend (homebrew rule, docs/PLAN-HOMEBREW-KARMA.md): with the rule on
+//     (opts.karmaRitualCost = the race's Legend-per-Karma cost) the Karma ledger's
+//     lifetime `converted` is all bought with Legend, so the sink is `converted × cost`
+//     — a single figure broken into a virtual historic line plus one line per dated
+//     ritual event. Rule off (absent/zero cost) ⇒ no sink.
 // It then reconciles the modeled total against the character's recorded
 // `resources.legend.totalSpent`, surfacing the still-unmodeled delta. Spells arrive
 // later; the section list is shaped so those slot in.
@@ -309,6 +314,46 @@ export function auditLegendSpent(character, costs, opts = {}) {
       };
     });
     sections.push({ key: 'threads', kind: 'threads', label: 'Thread Items', total: sumLines(threadLines), lines: threadLines });
+  }
+
+  // --- Karma on Legend (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md): with the
+  //     rule on, `opts.karmaRitualCost` is the race's Legend-per-Karma cost and the
+  //     Karma a character holds is a ledger — `resources.karma.converted` (lifetime
+  //     Karma gained, incl. starting) — every point bought with Legend, so the sink is
+  //     `converted × cost`, a single figure independent of the dated ritual events
+  //     (`resources.karma.rituals`, which stay for display/undo). The section breaks
+  //     that figure into a virtual historic line (points from before the ritual log)
+  //     plus one line per dated event, all priced at the *current* cost, so its total
+  //     always equals `converted × cost`. Rule off (absent/zero cost) ⇒ no sink. ---
+  const karmaRitualCost = Number(opts?.karmaRitualCost);
+  const karmaLedger = character?.resources?.karma ?? {};
+  const converted = Number(karmaLedger.converted) || 0;
+  const rituals = karmaLedger.rituals ?? [];
+  if (Number.isFinite(karmaRitualCost) && karmaRitualCost > 0 && converted > 0) {
+    const eventsPoints = rituals.reduce((s, r) => s + (Number(r?.points) || 0), 0);
+    const historic = converted - eventsPoints;
+    const ritualLines = [];
+    if (historic > 0) {
+      ritualLines.push({
+        name: 'Karma conversions (historic)',
+        detail: `+${historic} Karma @ ${karmaRitualCost}/pt`,
+        cost: historic * karmaRitualCost,
+      });
+    }
+    for (const r of rituals) {
+      ritualLines.push({
+        name: r?.date ? String(r.date).slice(0, 10) : 'Karma Ritual',
+        detail: `+${Number(r?.points) || 0} Karma @ ${karmaRitualCost}/pt`,
+        cost: (Number(r?.points) || 0) * karmaRitualCost,
+      });
+    }
+    sections.push({
+      key: 'karma-rituals',
+      kind: 'karma-rituals',
+      label: 'Karma Rituals',
+      total: converted * karmaRitualCost,
+      lines: ritualLines,
+    });
   }
 
   const total = sections.reduce((s, sec) => s + (sec.total ?? 0), 0);

@@ -21,29 +21,32 @@ the build**:
 |--------|------|----------|
 | `main` | Production app | ✅ → root |
 | `dev` | Testing app | ✅ → `/dev/` |
-| `character-data` | File store for the grouped character store `data/characters.json`, the portrait image `data/chakka.jpg`, **and the shared custom-item catalog `data/custom-items.json`** | ❌ never deployed |
+| `character-data` | File store for per-character files `data/characters/<id>.json` + discovery index, the portrait images (`data/chakka.jpg`, …), **and the shared custom-item catalog `data/custom-items.json`** | ❌ never deployed |
 
 The deploy workflow listens to `main` and `dev` only, so nothing committed to
 `character-data` ever triggers a rebuild or a Pages deployment. The branch exists
-for one reason: to hold the live data — the grouped store
-`data/characters.json` (`{ schema: "ed-characters/1", characters: { "<id>": { …
-} } }`) and the custom-item catalog `data/custom-items.json` (`ed-items/2`) —
+for one reason: to hold the live data — one raw `ed-character/1` file per
+character at `data/characters/<id>.json` plus a create-only discovery index
+`data/characters/index.json` (`ed-characters-index/1`), and the custom-item
+catalog `data/custom-items.json` (`ed-items/2`) —
 committed by the serverless save target (docs/GITHUB-SERVERLESS-SAVE.md) on the
 app's behalf, alongside the portrait image each entry references via
 `meta.portrait`. The legacy single-file `data/character.json` was **removed at
-the v1.6.0 promotion**; the grouped store is the only character save target, and
-`data/custom-items.json` is the only custom-item target.
+the v1.6.0 promotion**, and the grouped `data/characters.json` store was retired
+by the per-character split (docs/PLAN-SAVE-CONCURRENCY.md); the per-character
+files + index are the only character save targets.
 
 Both environments **source the character detail from this one branch**: on the
-Pages site the app reads `data/characters.json` live from `character-data` —
+Pages site the app reads `data/characters/<id>.json` (and the index) live from
+`character-data` —
 preferring the GitHub contents API (git-consistent, so a fresh save shows up
 immediately), falling back to the raw CDN
 (docs/GITHUB-SERVERLESS-SAVE.md §4.5); locally it reads the gitignored working
-copy (see "Local character copies" below). The portrait is read live from the
+copies (see "Local character copies" below). The portrait is read live from the
 same branch's raw CDN. Because `/` and `/dev/` read the same branch, a save
 shows up identically in both — and a save never rebuilds either one. The app
-bundles ship **no character data**: `data/characters.json`, `data/custom-items.json`
-and the portrait are gitignored so they stay out of every deploy (local working
+bundles ship **no character data**: `data/characters/`, `data/custom-items.json`
+and the portraits are gitignored so they stay out of every deploy (local working
 copies only).
 
 **The fold job — the one exception to "never a build input."** The workflow
@@ -164,23 +167,29 @@ entirely while reconnecting the histories, then push.
   asset and `fetch` paths in the app must be relative (`./data/...`,
   `./engine/...`), never root-absolute (`/data/...`). This keeps the same build
   working at both the root and the subpath.
-- **Saves never rebuild the app.** The serverless save target upserts
-  `characters[id]` in `data/characters.json` on the dedicated `character-data`
+- **Saves never rebuild the app.** The serverless save target writes
+  `data/characters/<id>.json` (per-character files + create-only index) on the
+  dedicated `character-data`
   branch — a file store, not a build input (see "The `character-data` branch"
   above and docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed. The one
   exception: a **custom-item** save (via `/save-items`) triggers the fold job,
   which mirrors the catalog into `rules/custom-items.json` **on `dev`** — a
   build input — so `/dev/` rebuilds while `main` stays untouched
   (docs/PLAN-CUSTOM-ITEMS.md §3).
-- **Local character copies.** `data/characters.json`, `data/custom-items.json`
-  and the portrait image (`data/chakka.jpg`) are gitignored (see `.gitignore`):
+- **Local character copies.** `data/characters/` (per-character files + index),
+  `data/custom-items.json`
+  and the portrait images (e.g. `data/chakka.jpg`) are gitignored (see
+  `.gitignore`):
   they live on `character-data`, not in the bundle. Local dev / `file://` reads
   the working copies from the working tree. After a fresh clone, fetch the latest
-  with `git show character-data:data/characters.json > data/characters.json` (and
-  likewise for `data/custom-items.json` and the portrait) — or just rely on the
-  branch live-read on the Pages site. Local custom-item editing works off the
-  working copy exactly like character editing; a save commits it to the branch.
+  with `git show character-data:data/characters/index.json > data/characters/index.json`
+  and `git show character-data:data/characters/<id>.json > data/characters/<id>.json`
+  (and
+  likewise for `data/custom-items.json` and the portraits) — or just rely on the
+  branch live-read on the Pages site (or `npm run dev:sync`). Local custom-item
+  editing works off the working copy exactly like character editing; a save
+  commits it to the branch.
 - **What gets deployed:** the static app (`index.html`, `ui/`, `engine/`,
   `data/`, `rules/`, assets). Excluded: `tools/`, `node_modules/`, `package*.json`,
   `*.xlsx`, and anything gitignored (source spreadsheet, rulebook extracts,
-  talent prose, `data/characters.json`, the portrait image).
+  talent prose, `data/characters/`, the portrait images).

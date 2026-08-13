@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Combat Tab — UI mock</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 1rem 1rem 1.5rem;
+    font: 400 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: light-dark(#f4f5f7, #12151b);
+    color: light-dark(#111418, #f0f3f7);
+  }
+  :root {
+    --card: light-dark(#ffffff, #232833);
+    --bg-card: light-dark(#f1f2f5, #1b1f27);
+    --chip: light-dark(#f7f8fa, #1b1f27);
+    --border: light-dark(#e2e5ea, #2c313b);
+    --muted: light-dark(#5a6472, #93a0b3);
+    --accent: light-dark(#7a3e12, #d9944e);
+    --accent-bg: light-dark(#f6e9dc, #3a2a17);
+    --karma: light-dark(#3d6b4a, #82c39a);
+    --danger: light-dark(#c0392b, #e06557);
+    --danger-bg: light-dark(#fbe9e7, #3a1f1c);
+    --blood: light-dark(#a1352b, #e0736a);
+    --blood-bg: light-dark(#f8e7e4, #3a201d);
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; }
+  .banner { font-size: 0.72rem; color: var(--muted); text-align: center; margin-bottom: 12px; }
+  .banner b { color: var(--accent); font-weight: 500; }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 14px; overflow-x: auto; }
+  .tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; font-size: 0.88rem; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab .i { color: var(--accent); }
+  .tab[aria-selected="true"] { color: light-dark(#111418, #f0f3f7); font-weight: 500; border-bottom-color: var(--accent); }
+
+  .blk { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+  .h .r { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.68rem; display: inline-flex; align-items: center; gap: 6px; }
+  .h .r b { color: var(--accent); }
+  select { font: inherit; font-size: 0.8rem; width: 100%; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--chip); color: inherit; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
+
+  .top { display: grid; grid-template-columns: 1fr 240px; gap: 10px; align-items: start; }
+  @media (max-width: 720px) { .top { grid-template-columns: 1fr; } }
+  .rail { display: flex; flex-direction: column; gap: 10px; }
+
+  /* weapon image: a square as tall as the dropdowns + Attack + Damage rows.
+     Grid (not flex) so the auto column derives its width from the stretched height.
+     The img is absolutely positioned (intrinsic size never inflates the row) and
+     object-fit: contain shrinks it to fit. */
+  .attacktop { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: stretch; }
+  .attackrows { min-width: 0; display: flex; flex-direction: column; }
+  .artbox { position: relative; aspect-ratio: 1; height: 100%; border: 1px dashed var(--border); border-radius: 8px; background: var(--bg-card); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--muted); overflow: hidden; }
+  .artbox img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .artbox svg { width: 30px; height: 30px; opacity: 0.6; }
+  .artbox .cap { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .statline { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.8rem; border-top: 1px solid var(--border); }
+  .statline .k { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 54px; flex: none; }
+  .statline .v { flex: 1; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.72rem; flex: none; padding: 0; }
+
+  .vs { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--muted); }
+  .vs input { width: 46px; font: inherit; font-size: 0.8rem; font-weight: 500; text-align: right; color: light-dark(#111418, #f0f3f7); background: var(--chip); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+  .strain-k { margin-left: 14px; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: none; }
+  .strain { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--danger); flex: none; min-width: 14px; text-align: right; }
+
+  .dtcol .cur { display: flex; align-items: center; gap: 8px; }
+  .dtcol .curdmg { width: 62px; font: inherit; font-size: 0.95rem; font-weight: 500; text-align: right; color: light-dark(#111418, #f0f3f7); background: var(--chip); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
+  .dtcol .thr { font-size: 0.68rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .dtcol .dtbtns { display: flex; gap: 6px; margin-top: 9px; }
+  .status { font-size: 0.6rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .status.warn { background: var(--danger-bg); color: var(--danger); }
+
+  /* combat log — a view of the device-local Roll Log (store-rolllog.js) */
+  .clear { font: inherit; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
+  .clear:hover { color: var(--danger); border-color: var(--danger); }
+  .log { display: flex; flex-direction: column; max-height: 320px; overflow: auto; }
+  .logrow { display: flex; gap: 7px; align-items: baseline; font-size: 0.72rem; padding: 4px 0; border-top: 1px solid var(--border); }
+  .logrow:first-child { border-top: none; }
+  .logrow .lt { flex: none; width: 14px; text-align: center; color: var(--accent); font-size: 0.7rem; }
+  .logrow .lx { min-width: 0; color: var(--muted); line-height: 1.35; }
+  .logrow .lx b { color: light-dark(#111418, #f0f3f7); font-weight: 500; }
+  .logrow .lx .hit { color: var(--karma); font-weight: 500; }
+  .logrow .lx .miss { color: var(--danger); font-weight: 500; }
+  .logrow .lx .mods { color: var(--muted); }
+  .logempty { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+
+  .sec { margin-top: 8px; }
+  .sechead { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 0.62rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; }
+  .sechead .chev { font-size: 0.66rem; }
+  .sechead .cnt { color: var(--accent); margin-left: 5px; }
+  .secbody { margin-top: 6px; }
+  .sec.collapsed .secbody { display: none; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--chip); color: inherit; cursor: pointer; user-select: none; }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .chip .star { color: var(--accent); }
+  .chip.charm[aria-pressed="true"] { border-color: var(--blood); background: var(--blood-bg); color: var(--blood); }
+  .chip.charm[aria-pressed="true"] .star { color: var(--blood); }
+  .badge { font-size: 0.56rem; padding: 0 4px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .chip[aria-pressed="true"] .badge { border-color: currentColor; }
+  .badge.pos { color: var(--karma); }
+  .badge.neg { color: var(--danger); }
+  .badge.strain { color: var(--danger); }
+  .restricted { opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">UI mock — <b>Combat tab</b> at full tab width. Weapon image + attack builder on the left; <b>Damage taken</b> and a device-local <b>Combat log</b> on the right. Roll (⚄) to fill the log — the active options are summarized on the roll line. Representative numbers, no engine.</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab"><span class="i">▤</span> Overview</button>
+    <button class="tab" role="tab"><span class="i">◈</span> Disciplines</button>
+    <button class="tab" role="tab"><span class="i">✦</span> Spells</button>
+    <button class="tab" role="tab"><span class="i">⚔</span> Equipment</button>
+    <button class="tab" role="tab"><span class="i">❋</span> Notes</button>
+    <button class="tab" role="tab" aria-selected="true"><span class="i">◎</span> Combat</button>
+  </div>
+
+  <div class="mock">
+    <div class="top">
+      <div class="blk">
+        <div class="h"><span>Your attack</span><span class="r">Initiative <b>7</b> <button class="roll" data-role="init" title="Roll initiative">⚄</button></span></div>
+
+        <div class="attacktop">
+          <div class="artbox" title="Weapon image (missing)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <circle cx="8.5" cy="9" r="1.5" />
+              <path d="M4 17l4.5-4.5 3.5 3.5 3-3L20 16" />
+            </svg>
+            <span class="cap">no image</span>
+          </div>
+          <div class="attackrows">
+            <div class="row2">
+              <select class="weapon">
+                <option data-dmg="9">Broadsword · dmg 5</option>
+                <option data-dmg="7">Beer Mug of Brawling ✦ · dmg 3</option>
+                <option data-dmg="12">Elven Warbow · dmg 5</option>
+                <option data-dmg="6">Unarmed · dmg 0</option>
+              </select>
+              <select class="talent">
+                <option data-step="8">Melee Weapon · 8</option>
+                <option data-step="9">Unarmed Combat · 9</option>
+                <option data-step="7">Missile Weapon · 7</option>
+              </select>
+            </div>
+            <div class="statline">
+              <span class="k">Attack</span>
+              <span class="v atkv">Step 8 · D10+D6</span>
+              <span class="vs">vs <input class="tgt" type="number" placeholder="#" value="11" /></span>
+              <button class="roll" data-role="atk" title="Roll attack">⚄</button>
+            </div>
+            <div class="statline">
+              <span class="k">Damage</span>
+              <span class="v dmgv">Step 9 · D8+2D6</span>
+              <button class="roll" data-role="dmg" title="Roll damage">⚄</button>
+              <span class="strain-k">Strain</span><span class="strain">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec"><div class="sechead"><span>Combat options<span class="cnt"></span></span><span class="chev">▾</span></div><div class="secbody"><div class="chips opts"></div></div></div>
+        <div class="sec"><div class="sechead"><span>Situational<span class="cnt"></span></span><span class="chev">▾</span></div><div class="secbody"><div class="chips sits"></div></div></div>
+        <div class="sec"><div class="sechead"><span>Blood charms<span class="cnt"></span></span><span class="chev">▾</span></div><div class="secbody"><div class="chips charms"></div></div></div>
+      </div>
+
+      <div class="rail">
+        <div class="blk dtcol">
+          <div class="h"><span>Damage taken</span><span class="status" id="hstatus">Unhurt</span></div>
+          <div class="cur"><span class="k" style="font-size:0.62rem;text-transform:uppercase;color:var(--muted)">Current</span><input class="curdmg" type="number" value="0" /></div>
+          <div class="thr">35 unconscious<br />43 death</div>
+          <div class="dtbtns">
+            <button class="roll" data-role="take" title="Take damage — opens the damage modal in the app">✚</button>
+            <button class="roll" data-role="recover" title="Recovery test — heals the Toughness Effect result">⚄</button>
+          </div>
+        </div>
+
+        <div class="blk">
+          <div class="h"><span>Combat log</span><button class="clear">clear</button></div>
+          <div class="log"><div class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Roll Log).</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const OPTIONS = [
+    { name: "Aggressive Attack", strain: 1, atk: 3, dmg: 3, def: -3, note: "+3 atk/dmg, −3 P/M Def" },
+    { name: "Attacking to Stun", strain: 0, note: "may knock down; no real damage" },
+    { name: "Called Shot", strain: 0, atk: -3, note: "−3 atk; hits chosen area" },
+    { name: "Defensive Stance", strain: 0, note: "+3 P/M Def, −3 all tests" },
+    { name: "Jump Up", strain: 2, note: "stand + standard action" },
+    { name: "Splitting Movement", strain: 1, note: "move/action/move; Harried" },
+    { name: "Shattering a Shield", strain: 1, note: "break a shield" },
+    { name: "Tail Attack", strain: 0, restricted: 1, note: "t'skrang: extra Unarmed attack, −2 all" },
+  ];
+  const SITUATIONS = [
+    { name: "Blindsided", note: "−2 Def" },
+    { name: "Partial Cover", note: "+2 Def" },
+    { name: "Full Cover", note: "Def NA" },
+    { name: "Partial Darkness", act: -2, note: "−2 sight actions" },
+    { name: "Full Darkness", act: -4, note: "−4 sight actions" },
+    { name: "Harried", act: -2, note: "−2 act, −2 Def" },
+    { name: "Heavy Impaired Move", act: -4, note: "−4 act" },
+    { name: "Knocked Down", act: -3, note: "−3 act, −3 Def" },
+    { name: "Long Range", act: -2, note: "−2 act" },
+    { name: "Surprised", note: "no action; −3 Def" },
+  ];
+  const CHARMS = [
+    { name: "Desperate Blow", atk: 6, note: "+6 to your next Attack test" },
+    { name: "Absorb Blow", note: "absorbs next 12 damage, then destroyed", tag: "12 abs" },
+    { name: "Initiative Booster", note: "+1 Initiative per Strain", tag: "+1/str" },
+    { name: "Garlen Stone", note: "spend a Recovery test to heal a Wound", tag: "heal wnd" },
+  ];
+  const dice = (s) => ({6:"D8+D6",7:"D12",8:"D10+D6",9:"D8+2D6",11:"D10+D8",12:"D10+D8+D6",13:"D12+D10",14:"2D10+D6",15:"D12+D10+D6",17:"2D10+D8"}[s] || ("Step "+s));
+
+  function badges(o) {
+    const b = [];
+    if (o.strain) b.push(`<span class="badge strain">${o.strain}⚡</span>`);
+    if (o.atk) b.push(`<span class="badge pos">+${o.atk} atk</span>`);
+    if (o.dmg) b.push(`<span class="badge pos">+${o.dmg} dmg</span>`);
+    if (o.act) b.push(`<span class="badge neg">${o.act} act</span>`);
+    if (o.def) b.push(`<span class="badge neg">${o.def} def</span>`);
+    if (o.tag) b.push(`<span class="badge">${o.tag}</span>`);
+    return b.join(' ');
+  }
+  const dataAttrs = (o) => [o.atk&&`data-atk="${o.atk}"`, o.dmg&&`data-dmg="${o.dmg}"`, o.act&&`data-act="${o.act}"`, o.strain&&`data-strain="${o.strain}"`].filter(Boolean).join(' ');
+  const chip = (o, cls, star) => `<button class="chip ${cls||''}${o.restricted?' restricted':''}" data-name="${o.name}" ${dataAttrs(o)} aria-pressed="false" title="${o.note}">${star?'<span class="star">✦</span> ':''}${o.name} ${badges(o)}</button>`;
+
+  const root = document.querySelector('.mock');
+  root.querySelector('.opts').innerHTML = OPTIONS.map(o => chip(o)).join('');
+  root.querySelector('.sits').innerHTML = SITUATIONS.map(o => chip(o)).join('');
+  root.querySelector('.charms').innerHTML = CHARMS.map(o => chip(o, 'charm', true)).join('');
+
+  root.addEventListener('click', (e) => {
+    const c = e.target.closest('.chip'); if (c) { press(c); recompute(); return; }
+    if (e.target.closest('.clear')) { root.querySelector('.log').innerHTML = '<div class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Roll Log).</div>'; return; }
+    const sh = e.target.closest('.sechead'); if (sh) { const s = sh.closest('.sec'); sh.querySelector('.chev').textContent = s.classList.toggle('collapsed') ? '▸' : '▾'; return; }
+    const r = e.target.closest('.roll'); if (r) { doRoll(r.dataset.role); return; }
+  });
+  root.querySelectorAll('select').forEach(s => s.addEventListener('change', recompute));
+  root.querySelector('.curdmg').addEventListener('input', updateStatus);
+  const press = (el) => el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+
+  const activeNames = () => [...root.querySelectorAll('.chip[aria-pressed="true"]')].map(c => c.dataset.name);
+  function modSummary() { const m = activeNames(); return m.length ? ` · <span class="mods">${m.join(', ')}</span>` : ''; }
+
+  function log(icon, html) {
+    const box = root.querySelector('.log');
+    const empty = box.querySelector('.logempty'); if (empty) empty.remove();
+    const row = document.createElement('div');
+    row.className = 'logrow';
+    row.innerHTML = `<span class="lt">${icon}</span><span class="lx">${html}</span>`;
+    box.prepend(row);
+  }
+
+  function recompute() {
+    const atkBase = +root.querySelector('.talent').selectedOptions[0].dataset.step;
+    const dmgBase = +root.querySelector('.weapon').selectedOptions[0].dataset.dmg;
+    let atk = atkBase, dmg = dmgBase, strain = 0;
+    const count = { opts: 0, sits: 0, charms: 0 };
+    root.querySelectorAll('.chip[aria-pressed="true"]').forEach(c => {
+      atk += (+c.dataset.atk || 0) + (+c.dataset.act || 0);
+      dmg += (+c.dataset.dmg || 0);
+      strain += (+c.dataset.strain || 0);
+      const grp = c.closest('.opts') ? 'opts' : c.closest('.sits') ? 'sits' : 'charms';
+      count[grp]++;
+    });
+    root.querySelector('.atkv').textContent = `Step ${atk} · ${dice(atk)}`;
+    root.querySelector('.dmgv').textContent = `Step ${dmg} · ${dice(dmg)}`;
+    root.querySelector('.strain').textContent = strain;
+    setCnt('.opts', count.opts, 'on'); setCnt('.sits', count.sits, 'on'); setCnt('.charms', count.charms, 'active');
+  }
+  function setCnt(sel, n, word) { root.querySelector(sel).closest('.sec').querySelector('.cnt').textContent = n ? ` · ${n} ${word}` : ''; }
+
+  function updateStatus() {
+    const d = +root.querySelector('.curdmg').value || 0;
+    const s = root.querySelector('#hstatus');
+    let word = 'Unhurt', warn = false;
+    if (d >= 43) { word = 'Dead'; warn = true; }
+    else if (d >= 35) { word = 'Unconscious'; warn = true; }
+    else if (d > 0) { word = 'Conscious'; }
+    s.textContent = word; s.classList.toggle('warn', warn);
+  }
+
+  function doRoll(role) {
+    if (role === 'init') { const r = 4 + Math.floor(Math.random()*10); log('⚄', `Initiative Step 7 → <b>${r}</b>`); return; }
+    if (role === 'atk') {
+      const step = +root.querySelector('.atkv').textContent.match(/Step (\d+)/)[1];
+      const roll = 4 + Math.floor(Math.random() * step * 1.4);
+      const tgt = root.querySelector('.tgt').value;
+      const verdict = tgt ? ` vs ${tgt} — <span class="${roll >= +tgt ? 'hit' : 'miss'}">${roll >= +tgt ? 'Hit' : 'Miss'}</span>` : ' (GM adjudicates)';
+      log('⚔', `Attack Step ${step} → <b>${roll}</b>${verdict}${modSummary()}`);
+      return;
+    }
+    if (role === 'dmg') {
+      const step = +root.querySelector('.dmgv').textContent.match(/Step (\d+)/)[1];
+      const roll = 3 + Math.floor(Math.random() * step * 1.3);
+      const strain = +root.querySelector('.strain').textContent;
+      const strainNote = strain ? ` · <span class="mods">${strain} strain</span>` : '';
+      log('⚄', `Damage Step ${step} → <b>${roll}</b> to target${strainNote}`);
+      return;
+    }
+    if (role === 'take') { log('✚', `Take-damage modal opened`); return; }
+    if (role === 'recover') { log('⚄', `Recovery test rolled — heals damage`); return; }
+  }
+  recompute();
+</script>
+</body>
+</html>

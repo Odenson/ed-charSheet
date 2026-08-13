@@ -102,7 +102,7 @@ new talents/spells becomes adding **data**, not code.
 │  - Action executor                                            │
 ├──────────────────────────────────────────────────────────────┤
 │  Data Layer                                                   │
-│  - character.json   (this character's data)                  │
+│  - data/characters/<id>.json + index (character inputs)       │
 │  - rules/*.json     (game reference: steps, talents, races…) │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -116,7 +116,7 @@ The golden rule: **data flows down through render; events flow up through
 
 Two kinds of data, kept strictly separate.
 
-### 4.1 Character data (`character.json`) — per character, editable
+### 4.1 Character data (`data/characters/<id>.json`) — per character, editable
 The character's own facts. Human-friendly nested JSON that the app flattens
 into the property store at load:
 
@@ -282,7 +282,7 @@ overlay** for that character — only the inputs the player changed
 (`{ meta, items, wealth }`), never a whole snapshot. Every edit writes it
 instantly — no permissions, survives refresh, works on every browser and
 offline. At load the overlay is merged onto the freshly-fetched store entry
-(`characters[id]` in `data/characters.json`, §7.5), which stays the source of
+(`characters[id]` — the per-character file `data/characters/<id>.json`, §7.5), which stays the source of
 truth for everything untouched. "Store only inputs, never derived" holds — the
 overlay carries raw inputs only.
 
@@ -315,7 +315,7 @@ browser (Firefox / Safari / mobile), not just Chromium.
   syncs across devices; the export is a point-in-time copy the player keeps or
   re-imports. It carries no dirty tracking of its own.
 - **Formatting note.** Serializing normalizes JSON to 2-space, so hand-compacted
-  single-line objects in `character.json` re-expand once (semantically identical
+  single-line objects in a character file re-expand once (semantically identical
   — a one-time diff). Pre-normalizing the file removes that churn.
 
 > **Retired:** the earlier Chromium-only **File System Access** save
@@ -324,7 +324,7 @@ browser (Firefox / Safari / mobile), not just Chromium.
 > the portable download replaces it — simpler, and no longer Chromium-gated.
 
 ### 7.3 Save targets — status
-State is *just* the character entries in the grouped store, so each Save target
+State is *just* the character entries (one per-character file in the store), so each Save target
 is additive, not a rewrite. What shipped and what stayed on the shelf:
 
 | Strategy | Status | Notes |
@@ -385,18 +385,26 @@ holds the repo-scoped GitHub token in the platform's secret store, does the
 GET-SHA → PUT-commit to the dedicated `character-data` branch, and the app reads
 the committed data live at runtime (`store.js`). The deploy workflow watches
 `main` and `dev` only, so a save never rebuilds the app. The client sees one
-`200` (with the commit URL) or one typed error; the `409` retry lives in the
-worker.
+`200` (with the commit URL) or one typed error; a conflicting save (`409
+stale_base`) is surfaced to the player as a keep-mine/take-theirs conflict
+rather than a retried or lost write (the worker's bounded retry applies only to
+legacy no-base callers).
 
-**Multi-character (shipped, v1.6.0).** Characters are grouped in a single store,
-`data/characters.json` (`{ schema: "ed-characters/1", characters: { "<id>": {
-… ed-character/1 entry … } } }`). A save always carries an `id` (required since
-v1.6.0) and the worker upserts `characters[id]` (GET the store → replace the
-entry → PUT the whole file). The app reads the store once — one fetch discovers
-**and** loads every character — and the first-run picker lists the store's ids
-(docs/PLAN-MULTI-CHARACTER.md). The legacy `data/character.json` and the worker's
-no-`id` path were **removed at the v1.6.0 promotion** — the grouped store is the
-only save target.
+**Multi-character (shipped, v1.6.0; per-character files since the concurrency
+split).** Each character is its **own file** `data/characters/<id>.json` (a raw
+`ed-character/1` entry — no grouped wrapper), discovered through a small
+create-only index `data/characters/index.json`
+(`{ schema: "ed-characters-index/1", characters: { "<id>": { name, portrait? } } }`).
+A save always carries an `id` (required since v1.6.0); the worker writes
+`data/characters/<id>.json` with an optimistic-concurrency check — the client
+sends `base` (the file's blob sha from the read ETag) and a stale base returns
+`409 stale_base`, surfacing a keep-mine/take-theirs conflict instead of a silent
+lost write (docs/PLAN-SAVE-CONCURRENCY.md). The index row is ensured only on
+create, so saves never read or rewrite it (renames lag — the file's `meta.name`
+is authoritative). The app fetches the index once to list characters, then loads
+one file per character. The grouped `ed-characters/1` store was **retired** with
+the split; the legacy `data/character.json` and the worker's no-`id` path were
+**removed at the v1.6.0 promotion**.
 
 App side: `store-server.js` (`saveServer`) is the target; the `SAVE_KEY` is
 entered via a key-prompt on first save and held **in memory only** (never
@@ -414,7 +422,7 @@ and its runbook.
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
-  store.js            # loads the grouped character store (data/characters.json) + rules/*.json, builds the view-model (pure)
+  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure)
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
   store-server.test.js# node --test (see `npm test`)
@@ -440,12 +448,14 @@ and its runbook.
     #          dddice.js (optional 3D dice adapter)
   data/
     changelog.json    # feature changelog (shipped history)
-    # characters.json (the grouped store) and chakka.jpg are NOT bundle files:
-    # they live on the character-data branch and are read live on the Pages
+    # data/characters/ (one <id>.json per character + index.json) and the
+    # portraits (chakka.jpg …) are NOT bundle files: they live on the
+    # character-data branch and are read live on the Pages
     # site (see §7.5 / docs/GITHUB-SERVERLESS-SAVE.md). Gitignored local working
     # copies exist for local dev / file://. The portrait is the repo image
     # referenced by each entry's meta.portrait (docs/UI-GUIDELINES.md §6). The
-    # legacy data/character.json was removed at the v1.6.0 promotion.
+    # legacy data/character.json and the grouped data/characters.json were
+    # removed (v1.6.0 promotion / per-character split).
   rules/
     steps.json attributes.json characteristics.json talents.json
     disciplines.json races.json skills.json items.json
@@ -520,9 +530,11 @@ and its runbook.
 - **Persistence — DECIDED & SHIPPED: one Save → GitHub, over an autosave overlay,
   plus a portable Export.** A per-character localStorage edits overlay
   (`ed-character-edits:${id}`, always on, every browser) is the resilient
-  autosave *beneath* the primary Save, which upserts `characters[id]` in the
-  grouped `data/characters.json` (`ed-characters/1`) straight to the
-  `character-data` branch via the serverless worker; on success the overlay
+  autosave *beneath* the primary Save, which writes `data/characters/<id>.json`
+  (raw `ed-character/1`, per-character files + a create-only index,
+  docs/PLAN-SAVE-CONCURRENCY.md) straight to the `character-data` branch via the
+  serverless worker with a per-file optimistic-concurrency check (stale saves
+  surface a keep-mine/take-theirs conflict); on success the overlay
   reconciles so the live branch read wins. A portable **Export** download is the
   local backup. The earlier Chromium-only File System Access save is
   **retired**. See §7.
@@ -542,8 +554,10 @@ and its runbook.
 - **Scope — DECIDED: single character (Chakka).** Data layout and UI target one
   character for now; the `character.json` structure stays clean enough to
   generalize to multi-character later without a rewrite. *(Updated 2026-08-07:
-  multi-character loading landed — the grouped `data/characters.json` store with
-  a first-run picker, docs/PLAN-MULTI-CHARACTER.md; a delete-character feature
+  multi-character loading landed with a first-run picker,
+  docs/PLAN-MULTI-CHARACTER.md; the grouped store shipped then was retired by
+  the per-character split + concurrency check 2026-08-12,
+  docs/PLAN-SAVE-CONCURRENCY.md; a delete-character feature
   remains future work.)*
 - **Cascade — DECIDED: recompute-all, not a dependency graph.** For one
   character, a pure `derive(inputs) → derived` that recomputes everything is

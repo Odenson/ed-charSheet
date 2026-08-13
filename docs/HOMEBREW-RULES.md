@@ -18,7 +18,7 @@ or editing a rule. The active build plan lives in
 
 | Piece | File / location | Schema |
 |---|---|---|
-| Rules file | `rules/homebrew.json` | `ed-homebrew/1` |
+| Rules file | `rules/homebrew.json` | `ed-homebrew/2` |
 | Loading | `store.js` `loadCharacter` — optional (`loadJSONOptional`, knacks/thread-items precedent) | — |
 | Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v3 |
 | Build plan | `docs/PLAN-HOMEBREW.md` | — |
@@ -31,7 +31,7 @@ Top-level shape:
 
 ```jsonc
 {
-  "schema": "ed-homebrew/1",                 // Tier-1: don't rename fields
+  "schema": "ed-homebrew/2",                 // Tier-1: don't rename fields
   "source": "… provenance note …",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "note": "… file-level note (optional, documentation only) …",
@@ -65,6 +65,7 @@ Top-level shape:
 | `enabled` | yes | yes | Global toggle: `true` applies the rule to every character. |
 | `formula` | no | yes | Replaces the standard computation for the named ratings (§3). |
 | `effects` | no | yes | Taxonomy effects merged into the active-effects fold (§5). |
+| `set` | no | yes | **v2:** override a registry target with a scalar or race-keyed value (§5.5). |
 | `note` | no | no | Documentation only; the engine ignores it. |
 
 ### 2.1 The `id`
@@ -170,6 +171,46 @@ for the same rating, the later rule in the `rules` array wins.
 
 ---
 
+## 5.5 `set` — value overrides (v2)
+
+`formula` computes a *rating* as a term sum; it cannot express a **flat
+constant**, has **no race-keyed values**, and only targets the health ratings.
+`set` (ed-homebrew/2) fills those gaps: it overrides a **named engine target**
+with a scalar or a **race-keyed map**.
+
+```jsonc
+"set": {
+  "karma.step":   { "Dwarf": 4, "Human": 5, "Windling": 6, … },  // race-keyed
+  "karma.maxCap": 25,                                             // or a scalar
+  "karma.ritualCost": { "Human": 6, … }
+}
+```
+
+- **Value forms.** A **scalar** applies to every character; a **race-keyed map**
+  `{ "<race>": <value> }` resolves against the character's race. A race **absent**
+  from the map leaves that target **un-overridden** (the standard derivation
+  stands). The keys are race names as in `rules/races.json`.
+- **Target registry.** Only targets in `HOMEBREW_SET_TARGETS` (`store.js`) are
+  honoured; any other target name is **ignored** (never a silent override of the
+  wrong value). v2 registry:
+  - `karma.step` — the Karma die Step (replaces the `KARMA_STEP` constant).
+  - `karma.maxCap` — a **cap** fed to `maxKarma(modifier, circle, maximum)`; the
+    engine applies `min(Modifier × Circle, maxCap)` (absent ⇒ no cap).
+  - `karma.ritualCost` — Legend per Karma point for the paid Karma Ritual
+    (read by the ritual feature; not a rating). Its presence switches the ritual
+    from the free refill to the paid buy-back.
+- **Semantics.** `set` **replaces** the target's standard value; a rule may pair
+  `set` with `effects`/`formula` on *different* targets. **Last-enabled-wins** if
+  two enabled rules `set` the same target. A `set` value is a **constant** in v2
+  (no refs). Where a target needs clamping (e.g. `karma.maxCap`), the *engine*
+  owns the clamp — `set` only supplies the parameter.
+
+> **Adding a target** to the registry is an engine change (wire the consumption
+> site + add the target to `HOMEBREW_SET_TARGETS`), not a format change. Adding a
+> *new lever* (beyond `formula`/`effects`/`set`) is a format change (§7).
+
+---
+
 ## 6. Authoring workflow — creating a new rule
 
 1. **Identify the standard rule** being overridden and cite it in `overrides`
@@ -191,8 +232,10 @@ for the same rating, the later rule in the `rules` array wins.
 
 ## 7. Versioning & governance
 
-- The file's shape is its own schema (`ed-homebrew/1`). A **format change** must
+- The file's shape is its own schema (`ed-homebrew/2`). A **format change** must
   bump the schema tag **and** migrate `rules/homebrew.json` in the same change.
+  **v2 (2026-08-13)** added the `set` lever (§5.5) — the `formula`/`effects`
+  shape from v1 is unchanged, so v1 rules validate as-is under v2.
 - A rule's `effects` must conform to the effect taxonomy; a taxonomy change is
   governed by EFFECT-TAXONOMY.md (bump + migrate + update references).
 - Authoring a new rule that fits this format is **Tier 3** (new data); changing

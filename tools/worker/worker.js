@@ -1,25 +1,32 @@
 // worker.js — GitHub serverless save endpoint (Cloudflare Worker).
 //
-// POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": "<character id>" }
+// POST /save  { "character": <inputs-only ed-character/1 JSON>, "id": "<id>", "base"?: "<file sha>" }
 //
 // Commits the posted character to the `character-data` branch on the app's
 // behalf, so the GitHub credential never enters the browser. The deploy workflow
 // does not watch that branch, so a save is a data commit — never an app rebuild.
 // The app reads the branch live (store.js), so a save shows up on next load.
 //
-// The `id` names the character's entry in the grouped store
-// `data/characters.json` (ed-characters/1): GET the store, replace
-// `characters[id]`, PUT it back. The id is required — the grouped store is the
-// only save target since the v1.6.0 promotion (the legacy single-file
-// `data/character.json` path was removed with it).
+// Since the per-character-files split (docs/PLAN-SAVE-CONCURRENCY.md) the save
+// target is ONE file per character: `data/characters/<id>.json`, holding the raw
+// `schema: "ed-character/1"` entry (no grouped wrapper). The `id` is validated
+// against a strict class (`[a-z0-9][a-z0-9-]{0,63}`) that is also a safe
+// filename class — no separators, no traversal — and is interpolated into the
+// env-pinned path (`GITHUB_CHARS_DIR`, never taken from the request).
+//
+// Optimistic concurrency: the client sends `base` = the file sha it last saw
+// (captured from the contents-API ETag on read; confirmed == blob sha). The
+// worker rejects a stale base with `409 { code: "stale_base", sha }` (no retry —
+// a stale base cannot be retried away); the app then offers keep-mine /
+// take-theirs. Success returns `commit: { sha, url }` where `sha` is the new
+// file blob sha (`content.sha`) — the client's next base. A caller that sends no
+// base (older deployment, local dev / CDN-fallback session) keeps the legacy
+// bounded GET-sha → PUT 409-retry overwrite contract.
 //
 // This build REQUIRES SAVE_KEY and fails closed (runbook §2.1 / §5.2): a missing
 // or wrong `x-save-key`, OR an unconfigured SAVE_KEY, is rejected 401. Everything
 // else follows the design doc §4.2 handler: schema/size validation, env-pinned
 // path/branch (never taken from the request), GET-sha → PUT, bounded 409 retry.
-// The `id` is validated against a strict character class (no path separators, no
-// traversal) and used only as a map key inside the store — it never becomes a
-// filesystem path.
 //
 // POST /save-items  { "items": { "<name>": <item> }, "delete"?: ["<name>", …] }
 //
@@ -105,10 +112,14 @@ export default {
       const id = body?.id;
       if (!isValidId(id))
         return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
+      const rawBase = body?.base;
+      if (rawBase !== undefined && rawBase !== null && typeof rawBase !== 'string')
+        return json(cors, 400, { ok: false, error: { code: 'invalid_base', message: 'base must be a file sha string or omitted' } });
+      const base = typeof rawBase === 'string' ? rawBase : null;
 
       await ensureBranch(repo, branch, gh); // first save only
-      const storePath = env.GITHUB_STORE ?? 'data/characters.json';
-      return await upsertCharacter(repo, branch, gh, storePath, id, character, cors);
+      const charsDir = env.GITHUB_CHARS_DIR ?? 'data/characters';
+      return await upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(JSON.stringify({ message: 'save failed (upstream)', error: message }));
@@ -117,38 +128,122 @@ export default {
   },
 };
 
-// Upsert `character` under `characters[id]` in the grouped store at `storePath`.
-// Reads the whole store (sha + content), replaces the one entry, PUTs it back —
-// same bounded GET-sha → PUT 409-retry contract. A missing store file (first
-// id-save on a fresh repo) is created as a fresh ed-characters/1 store.
-async function upsertCharacter(repo, branch, gh, storePath, id, character, cors) {
+// Upsert `character` as `data/characters/<id>.json` (one file per character, raw
+// ed-character/1 — no grouped wrapper, no merge). With a `base`: GET the file →
+// 404 ⇒ create (PUT without sha; base ignored — a missing file cannot be raced);
+// base ≠ current file sha ⇒ 409 `stale_base` immediately (no retry — a stale
+// base cannot be retried away); base == sha ⇒ PUT with the current sha, and a
+// 409 in the read→write window also returns `stale_base` (with the current sha,
+// freshly read). Without a `base` (legacy caller) keep the current bounded
+// GET-sha → PUT 409-retry contract.
+async function upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors) {
+  const filePath = `${charsDir}/${id}.json`;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { sha, store } = await readStore(repo, storePath, branch, gh);
-    store.characters = store.characters ?? {};
-    store.characters[id] = character;
-    const content = toBase64(JSON.stringify(store, null, 2) + '\n');
-    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${storePath}`, {
-      method: 'PUT',
-      headers: { ...gh, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Save character (serverless)', content, sha, branch }),
-    });
-    if (res.ok) return ok(cors, res);
-    if (res.status !== 409) {
-      console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
-      return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
+    const { sha, exists } = await readCharacterFile(repo, filePath, branch, gh);
+    if (base && exists && base !== sha) return staleBase(cors, sha);
+    const res = await putCharacterFile(repo, branch, gh, filePath, character, exists ? sha : undefined, cors);
+    if (res) {
+      // Only a brand-new file that was ACTUALLY created (a 2xx PUT) touches the
+      // discovery index — never a non-409 upstream failure (`putCharacterFile`
+      // returns its 502 Response here), which would leave a dangling index entry
+      // for a file that was never written.
+      if (!exists && res.status < 300) await ensureIndexEntry(repo, branch, gh, charsDir, id, character);
+      return res;
+    }
+    // PUT 409 — the file sha moved in the read→write window. A base-caller
+    // cannot retry this away: surface the current sha so the app can offer
+    // keep-mine / take-theirs.
+    if (base) {
+      const current = await readCharacterFile(repo, filePath, branch, gh);
+      return staleBase(cors, current.sha ?? sha);
     }
   }
   return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
 }
 
-// Read the grouped store: `{ sha, store }` decoded from the contents API.
-// A 404 (store not created yet) yields a fresh empty store with no sha.
-async function readStore(repo, storePath, branch, gh) {
-  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${storePath}?ref=${branch}`, { headers: gh });
-  if (res.status === 404) return { sha: undefined, store: { schema: 'ed-characters/1', characters: {} } };
+function staleBase(cors, sha) {
+  return json(cors, 409, { ok: false, error: { code: 'stale_base', message: 'character changed on the branch', sha } });
+}
+
+// Read one character file: `{ sha, exists }`. `sha` is the blob sha (the
+// contents-API ETag, confirmed == blob sha 2026-08-12) — the client's base and
+// the PUT's `sha`. The content is never needed: a per-file save writes the
+// posted character as-is, so there is no store to merge. A 404 (file not created
+// yet) yields `{ sha: undefined, exists: false }`.
+async function readCharacterFile(repo, filePath, branch, gh) {
+  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${filePath}?ref=${branch}`, { headers: gh });
+  if (res.status === 404) return { sha: undefined, exists: false };
   if (!res.ok) throw new Error(`read ${res.status}`);
   const obj = await res.json();
-  return { sha: obj.sha, store: JSON.parse(base64ToString(obj.content)) };
+  return { sha: obj.sha, exists: true };
+}
+
+// PUT one character file (its own file, never a whole-store rewrite). Returns
+// the success/upstream Response, or null on a 409 so the caller decides between
+// `stale_base` (base-caller) and a bounded retry (no-base caller).
+async function putCharacterFile(repo, branch, gh, filePath, character, sha, cors) {
+  const content = toBase64(JSON.stringify(character, null, 2) + '\n');
+  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${filePath}`, {
+    method: 'PUT',
+    headers: { ...gh, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'Save character (serverless)', content, sha, branch }),
+  });
+  if (res.ok) return ok(cors, res);
+  if (res.status !== 409) {
+    console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
+    return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
+  }
+  return null;
+}
+
+// Create-only discovery-index maintenance. Touched ONLY when a save created a
+// brand-new character file: ensure `id → { name, portrait }` is discoverable in
+// `data/characters/index.json` (creating the index file if absent), so the new
+// character appears in the picker in one fetch. Best-effort by design — a failed
+// index write is logged and tolerated (the file is truth; a created-but-
+// unindexed character is invisible to the picker until the index is refreshed).
+// Renames and portrait changes never touch the index: an entry may go stale (the
+// file's `meta.name`/`meta.portrait` are authoritative) and the index is never
+// trusted for save bases.
+async function ensureIndexEntry(repo, branch, gh, charsDir, id, character) {
+  const indexPath = `${charsDir}/index.json`;
+  // Bounded read→write retry: a concurrent create moves the index sha, so a PUT
+  // 409 is re-read and re-applied (without it, a raced create silently drops an
+  // entry that never self-heals — the file exists on the next save, so the create
+  // path never runs again). A non-409 failure is logged and tolerated.
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    let sha;
+    let file;
+    try {
+      const read = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}?ref=${branch}`, { headers: gh });
+      if (read.status === 404) {
+        file = { schema: 'ed-characters-index/1', characters: {} };
+      } else if (!read.ok) {
+        throw new Error(`index read ${read.status}`);
+      } else {
+        const obj = await read.json();
+        sha = obj.sha;
+        file = JSON.parse(base64ToString(obj.content));
+      }
+    } catch (err) {
+      console.error(JSON.stringify({ message: 'index ensure failed (read)', error: err instanceof Error ? err.message : String(err) }));
+      return;
+    }
+    file.characters = file.characters ?? {};
+    if (file.characters[id]) return; // already indexed — nothing to write
+    file.characters[id] = { name: character.meta?.name ?? '', portrait: character.meta?.portrait ?? null };
+    const content = toBase64(JSON.stringify(file, null, 2) + '\n');
+    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}`, {
+      method: 'PUT',
+      headers: { ...gh, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Index character (serverless)', content, sha, branch }),
+    });
+    if (res.ok) return;
+    if (res.status === 409) continue; // sha moved (raced create) — re-read and retry
+    console.error(JSON.stringify({ message: 'index ensure failed (write)', status: res.status }));
+    return; // non-409 upstream failure — tolerated (the file is truth)
+  }
+  console.error(JSON.stringify({ message: 'index ensure gave up (sha kept moving)', id }));
 }
 
 // Upsert custom items into the shared catalog at `itemsPath` (ed-items/2): GET
@@ -280,9 +375,11 @@ function isValidCharacter(c) {
   );
 }
 
-// A character id is a short lowercase slug used as a map key inside the grouped
-// store — never a filesystem path. The strict character class makes traversal
-// (`../`, `/`, backslash) and control characters impossible to express.
+// A character id is a short lowercase slug naming one file,
+// `data/characters/<id>.json`. The strict character class is also a safe
+// filename class: no separators (`/`, backslash), no dots (so no `..` or hidden
+// files), no control characters, no uppercase — traversal is impossible to
+// express and the id is interpolated into the env-pinned directory only.
 function isValidId(id) {
   return typeof id === 'string' && ID_RE.test(id);
 }

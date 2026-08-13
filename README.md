@@ -18,15 +18,15 @@ logic already built in.
 The design mirrors what a spreadsheet-based sheet already does, but as clean,
 testable layers:
 
-- **Data** — the grouped store `data/characters.json` holds every character's
-  *inputs only* (attributes, ranks, resources) as `characters[id]` entries;
-  `rules/*.json` holds shared Earthdawn reference data (the Step→Dice
-  table, the Characteristics Table, talent mechanics, disciplines, skills, races).
-  The store and each character's
-  portrait live on the `character-data` branch and are read live from it
-  (gitignored local working copies serve local dev; see WORKFLOW.md). Modifiers
-  live as `effects` arrays on the abilities/items that grant them, in a
-  controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
+- **Data** — each character is its own file `data/characters/<id>.json`
+  (*inputs only*: attributes, ranks, resources), discovered through a small
+  index `data/characters/index.json`; `rules/*.json` holds shared Earthdawn
+  reference data (the Step→Dice table, the Characteristics Table, talent
+  mechanics, disciplines, skills, races). The character files and each
+  character's portrait live on the `character-data` branch and are read live
+  from it (gitignored local working copies serve local dev; see WORKFLOW.md).
+  Modifiers live as `effects` arrays on the abilities/items that grant them, in
+  a controlled vocabulary (`docs/EFFECT-TAXONOMY.md`).
 - **Engine** (pure, framework-free, testable) — derives characteristics from the
   Characteristics Table plus the taxonomy effects, recomputing everything from
   inputs so editing one attribute cascades to all derived values; plus a Step→Dice
@@ -41,7 +41,7 @@ Full details and design decisions are in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 ## Project structure
 
 ```
-data/            characters.json (grouped store: every character's inputs)
+data/            characters/ (one <id>.json per character + index.json)
 rules/           steps, attributes, characteristics, talents, disciplines, skills, races
 docs/            EFFECT-TAXONOMY.md (effect vocabulary), UI-GUIDELINES.md (UI/UX contract)
 engine/          pure rules engine + *.test.js (derive, characteristics, dice)
@@ -86,7 +86,8 @@ re-sync). The server:
 - serves the repo root statically (MIME types, path-traversal guard), including
   the `/dev/` self-symlink it creates if missing;
 - implements the worker's two save routes on the same origin —
-  `POST /save` (upsert `data/characters.json`, `ed-characters/1`) and
+  `POST /save` (write `data/characters/<id>.json`, raw `ed-character/1` + a
+  create-only `index.json` entry) and
   `POST /save-items` (merge `data/custom-items.json`, `ed-items/2`) — with the
   same validation and error codes, so the app's `SaveError` handling runs
   unchanged (the save-key prompt still appears — type anything);

@@ -11,6 +11,7 @@ import { makeCharacteristics, woundThreshold } from './characteristics.js';
 import {
   damageState,
   applyHealth,
+  recoveriesRemaining,
   HEALTH_STATES,
   woundsFromHit,
   knockdownTriggered,
@@ -137,6 +138,19 @@ test('applyHealth: tolerates a missing health input and never mutates it', () =>
   const next = applyHealth(base, { damage: 2 });
   assert.deepEqual(base, { damage: 4, wounds: 0, recoveriesUsed: 0 }); // untouched
   assert.deepEqual(applyHealth(undefined, { damage: 2 }), { damage: 2, wounds: 0, recoveriesUsed: 0 });
+});
+
+test('recoveriesRemaining: max minus used, clamped at 0 (a Recovery test with none left is refused)', () => {
+  assert.equal(recoveriesRemaining(0, 3), 3);
+  assert.equal(recoveriesRemaining(1, 3), 2);
+  assert.equal(recoveriesRemaining(3, 3), 0); // the guard trip: 0 left
+  assert.equal(recoveriesRemaining(5, 3), 0); // never negative
+  assert.equal(recoveriesRemaining(undefined, 3), 3); // missing used reads as 0
+});
+
+test('recoveriesRemaining: an unknown max -> null, so the roll stays allowed (never a guess)', () => {
+  assert.equal(recoveriesRemaining(3, null), null);
+  assert.equal(recoveriesRemaining(3, undefined), null);
 });
 
 // --- Wounds & knockdown (a wounding hit) -------------------------------------

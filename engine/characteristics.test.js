@@ -317,6 +317,14 @@ test('maxKarma guards missing inputs', () => {
   assert.equal(maxKarma(5, undefined), null);
 });
 
+test('maxKarma optional cap (homebrew karma.maxCap): min(mod×circle, maximum); absent = no cap', () => {
+  assert.equal(maxKarma(5, 4, null), 20); // no cap → mod×circle (off path unchanged)
+  assert.equal(maxKarma(5, 10, 40), 40); // 50 capped to 40 (Human)
+  assert.equal(maxKarma(6, 8, 60), 48); // 48 < 60 → uncapped value stands (Windling, low circle)
+  assert.equal(maxKarma(4, 100, 25), 25); // hard cap (Dwarf)
+  assert.equal(maxKarma(null, 4, 25), null); // missing base still null
+});
+
 test('karmaUse finds grant-karma-use permissions by test name, with scope', () => {
   const effects = [
     { type: 'grant-karma-use', target: { domain: 'test', name: 'Initiative' }, origin: { kind: 'discipline', name: 'Archer', circle: 3 } },

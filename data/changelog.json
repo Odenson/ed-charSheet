@@ -1,147 +1,462 @@
 {
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
-  "unreleased": { "changes": [] },
+  "unreleased": {
+    "changes": []
+  },
   "releases": [
+    {
+      "version": "1.11.0",
+      "date": "2026-08-13",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "The Recovery test button is no longer usable when you're out of tests for the day. Before, with all your daily Recovery Tests used (e.g. 3/3), the button still let you roll and heal — the heal went through even though you had none left. Now the button is disabled with a tooltip telling you to start a new day, and the heal is refused at the sheet level too, so a Recovery test can never be used past your daily budget."
+        },
+        {
+          "type": "changed",
+          "text": "Your Karma now runs on a ledger: the sheet keeps track of how much Karma your character has gained and spent, and your available Karma is derived from that running difference instead of being stored as a number — so spending a point on a roll and buying it back through a Karma Ritual can never fall out of step. With the Karma-economy rule on, the Notes tab's Legend log now shows each ritual's cost as a −N Legend line (already reflected in your Available Legend), side by side with what you've earned."
+        },
+        {
+          "type": "added",
+          "text": "New optional homebrew rule — Race-driven Karma economy (ships off). Turn it on and the Karma Ritual is no longer a free refill: you buy Karma back with Legend at a race-driven cost, your maximum Karma is capped by race, and your Karma die is race-driven. The Overview + becomes a buy-back dialog where you choose how many points to purchase (it never lets you overspend or exceed your max), each purchase is a dated line you can undo, and the Legend it costs shows in your Legend-spent breakdown. With the rule off, everything works exactly as before (free refill, standard maximum, D6 Karma die)."
+        },
+        {
+          "type": "added",
+          "text": "Perform your Karma Ritual from the Overview: a + beside 'Karma' in the Combat panel restores your Karma to its maximum in one tap (Players Guide p.83 — free and always succeeds), with a confirmation message. It's greyed out when Karma is already full. The once-a-day limit isn't enforced, and there's no Legend cost — that's a separate house rule for later."
+        },
+        {
+          "type": "added",
+          "text": "Standing up from the Combat tab is now recorded in the Combat log (and the Notes-tab Roll Log): a 'Stand up' line joins the round's rolls, so the fight's actions read like a session log. It clears with the same 'clear' as the rolls."
+        },
+        {
+          "type": "added",
+          "text": "The Save icon is now always visible (not only in Edit mode), with its dot showing whenever you have unsaved changes — so background changes during play, like taking damage or spending Karma, are no longer invisible. One tap saves."
+        },
+        {
+          "type": "added",
+          "text": "Autosave to GitHub: after a short pause in changes (60 seconds by default) the sheet saves in the background, and it also saves when you switch away from or close the tab, so a forgotten Save no longer strands your play. It's silent, never interrupts a fight, and never overwrites another device without asking. A new Settings dialog (gear icon) turns it on or off and sets the interval; off leaves you with the manual Save button."
+        },
+        {
+          "type": "changed",
+          "text": "The Combat tab's weapon picker drops the synthetic 'Unarmed · dmg 0' entry. Unarmed attacks still work the same way — pick 'None' for the weapon and roll the Unarmed Combat talent or skill from the attack list."
+        },
+        {
+          "type": "changed",
+          "text": "The Combat tab's collapsible sections — Combat Options, Situational, and Blood Charms — now default to expanded on desktop, and to collapsed on mobile (where the single-column layout is tall). Your taps still win either way, and the tab remembers them while you play."
+        },
+        {
+          "type": "fixed",
+          "text": "Rolling Karma on the Overview now actually spends a point: the Karma die is a Karma point, so rolling it drops your available Karma by one and saves it, like adding a Karma die to any other roll. The roll button is disabled when you have none left, matching the spend toggle's guard."
+        },
+        {
+          "type": "added",
+          "text": "Equipped weapons on the Combat tab now show their picture: each weapon's image loads from the repo beside its stats, with a graceful placeholder when an image is missing or can't load. A new Ork Hand Axe joins the weapon list, and Spear, Broadsword, and Shield Buckler gained images."
+        },
+        {
+          "type": "added",
+          "text": "A save that would overwrite someone else's changes now asks before it commits. If the character changed on another device or player since you last loaded it, the sheet pauses and offers Keep my changes or take the other copy — the conflict you'd lose is surfaced instead of silently overwritten, and your local edits stay in the sheet either way."
+        },
+        {
+          "type": "changed",
+          "text": "Each character now saves as its own file (per-character git history, and a save on one character can't disturb another's), with the roster discovered from a lightweight index. Saves still land on the same branch as before, so your characters and this release keep reading each other's changes."
+        },
+        {
+          "type": "changed",
+          "text": "Saving is now concurrency-checked end to end: every save carries the exact version it was based on, and a stale save is refused with a conflict prompt instead of a silent lost write. The conflict check is per character, so two players saving different characters never false-conflict."
+        },
+        {
+          "type": "added",
+          "text": "A Combat tab for running a fight. Pick an equipped weapon and attack talent, set the target number to beat, and roll your Attack, Damage, and Initiative through the dice roller. Combat options (Aggressive Attack, Called Shot, Defensive Stance…), situational modifiers (cover, darkness, range, knocked down…), and equipped blood charms (Absorb Blow, Desperate Blow…) are collapsible chip sections that fold their step and result modifiers into the roll and total their Strain — charged automatically the moment you roll the attack (shown on the Combat log). While you're prone the sheet's universal −3 rides every roll as before; defence modifiers are shown as informational figures for the GM, never silently folded into your Defence."
+        },
+        {
+          "type": "added",
+          "text": "Take damage without leaving the fight: the Combat tab's damage column shows your current damage and standing, with a button to record damage or a heal. A single hit at or above your Wound Threshold still records a Wound, and one five or more over it triggers the Knockdown test — same engine as the Overview. A Recovery test button heals what you roll and uses one of your daily tests. Damage, healing, and strain are applied once and are not undoable."
+        },
+        {
+          "type": "added",
+          "text": "A Combat log on the Combat tab: a roll-only view of your device-local Roll Log, so the fight's rolls stay in view while you play. It clears with the same 'clear' as the Notes-tab Roll Log."
+        },
+        {
+          "type": "added",
+          "text": "Blood charms you arm on the Combat tab are spent when the new round begins: rolling Initiative deactivates every armed charm and unequips it, so a single-use charm (like Desperate Blow's +6 to one test) can't silently be re-used the same fight. Equip it again from the Equipment tab once its Blood Magic Damage has healed."
+        },
+        {
+          "type": "changed",
+          "text": "Rolling against a Difficulty now reads Hit / Miss instead of Success / Failure for attack rolls, and the Combat tab's attack rolls show the result in the roll outcome and the Roll Log."
+        },
+        {
+          "type": "changed",
+          "text": "The Combat tab now sits directly after Disciplines (Overview · Disciplines · Combat · Spells · Gear · Notes)."
+        },
+        {
+          "type": "added",
+          "text": "The Combat tab's attack picker now matches the weapon you chose: a melee weapon offers your Melee Weapon talent, a bow your Missile Weapon, a thrown weapon your Throwing Weapon — and the list now includes matching skills, not just talents. Pick 'None' for the weapon and the list opens up to every talent and skill you have, so you can roll a free-action ability like Avoid Blow or Anticipate Blow without tying it to a weapon."
+        },
+        {
+          "type": "added",
+          "text": "Extra attack success levels now boost your damage: every whole 5 your attack result beats the target number is a success level, and each level adds one step to your Damage roll. Set a target number, roll to hit, and the Damage line shows the bonus before you roll it."
+        },
+        {
+          "type": "added",
+          "text": "Stand up from the Combat tab: while you're Knocked Down a Stand up button appears in the Situational section, the same one-tap reversal as the Overview."
+        },
+        {
+          "type": "changed",
+          "text": "Spending Karma on a roll now reduces your Karma. Any time you add a Karma die to your roll — on any tab — your available Karma drops by one and is saved; the button is disabled when you have none left. The spend is charged once per roll (Roll again doesn't cost more)."
+        },
+        {
+          "type": "changed",
+          "text": "The Combat tab now keeps your setup when you leave and come back: the weapon, talent, options, situational modifiers, charm toggles, target number, and which sections are open are all remembered while you play, instead of resetting every time you switch tabs. They still reset when you load a different character or reload the app."
+        }
+      ]
+    },
     {
       "version": "1.10.0",
       "date": "2026-08-10",
       "changes": [
-        { "type": "added", "text": "A Notes tab to keep your game notes and history: it now holds four views behind a segmented control. Notes are free-form cards you curate (NPCs, locations, quest threads, table reminders); History is a dated, newest-first timeline of what happened and when; Legend lists every amount of Legend you've earned and adds the running total; and Roll Log keeps the last rolls from your sessions — each with the step, the dice, what each die actually rolled (an exploding die shows its chain, like 6↦3), the difficulty it beat, its outcome, and any Karma or roll-time modifiers that went into the total." },
-        { "type": "added", "text": "Roll Log is a game-time view that lives on this device only: it records every roll you make — initial roll, Roll again, and Karma spends each update the same row — and stays capped at a keep-last count you choose (10, 20, or 50). It's deliberately never exported or written to a cloud save, so it follows your session but not your character across devices." },
-        { "type": "added", "text": "Record Legend as you earn it: a + button beside the total on the Overview, and a Legend view on the Notes tab, open the same form to add an amount and a short description. The running Total Legend earned is derived from that log (plus your recorded starting total), so the Overview's total and your Available Legend stay in step with what you've actually earned." }
+        {
+          "type": "added",
+          "text": "A Notes tab to keep your game notes and history: it now holds four views behind a segmented control. Notes are free-form cards you curate (NPCs, locations, quest threads, table reminders); History is a dated, newest-first timeline of what happened and when; Legend lists every amount of Legend you've earned and adds the running total; and Roll Log keeps the last rolls from your sessions — each with the step, the dice, what each die actually rolled (an exploding die shows its chain, like 6↦3), the difficulty it beat, its outcome, and any Karma or roll-time modifiers that went into the total."
+        },
+        {
+          "type": "added",
+          "text": "Roll Log is a game-time view that lives on this device only: it records every roll you make — initial roll, Roll again, and Karma spends each update the same row — and stays capped at a keep-last count you choose (10, 20, or 50). It's deliberately never exported or written to a cloud save, so it follows your session but not your character across devices."
+        },
+        {
+          "type": "added",
+          "text": "Record Legend as you earn it: a + button beside the total on the Overview, and a Legend view on the Notes tab, open the same form to add an amount and a short description. The running Total Legend earned is derived from that log (plus your recorded starting total), so the Overview's total and your Available Legend stay in step with what you've actually earned."
+        }
       ]
     },
     {
       "version": "1.9.0",
       "date": "2026-08-10",
       "changes": [
-        { "type": "added", "text": "See how much your character is carrying: the Gear tab opens with a Carried Weight banner totalling every item you own (equipped or stored) against your Carrying Capacity, with your Lift figure and a status chip — Clear, Burdened, Overburdened, or Exceeds lift. Each section (Weapons & Armour, Gear, Thread Items, Charms & Consumables) shows its own weight subtotal." },
-        { "type": "added", "text": "Encumbrance now follows the rulebook (Players' Guide p.405). Carry more than your Carrying Capacity and your Movement Rate halves and you're Harried (−2 to your Defence and Action tests, shown in Active Effects). Past 150% of capacity your Movement drops to 2 and your Physical and Mystic Defence to 2. Beyond double your capacity the sheet flags that lifting it would need a Strength test. Items with an unrecorded weight are noted rather than silently guessed." },
-        { "type": "fixed", "text": "Custom items you create now keep their effects. Before, changing an effect's type while creating an item could make that effect silently disappear from the saved item — the sheet now always saves the effects you add, with each effect's summary auto-generated from its fields (edit the summary to override it, and pick a different type and the summary re-forms to match)." },
-        { "type": "added", "text": "Custom items can now carry a short one-line label for the equipped tile: a Short effect field in the item form, with a live character counter and a 32-character cap so the label stays short. Leave it empty and the tile shows the item's main bonus instead." },
-        { "type": "fixed", "text": "Editing an existing custom item now shows it with the latest saved changes — including the effects you added — and those changes stay until the cloud copy has really caught up. Before, reopening the edit form right after a save could show the older version of the item (and lose its freshly saved effects from view) until a page refresh." },
-        { "type": "added", "text": "Homebrew rules: the sheet can now apply campaign rules that change how a rating is calculated, as data rather than code. The first rule ships bundled — a Durability-scaled Unconsciousness and Death rating (your Durability Rank times your Toughness Step, in place of the standard fixed figures) — and is switched off by default, so nothing changes until you turn it on. A future rule could adjust any rating or add effects in the same way." },
-        { "type": "added", "text": "Spend your Legend in edit mode: on the Disciplines tab each talent and skill gains a −/+ rank stepper, so you can raise a rank and watch your Available Legend shrink by exactly the step's cost, or lower it and get the Legend back. An Available Legend chip at the top of the tab shows the budget the sheet will let you spend; a stepper greys out when the next step is too expensive, would pass the rulebook tables, or can't be priced. With no Total Legend earned yet, the steppers stay locked with a hint until you record how much Legend you have." },
-        { "type": "added", "text": "A Homebrew pill appears beside the version badge whenever a homebrew rule is switched on. Click it to see the active rules at a glance — each rule's name, the rulebook section it changes, its plain-English summary, and the formula notes explaining exactly how its rating is calculated." }
+        {
+          "type": "added",
+          "text": "See how much your character is carrying: the Gear tab opens with a Carried Weight banner totalling every item you own (equipped or stored) against your Carrying Capacity, with your Lift figure and a status chip — Clear, Burdened, Overburdened, or Exceeds lift. Each section (Weapons & Armour, Gear, Thread Items, Charms & Consumables) shows its own weight subtotal."
+        },
+        {
+          "type": "added",
+          "text": "Encumbrance now follows the rulebook (Players' Guide p.405). Carry more than your Carrying Capacity and your Movement Rate halves and you're Harried (−2 to your Defence and Action tests, shown in Active Effects). Past 150% of capacity your Movement drops to 2 and your Physical and Mystic Defence to 2. Beyond double your capacity the sheet flags that lifting it would need a Strength test. Items with an unrecorded weight are noted rather than silently guessed."
+        },
+        {
+          "type": "fixed",
+          "text": "Custom items you create now keep their effects. Before, changing an effect's type while creating an item could make that effect silently disappear from the saved item — the sheet now always saves the effects you add, with each effect's summary auto-generated from its fields (edit the summary to override it, and pick a different type and the summary re-forms to match)."
+        },
+        {
+          "type": "added",
+          "text": "Custom items can now carry a short one-line label for the equipped tile: a Short effect field in the item form, with a live character counter and a 32-character cap so the label stays short. Leave it empty and the tile shows the item's main bonus instead."
+        },
+        {
+          "type": "fixed",
+          "text": "Editing an existing custom item now shows it with the latest saved changes — including the effects you added — and those changes stay until the cloud copy has really caught up. Before, reopening the edit form right after a save could show the older version of the item (and lose its freshly saved effects from view) until a page refresh."
+        },
+        {
+          "type": "added",
+          "text": "Homebrew rules: the sheet can now apply campaign rules that change how a rating is calculated, as data rather than code. The first rule ships bundled — a Durability-scaled Unconsciousness and Death rating (your Durability Rank times your Toughness Step, in place of the standard fixed figures) — and is switched off by default, so nothing changes until you turn it on. A future rule could adjust any rating or add effects in the same way."
+        },
+        {
+          "type": "added",
+          "text": "Spend your Legend in edit mode: on the Disciplines tab each talent and skill gains a −/+ rank stepper, so you can raise a rank and watch your Available Legend shrink by exactly the step's cost, or lower it and get the Legend back. An Available Legend chip at the top of the tab shows the budget the sheet will let you spend; a stepper greys out when the next step is too expensive, would pass the rulebook tables, or can't be priced. With no Total Legend earned yet, the steppers stay locked with a hint until you record how much Legend you have."
+        },
+        {
+          "type": "added",
+          "text": "A Homebrew pill appears beside the version badge whenever a homebrew rule is switched on. Click it to see the active rules at a glance — each rule's name, the rulebook section it changes, its plain-English summary, and the formula notes explaining exactly how its rating is calculated."
+        }
       ]
     },
     {
       "version": "1.8.0",
       "date": "2026-08-09",
       "changes": [
-        { "type": "added", "text": "Track your character's current damage right on the Overview: the Health panel now shows Current Damage with a conscious / unconscious / dead readout, your Wound Threshold, how many of today's Recovery Tests you've used, and any wounds you've taken. An Edit button (and, while running the game, a compact damage button on the panel) opens the damage controls where you can take damage, heal it, or step through wounds. A Recovery test button rolls the open-ended Effect test at your Toughness step and heals exactly what you roll — using one of your Recovery Tests for the day." },
-        { "type": "added", "text": "Wounds and Knockdown while you're running the game: take damage through the damage button and the sheet records a Wound whenever a single hit meets your Wound Threshold. A hit five or more over it triggers a Knockdown test — an open-ended Strength test against a Difficulty of the hit minus your threshold — and the roll tells you whether you stay on your feet or are Knocked Down." },
-        { "type": "added", "text": "A new Active Effects panel on the Overview lists everything currently shaping your character — race abilities, discipline circle abilities, and your equipped item and thread effects. Live conditions live here too: while Knocked Down the condition sits on the panel with a Stand up button that clears it, and a small button beside Recoveries lets you start a new day by resetting today's Recovery Tests to zero." },
-        { "type": "changed", "text": "The Knocked Down condition now follows the rulebook precisely: while you're on the ground every test you roll takes a −3 penalty (Initiative included, as the book's own example shows) and your Physical and Mystic Defence both drop by 3. The affected Defence numbers turn red with a small −3 badge until you get back up, so you can see at a glance what being prone is costing you." },
-        { "type": "changed", "text": "A Knockdown test settles itself the moment the dice land — there's no Apply button to press. Fail, and the roll modal stays open over your now-prone character showing the outcome, ready to dismiss or roll again." },
-        { "type": "fixed", "text": "Editing one health field (e.g. just damage) no longer risks dropping your other health values on the next reload — the sheet always stores your full health inputs." },
-        { "type": "added", "text": "Create custom items in the Equipment tab: a new Custom items section lets you build your own weapons, armour, gear, and more (name, kind, and the effects they grant), save them to the cloud alongside your character, and add them to any of your characters with the normal picker. Custom items are shared across all your characters, and the catalogue is folded into the rule files on the dev site so nothing is lost if the cloud copy ever goes missing." }
+        {
+          "type": "added",
+          "text": "Track your character's current damage right on the Overview: the Health panel now shows Current Damage with a conscious / unconscious / dead readout, your Wound Threshold, how many of today's Recovery Tests you've used, and any wounds you've taken. An Edit button (and, while running the game, a compact damage button on the panel) opens the damage controls where you can take damage, heal it, or step through wounds. A Recovery test button rolls the open-ended Effect test at your Toughness step and heals exactly what you roll — using one of your Recovery Tests for the day."
+        },
+        {
+          "type": "added",
+          "text": "Wounds and Knockdown while you're running the game: take damage through the damage button and the sheet records a Wound whenever a single hit meets your Wound Threshold. A hit five or more over it triggers a Knockdown test — an open-ended Strength test against a Difficulty of the hit minus your threshold — and the roll tells you whether you stay on your feet or are Knocked Down."
+        },
+        {
+          "type": "added",
+          "text": "A new Active Effects panel on the Overview lists everything currently shaping your character — race abilities, discipline circle abilities, and your equipped item and thread effects. Live conditions live here too: while Knocked Down the condition sits on the panel with a Stand up button that clears it, and a small button beside Recoveries lets you start a new day by resetting today's Recovery Tests to zero."
+        },
+        {
+          "type": "changed",
+          "text": "The Knocked Down condition now follows the rulebook precisely: while you're on the ground every test you roll takes a −3 penalty (Initiative included, as the book's own example shows) and your Physical and Mystic Defence both drop by 3. The affected Defence numbers turn red with a small −3 badge until you get back up, so you can see at a glance what being prone is costing you."
+        },
+        {
+          "type": "changed",
+          "text": "A Knockdown test settles itself the moment the dice land — there's no Apply button to press. Fail, and the roll modal stays open over your now-prone character showing the outcome, ready to dismiss or roll again."
+        },
+        {
+          "type": "fixed",
+          "text": "Editing one health field (e.g. just damage) no longer risks dropping your other health values on the next reload — the sheet always stores your full health inputs."
+        },
+        {
+          "type": "added",
+          "text": "Create custom items in the Equipment tab: a new Custom items section lets you build your own weapons, armour, gear, and more (name, kind, and the effects they grant), save them to the cloud alongside your character, and add them to any of your characters with the normal picker. Custom items are shared across all your characters, and the catalogue is folded into the rule files on the dev site so nothing is lost if the cloud copy ever goes missing."
+        }
       ]
     },
     {
       "version": "1.7.0",
       "date": "2026-08-08",
       "changes": [
-        { "type": "added", "text": "Legend tracking on the Overview: the Legend panel shows your total Legend earned, your Legendary Status (which status band you've reached, with the Renown and Reputation it grants), and how much Legend you have available to spend — your total earned minus everything the sheet can account for as spent. An info button opens a full Legend-spent breakdown that prices each advancement (attributes, talents — including the surcharge on a second Discipline — skills, and knacks) against the rulebook tables and shows how much it can't account for yet." },
-        { "type": "added", "text": "Knacks now live with the ability that governs them: on the Disciplines tab they appear as an indented row beneath their governing talent, and on the Skills tab beneath their governing skill — no more loose list at the bottom. Each knack has an info button that opens its details: the governing ability and required rank, action, strain, and a plain-language description." },
-        { "type": "added", "text": "Skills now show a one-line summary of what they do, matching the talents list." },
-        { "type": "added", "text": "Thread items: magic items with woven Thread Ranks are now a first-class rule. The new thread-items catalogue (currently the Bracers of Aras) records each item's tier, Mystic Defense, maximum threads, and per-rank effects; on your character an owned thread item gains a thread rank, and the sheet derives exactly the effects of the ranks you've woven — a higher rank replaces a lower one rather than stacking. The Legend-spent breakdown prices each woven rank against the cumulative Legend cost for the item's tier." },
-        { "type": "changed", "text": "Attribute steps on the Overview now read like the rest of the sheet — e.g. \"10 · 2D8\" instead of \"s8 2D6\"." },
-        { "type": "changed", "text": "The Equipment sections now sit in two independent columns — each one (Weapons & Armour, Gear, Thread Items, Charms & Consumables, Wealth) stacks directly beneath the one above it instead of waiting on the block across the gap, so short sections no longer hold tall ones down." }
+        {
+          "type": "added",
+          "text": "Legend tracking on the Overview: the Legend panel shows your total Legend earned, your Legendary Status (which status band you've reached, with the Renown and Reputation it grants), and how much Legend you have available to spend — your total earned minus everything the sheet can account for as spent. An info button opens a full Legend-spent breakdown that prices each advancement (attributes, talents — including the surcharge on a second Discipline — skills, and knacks) against the rulebook tables and shows how much it can't account for yet."
+        },
+        {
+          "type": "added",
+          "text": "Knacks now live with the ability that governs them: on the Disciplines tab they appear as an indented row beneath their governing talent, and on the Skills tab beneath their governing skill — no more loose list at the bottom. Each knack has an info button that opens its details: the governing ability and required rank, action, strain, and a plain-language description."
+        },
+        {
+          "type": "added",
+          "text": "Skills now show a one-line summary of what they do, matching the talents list."
+        },
+        {
+          "type": "added",
+          "text": "Thread items: magic items with woven Thread Ranks are now a first-class rule. The new thread-items catalogue (currently the Bracers of Aras) records each item's tier, Mystic Defense, maximum threads, and per-rank effects; on your character an owned thread item gains a thread rank, and the sheet derives exactly the effects of the ranks you've woven — a higher rank replaces a lower one rather than stacking. The Legend-spent breakdown prices each woven rank against the cumulative Legend cost for the item's tier."
+        },
+        {
+          "type": "changed",
+          "text": "Attribute steps on the Overview now read like the rest of the sheet — e.g. \"10 · 2D8\" instead of \"s8 2D6\"."
+        },
+        {
+          "type": "changed",
+          "text": "The Equipment sections now sit in two independent columns — each one (Weapons & Armour, Gear, Thread Items, Charms & Consumables, Wealth) stacks directly beneath the one above it instead of waiting on the block across the gap, so short sections no longer hold tall ones down."
+        }
       ]
     },
     {
       "version": "1.6.0",
       "date": "2026-08-07",
       "changes": [
-        { "type": "added", "text": "Multiple characters: the app can now hold more than one character, and a character picker in the header (also shown automatically on first run) lets you switch between them. Each character keeps its own unsaved draft in this browser, and saves write to the right character on GitHub." },
-        { "type": "changed", "text": "The character store and each character's portrait now live on the character-data branch and are read straight from it, so the deployed app bundles no character data — a save and its portrait show up on the live site immediately, with no rebuild." },
-        { "type": "fixed", "text": "The character picker now lists your characters the first time it opens (a fresh browser showed an empty list), so you can always load a character." }
+        {
+          "type": "added",
+          "text": "Multiple characters: the app can now hold more than one character, and a character picker in the header (also shown automatically on first run) lets you switch between them. Each character keeps its own unsaved draft in this browser, and saves write to the right character on GitHub."
+        },
+        {
+          "type": "changed",
+          "text": "The character store and each character's portrait now live on the character-data branch and are read straight from it, so the deployed app bundles no character data — a save and its portrait show up on the live site immediately, with no rebuild."
+        },
+        {
+          "type": "fixed",
+          "text": "The character picker now lists your characters the first time it opens (a fresh browser showed an empty list), so you can always load a character."
+        }
       ]
     },
     {
       "version": "1.5.1",
       "date": "2026-08-07",
       "changes": [
-        { "type": "changed", "text": "The save-key prompt now works with password managers — 1Password, Apple's iCloud Keychain, and others can offer to save your key and fill it automatically next time." },
-        { "type": "added", "text": "Discard local changes: while editing, if you have unsaved edits a revert button appears — it throws away the draft held in this browser and reloads the version saved on GitHub, so an old local copy can't linger over your saved character." }
+        {
+          "type": "changed",
+          "text": "The save-key prompt now works with password managers — 1Password, Apple's iCloud Keychain, and others can offer to save your key and fill it automatically next time."
+        },
+        {
+          "type": "added",
+          "text": "Discard local changes: while editing, if you have unsaved edits a revert button appears — it throws away the draft held in this browser and reloads the version saved on GitHub, so an old local copy can't linger over your saved character."
+        }
       ]
     },
     {
       "version": "1.5.0",
       "date": "2026-08-06",
       "changes": [
-        { "type": "added", "text": "Save directly to GitHub: while editing, the Save button now commits your character to the cloud, so it syncs across your devices and the live site with no file to juggle. Enter your private save key once per session — it's kept only in memory and never stored. A dot on the Save button marks unsaved changes and clears once a save lands." },
-        { "type": "added", "text": "Export a copy: a one-click download of your character as a .json backup, now working in every browser — including Firefox, Safari, and mobile — replacing the old Chrome-only \"save to a file\" button." },
-        { "type": "changed", "text": "Your edits keep autosaving to your browser as you make them, so an interrupted or offline save never loses work; the GitHub save is the moment you publish that work to the cloud." },
-        { "type": "fixed", "text": "A save now shows up the moment you reload — the sheet reads your latest save straight from GitHub, instead of occasionally showing a few-minutes-stale copy right after saving." }
+        {
+          "type": "added",
+          "text": "Save directly to GitHub: while editing, the Save button now commits your character to the cloud, so it syncs across your devices and the live site with no file to juggle. Enter your private save key once per session — it's kept only in memory and never stored. A dot on the Save button marks unsaved changes and clears once a save lands."
+        },
+        {
+          "type": "added",
+          "text": "Export a copy: a one-click download of your character as a .json backup, now working in every browser — including Firefox, Safari, and mobile — replacing the old Chrome-only \"save to a file\" button."
+        },
+        {
+          "type": "changed",
+          "text": "Your edits keep autosaving to your browser as you make them, so an interrupted or offline save never loses work; the GitHub save is the moment you publish that work to the cloud."
+        },
+        {
+          "type": "fixed",
+          "text": "A save now shows up the moment you reload — the sheet reads your latest save straight from GitHub, instead of occasionally showing a few-minutes-stale copy right after saving."
+        }
       ]
     },
     {
       "version": "1.4.0",
       "date": "2026-08-05",
       "changes": [
-        { "type": "changed", "text": "Equipment tiles are tidier: each equipped item shows a quiet one-line effect on the right — a short label for special gear (e.g. \"Entangles target\") or its key bonus (e.g. \"Physical Armour +5\"). Click any item to open its full detail card." },
-        { "type": "changed", "text": "Stored items now sink to the bottom of their section and collapse to just their name, keeping your equipped gear front and centre." },
-        { "type": "changed", "text": "Magical items, blood charms, and healing aids are marked with a ✦ star beside their name instead of a glowing border, decluttering both the tiles and the detail cards." },
-        { "type": "added", "text": "Every item now carries a short description drawn from the Earthdawn rulebooks, shown at the top of its detail card." },
-        { "type": "changed", "text": "The item detail card now reads the same for every item: a labelled stat row (cost, weight, availability, and — newly shown — strength minimum, size, range, and crafting difficulty), the item's key bonuses as chips, then the item's description and the full text of every rule it grants — so nothing is hidden behind a short label." },
-        { "type": "fixed", "text": "Closing an item's detail card with Escape no longer leaves a stray highlight on the tile you selected." }
+        {
+          "type": "changed",
+          "text": "Equipment tiles are tidier: each equipped item shows a quiet one-line effect on the right — a short label for special gear (e.g. \"Entangles target\") or its key bonus (e.g. \"Physical Armour +5\"). Click any item to open its full detail card."
+        },
+        {
+          "type": "changed",
+          "text": "Stored items now sink to the bottom of their section and collapse to just their name, keeping your equipped gear front and centre."
+        },
+        {
+          "type": "changed",
+          "text": "Magical items, blood charms, and healing aids are marked with a ✦ star beside their name instead of a glowing border, decluttering both the tiles and the detail cards."
+        },
+        {
+          "type": "added",
+          "text": "Every item now carries a short description drawn from the Earthdawn rulebooks, shown at the top of its detail card."
+        },
+        {
+          "type": "changed",
+          "text": "The item detail card now reads the same for every item: a labelled stat row (cost, weight, availability, and — newly shown — strength minimum, size, range, and crafting difficulty), the item's key bonuses as chips, then the item's description and the full text of every rule it grants — so nothing is hidden behind a short label."
+        },
+        {
+          "type": "fixed",
+          "text": "Closing an item's detail card with Escape no longer leaves a stray highlight on the tile you selected."
+        }
       ]
     },
     {
       "version": "1.3.0",
       "date": "2026-08-04",
       "changes": [
-        { "type": "changed", "text": "The Equipment tab is redesigned: your gear is grouped into Weapons & Armour, Gear, and Charms & Consumables across two columns, with cleaner rows. Click any item to open a details card showing its cost, weight, availability, and effect." },
-        { "type": "added", "text": "Each item has a single Equipped / Stored toggle — Equipped gear is on your character and feeds Armour, Defences, and Initiative; Stored gear is owned but set aside. Add items with a searchable picker that filters the whole catalogue as you type." },
-        { "type": "added", "text": "Magical items now glow wherever they sit — magic items, blood charms, and healing aids are highlighted in every section, not just their own." },
-        { "type": "added", "text": "New Wealth section: record every Earthdawn coin (copper, silver, gold, and the elemental earth, water, air, fire, and orichalcum coins) plus your gems and precious stones valued in silver. It totals your worth in silver and estimates gem resale (70–80%). Saved in your browser." },
-        { "type": "added", "text": "You can now spend Karma (+D6) when rolling a talent on the Disciplines tab. Talents are Karma-eligible by default, matching the core rule (Versatility-learned talents being the exception)." },
-        { "type": "changed", "text": "The Disciplines panel now sizes its Durability, Half-magic, and Artisan boxes to fit their content, giving the Half-magic description room to breathe." },
-        { "type": "added", "text": "The talent list now marks which talents are required for your Discipline (a filled dot) versus ones you chose as Talent Options (a hollow dot), with a legend." },
-        { "type": "added", "text": "Talents now show a one-line summary of what they do, and each has an info button (the required/optional circle) that opens plain-language details — action, strain, what it tests against, and the effect. Hidden effect column folds away on mobile, where the details are a tap away." },
-        { "type": "added", "text": "The Equipment catalogue is much bigger: all rulebook weapons (melee, missile, and throwing), ammunition, common magic items, blood charms, healing aids, and adventuring gear are now in the add-item list. Weapon damage steps, entangle rules, and one-shot bonuses show as effect chips." }
+        {
+          "type": "changed",
+          "text": "The Equipment tab is redesigned: your gear is grouped into Weapons & Armour, Gear, and Charms & Consumables across two columns, with cleaner rows. Click any item to open a details card showing its cost, weight, availability, and effect."
+        },
+        {
+          "type": "added",
+          "text": "Each item has a single Equipped / Stored toggle — Equipped gear is on your character and feeds Armour, Defences, and Initiative; Stored gear is owned but set aside. Add items with a searchable picker that filters the whole catalogue as you type."
+        },
+        {
+          "type": "added",
+          "text": "Magical items now glow wherever they sit — magic items, blood charms, and healing aids are highlighted in every section, not just their own."
+        },
+        {
+          "type": "added",
+          "text": "New Wealth section: record every Earthdawn coin (copper, silver, gold, and the elemental earth, water, air, fire, and orichalcum coins) plus your gems and precious stones valued in silver. It totals your worth in silver and estimates gem resale (70–80%). Saved in your browser."
+        },
+        {
+          "type": "added",
+          "text": "You can now spend Karma (+D6) when rolling a talent on the Disciplines tab. Talents are Karma-eligible by default, matching the core rule (Versatility-learned talents being the exception)."
+        },
+        {
+          "type": "changed",
+          "text": "The Disciplines panel now sizes its Durability, Half-magic, and Artisan boxes to fit their content, giving the Half-magic description room to breathe."
+        },
+        {
+          "type": "added",
+          "text": "The talent list now marks which talents are required for your Discipline (a filled dot) versus ones you chose as Talent Options (a hollow dot), with a legend."
+        },
+        {
+          "type": "added",
+          "text": "Talents now show a one-line summary of what they do, and each has an info button (the required/optional circle) that opens plain-language details — action, strain, what it tests against, and the effect. Hidden effect column folds away on mobile, where the details are a tap away."
+        },
+        {
+          "type": "added",
+          "text": "The Equipment catalogue is much bigger: all rulebook weapons (melee, missile, and throwing), ammunition, common magic items, blood charms, healing aids, and adventuring gear are now in the add-item list. Weapon damage steps, entangle rules, and one-shot bonuses show as effect chips."
+        }
       ]
     },
     {
       "version": "1.2.0",
       "date": "2026-08-02",
       "changes": [
-        { "type": "added", "text": "Armour is now calculated on the Overview: Physical Armour from the armour you wear, and Mystic Armour from your Willpower plus any protective gear." },
-        { "type": "added", "text": "Equipment tab is live. In edit mode, add armour and shields from the rulebook catalogue and equip or unequip them; equipped gear automatically feeds your Armour, Defences, and Initiative. Saved in your browser." },
-        { "type": "changed", "text": "Shields now correctly raise your Physical or Mystic Defence and apply their Initiative penalty, rather than adding to Armour — matching the rules." },
-        { "type": "added", "text": "Health ratings are now calculated on the Overview: Unconsciousness and Death Ratings from Toughness, including the Durability bonus and (for Death) your Circle, plus your Recovery Tests per day." },
-        { "type": "added", "text": "Carry / Lift now shows your Carrying Capacity from Strength, and the most you can lift without a test. The Overview is now fully calculated — every derived stat is filled in." }
+        {
+          "type": "added",
+          "text": "Armour is now calculated on the Overview: Physical Armour from the armour you wear, and Mystic Armour from your Willpower plus any protective gear."
+        },
+        {
+          "type": "added",
+          "text": "Equipment tab is live. In edit mode, add armour and shields from the rulebook catalogue and equip or unequip them; equipped gear automatically feeds your Armour, Defences, and Initiative. Saved in your browser."
+        },
+        {
+          "type": "changed",
+          "text": "Shields now correctly raise your Physical or Mystic Defence and apply their Initiative penalty, rather than adding to Armour — matching the rules."
+        },
+        {
+          "type": "added",
+          "text": "Health ratings are now calculated on the Overview: Unconsciousness and Death Ratings from Toughness, including the Durability bonus and (for Death) your Circle, plus your Recovery Tests per day."
+        },
+        {
+          "type": "added",
+          "text": "Carry / Lift now shows your Carrying Capacity from Strength, and the most you can lift without a test. The Overview is now fully calculated — every derived stat is filled in."
+        }
       ]
     },
     {
       "version": "1.1.0",
       "date": "2026-08-02",
       "changes": [
-        { "type": "added", "text": "Save to a character file: while editing, a Save button writes your changes to a character.json file you pick once and reconnect to thereafter. It saves to both the file and your browser, so they stay in sync — commit the file to keep changes for next time. A dot on the button shows when the file is behind your latest edits. (Chrome/Edge; other browsers keep saving to the browser only.)" },
-        { "type": "added", "text": "Edit mode: use the Edit toggle (top-right, by the theme switch) to make editable parts of the sheet interactive without cluttering the read view. First up — the character's details (description, age, sex, height, weight, skin tone, background); click the name block to edit. Changes are saved in your browser." },
-        { "type": "changed", "text": "Info (ⓘ) icons now stay hidden until you hover what they annotate — the character name and each Special Feature — revealing on approach and always shown on touch, keeping the read view clean." },
-        { "type": "fixed", "text": "Closing a details popover with Escape now behaves like clicking away — the ⓘ icon hides again instead of lingering with a focus outline." },
-        { "type": "added", "text": "Combat panel is now live: Initiative (Dexterity step, less armour), Knockdown (Strength step), and Karma (maximum from race and Circle), each rollable." },
-        { "type": "added", "text": "Rolls can optionally spend Karma (+D6) on tests your race or Discipline permits, showing the granting Discipline and any condition." },
-        { "type": "changed", "text": "Value tooltips now name the exact source of each modifier (e.g. \"Arc 4\", \"Net 2\") instead of a generic \"discipline\"." },
-        { "type": "changed", "text": "Karma indicators now use a distinct green, keeping amber as the general accent." }
+        {
+          "type": "added",
+          "text": "Save to a character file: while editing, a Save button writes your changes to a character.json file you pick once and reconnect to thereafter. It saves to both the file and your browser, so they stay in sync — commit the file to keep changes for next time. A dot on the button shows when the file is behind your latest edits. (Chrome/Edge; other browsers keep saving to the browser only.)"
+        },
+        {
+          "type": "added",
+          "text": "Edit mode: use the Edit toggle (top-right, by the theme switch) to make editable parts of the sheet interactive without cluttering the read view. First up — the character's details (description, age, sex, height, weight, skin tone, background); click the name block to edit. Changes are saved in your browser."
+        },
+        {
+          "type": "changed",
+          "text": "Info (ⓘ) icons now stay hidden until you hover what they annotate — the character name and each Special Feature — revealing on approach and always shown on touch, keeping the read view clean."
+        },
+        {
+          "type": "fixed",
+          "text": "Closing a details popover with Escape now behaves like clicking away — the ⓘ icon hides again instead of lingering with a focus outline."
+        },
+        {
+          "type": "added",
+          "text": "Combat panel is now live: Initiative (Dexterity step, less armour), Knockdown (Strength step), and Karma (maximum from race and Circle), each rollable."
+        },
+        {
+          "type": "added",
+          "text": "Rolls can optionally spend Karma (+D6) on tests your race or Discipline permits, showing the granting Discipline and any condition."
+        },
+        {
+          "type": "changed",
+          "text": "Value tooltips now name the exact source of each modifier (e.g. \"Arc 4\", \"Net 2\") instead of a generic \"discipline\"."
+        },
+        {
+          "type": "changed",
+          "text": "Karma indicators now use a distinct green, keeping amber as the general accent."
+        }
       ]
     },
     {
       "version": "1.0.0",
       "date": "2026-08-01",
       "changes": [
-        { "type": "added", "text": "Tabbed character sheet: Overview, Disciplines, Spells, Gear, and Notes." },
-        { "type": "added", "text": "Overview dashboard — attributes, defences, armour, health, movement, and combat at a glance." },
-        { "type": "added", "text": "Special Features panel showing racial abilities and their linked traits." },
-        { "type": "added", "text": "Exploding-dice roller with a result modal for rollable stats." },
-        { "type": "added", "text": "Rules engine: Physical, Mystic, and Social Defence derived from attributes plus racial and discipline effects." },
-        { "type": "added", "text": "Light and dark theme toggle, with the choice remembered." },
-        { "type": "added", "text": "Character details modal with portrait, background, and vitals." },
-        { "type": "changed", "text": "Self-hosted the UI framework so the app loads reliably and works offline." }
+        {
+          "type": "added",
+          "text": "Tabbed character sheet: Overview, Disciplines, Spells, Gear, and Notes."
+        },
+        {
+          "type": "added",
+          "text": "Overview dashboard — attributes, defences, armour, health, movement, and combat at a glance."
+        },
+        {
+          "type": "added",
+          "text": "Special Features panel showing racial abilities and their linked traits."
+        },
+        {
+          "type": "added",
+          "text": "Exploding-dice roller with a result modal for rollable stats."
+        },
+        {
+          "type": "added",
+          "text": "Rules engine: Physical, Mystic, and Social Defence derived from attributes plus racial and discipline effects."
+        },
+        {
+          "type": "added",
+          "text": "Light and dark theme toggle, with the choice remembered."
+        },
+        {
+          "type": "added",
+          "text": "Character details modal with portrait, background, and vitals."
+        },
+        {
+          "type": "changed",
+          "text": "Self-hosted the UI framework so the app loads reliably and works offline."
+        }
       ]
     }
   ]

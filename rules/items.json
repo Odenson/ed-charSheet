@@ -17,7 +17,7 @@
       "kind": "armor",
       "living": false,
       "ref": {
-        "cost": 10,
+        "cost": 2,
         "weight": "5 lb",
         "availability": "average",
         "description": "Made of layers of cotton stitched tightly together, this simple armour provides basic protection"
@@ -30,11 +30,11 @@
             "name": "Physical"
           },
           "operation": "add",
-          "value": 1,
+          "value": 2,
           "measure": "rating",
           "condition": "always",
           "source": "item",
-          "summary": "Adds Physical Armor of 1"
+          "summary": "Adds Physical Armor of 2"
         }
       ]
     },
@@ -67,7 +67,7 @@
       "kind": "armor",
       "living": false,
       "ref": {
-        "cost": 30,
+        "cost": 20,
         "weight": "20 lb",
         "availability": "average",
         "description": "Padded cloth backed with a covering of leather armour."
@@ -85,32 +85,6 @@
           "condition": "always",
           "source": "item",
           "summary": "Physical Armor 4"
-        },
-        {
-          "type": "armor-modifier",
-          "target": {
-            "domain": "armor",
-            "name": "Mystic"
-          },
-          "operation": "add",
-          "value": 2,
-          "measure": "rating",
-          "condition": "always",
-          "source": "item",
-          "summary": "Mystic Armor 2"
-        },
-        {
-          "type": "characteristic-modifier",
-          "target": {
-            "domain": "characteristic",
-            "name": "Initiative"
-          },
-          "operation": "subtract",
-          "value": 1,
-          "measure": "step",
-          "condition": "always",
-          "source": "item",
-          "summary": "Initiative penalty 1"
         }
       ]
     },
@@ -138,30 +112,17 @@
           "summary": "Adds Physical Armor of 5."
         },
         {
-          "type": "armor-modifier",
-          "target": {
-            "domain": "armor",
-            "name": "Mystic"
-          },
-          "operation": "add",
-          "value": 1,
-          "measure": "rating",
-          "condition": "always",
-          "source": "item",
-          "summary": "Adds a Mystic Armor of 1"
-        },
-        {
           "type": "characteristic-modifier",
           "target": {
             "domain": "characteristic",
             "name": "Initiative"
           },
           "operation": "subtract",
-          "value": 2,
+          "value": 1,
           "measure": "step",
           "condition": "always",
           "source": "item",
-          "summary": "Imposes an Initiative penalty of 2."
+          "summary": "Imposes an Initiative penalty of 1."
         }
       ]
     },
@@ -220,8 +181,8 @@
       "kind": "armor",
       "living": false,
       "ref": {
-        "cost": 300,
-        "weight": "40 lb",
+        "cost": 110,
+        "weight": "30 lb",
         "availability": "average",
         "description": "Leather reinforced with riveted metal rings to turn blows."
       },
@@ -296,7 +257,7 @@
       "kind": "armor",
       "living": false,
       "ref": {
-        "cost": 2500,
+        "cost": 3000,
         "weight": "60 lb",
         "availability": "unusual",
         "description": "Fitted steel plates over chain mail, the heaviest and most cumbersome protection."
@@ -424,8 +385,8 @@
       "living": false,
       "ref": {
         "cost": 100,
-        "weight": "5 lb",
-        "availability": "average",
+        "weight": "20 lb",
+        "availability": "rare",
         "description": "Armour flayed from a slain obsidiman; wearing it invites loathing and attack."
       },
       "effects": [
@@ -440,7 +401,7 @@
           "measure": "rating",
           "condition": "always",
           "source": "item",
-          "summary": "Physical Armor 2"
+          "summary": "Physical Armor 3"
         },
         {
           "type": "armor-modifier",
@@ -449,11 +410,11 @@
             "name": "Mystic"
           },
           "operation": "add",
-          "value": 2,
+          "value": 1,
           "measure": "rating",
           "condition": "always",
           "source": "item",
-          "summary": "Mystic Armor 2"
+          "summary": "Mystic Armor 1"
         }
       ]
     },
@@ -707,7 +668,8 @@
         "weight": "3 lb",
         "availability": "average",
         "shatterThreshold": 17,
-        "description": "A small forearm shield that still lets the wearer draw a bow."
+        "description": "A small forearm shield that still lets the wearer draw a bow.",
+        "image": "data/Shield-Buckler.png"
       },
       "effects": [
         {
@@ -886,11 +848,11 @@
             "name": "Initiative"
           },
           "operation": "subtract",
-          "value": 1,
+          "value": 2,
           "measure": "step",
           "condition": "always",
           "source": "item",
-          "summary": "Initiative penalty 1"
+          "summary": "Initiative penalty 2"
         }
       ]
     },
@@ -1093,7 +1055,8 @@
         "strMin": 12,
         "size": 3,
         "damageStep": 5,
-        "description": "A blade about three feet long, curved or straight, single- or double-edged."
+        "description": "A blade about three feet long, curved or straight, single- or double-edged.",
+        "image": "data/broadsword.png"
       },
       "effects": [
         {
@@ -1145,12 +1108,10 @@
         "cost": "8 cp",
         "weight": "1 lb",
         "availability": "average",
-        "category": "throwing",
+        "category": "melee",
         "strMin": 4,
         "size": 1,
         "damageStep": 2,
-        "shortRange": "2-10",
-        "longRange": "11-20",
         "description": "A short blade up to a foot long, equally at home thrown."
       },
       "effects": [
@@ -1165,7 +1126,36 @@
           "measure": "step",
           "condition": "always",
           "source": "item",
-          "summary": "Thrown damage: Strength step + 2."
+          "summary": "Melee damage: Strength step + 2."
+        }
+      ]
+    },
+    "Ork Dagger": {
+      "kind": "weapon",
+      "ref": {
+        "cost": "8 cp",
+        "weight": "1 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 4,
+        "size": 1,
+        "damageStep": 2,
+        "description": "A short but bulky blade a foot long favoured by Orks.",
+        "image": "data/Std-ork-dagger.png"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 2."
         }
       ]
     },
@@ -1345,6 +1335,35 @@
         }
       ]
     },
+    "Ork Hand Axe": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": "3.5 lb",
+        "availability": "average",
+        "category": "melee",
+        "strMin": 8,
+        "size": 2,
+        "damageStep": 4,
+        "description": "A small brutal axe, easy-to-use one-handed built with hardwood and heavier than normal handaxe.",
+        "image": "data/Ork-handaxe.png"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 4."
+        }
+      ]
+    },
     "Hawk Hatchet": {
       "kind": "weapon",
       "ref": {
@@ -1445,7 +1464,8 @@
         "damageStep": 4,
         "shortRange": "2-32",
         "longRange": "33-64",
-        "description": "A small, concealable crossbow firing short bolts."
+        "description": "A small, concealable crossbow firing short bolts.",
+        "image":"data/light-crossbow.png"
       },
       "effects": [
         {
@@ -1562,7 +1582,8 @@
         "damageStep": 5,
         "shortRange": "2-40",
         "longRange": "41-80",
-        "description": "A larger crossbow firing twelve-inch bolts."
+        "description": "A larger crossbow firing twelve-inch bolts.",
+        "image":"data/medium-crossbow.png"
       },
       "effects": [
         {
@@ -1851,7 +1872,8 @@
         "damageStep": 4,
         "shortRange": "2-10",
         "longRange": "11-20",
-        "description": "A short throwing-or-thrusting spear, often paired with a shield."
+        "description": "A short throwing-or-thrusting spear, often paired with a shield.",
+        "image": "data/spear.png"
       },
       "effects": [
         {
@@ -1939,7 +1961,8 @@
         "damageStep": 2,
         "shortRange": "2-16",
         "longRange": "17-32",
-        "description": "A flat, thin dagger balanced for throwing."
+        "description": "A flat, thin dagger balanced for throwing.",
+        "image": "data/thrown-dagger.png"
       },
       "effects": [
         {

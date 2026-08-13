@@ -18,7 +18,7 @@ for the `rules/thread-items.json` catalog.
 | Piece | File | Schema |
 |---|---|---|
 | Catalogue | `rules/thread-items.json` | `ed-thread-items/1` |
-| Character ownership | `data/characters.json` → character `items[]` | `ed-character/1` |
+| Character ownership | `data/characters/<id>.json` → character `items[]` | `ed-character/1` |
 | Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v3 |
 | Legend cost tables | `rules/legend.json` → `costs.talentRank` | — |
 

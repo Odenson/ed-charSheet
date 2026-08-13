@@ -60,3 +60,27 @@ export function applyArmourSwap(items, kindOf, name, via) {
   if (via === 'add') return [...stored, { name, equipped: true }];
   return stored.map((i) => (i.name === name ? { ...i, equipped: true } : i));
 }
+
+/**
+ * Reshape the derived model items into the stored input list with every named
+ * item unequipped — the Combat tab's blood-charm spend (PLAN-COMBAT-TAB,
+ * "spent at the new round's Initiative roll"): a charm armed during a round is
+ * spent when the next round begins, so it leaves the character (equipped:false)
+ * and returns only via the Equipment tab's Equipped/Stored toggle once its Blood
+ * Magic Damage has healed. Only the toggled names change; everything else —
+ * equipped flags and thread ranks — is preserved exactly.
+ *
+ * @param {Array<{name:string, equipped:boolean, thread?:{threadRank:number}}>} items
+ *   the derived model items
+ * @param {string[]} spentNames  the armed blood-charm names to unequip
+ * @returns {Array<{name:string, equipped:boolean, threadRank?:number}>} the next
+ *   input list ready to dispatch as `ed-edit-items`
+ */
+export function unequipSpentCharms(items, spentNames) {
+  const spent = new Set(spentNames ?? []);
+  return items.map((it) => ({
+    name: it.name,
+    equipped: spent.has(it.name) ? false : it.equipped,
+    ...(it.thread ? { threadRank: it.thread.threadRank } : {}),
+  }));
+}

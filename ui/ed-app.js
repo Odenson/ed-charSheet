@@ -1,15 +1,17 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, loadCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
-import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
-import { saveServer, SaveError, DEFAULT_ENDPOINT } from '../store-server.js';
+import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../store-server.js';
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
+import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
+import './ed-combat.js';
 import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
@@ -19,11 +21,14 @@ import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
 import './ed-character-picker.js';
+import './ed-conflict.js';
+import './ed-settings.js';
 import { saveRollLog } from '../store-rolllog.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
   { id: 'disciplines', label: 'Disciplines', icon: '◈' },
+  { id: 'combat', label: 'Combat', icon: '◎' },
   { id: 'spells', label: 'Spells', icon: '✦' },
   { id: 'equipment', label: 'Equipment', icon: '⚔' },
   { id: 'notes', label: 'Notes', icon: '❋' },
@@ -46,11 +51,14 @@ export class EdApp extends LitElement {
     _saving: { state: true },
     _saveError: { state: true },
     _saveOk: { state: true },
+    _notice: { state: true }, // transient status message (e.g. Karma Ritual performed)
     _keyPrompt: { state: true },
     _confirmDiscard: { state: true },
     _confirmSwitch: { state: true },
     _picker: { state: true },
     _noSelection: { state: true },
+    _conflict: { state: true },
+    _settings: { state: true }, // Settings modal open?
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -58,18 +66,31 @@ export class EdApp extends LitElement {
   // flows back down). Not reactive state — _model is the render trigger.
   _character = null;
   _rules = null;
-  // The selected character's map key in the grouped store (meta.id). Persisted
-  // to localStorage 'ed-character' so the same character loads next session.
+  // The selected character's id (its per-character file name). Persisted to
+  // localStorage 'ed-character' so the same character loads next session.
   _characterId = null;
-  // The fetched grouped store ({ schema, characters: { id: entry } }) — the
-  // character picker lists from it. Refreshed on each character load.
-  _characterStore = null;
+  // The per-character index rows [{ id, name, portrait }] — the character picker
+  // lists from them. Fetched at startup (and refreshed on each load path).
+  _characters = null;
+  // The last-seen blob sha of the loaded character's file (from the read ETag or
+  // the last save's commit sha) — the optimistic-concurrency `base` sent on the
+  // next /save. Null locally / on the CDN fallback (no ETag → overwrite path).
+  _baseSha = null;
   // The SAVE_KEY for GitHub saves. Held in memory for the session only — never
   // localStorage (runbook §0). A plain field, not reactive state.
   _saveKey = null;
   // A custom-item save interrupted by the key prompt (saveKey absent). Replayed
   // once the prompt confirms; cleared on any prompt close.
   _pendingCustomSave = null;
+  // A character save interrupted by the key prompt — whether it was silent
+  // (background) so the replay preserves the toast behaviour. Cleared on any
+  // prompt close.
+  _pendingSaveSilent = null;
+  // An open stale_base conflict ({ sha, silent }) — the worker rejected a save
+  // because the character changed on the branch; the modal resolves it. `sha` is
+  // the branch's current file sha (the acknowledged-overwrite base), `silent`
+  // whether the rejected save was a background auto-save.
+  _conflict = null;
 
   static styles = css`
     :host {
@@ -162,6 +183,7 @@ export class EdApp extends LitElement {
     this._saving = false;
     this._saveError = null;
     this._saveOk = null;
+    this._notice = null;
     this._keyPrompt = false;
     this._confirmDiscard = false;
     this._confirmSwitch = false;
@@ -171,10 +193,27 @@ export class EdApp extends LitElement {
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     this._applyTheme();
+    this._settings = false;
+    // Autosave prefs (localStorage): on by default, 60s idle interval. Off = pure
+    // manual save (the always-visible Save icon). The idle timer coalesces a lull
+    // in edits into one background save; a max-wait cap bounds continuous activity;
+    // and visibilitychange/pagehide flush on leaving. See docs/PLAN-SAVE-VISIBILITY.
+    this._autosaveEnabled = localStorage.getItem('ed-autosave') !== 'off';
+    const secs = Number(localStorage.getItem('ed-autosave-seconds'));
+    this._autosaveSeconds = Number.isFinite(secs) && secs >= 10 ? secs : 60;
+    this._autosaveTimer = null; // idle debounce
+    this._autosaveMaxTimer = null; // max-wait cap
   }
 
   async connectedCallback() {
     super.connectedCallback();
+    // Flush a pending autosave when the tab is hidden or the page is unloading —
+    // the natural moment work would otherwise be stranded (a tab switch, a close,
+    // mobile backgrounding). keepalive lets the request outlive the document.
+    this._onHide = () => { if (document.visibilityState === 'hidden') this._flushSave(); };
+    this._onPageHide = () => this._flushSave();
+    document.addEventListener('visibilitychange', this._onHide);
+    window.addEventListener('pagehide', this._onPageHide);
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
       const { label, step, karma, apply, kind, difficulty } = e.detail;
@@ -185,6 +224,11 @@ export class EdApp extends LitElement {
         karma?.step != null && this._model?.stepByNumber?.[karma.step]
           ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
           : null;
+      // Rolling the Karma die IS spending a point of Karma: the Overview's Karma
+      // roll has no +D6 toggle (it is the die), so charge the spend here. Charge,
+      // no refund (owner decision) — each button click opens a fresh roll
+      // interaction, while the modal's "Roll again" never re-fires `ed-roll`.
+      if (kind === 'karma') this._editKarma({ spend: 1 });
       this._roll = {
         rollId: uid(),
         label,
@@ -192,7 +236,10 @@ export class EdApp extends LitElement {
         karma: karmaCtx,
         apply: apply ?? null,
         difficulty: difficulty ?? null,
-        mods: this._rollTimeMods({ kind, apply }),
+        // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
+        // the universal Knocked Down −3 (every test, Karma die only excluded)
+        // is added after — it applies to every roll, combat or not.
+        mods: [...(e.detail.mods ?? []), ...this._rollTimeMods({ kind, apply })],
       };
     });
     // A completed roll in the modal (PLAN-NOTES-TAB, decision #5): the modal
@@ -235,7 +282,18 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-roll-apply', (e) => {
       const { action, result, difficulty } = e.detail;
       if (action === 'recovery-heal') {
-        this._editHealth(applyHealth(this._character?.resources?.health ?? {}, { damage: -result, recoveriesUsed: 1 }));
+        // Recovery Tests are a per-day budget, so the apply site is the authority
+        // (the buttons also disable themselves): a roll can never heal when the
+        // character has none left, even if a stale view slipped one through.
+        const health = this._character?.resources?.health ?? {};
+        const maxRec = this._model?.characteristics?.recoveries?.value ?? null;
+        const remaining = recoveriesRemaining(health?.recoveriesUsed, maxRec);
+        if (remaining != null && remaining <= 0) {
+          this._showNotice(`No Recovery Tests left today — used all ${maxRec}. Start a new day to reset.`);
+          this._roll = null;
+          return;
+        }
+        this._editHealth(applyHealth(health, { damage: -result, recoveriesUsed: 1 }));
         this._roll = null; // button-driven: apply and close
       } else if (action === 'knockdown-result') {
         // A Knockdown test resolves itself at roll time — no verify button: a
@@ -253,6 +311,10 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
+    // A roll spent Karma (the shared roll modal, so this fires for ANY tab's
+    // roll). Decrement the stored `available` balance app-wide — charge, no
+    // refund (owner decision).
+    this.addEventListener('ed-edit-karma', (e) => this._editKarma(e.detail));
     this.addEventListener('ed-edit-talent-rank', (e) => this._editTalentRank(e.detail));
     this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
     // Notes-tab surfaces (PLAN-NOTES-TAB): the player's hand-written notes and
@@ -264,15 +326,23 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-legend-earned', (e) => this._editLegendEarned(e.detail));
     // The key-prompt modal supplies a SAVE_KEY; keep it in memory and retry.
     // A custom-item save paused for the key replays first; otherwise retry the
-    // character save. The pending is consumed either way.
+    // character save (preserving whether it was a silent background save). The
+    // pending is consumed either way.
     this.addEventListener('ed-save-key', (e) => {
       this._saveKey = e.detail?.key || null;
       this._keyPrompt = false;
       const pending = this._pendingCustomSave;
       this._pendingCustomSave = null;
+      const silent = this._pendingSaveSilent ?? false;
+      this._pendingSaveSilent = null;
       if (!this._saveKey) return;
       if (pending) this._saveCustomItems(pending.items, pending.delete);
-      else this._save();
+      else this._doSave({ silent });
+    });
+    // A stale_base conflict modal choice (keep-mine / take-theirs / cancel) —
+    // route it through the pure nextSaveAction helper (save-action.js).
+    this.addEventListener('ed-conflict', (e) => {
+      this._applyConflictChoice(e.detail?.choice);
     });
     // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3).
     // 'draft' writes the overlay instantly (resilient) and re-derives so pending
@@ -284,18 +354,18 @@ export class EdApp extends LitElement {
       if (e.detail?.id) this._loadCharacter(e.detail.id);
     });
     try {
-      const store = await loadCharacters();
-      const ids = Object.keys(store?.characters ?? {});
+      const characters = await listCharacters();
+      const ids = characters.map((c) => c.id);
       if (!ids.length) {
         this._error = 'No characters found in the character store.';
         return;
       }
-      const id = this._initialId(ids, store);
-      if (id) await this._loadCharacter(id, { store });
+      const id = this._initialId(ids, characters);
+      if (id) await this._loadCharacter(id, { characters });
       else {
-        // First run with no saved selection: keep the fetched store so the
+        // First run with no saved selection: keep the fetched index so the
         // picker has characters to list (only _loadCharacter sets it otherwise).
-        this._characterStore = store;
+        this._characters = characters;
         this._picker = true;
       }
     } catch (e) {
@@ -304,26 +374,29 @@ export class EdApp extends LitElement {
   }
 
   // Which character to load on startup: the saved 'ed-character' selection if
-  // it still exists in the store; the single entry if there's only one (no real
+  // it still exists in the index; the single entry if there's only one (no real
   // choice); otherwise null — the picker asks the user (first run).
-  _initialId(ids, store) {
+  _initialId(ids, characters) {
     const saved = localStorage.getItem('ed-character');
-    if (saved && store.characters?.[saved]) return saved;
+    if (saved && characters.some((c) => c.id === saved)) return saved;
     if (ids.length === 1) return ids[0];
     return null;
   }
 
-  // Load a character by id: fetch the store (unless passed in), apply its per-id
-  // overlay, derive the model. Persists the selection so the same character
-  // loads next session. Sets _dirty from the id's own overlay.
-  async _loadCharacter(id, { store } = {}) {
+  // Load a character by id: read its per-character file (unless the index was
+  // passed in), apply its per-id overlay, derive the model, and keep the file's
+  // current blob sha as `_baseSha` (the concurrency token for the next save).
+  // Persists the selection so the same character loads next session. Sets
+  // _dirty from the id's own overlay.
+  async _loadCharacter(id, { characters } = {}) {
     try {
-      const { character, rules, store: fresh } = await loadCharacter(id, store ? { store } : {});
+      const { character, rules, base } = await loadCharacter(id);
       this._characterId = id;
-      this._characterStore = fresh;
+      if (characters) this._characters = characters;
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
+      this._baseSha = base;
       this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
       this._picker = false;
       this._noSelection = false;
@@ -348,7 +421,7 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, meta: { ...this._character.meta, ...patch } };
     saveMetaEdits(patch, this._characterId); // overlay: always-on autosave, instant, no permissions
     // Local edits are now ahead of the last GitHub commit until the next Save.
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -359,7 +432,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(items)) return;
     this._character = { ...this._character, items };
     saveItemEdits(items, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -370,7 +443,7 @@ export class EdApp extends LitElement {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -392,8 +465,87 @@ export class EdApp extends LitElement {
       },
     };
     saveHealthEdits(merged, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
+  }
+
+  // The Karma ledger (docs/PLAN-LEGEND-KARMA-RITUAL-LOG.md): the stored inputs are
+  // `resources.karma.converted` (lifetime Karma gained) and `spent` (lifetime Karma
+  // spent rolling dice); the spendable pool `available` is DERIVED
+  // (`clamp(converted − spent, 0, max)`) and never written. Every branch below is an
+  // input write on the ledger, persisted via saveKarmaEdits. Also refreshes the open
+  // roll's karma snapshot so the modal's "N Karma" readout decrements live (re-derived
+  // after the model re-derives — the modal holds `this._roll.karma`, taken when opened).
+  _editKarma(detail) {
+    if (!this._character) return;
+    const cur = this._character.resources?.karma ?? {};
+    const karma = this._model?.characteristics?.karma;
+    const converted = Number(cur.converted) || 0;
+    const spent = Number(cur.spent) || 0;
+    const max = karma?.max;
+    const available =
+      Number.isFinite(max) && max != null ? Math.max(0, Math.min(max, converted - spent)) : null;
+    let nextKarma;
+    if (detail?.ritual) {
+      // Paid Karma Ritual (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md): buy N
+      // Karma for N × race cost Legend. Clamp defensively to the room under max and to
+      // what Legend affords, so available Legend can never go negative even if the
+      // caller over-asks. The spend is a dated, undoable log event; the Legend sink is
+      // derived (`converted × cost`), so available Legend reflects it automatically.
+      const cost = karma?.ritualCost;
+      if (!Number.isFinite(cost) || cost <= 0) return; // rule off / no cost → no paid ritual
+      const currentK = available ?? 0;
+      const room = Number.isFinite(max) ? Math.max(0, max - currentK) : Infinity;
+      const availLegend = this._model?.legend?.available;
+      const affordable = Number.isFinite(availLegend) ? Math.floor(availLegend / cost) : Infinity;
+      const points = Math.max(0, Math.min(Number(detail.ritual.points) || 0, room, affordable));
+      if (points <= 0) return;
+      const event = { id: uid(), date: new Date().toISOString(), points, cost, legend: points * cost };
+      nextKarma = { ...cur, converted: converted + points, rituals: [...(cur.rituals ?? []), event] };
+      this._showNotice(`Karma Ritual — bought ${points} Karma for ${points * cost} Legend.`);
+    } else if (detail?.removeRitual) {
+      // Undo a ritual purchase: drop the event and the `converted` it added. The Legend
+      // returns via the derived sink (`converted × cost` drops by points × cost) — no
+      // stored `available` to touch.
+      const rituals = cur.rituals ?? [];
+      const ev = rituals.find((r) => r.id === detail.removeRitual);
+      if (!ev) return;
+      const evPoints = Number(ev.points) || 0;
+      nextKarma = { ...cur, converted: Math.max(0, converted - evPoints), rituals: rituals.filter((r) => r.id !== detail.removeRitual) };
+      this._showNotice(`Undid a Karma Ritual — returned ${Number(ev.legend) || (evPoints * (Number(ev.cost) || 0))} Legend.`);
+    } else if (detail?.refill) {
+      // Free Karma Ritual (PG p.83, rule OFF): restore the derived pool to the derived
+      // maximum by raising the ledger (`converted := spent + max`); no Legend cost. Max
+      // is derived (Circle × racial modifier) — never stored.
+      if (available == null) return;
+      if (available >= max) return; // already full
+      nextKarma = { ...cur, converted: spent + max };
+      this._showNotice(`Karma Ritual performed — Karma restored to ${max}.`);
+    } else {
+      const spend = Number(detail?.spend) || 0;
+      if (spend <= 0) return;
+      if (available == null || available <= 0) return;
+      nextKarma = { ...cur, spent: spent + Math.min(spend, available) };
+    }
+    this._character = {
+      ...this._character,
+      resources: { ...(this._character.resources || {}), karma: nextKarma },
+    };
+    saveKarmaEdits(nextKarma, this._characterId);
+    this._markDirty();
+    this._model = deriveModel(this._character, this._rules);
+    if (this._roll?.karma) {
+      const derived = this._model?.characteristics?.karma?.available ?? null;
+      this._roll = { ...this._roll, karma: { ...this._roll.karma, available: derived } };
+    }
+  }
+
+  // A transient status message (auto-dismisses; click to dismiss early). Distinct
+  // from the save toasts — used for in-app actions like the Karma Ritual.
+  _showNotice(text) {
+    this._notice = text;
+    clearTimeout(this._noticeTimer);
+    this._noticeTimer = setTimeout(() => { this._notice = null; }, 3500);
   }
 
   // A view replaced the character's hand-written notes. Same inputs-only flow:
@@ -403,7 +555,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(notes)) return;
     this._character = { ...this._character, notes };
     saveNotesEdits(notes, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -412,7 +564,7 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(history)) return;
     this._character = { ...this._character, history };
     saveHistoryEdits(history, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -431,7 +583,7 @@ export class EdApp extends LitElement {
       },
     };
     saveLegendEdits(earned, this._characterId);
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -489,7 +641,7 @@ export class EdApp extends LitElement {
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
       this._characterId,
     );
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -511,7 +663,7 @@ export class EdApp extends LitElement {
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
       this._characterId,
     );
-    this._dirty = true;
+    this._markDirty();
     this._model = deriveModel(this._character, this._rules);
   }
 
@@ -620,19 +772,101 @@ export class EdApp extends LitElement {
     return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
   }
 
+  disconnectedCallback() {
+    document.removeEventListener('visibilitychange', this._onHide);
+    window.removeEventListener('pagehide', this._onPageHide);
+    this._clearAutosaveTimers();
+    super.disconnectedCallback();
+  }
+
+  // A view edited an input: mark the local copy ahead of GitHub (the always-
+  // visible Save icon shows its dot) and (re)arm the idle autosave.
+  _markDirty() {
+    this._dirty = true;
+    this._scheduleAutosave();
+  }
+
+  // Debounced idle autosave: reset the idle timer on every change so a burst
+  // coalesces into one save after `_autosaveSeconds` of quiet; a max-wait cap
+  // (2× the interval) guarantees a save during continuous activity so a long
+  // fight never goes unsaved. No-op when autosave is off.
+  _scheduleAutosave() {
+    if (!this._autosaveEnabled) return;
+    clearTimeout(this._autosaveTimer);
+    this._autosaveTimer = setTimeout(() => this._autosaveFire(), this._autosaveSeconds * 1000);
+    if (!this._autosaveMaxTimer) {
+      this._autosaveMaxTimer = setTimeout(() => this._autosaveFire(), this._autosaveSeconds * 2000);
+    }
+  }
+  _clearAutosaveTimers() {
+    clearTimeout(this._autosaveTimer);
+    clearTimeout(this._autosaveMaxTimer);
+    this._autosaveTimer = null;
+    this._autosaveMaxTimer = null;
+  }
+  // Fire a background save — key-gated (never prompts) and silent (no toast). A
+  // conflict is deferred (see _doSave); failures keep the dot dirty and the next
+  // change re-arms the timer.
+  _autosaveFire() {
+    this._clearAutosaveTimers();
+    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving) return;
+    this._doSave({ silent: true });
+  }
+  // Flush on tab-hide / page-unload — key-gated + silent, with keepalive so the
+  // request survives the document going away. Best-effort: nothing is lost either
+  // way (the overlay persists locally).
+  _flushSave() {
+    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving) return;
+    this._doSave({ silent: true, keepalive: true });
+  }
+
+  // Persist the autosave preferences (Settings modal) and re-arm/cancel the timer.
+  _applySettings({ enabled, seconds } = {}) {
+    this._autosaveEnabled = enabled !== false;
+    if (Number.isFinite(seconds)) this._autosaveSeconds = seconds;
+    localStorage.setItem('ed-autosave', this._autosaveEnabled ? 'on' : 'off');
+    localStorage.setItem('ed-autosave-seconds', String(this._autosaveSeconds));
+    this._settings = false;
+    if (!this._autosaveEnabled) this._clearAutosaveTimers();
+    else if (this._dirty) this._scheduleAutosave();
+  }
+
+  // Manual Save button → a loud save (toast on success/failure). The background
+  // save path calls `_doSave({ silent: true })` — same store, no toast noise.
+  _save() {
+    this._doSave({ silent: false });
+  }
+
   // Save to GitHub: POST the merged, inputs-only character to the worker, which
   // commits it to the character-data branch (store-server.js). Requires a
   // SAVE_KEY — if none is set for the session, open the key prompt first; the
   // overlay already holds the edits, so nothing is lost meanwhile. On success,
   // reconcile the overlay so the branch read becomes the source of truth (§4.5).
-  async _save() {
+  //
+  // `base` is the optimistic-concurrency token: the file sha this client last
+  // saw (`_baseSha`). A `stale_base` rejection (the character changed on the
+  // branch) opens the conflict modal instead of an error toast — the modal's
+  // keep-mine re-save passes the branch's current sha as the acknowledged base.
+  // `silent` (background) suppresses the success/error toasts; a conflict still
+  // surfaces (never silently dropped).
+  async _doSave({ silent = false, base = this._baseSha, keepalive = false } = {}) {
     if (!this._character || this._saving) return;
-    if (!this._saveKey) { this._keyPrompt = true; return; }
+    if (!this._saveKey) {
+      // Never prompt for the key from a background/flush save — those are
+      // key-gated by the caller, so this only fires on a manual Save.
+      this._pendingSaveSilent = silent;
+      this._keyPrompt = true;
+      return;
+    }
+    this._clearAutosaveTimers(); // a save is happening now — cancel any pending one
     this._saving = true;
-    this._saveError = null;
-    this._saveOk = null;
+    if (!silent) {
+      this._saveError = null;
+      this._saveOk = null;
+    }
     try {
-      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId });
+      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
+      this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
       // Save commits that too — /save-items POST, reconcile, re-read the catalog.
@@ -643,14 +877,41 @@ export class EdApp extends LitElement {
         await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
-      this._saveOk = commit; // { sha, url }
+      if (!silent) this._saveOk = commit; // { sha, url }
     } catch (e) {
-      // A rejected key: drop it so the next Save re-prompts.
-      if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
-      this._saveError = e?.message ? String(e.message) : String(e);
-      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      // A stale base — the character changed on the branch since this client
+      // loaded (or last saved) it. Surface the conflict modal, never a toast:
+      // the overlay still holds the local draft, and the modal decides whether
+      // the branch version wins.
+      if (e instanceof SaveConflictError) {
+        // A LOUD (manual) save surfaces the conflict modal now. A SILENT
+        // (autosave / flush-on-hide) one must NOT interrupt play — leave the
+        // overlay dirty and defer the conflict to the next explicit Save.
+        if (!silent) this._conflict = { sha: e.sha, silent };
+      } else {
+        // A rejected key: drop it so the next Save re-prompts.
+        if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
+        if (!silent) this._saveError = e?.message ? String(e.message) : String(e);
+        this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      }
     } finally {
       this._saving = false;
+    }
+  }
+
+  // Route a conflict-modal choice through the pure nextSaveAction helper:
+  // keep-mine → re-save with the branch's current sha as the acknowledged base;
+  // take-theirs → discard the local draft and reload the branch version; cancel
+  // → close, the local overlay stays dirty and nothing is written.
+  _applyConflictChoice(choice) {
+    const step = nextSaveAction({ choice, conflictSha: this._conflict?.sha ?? null });
+    const silent = this._conflict?.silent ?? false;
+    this._conflict = null;
+    if (step.action === 'none') return;
+    if (step.action === 'resave') this._doSave({ silent, base: step.base });
+    else if (step.action === 'reload') {
+      reconcileOverlay(undefined, this._characterId); // clear the local draft
+      this._reloadSaved();
     }
   }
 
@@ -673,17 +934,23 @@ export class EdApp extends LitElement {
   // Discard the local autosave draft and reload the saved (GitHub) version of
   // the current character. Clears the overlay so it can't mask the branch, then
   // re-loads from source — the fix for a stale local draft leaking over a newer
-  // GitHub save.
-  async _discardLocal() {
+  // GitHub save. Also the "take theirs" half of a stale_base conflict.
+  _discardLocal() {
     this._confirmDiscard = false;
     reconcileOverlay(undefined, this._characterId); // clear every saved category from the overlay
+    this._reloadSaved();
+  }
+
+  // Reload the current character from the branch, refreshing `_baseSha` to the
+  // file's current sha. A pending custom-item delta is a separate, global overlay
+  // and survives.
+  async _reloadSaved() {
     try {
-      const { character, rules } = await loadCharacter(this._characterId);
+      const { character, rules, base } = await loadCharacter(this._characterId);
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
-      // Discarding clears the character overlay only; a pending custom-item delta
-      // is a separate, global overlay and survives.
+      this._baseSha = base;
       this._dirty = hasCustomPendingEdits();
       this._saveError = null;
     } catch (e) {
@@ -719,6 +986,12 @@ export class EdApp extends LitElement {
           .customOverlay=${loadCustomEdits()}
           .customCanonKeys=${m.customCanonKeys}
         ></ed-equipment>`;
+      case 'combat':
+        return html`<ed-combat
+          .model=${m}
+          .editMode=${this._editMode}
+          .characterId=${this._characterId}
+        ></ed-combat>`;
       case 'notes':
         return html`<ed-notes
           .model=${m}
@@ -767,7 +1040,7 @@ export class EdApp extends LitElement {
                   <path d="M3 4v4h4" />
                 </svg></button>`
           : ''}
-        ${this._editMode
+        ${this._characterId
           ? html`<button
                 class="icon-btn save ${this._dirty ? 'dirty' : ''}"
                 @click=${this._save}
@@ -778,8 +1051,10 @@ export class EdApp extends LitElement {
                   <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
                   <circle cx="12" cy="14" r="2" />
                   <path d="M14 4v4h-6v-4" />
-                </svg></button>
-              <button
+                </svg></button>`
+          : ''}
+        ${this._editMode
+          ? html`<button
                 class="icon-btn export"
                 @click=${this._export}
                 title="Export a copy (download)"
@@ -798,6 +1073,15 @@ export class EdApp extends LitElement {
         ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 20h16a2 2 0 0 0 2 -2v-9a2 2 0 0 0 -2 -2h-7l-2 -3h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2" />
             <path d="M9.5 10v5" /><path d="M7 12.5h5" />
+          </svg></button>
+        <button
+          class="icon-btn settings"
+          @click=${() => (this._settings = true)}
+          title="Settings (autosave)"
+          aria-label="Settings"
+        ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg></button>
         <button
           class="icon-btn theme"
@@ -819,7 +1103,7 @@ export class EdApp extends LitElement {
           : html`<p class="status">Loading character…</p>`}
       ${this._picker
         ? html`<ed-character-picker
-            .characters=${this._characterStore?.characters ?? {}}
+            .characters=${this._characters ?? []}
             .current=${this._characterId}
             @close=${() => {
               this._picker = false;
@@ -839,7 +1123,18 @@ export class EdApp extends LitElement {
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}
-      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; }}></ed-save-key>` : ''}
+      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; this._pendingSaveSilent = null; }}></ed-save-key>` : ''}
+      ${this._conflict
+        ? html`<ed-conflict @close=${() => (this._conflict = null)}></ed-conflict>`
+        : ''}
+      ${this._settings
+        ? html`<ed-settings
+            .enabled=${this._autosaveEnabled}
+            .seconds=${this._autosaveSeconds}
+            @ed-settings=${(e) => this._applySettings(e.detail)}
+            @close=${() => (this._settings = false)}
+          ></ed-settings>`
+        : ''}
       ${this._confirmDiscard
         ? html`<ed-confirm
             heading="Discard local changes?"
@@ -871,6 +1166,9 @@ export class EdApp extends LitElement {
         ? html`<div class="toast ok" role="status" @click=${() => (this._saveOk = null)}>
             Saved to GitHub ✓ ${this._saveOk.url ? html`— <a href=${this._saveOk.url} target="_blank" rel="noopener">view commit</a>` : ''}
           </div>`
+        : ''}
+      ${this._notice
+        ? html`<div class="toast ok" role="status" @click=${() => (this._notice = null)}>${this._notice}</div>`
         : ''}
     `;
   }
