@@ -81,6 +81,101 @@ const homebrewRule = {
 
 const rulesWith = (homebrewFile) => ({ ...baseRules, homebrewFile });
 
+// --- ed-homebrew/2 `set` lever (docs/HOMEBREW-RULES.md §5.5) -------------------
+
+// A Human (karmaModifier 5) Warrior at Circle 4 → standard max = 5×4 = 20, die
+// step 4 (D6), no ritual cost.
+const humanChar = (circle = 4) => ({
+  schema: 'ed-character/1',
+  meta: { name: 'Karn', race: 'Human' },
+  attributes: { Toughness: { base: 17 } },
+  resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0 }, karma: { available: 3 } },
+  disciplines: [{ name: 'Warrior', circle, talents: [{ name: 'Durability', rank: 1 }] }],
+  skills: [], knacks: [], items: [],
+});
+const karmaEconomy = (enabled = true) => ({
+  schema: 'ed-homebrew/2',
+  rules: [{
+    id: 'hb-karma-economy', name: 'Race Karma economy', summary: 'race-driven karma', enabled,
+    set: {
+      'karma.step': { Human: 5, Dwarf: 4 },
+      'karma.maxCap': { Human: 40, Dwarf: 25 },
+      'karma.ritualCost': { Human: 6, Dwarf: 10 },
+    },
+  }],
+});
+
+test('set: race-keyed karma.step / maxCap / ritualCost apply for the character race', () => {
+  const model = deriveModel(humanChar(10), rulesWith(karmaEconomy())); // circle 10 → base 50
+  assert.equal(model.characteristics.karma.step, 5); // Human override (was 4)
+  assert.equal(model.characteristics.karma.max, 40); // min(5×10, 40) = 40 capped
+  assert.equal(model.characteristics.karma.ritualCost, 6); // Human cost, drives the paid ritual
+});
+
+test('set: below the cap, max is the standard mod×circle (cap only clamps)', () => {
+  const model = deriveModel(humanChar(4), rulesWith(karmaEconomy())); // base 20 < cap 40
+  assert.equal(model.characteristics.karma.max, 20);
+});
+
+test('set: disabled rule leaves the standard karma (no cap, KARMA_STEP, no cost)', () => {
+  const model = deriveModel(humanChar(10), rulesWith(karmaEconomy(false)));
+  assert.equal(model.characteristics.karma.step, 4); // KARMA_STEP
+  assert.equal(model.characteristics.karma.max, 50); // 5×10, uncapped
+  assert.equal(model.characteristics.karma.ritualCost, null);
+});
+
+test('set: a race absent from a race-keyed map leaves that target un-overridden', () => {
+  const dwarfOnly = { schema: 'ed-homebrew/2', rules: [{ id: 'hb-k', name: 'x', summary: 'x', enabled: true, set: { 'karma.step': { Dwarf: 4 } } }] };
+  const model = deriveModel(humanChar(4), rulesWith(dwarfOnly)); // Human not in the map
+  assert.equal(model.characteristics.karma.step, 4); // falls back to KARMA_STEP, not overridden
+});
+
+test('set: an unknown target is ignored (registry-gated)', () => {
+  const bogus = { schema: 'ed-homebrew/2', rules: [{ id: 'hb-x', name: 'x', summary: 'x', enabled: true, set: { 'karma.bogus': 99, 'not.a.target': 1 } }] };
+  const model = deriveModel(humanChar(4), rulesWith(bogus));
+  assert.equal(model.characteristics.karma.max, 20); // untouched
+  assert.equal(model.characteristics.karma.step, 4);
+});
+
+test('set: legend.spends derives karma-on-legend rows from the ledger (historic + events)', () => {
+  const char = {
+    ...humanChar(4),
+    resources: {
+      health: { damage: 0, wounds: 0, recoveriesUsed: 0 },
+      karma: { converted: 20, rituals: [
+        { id: 'a', date: '2026-08-13T00:00:00Z', points: 3, cost: 6 },
+        { id: 'b', date: '2026-08-13T01:00:00Z', points: 2, cost: 6 },
+      ] },
+      legend: { earned: [{ id: 'e1', amount: 500, description: 'Adventure', date: '2026-08-01' }] },
+    },
+  };
+  const model = deriveModel(char, rulesWith(karmaEconomy())); // Human ritualCost 6
+  const spends = model.legend.spends;
+  assert.equal(spends.length, 3); // historic(15) + a + b
+  assert.equal(spends[0].virtual, true);
+  assert.equal(spends[0].points, 15); // 20 − 3 − 2
+  assert.equal(spends[0].legend, 90); // 15 × 6, current cost
+  assert.equal(spends[1].legend, 18); // 3 × 6
+  assert.equal(spends[2].legend, 12); // 2 × 6
+  // Display rows never leak into the earned list or the earned total.
+  assert.equal(model.legend.totalEarnt, 500);
+  assert.equal(model.legend.spent.total, 120); // converted 20 × 6 sink
+});
+
+test('set: legend.spends is empty when the Karma economy rule is off (no cost)', () => {
+  const char = {
+    ...humanChar(4),
+    resources: {
+      health: { damage: 0, wounds: 0, recoveriesUsed: 0 },
+      karma: { converted: 20 },
+      legend: { earned: [{ id: 'e1', amount: 500, description: 'Adventure', date: '2026-08-01' }] },
+    },
+  };
+  const model = deriveModel(char, rulesWith(karmaEconomy(false)));
+  assert.deepEqual(model.legend.spends, []);
+  assert.equal(model.legend.totalEarnt, 500); // unaffected by the display rows
+});
+
 test('disabled homebrew rules leave the standard ratings and no homebrew effects', () => {
   const model = deriveModel(character(), rulesWith({ schema: 'ed-homebrew/1', rules: [{ ...homebrewRule.rules[0], enabled: false }] }));
   assert.equal(model.characteristics.unconsciousness.value, 62); // 34 + 7×4

@@ -519,9 +519,15 @@ export function talentKarmaUse(talent) {
  * which we do not track). For a multi-Discipline adept, `circle` is the highest
  * Discipline Circle. (PG, Creating a Character.)
  *
+ * `maximum` (optional) is a hard cap — the homebrew Karma-economy rule's race
+ * `karma.maxCap` (docs/PLAN-HOMEBREW-KARMA.md). Absent/`null` ⇒ no cap ⇒ the standard
+ * `Modifier × Circle`; present ⇒ `min(Modifier × Circle, maximum)`. One
+ * derivation, no branch: the off path passes no `maximum` and is unchanged.
+ *
  * @returns {number|null}
  */
-export function maxKarma(karmaModifier, circle) {
+export function maxKarma(karmaModifier, circle, maximum = null) {
   if (typeof karmaModifier !== 'number' || typeof circle !== 'number') return null;
-  return karmaModifier * circle;
+  const base = karmaModifier * circle;
+  return typeof maximum === 'number' && Number.isFinite(maximum) ? Math.min(base, maximum) : base;
 }

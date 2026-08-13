@@ -21,6 +21,8 @@ export class EdOverview extends LitElement {
     _healthModal: { state: true },
     _resetRecoveries: { state: true },
     _addLegend: { state: true },
+    _karmaRitual: { state: true }, // paid Karma-Ritual modal open?
+    _karmaBuy: { state: true },    // draft: points to buy
   };
 
   static styles = css`
@@ -69,6 +71,9 @@ export class EdOverview extends LitElement {
     .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     .kmark { color: var(--karma); }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
+    /* Karma Ritual "+": reuses the .info affordance (amber glyph, hover-reveal),
+       matching the "Add Legend earned" plus. Disabled → muted when Karma is full. */
+    .info:disabled { color: var(--muted); cursor: default; opacity: 0.5; }
     .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0; }
     .hreset:hover { color: var(--accent); }
     /* Top row: attributes (compacted) beside the Legend panel, sharing one height. */
@@ -146,6 +151,19 @@ export class EdOverview extends LitElement {
     .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
     .mbody { font-size: 0.85rem; line-height: 1.5; color: var(--muted); }
     .mpara { margin: 0 0 0.6rem; }
+    .mpara b { color: light-dark(#111418, #f0f3f7); font-weight: 500; }
+    /* Karma-Ritual modal */
+    .kbuyrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0.4rem 0; font-size: 0.85rem; color: light-dark(#111418, #f0f3f7); }
+    .kbuy { font: inherit; font-size: 0.9rem; width: 4.5rem; text-align: right; color: inherit; background: var(--bg-chip, light-dark(#f7f8fa,#1b1f27)); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; margin: 0 4px; }
+    .kbuy:focus { outline: none; border-color: var(--accent); }
+    .kbuyfor { color: var(--muted); }
+    .kfoot { display: flex; justify-content: flex-end; margin: 0.6rem 0 0.2rem; }
+    .hbtn:disabled { opacity: 0.4; cursor: default; }
+    .khist { margin-top: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+    .khhead { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+    .khrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); padding: 2px 0; }
+    .khundo { flex: none; font: inherit; font-size: 0.85rem; line-height: 1; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--accent); cursor: pointer; }
+    .khundo:hover { background: var(--accent-bg); }
     .mtrigger { border-top: 1px solid var(--border); padding-top: 0.6rem; margin-top: 0.2rem; }
     .mtlabel { font-weight: 500; color: light-dark(#111418, #f0f3f7); margin-bottom: 0.25rem; }
     .mtsummary { color: var(--accent); margin-bottom: 0.3rem; }
@@ -281,15 +299,93 @@ export class EdOverview extends LitElement {
     return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma, false, key)}`;
   }
 
-  // Karma: available points (max in the tooltip); the roll button rolls the D6 Karma die.
+  // Karma: available points (max in the tooltip); the roll button rolls the Karma
+  // die at the current step — D6 by default, race/rule-driven when the homebrew
+  // Karma economy is on (the die names the actual step, never a hardcoded D6).
   _karma(label) {
     const k = this.model?.characteristics?.karma;
     if (!k) return html`${this._pend()}${this._rollBtn(label, null, undefined, true, 'karma')}`;
-    const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma · die D6`;
+    const die = this.model?.stepByNumber?.[k.step]?.dice;
+    const title = `${k.available ?? '—'} of ${k.max ?? '—'} Karma${die ? ` · die ${die}` : ''}`;
     // Rolling the Karma die spends one point, so the roll is disabled with nothing
     // left to spend (the same guard the roll modal applies to its +D6 toggle).
     const spendable = typeof k.available === 'number' && Number.isFinite(k.available) && k.available > 0;
     return html`<span class="val" title=${title}>${k.available ?? k.max ?? '—'}</span>${this._rollBtn(label, spendable ? k.step : null, null, true, 'karma')}`;
+  }
+  // Karma Ritual "+": rule-aware. With the homebrew Karma economy ON (a race
+  // `ritualCost`), open the paid buy-back modal (spend Legend for Karma). OFF, it
+  // is the free restore-to-max (PG p.83). Disabled only for the free path when
+  // already full (the paid modal stays reachable so past rituals can be undone).
+  _karmaRitualBtn() {
+    const k = this.model?.characteristics?.karma;
+    if (!k || k.max == null) return '';
+    const paid = Number.isFinite(k.ritualCost) && k.ritualCost > 0;
+    const full = typeof k.available === 'number' && k.available >= k.max;
+    return html`<button
+      class="info"
+      ?disabled=${!paid && full}
+      title=${paid
+        ? `Karma Ritual — buy Karma with Legend (${k.ritualCost}/point)`
+        : full
+          ? 'Karma is already full'
+          : `Karma Ritual — restore Karma to maximum (${k.max})`}
+      aria-label="Karma Ritual"
+      @click=${(e) => {
+        e.stopPropagation();
+        if (paid) this._openKarmaRitual();
+        else this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { refill: true }, bubbles: true, composed: true }));
+      }}
+    >✚</button>`;
+  }
+  _openKarmaRitual() {
+    const k = this.model?.characteristics?.karma ?? {};
+    this._karmaBuy = this._ritualMaxBuy(k); // default: refill to full (or as much as Legend affords)
+    this._karmaRitual = true;
+  }
+  // Most Karma the character could buy right now: room under max, and what Legend
+  // affords. The modal clamps the draft to this (ed-app re-clamps defensively).
+  _ritualMaxBuy(k) {
+    const room = Number.isFinite(k?.max) ? Math.max(0, k.max - (k.available ?? 0)) : 0;
+    const cost = k?.ritualCost;
+    const avail = this.model?.legend?.available;
+    const affordable = Number.isFinite(avail) && cost > 0 ? Math.floor(avail / cost) : 0;
+    return Math.max(0, Math.min(room, affordable));
+  }
+  _karmaRitualBody() {
+    const k = this.model?.characteristics?.karma ?? {};
+    const cost = k.ritualCost ?? 0;
+    const cur = k.available ?? 0;
+    const avail = this.model?.legend?.available ?? null;
+    const cap = this._ritualMaxBuy(k);
+    const n = Math.max(0, Math.min(Number(this._karmaBuy) || 0, cap));
+    const spend = n * cost;
+    const rituals = [...(this.model?.resources?.karma?.rituals ?? [])].reverse();
+    return html`
+      <p class="mpara">Karma <b>${cur}</b> / ${k.max ?? '—'} · cost <b>${cost}</b> Legend per point · Available Legend <b>${avail ?? '—'}</b>.</p>
+      <div class="kbuyrow">
+        <label>Buy <input class="kbuy" type="number" min="0" max=${cap} step="1" .value=${String(n)} aria-label="Karma points to buy"
+          @input=${(e) => (this._karmaBuy = e.target.value)} /> Karma</label>
+        <span class="kbuyfor">for <b>${spend}</b> Legend</span>
+      </div>
+      <p class="mpara hint">After: Karma <b>${cur + n}</b> / ${k.max ?? '—'} · Legend <b>${avail != null ? avail - spend : '—'}</b>.${cap === 0 ? ' No Karma to buy (full, or not enough Legend).' : ''}</p>
+      <div class="kfoot">
+        <button class="hbtn" ?disabled=${n <= 0} @click=${() => this._buyKarma(n)}>Buy${n > 0 ? ` ${n}` : ''}</button>
+      </div>
+      ${rituals.length
+        ? html`<div class="khist">
+            <div class="khhead">Recent rituals</div>
+            ${rituals.slice(0, 6).map((r) => html`<div class="khrow">
+              <span>${(r.date ?? '').slice(0, 10)} · +${r.points} Karma · −${Number(r.legend) || (r.points * r.cost)} Legend</span>
+              <button class="khundo" title="Undo this ritual" aria-label="Undo this ritual"
+                @click=${() => this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { removeRitual: r.id }, bubbles: true, composed: true }))}>↺</button>
+            </div>`)}
+          </div>`
+        : ''}
+    `;
+  }
+  _buyKarma(n) {
+    if (n > 0) this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { ritual: { points: n } }, bubbles: true, composed: true }));
+    this._karmaRitual = false;
   }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
   // Disabled when there's no step yet (e.g. engine-derived combat stats). If the
@@ -495,6 +591,7 @@ export class EdOverview extends LitElement {
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
       if (this._addLegend) this._addLegend = false;
+      if (this._karmaRitual) this._karmaRitual = false;
       if (this._healthModal) this._closeHealthModal();
       if (this._modal) this._closeModal();
       if (this._lightbox) this._lightbox = false;
@@ -931,7 +1028,7 @@ export class EdOverview extends LitElement {
                 <h4>Combat</h4>
                 <div class="line"><span>Initiative</span><span class="rl">${this._combatStep('initiative', 'Initiative')}</span></div>
                 <div class="line"><span>Knockdown</span><span class="rl">${this._combatStep('knockdown', 'Knockdown')}</span></div>
-                <div class="line"><span>Karma</span><span class="rl">${this._karma('Karma')}</span></div>
+                <div class="line"><span>Karma${this._karmaRitualBtn()}</span><span class="rl">${this._karma('Karma')}</span></div>
               </div>
               ${this._specialFeatures()}
               ${this._activeEffects()}
@@ -991,6 +1088,21 @@ export class EdOverview extends LitElement {
         : ''}
       ${this._addLegend
         ? html`<ed-add-legend .earned=${(m.resources?.legend?.earned ?? []).filter((x) => !x.virtual)} @close=${() => (this._addLegend = false)}></ed-add-legend>`
+        : ''}
+      ${this._karmaRitual
+        ? html`
+            <div class="overlay" @click=${() => (this._karmaRitual = false)} @keydown=${(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); this._buyKarma(Math.max(0, Math.min(Number(this._karmaBuy) || 0, this._ritualMaxBuy(this.model?.characteristics?.karma ?? {})))); }
+            }}>
+              <div class="modal" @click=${(e) => e.stopPropagation()}>
+                <div class="mhead">
+                  <span>Karma Ritual</span>
+                  <button class="mclose" aria-label="Close" @click=${() => (this._karmaRitual = false)}>✕</button>
+                </div>
+                <div class="mbody">${this._karmaRitualBody()}</div>
+              </div>
+            </div>
+          `
         : ''}
       ${this._edit
         ? html`<ed-edit-meta .meta=${meta} @close=${() => (this._edit = false)}></ed-edit-meta>`
