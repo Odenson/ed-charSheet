@@ -3,7 +3,7 @@
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
-import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty } from '../engine/health.js';
+import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import './ed-edit-meta.js';
 import './ed-confirm.js';
 import './ed-add-legend.js';
@@ -544,6 +544,12 @@ export class EdOverview extends LitElement {
   _recoveryTest() {
     const tou = (this.model?.attributes ?? []).find((a) => a.name === 'Toughness');
     if (tou?.step == null) return;
+    // Defence-in-depth: the button is disabled at 0, but never roll a test the
+    // character has no budget for (the apply site refuses it anyway).
+    const h = this.model?.resources?.health ?? {};
+    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
+    if (remaining != null && remaining <= 0) return;
     this.dispatchEvent(
       new CustomEvent('ed-roll', {
         detail: { label: 'Recovery test', step: tou.step, apply: { action: 'recovery-heal', label: 'Heal this amount' } },
@@ -565,6 +571,9 @@ export class EdOverview extends LitElement {
       d[k] = Math.max(0, Number(e.target.value) || 0);
     };
     const wt = this.model?.characteristics?.woundThreshold?.value;
+    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
+    const noRecoveries = remaining != null && remaining <= 0;
     return html`
       <p class="mpara">
         Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious
@@ -578,7 +587,9 @@ export class EdOverview extends LitElement {
         A hit at or above the Wound Threshold ${rating(wt)} records one Wound; a
         hit five or more over it triggers a Knockdown test.
       </p>
-      <button class="hbtn hrec" @click=${this._recoveryTest}>⚄ Recovery test — heals the result, uses one</button>
+      <button class="hbtn hrec" ?disabled=${noRecoveries} @click=${this._recoveryTest}
+        title=${noRecoveries ? 'No Recovery Tests left today — reset for a new day' : 'Recovery test — heals the result, uses one'}>⚄ Recovery test — heals the result, uses one</button>
+      ${noRecoveries ? html`<p class="mpara hint">No Recovery Tests left today — reset Recoveries to start a new day.</p>` : ''}
       <div class="hfoot">
         <span class="hint">Enter applies · Escape closes</span>
         <button class="hbtn" @click=${this._applyHealthDraft}>Apply</button>

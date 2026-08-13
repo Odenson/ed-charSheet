@@ -73,6 +73,22 @@ export function applyHealth(health, change) {
   };
 }
 
+/**
+ * How many Recovery Tests the character has left today: the derived per-day max
+ * minus the stored `recoveriesUsed` input, never below 0. `null` when the max
+ * isn't known yet (no derived rating) — the guard then stands aside and lets the
+ * roll through rather than guess. The single decision point both the buttons
+ * (disable themselves at 0) and the apply site (refuse a heal) read from, so a
+ * Recovery test can never be used with none left.
+ * @param {number} used the stored `resources.health.recoveriesUsed` input
+ * @param {number|null} max the derived `characteristics.recoveries.value`
+ * @returns {number|null}
+ */
+export function recoveriesRemaining(used, max) {
+  if (max == null || !Number.isFinite(max)) return null;
+  return Math.max(0, max - (Number(used) || 0));
+}
+
 // --- Wounds & knockdown (a wounding hit) --------------------------------------
 //
 // Owner-stated rules (plan docs/PLAN-WOUNDS-KNOCKDOWN.md):

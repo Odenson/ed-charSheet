@@ -1,7 +1,7 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
-import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT } from '../engine/health.js';
+import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
 import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../store-server.js';
@@ -282,7 +282,18 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-roll-apply', (e) => {
       const { action, result, difficulty } = e.detail;
       if (action === 'recovery-heal') {
-        this._editHealth(applyHealth(this._character?.resources?.health ?? {}, { damage: -result, recoveriesUsed: 1 }));
+        // Recovery Tests are a per-day budget, so the apply site is the authority
+        // (the buttons also disable themselves): a roll can never heal when the
+        // character has none left, even if a stale view slipped one through.
+        const health = this._character?.resources?.health ?? {};
+        const maxRec = this._model?.characteristics?.recoveries?.value ?? null;
+        const remaining = recoveriesRemaining(health?.recoveriesUsed, maxRec);
+        if (remaining != null && remaining <= 0) {
+          this._showNotice(`No Recovery Tests left today — used all ${maxRec}. Start a new day to reset.`);
+          this._roll = null;
+          return;
+        }
+        this._editHealth(applyHealth(health, { damage: -result, recoveriesUsed: 1 }));
         this._roll = null; // button-driven: apply and close
       } else if (action === 'knockdown-result') {
         // A Knockdown test resolves itself at roll time — no verify button: a

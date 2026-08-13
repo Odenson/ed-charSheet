@@ -21,7 +21,7 @@
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
 import { attackPool, damagePool, collectCombatEffects, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
-import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty } from '../engine/health.js';
+import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { portraitUrlFor } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
@@ -694,6 +694,10 @@ export class EdCombat extends LitElement {
   _damageTbl() {
     const u = this.model?.characteristics?.unconsciousness?.value;
     const d = this.model?.characteristics?.death?.value;
+    const h = this.model?.resources?.health ?? {};
+    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
+    const noRecoveries = remaining != null && remaining <= 0;
     return html`
       <div class="blk dtcol">
         <div class="h"><span>Damage taken</span>${this._statusPill()}</div>
@@ -701,7 +705,9 @@ export class EdCombat extends LitElement {
         <div class="thr">${this._rating(u)} unconscious<br />${this._rating(d)} death</div>
         <div class="dtbtns">
           <button class="roll" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✚</button>
-          <button class="roll" @click=${this._recoveryTest} title="Recovery test — heals the Toughness Effect result, uses one" aria-label="Recovery test">⚄</button>
+          <button class="roll" ?disabled=${noRecoveries} @click=${this._recoveryTest}
+            title=${noRecoveries ? 'No Recovery Tests left today — reset for a new day' : 'Recovery test — heals the Toughness Effect result, uses one'}
+            aria-label="Recovery test">⚄</button>
         </div>
       </div>`;
   }
@@ -736,6 +742,12 @@ export class EdCombat extends LitElement {
   _recoveryTest() {
     const tou = (this.model?.attributes ?? []).find((a) => a.name === 'Toughness');
     if (tou?.step == null) return;
+    // Defence-in-depth: the button is disabled at 0, but never roll a test the
+    // character has no budget for (the apply site refuses it anyway).
+    const h = this.model?.resources?.health ?? {};
+    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
+    if (remaining != null && remaining <= 0) return;
     this._roll('Recovery test', tou.step, null, undefined, { apply: { action: 'recovery-heal', label: 'Heal this amount' } });
   }
 
