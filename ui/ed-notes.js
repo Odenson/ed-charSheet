@@ -113,6 +113,7 @@ export class EdNotes extends LitElement {
     .vrow .lamt { color: var(--muted); }
     .vtag { font-size: 0.6rem; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); border: 1px dashed var(--muted); color: var(--muted); white-space: nowrap; justify-self: end; }
     .lrow .del { justify-self: end; }
+    .lcaption { font-size: 0.68rem; color: var(--muted); padding: 6px 10px; }
 
     /* History: dated, reverse-chronological timeline (decision #4). */
     .timeline { display: flex; flex-direction: column; }
@@ -409,6 +410,17 @@ export class EdNotes extends LitElement {
   }
 
   _rollRow(r) {
+    // Non-roll entries (e.g. a Combat-tab Stand up) render as a plain action
+    // line — no step/dice/total, just the label and its age.
+    if (r.kind === 'action') {
+      return html`
+        <div class="rrow">
+          <div class="rtop">
+            <span class="rlbl">${r.label ?? 'Action'}</span>
+          </div>
+          <div class="rsub">${r.at ? html`<span class="ttime">${this._rel(r.at)}</span>` : ''}</div>
+        </div>`;
+    }
     const mods = r.mods ?? [];
     return html`
       <div class="rrow">
@@ -436,6 +448,7 @@ export class EdNotes extends LitElement {
 
   _legendView() {
     const list = this.model?.legendEarned ?? [];
+    const spends = this.model?.legend?.spends ?? [];
     const total = this.model?.legend?.totalEarnt ?? null;
     const fmt = (n) => (n == null ? '' : Number(n).toLocaleString());
     return html`
@@ -447,7 +460,7 @@ export class EdNotes extends LitElement {
         </span>
         <button class="addbtn" @click=${() => (this._legendModal = true)}>+ Add Legend earned</button>
       </div>
-      ${list.length
+      ${list.length || spends.length
         ? html`
             <div class="ltable">
               ${list.map((e) => html`
@@ -460,7 +473,24 @@ export class EdNotes extends LitElement {
                     : html`<button class="del" aria-label="Delete this entry" title="Delete" @click=${() => this._requestConfirm('legend', e.id)}>✕</button>`}
                 </div>
               `)}
+              ${spends.map((s) => html`
+                <div class="lrow ${s.virtual ? 'vrow' : ''}">
+                  <span class="lamt">−${fmt(s.legend)}</span>
+                  <span class="ldesc" title=${s.virtual ? 'Karma conversions before the dated ritual log' : `Karma Ritual — ${s.points} Karma`}>
+                    ${s.virtual
+                      ? `Karma conversions (historic) — ${fmt(s.points)} points`
+                      : `Karma Ritual — +${fmt(s.points)} Karma @ ${s.cost}/pt`}
+                  </span>
+                  <span class="ldate">${s.date ? String(s.date).slice(0, 10) : ''}</span>
+                  ${s.virtual
+                    ? html`<span class="vtag" title="Derived from your Karma ledger — read-only">historic</span>`
+                    : html`<span></span>`}
+                </div>
+              `)}
             </div>
+            ${spends.length
+              ? html`<div class="lcaption">Karma Ritual spends — already reflected in Available Legend.</div>`
+              : ''}
           `
         : html`<div class="empty">No Legend earned recorded yet. Add your first award to start the running total.</div>`}
     `;

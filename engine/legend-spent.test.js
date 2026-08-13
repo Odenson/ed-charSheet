@@ -407,3 +407,33 @@ test('auditLegendSpent handles a character with no legend inputs', () => {
   assert.equal(r.recorded, null);
   assert.equal(r.delta, null);
 });
+
+// --- Karma Rituals sink (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md) ----------
+
+test('auditLegendSpent sinks `converted × cost` and splits it into historic + event lines', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    resources: { karma: { converted: 20, rituals: [
+      { id: 'a', date: '2026-08-13T00:00:00Z', points: 3, cost: 6, legend: 18 },
+      { id: 'b', date: '2026-08-13T01:00:00Z', points: 2, cost: 6, legend: 12 },
+    ] } },
+  };
+  const r = auditLegendSpent(char, costs, { karmaRitualCost: 6 });
+  const sec = r.sections.find((s) => s.key === 'karma-rituals');
+  assert.equal(sec.total, 120); // converted 20 × 6
+  assert.equal(sec.lines.length, 3); // historic(15) + a + b
+  assert.equal(sec.lines[0].cost, 90); // (20 − 3 − 2) × 6
+  assert.equal(r.total, 120); // only sink present → whole spent total
+});
+
+test('Karma-ritual sink prices the whole `converted` at the current cost (event snapshots ignored)', () => {
+  const char = { attributes: {}, disciplines: [], resources: { karma: { converted: 4, rituals: [{ id: 'c', points: 4, cost: 5 }] } } };
+  const r = auditLegendSpent(char, costs, { karmaRitualCost: 7 });
+  assert.equal(r.sections.find((s) => s.key === 'karma-rituals').total, 28); // 4 × 7 at current cost
+});
+
+test('no karma-rituals section when absent cost or zero converted', () => {
+  const r = auditLegendSpent({ attributes: {}, disciplines: [], resources: { karma: { converted: 5 } } }, costs);
+  assert.equal(r.sections.find((s) => s.key === 'karma-rituals'), undefined);
+});

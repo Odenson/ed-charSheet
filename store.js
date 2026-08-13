@@ -311,9 +311,10 @@ export function saveHealthEdits(health, id) {
 
 /**
  * Persist the character's Karma resource to the edits overlay. `resources.karma`
- * is a stored *input* (its `available` balance is spent as Karma dice are rolled,
- * app-wide) — the derived `max`/`step` are recomputed and never stored, so only
- * the input object is written as-is. "Store only inputs" holds. A later save
+ * is a set of stored *inputs* (the ledger — `converted`, lifetime gained, and
+ * `spent`, lifetime spent; see PLAN-LEGEND-KARMA-RITUAL-LOG.md). The spendable
+ * balance and the `max`/`step` figures are derived and never stored, so only the
+ * input object is written as-is. "Store only inputs" holds. A later save
  * replaces the whole object (health precedent).
  */
 export function saveKarmaEdits(karma, id) {
@@ -481,7 +482,7 @@ async function loadRules() {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md)
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md)
   // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
   const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
   // Combat options + situational effects (rules/combat.json, ed-combat/1 —
@@ -501,6 +502,11 @@ async function loadRules() {
   const steps = stepsFile.steps ?? stepsFile;
   return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
 }
+
+// Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
+// may only override these; any other target name is ignored. Kept here (not in a
+// rule file) so the code that consumes each target and the registry stay together.
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
@@ -671,7 +677,7 @@ export function deriveModel(character, rules) {
     };
   });
 
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/1 — docs/HOMEBREW-RULES.md):
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md):
   // a file-based, data-only list of rating overrides + effects. Only `enabled`
   // rules apply; the last enabled rule wins per rating (no merge). A rule's own
   // `effects` fold like any always-on effect, tagged `kind: 'homebrew'` so a
@@ -684,6 +690,23 @@ export function deriveModel(character, rules) {
   for (const rule of homebrewRules) {
     for (const [rating, formula] of Object.entries(rule.formula ?? {})) {
       homebrewOverrides[rating] = formula;
+    }
+  }
+  // `set` overrides (ed-homebrew/2, docs/HOMEBREW-RULES.md): a flat or race-keyed
+  // value override for a named engine target. Only targets in this registry are
+  // honoured — an unknown target is ignored (never a silent override of the wrong
+  // thing). A race-keyed value resolves against the character's race; a race
+  // absent from the map leaves the target un-overridden. Last-enabled-wins.
+  const raceName = raceEntry?.name ?? character.meta?.race ?? null;
+  const homebrewSets = {};
+  for (const rule of homebrewRules) {
+    for (const [target, value] of Object.entries(rule.set ?? {})) {
+      if (!HOMEBREW_SET_TARGETS.has(target)) continue;
+      const resolved =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? (raceName != null ? value[raceName] : undefined) // race-keyed
+          : value; // scalar
+      if (resolved !== undefined) homebrewSets[target] = resolved;
     }
   }
 
@@ -795,6 +818,18 @@ export function deriveModel(character, rules) {
   }));
   const foldedEffects = [...activeEffects, ...conditionDefenseEffects, ...encumbranceConditionEffects];
 
+  // Karma ledger (docs/PLAN-LEGEND-KARMA-RITUAL-LOG.md): `available` is DERIVED from the
+  // stored inputs `resources.karma.converted` (lifetime gained) minus `spent` (lifetime
+  // spent rolling dice), clamped to `[0, max]` — never stored. Rule-off and legacy
+  // characters simply have no ledger inputs ⇒ 0. `karmaRitualCost` (rule on) feeds both
+  // the Legend sink and the Legend-log spend rows below.
+  const karmaMax = karmaMod != null ? maxKarma(karmaMod, highestCircle, homebrewSets['karma.maxCap'] ?? null) : null;
+  const karmaAvailable =
+    karmaMax != null
+      ? Math.max(0, Math.min(karmaMax, (Number(character.resources?.karma?.converted) || 0) - (Number(character.resources?.karma?.spent) || 0)))
+      : null;
+  const karmaRitualCost = homebrewSets['karma.ritualCost'] ?? null;
+
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), foldedEffects, lookupChar),
     mysticDefense: defense('Mystic', attrVal(DEFENSE_ATTRIBUTE.Mystic), foldedEffects, lookupChar),
@@ -812,9 +847,16 @@ export function deriveModel(character, rules) {
     karma:
       karmaMod != null
         ? {
-            max: maxKarma(karmaMod, highestCircle),
-            available: character.resources?.karma?.available ?? null,
-            step: KARMA_STEP,
+            // Homebrew Karma economy (ed-homebrew/2, docs/PLAN-HOMEBREW-KARMA.md): a race
+            // `karma.maxCap` caps the max, `karma.step` overrides the die, and
+            // `karma.ritualCost` (when present) switches the ritual to the paid
+            // Legend buy-back flow. Absent overrides ⇒ the standard values. `available`
+            // is the derived ledger clamp (converted − spent); the stored `available`
+            // input was dropped with the ledger (PLAN-LEGEND-KARMA-RITUAL-LOG.md).
+            max: karmaMax,
+            available: karmaAvailable,
+            step: homebrewSets['karma.step'] ?? KARMA_STEP,
+            ritualCost: karmaRitualCost,
           }
         : null,
   };
@@ -885,7 +927,11 @@ export function deriveModel(character, rules) {
   // tracks the sheet's actual advancements rather than the recorded `totalSpent`
   // input. Unpriced sinks (spells) stay in the reconciliation delta.
   const threadItemCatalog = threadItemsFile?.items ?? {};
-  const spent = auditLegendSpent(character, legendFile?.costs, { knacks, threadItemCatalog });
+  const spent = auditLegendSpent(character, legendFile?.costs, {
+    knacks,
+    threadItemCatalog,
+    karmaRitualCost,
+  });
   // Legend-earned log (PLAN-NOTES-TAB, decisions #1/#6): `totalEarnt` is the PURE
   // SUM of a display list — one synthesized, non-persisted virtual "Starting
   // total" row (amount = any legacy `totalEarnt` still in the branch file;
@@ -904,6 +950,33 @@ export function deriveModel(character, rules) {
   const totalEarnt = legendEarned.length
     ? legendEarned.reduce((s, e) => s + (Number(e.amount) || 0), 0)
     : null;
+  // Karma-on-Legend display rows (PLAN-LEGEND-KARMA-RITUAL-LOG.md): display-only, never
+  // stored or summed into `totalEarnt`. With the rule on (`karmaRitualCost` present),
+  // derived from the ledger — one virtual historic seed row (converted before the dated
+  // ritual log) plus one row per dated ritual event, all at the current cost, so
+  // `Σ legend = converted × cost` (exactly the audit sink above). Rule off ⇒ []. Not on
+  // `legendEarned` (that list stays earned-only for the add/delete flows).
+  const convertedKarma = Number(character.resources?.karma?.converted) || 0;
+  const karmaRituals = Array.isArray(character.resources?.karma?.rituals) ? character.resources.karma.rituals : [];
+  const hasKarmaCost = () => Number.isFinite(Number(karmaRitualCost)) && Number(karmaRitualCost) > 0;
+  const legendSpends = () => {
+    if (!hasKarmaCost() || convertedKarma <= 0) return [];
+    const eventsPoints = karmaRituals.reduce((s, r) => s + (Number(r?.points) || 0), 0);
+    const historic = convertedKarma - eventsPoints;
+    const cost = Number(karmaRitualCost);
+    return [
+      ...(historic > 0
+        ? [{ id: '__karma_historic__', date: null, virtual: true, points: historic, cost, legend: historic * cost }]
+        : []),
+      ...karmaRituals.map((r) => ({
+        id: r.id,
+        date: r.date ?? null,
+        points: Number(r?.points) || 0,
+        cost,
+        legend: (Number(r?.points) || 0) * cost,
+      })),
+    ];
+  };
   const legend =
     totalEarnt != null
       ? {
@@ -913,6 +986,7 @@ export function deriveModel(character, rules) {
           status: legendaryStatus(totalEarnt, legendBands),
           bands: legendBands,
           spent,
+          spends: legendSpends(),
         }
       : null;
 

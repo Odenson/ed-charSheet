@@ -51,6 +51,7 @@ export class EdApp extends LitElement {
     _saving: { state: true },
     _saveError: { state: true },
     _saveOk: { state: true },
+    _notice: { state: true }, // transient status message (e.g. Karma Ritual performed)
     _keyPrompt: { state: true },
     _confirmDiscard: { state: true },
     _confirmSwitch: { state: true },
@@ -182,6 +183,7 @@ export class EdApp extends LitElement {
     this._saving = false;
     this._saveError = null;
     this._saveOk = null;
+    this._notice = null;
     this._keyPrompt = false;
     this._confirmDiscard = false;
     this._confirmSwitch = false;
@@ -456,18 +458,64 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
-  // Spend Karma on a roll: subtract `spend` (default 1) from the stored
-  // `resources.karma.available` input, persist, and re-derive. Guards a
-  // null/absent balance (never writes NaN or a negative). Also refreshes the
-  // open roll's karma snapshot so the modal's "N Karma" readout decrements live
-  // (the modal holds `this._roll.karma`, taken when it opened).
+  // The Karma ledger (docs/PLAN-LEGEND-KARMA-RITUAL-LOG.md): the stored inputs are
+  // `resources.karma.converted` (lifetime Karma gained) and `spent` (lifetime Karma
+  // spent rolling dice); the spendable pool `available` is DERIVED
+  // (`clamp(converted − spent, 0, max)`) and never written. Every branch below is an
+  // input write on the ledger, persisted via saveKarmaEdits. Also refreshes the open
+  // roll's karma snapshot so the modal's "N Karma" readout decrements live (re-derived
+  // after the model re-derives — the modal holds `this._roll.karma`, taken when opened).
   _editKarma(detail) {
-    const spend = Number(detail?.spend) || 0;
-    if (!this._character || spend <= 0) return;
-    const cur = this._character.resources?.karma;
-    const available = cur?.available;
-    if (typeof available !== 'number' || !Number.isFinite(available) || available <= 0) return;
-    const nextKarma = { ...cur, available: Math.max(0, available - spend) };
+    if (!this._character) return;
+    const cur = this._character.resources?.karma ?? {};
+    const karma = this._model?.characteristics?.karma;
+    const converted = Number(cur.converted) || 0;
+    const spent = Number(cur.spent) || 0;
+    const max = karma?.max;
+    const available =
+      Number.isFinite(max) && max != null ? Math.max(0, Math.min(max, converted - spent)) : null;
+    let nextKarma;
+    if (detail?.ritual) {
+      // Paid Karma Ritual (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md): buy N
+      // Karma for N × race cost Legend. Clamp defensively to the room under max and to
+      // what Legend affords, so available Legend can never go negative even if the
+      // caller over-asks. The spend is a dated, undoable log event; the Legend sink is
+      // derived (`converted × cost`), so available Legend reflects it automatically.
+      const cost = karma?.ritualCost;
+      if (!Number.isFinite(cost) || cost <= 0) return; // rule off / no cost → no paid ritual
+      const currentK = available ?? 0;
+      const room = Number.isFinite(max) ? Math.max(0, max - currentK) : Infinity;
+      const availLegend = this._model?.legend?.available;
+      const affordable = Number.isFinite(availLegend) ? Math.floor(availLegend / cost) : Infinity;
+      const points = Math.max(0, Math.min(Number(detail.ritual.points) || 0, room, affordable));
+      if (points <= 0) return;
+      const event = { id: uid(), date: new Date().toISOString(), points, cost, legend: points * cost };
+      nextKarma = { ...cur, converted: converted + points, rituals: [...(cur.rituals ?? []), event] };
+      this._showNotice(`Karma Ritual — bought ${points} Karma for ${points * cost} Legend.`);
+    } else if (detail?.removeRitual) {
+      // Undo a ritual purchase: drop the event and the `converted` it added. The Legend
+      // returns via the derived sink (`converted × cost` drops by points × cost) — no
+      // stored `available` to touch.
+      const rituals = cur.rituals ?? [];
+      const ev = rituals.find((r) => r.id === detail.removeRitual);
+      if (!ev) return;
+      const evPoints = Number(ev.points) || 0;
+      nextKarma = { ...cur, converted: Math.max(0, converted - evPoints), rituals: rituals.filter((r) => r.id !== detail.removeRitual) };
+      this._showNotice(`Undid a Karma Ritual — returned ${Number(ev.legend) || (evPoints * (Number(ev.cost) || 0))} Legend.`);
+    } else if (detail?.refill) {
+      // Free Karma Ritual (PG p.83, rule OFF): restore the derived pool to the derived
+      // maximum by raising the ledger (`converted := spent + max`); no Legend cost. Max
+      // is derived (Circle × racial modifier) — never stored.
+      if (available == null) return;
+      if (available >= max) return; // already full
+      nextKarma = { ...cur, converted: spent + max };
+      this._showNotice(`Karma Ritual performed — Karma restored to ${max}.`);
+    } else {
+      const spend = Number(detail?.spend) || 0;
+      if (spend <= 0) return;
+      if (available == null || available <= 0) return;
+      nextKarma = { ...cur, spent: spent + Math.min(spend, available) };
+    }
     this._character = {
       ...this._character,
       resources: { ...(this._character.resources || {}), karma: nextKarma },
@@ -476,8 +524,17 @@ export class EdApp extends LitElement {
     this._markDirty();
     this._model = deriveModel(this._character, this._rules);
     if (this._roll?.karma) {
-      this._roll = { ...this._roll, karma: { ...this._roll.karma, available: nextKarma.available } };
+      const derived = this._model?.characteristics?.karma?.available ?? null;
+      this._roll = { ...this._roll, karma: { ...this._roll.karma, available: derived } };
     }
+  }
+
+  // A transient status message (auto-dismisses; click to dismiss early). Distinct
+  // from the save toasts — used for in-app actions like the Karma Ritual.
+  _showNotice(text) {
+    this._notice = text;
+    clearTimeout(this._noticeTimer);
+    this._noticeTimer = setTimeout(() => { this._notice = null; }, 3500);
   }
 
   // A view replaced the character's hand-written notes. Same inputs-only flow:
@@ -1098,6 +1155,9 @@ export class EdApp extends LitElement {
         ? html`<div class="toast ok" role="status" @click=${() => (this._saveOk = null)}>
             Saved to GitHub ✓ ${this._saveOk.url ? html`— <a href=${this._saveOk.url} target="_blank" rel="noopener">view commit</a>` : ''}
           </div>`
+        : ''}
+      ${this._notice
+        ? html`<div class="toast ok" role="status" @click=${() => (this._notice = null)}>${this._notice}</div>`
         : ''}
     `;
   }
