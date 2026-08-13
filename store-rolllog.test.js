@@ -135,3 +135,17 @@ test('saveRollLog guards a missing rollId and an undefined id', () => {
   assert.deepEqual(noId, { max: DEFAULT_MAX, entries: [] });
   assert.equal(loadRollLog('c1').entries.length, 0);
 });
+
+test('a non-roll action entry (kind: action, e.g. Stand up) round-trips as-is', () => {
+  memory.clear();
+  saveRollLog({ rollId: 'a1', at: '2026-08-12T00:00:00.000Z', kind: 'action', label: 'Stand up' }, 'c1');
+  const log = loadRollLog('c1');
+  assert.equal(log.entries.length, 1);
+  assert.equal(log.entries[0].kind, 'action');
+  assert.equal(log.entries[0].label, 'Stand up');
+  assert.equal(log.entries[0].step, undefined); // no fabricated roll fields
+  assert.equal(log.entries[0].total, undefined);
+  // The upsert-by-rollId rule applies to action entries too.
+  saveRollLog({ rollId: 'a1', at: '2026-08-12T00:00:01.000Z', kind: 'action', label: 'Stand up' }, 'c1');
+  assert.equal(loadRollLog('c1').entries.length, 1);
+});

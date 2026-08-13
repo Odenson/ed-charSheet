@@ -14,14 +14,15 @@
 // ed-app guarantees by rendering only the active tab).
 //
 // Applying a result (strain / incoming damage / a heal) dispatches `ed-edit-health`
-// so ed-app persists the input and re-derives (Phase F). A session undo stack
-// records each pre-apply Health snapshot and offers a one-tap Undo on the result
-// card. The Combat log is a roll-only view of the device-local Roll Log
-// (store-rolllog.js, shared with the Notes tab).
+// so ed-app persists the input and re-derives (Phase F). These writes are
+// one-way — there is no Undo: damage taken and healing done are not reversible
+// (owner decision). The Combat log is a view of the device-local Roll Log
+// (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
+// round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
 import { attackPool, damagePool, collectCombatEffects, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty } from '../engine/health.js';
-import { loadRollLog, clearRollLog } from '../store-rolllog.js';
+import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { portraitUrlFor } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
 import './ed-confirm.js';
@@ -32,7 +33,7 @@ import './ed-confirm.js';
 // switch still starts fresh, and a full reload (module reload) clears it — the
 // picks are session-only UI state, never persisted to the character (store-only-
 // inputs holds). Only the selections are cached, not mid-action state (pending
-// apply / undo / open modals).
+// apply / open modals).
 const SCRATCH = new Map();
 
 // Collapsible chip sections default to EXPANDED on desktop, and to collapsed on
@@ -53,6 +54,9 @@ const MISSING_IMAGE = html`
   </svg>
 `;
 
+// A per-interaction log id (same shape ed-app uses for roll entries).
+const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
 export class EdCombat extends LitElement {
   static properties = {
     model: { attribute: false },
@@ -67,7 +71,6 @@ export class EdCombat extends LitElement {
     _charmsOn: { state: true },
     _target: { state: true },
     _collapsed: { state: true },
-    _undoStack: { state: true }, // [{ desc, prior }] — session undo snapshots
     _damageModal: { state: true },
     _confirmClear: { state: true },
     _rolls: { state: true },
@@ -167,14 +170,6 @@ export class EdCombat extends LitElement {
        produced yet renders dashed, never as a fabricated number. */
     .pend { font-weight: 400; color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 0 6px; font-size: 0.72rem; }
 
-    /* Result card — Apply / Undo for the last write (Phase F). */
-    .applybar { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent-bg); font-size: 0.78rem; }
-    .applybar b { font-weight: 500; }
-    .applybar .sp { flex: 1; }
-    .abtn { font: inherit; font-size: 0.76rem; font-weight: 500; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--card); color: var(--accent); cursor: pointer; }
-    .abtn.prime { background: var(--accent); color: #fff; }
-    .ax { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 2px; }
-
     /* Damage-taken rail. */
     .dtcol .cur { display: flex; align-items: center; gap: 8px; }
     .dtcol .cur .lab { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
@@ -185,7 +180,7 @@ export class EdCombat extends LitElement {
     .status { font-size: 0.6rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
     .status.warn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
 
-    /* Combat log — a roll-only view of the device-local Roll Log. */
+    /* Combat log — a view of the device-local Roll Log (rolls + actions). */
     .clear { font: inherit; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
     .clear:hover { color: var(--danger); border-color: var(--danger); }
     .clear:disabled { opacity: 0.4; cursor: default; }
@@ -226,11 +221,9 @@ export class EdCombat extends LitElement {
     this._charmsOn = [];
     this._target = '';
     this._collapsed = defaultCollapsed();
-    this._undoStack = [];
     this._damageModal = false;
     this._confirmClear = false;
     this._rolls = [];
-    this._recoveryPrior = null;
     this._lastAttack = null;
     this._attackArmed = false;
   }
@@ -242,7 +235,6 @@ export class EdCombat extends LitElement {
       if (e.key !== 'Escape') return;
       if (this._damageModal) { this._damageModal = false; return; }
       if (this._confirmClear) { this._confirmClear = false; return; }
-      if (this._undoStack.length) this._undoStack = this._undoStack.slice(0, -1);
     };
     document.addEventListener('keydown', this._onKeydown);
     // Roll Log refreshes (device-local, shared with the Notes tab). The roll
@@ -259,17 +251,6 @@ export class EdCombat extends LitElement {
       }
     };
     document.addEventListener('ed-roll-logged', this._onRollLogged);
-    // A recovery test applies itself through ed-app (existing recovery-heal
-    // path). Pair that apply with the pre-roll Health snapshot so it lands on
-    // the undo stack too; any other health edit in between invalidates it.
-    this._onRollApply = (e) => {
-      if (e.detail?.action !== 'recovery-heal' || !this._recoveryPrior) return;
-      this._pushUndo({ desc: `healed ${e.detail.result}`, prior: this._recoveryPrior });
-      this._recoveryPrior = null;
-    };
-    document.addEventListener('ed-roll-apply', this._onRollApply);
-    this._onHealthEdit = () => { this._recoveryPrior = null; };
-    document.addEventListener('ed-edit-health', this._onHealthEdit);
     this._loadRolls();
   }
 
@@ -279,8 +260,6 @@ export class EdCombat extends LitElement {
     this._saveScratch();
     document.removeEventListener('keydown', this._onKeydown);
     document.removeEventListener('ed-roll-logged', this._onRollLogged);
-    document.removeEventListener('ed-roll-apply', this._onRollApply);
-    document.removeEventListener('ed-edit-health', this._onHealthEdit);
     super.disconnectedCallback();
   }
 
@@ -339,10 +318,8 @@ export class EdCombat extends LitElement {
     this._charmsOn = [];
     this._target = '';
     this._collapsed = defaultCollapsed();
-    this._undoStack = [];
     this._damageModal = false;
     this._confirmClear = false;
-    this._recoveryPrior = null;
     this._lastAttack = null;
     this._attackArmed = false;
   }
@@ -491,7 +468,7 @@ export class EdCombat extends LitElement {
     this._lastAttack = null;
     // Strain is charged on the roll itself (no Apply gate) — the option declares
     // the cost, so rolling the attack pays it immediately. It rides the roll's
-    // label so the Combat log records it, and lands on the undo stack (reversible).
+    // label so the Combat log records it; the write is one-way (no undo).
     const base = isNone ? this._rollLabel(opt?.name ?? 'Action', null) : this._rollLabel('Attack', w.name);
     const label = ap.strain ? `${base} · ${ap.strain} strain` : base;
     this._chargeStrain(ap.strain);
@@ -664,6 +641,13 @@ export class EdCombat extends LitElement {
   // ui/ed-overview.js "Stand up".
   _standUp() {
     this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: { knockedDown: false }, bubbles: true, composed: true }));
+    // Record the action in the device-local log (the same store the Combat log
+    // and the Notes Roll Log read) so the round's events — not just its rolls —
+    // show up. `kind: 'action'` marks it as a non-roll entry for the renderers.
+    if (this.characterId) {
+      saveRollLog({ rollId: uid(), at: new Date().toISOString(), kind: 'action', label: 'Stand up' }, this.characterId);
+      this._loadRolls();
+    }
   }
   _standUpLine() {
     if (!this.model?.combat?.conditions?.knockedDown) return '';
@@ -680,36 +664,12 @@ export class EdCombat extends LitElement {
     return this._sec('Blood charms', 'charms', (this._charmsOn ?? []).length, body);
   }
 
-  // --- result card (strain charged on the roll; one-tap Undo, Escape dismisses) ---
-  _pushUndo(entry) {
-    this._undoStack = [...(this._undoStack ?? []), entry].slice(-8);
-  }
-  // Charge attack Strain immediately (no Apply gate): add it to Health damage and
-  // record a reversible undo snapshot. Called by _rollAttack when the pool has a
-  // strain cost.
+  // Charge attack Strain immediately (no Apply gate): add it to Health damage.
+  // Called by _rollAttack when the pool has a strain cost. The write is one-way.
   _chargeStrain(amount) {
     if (!amount) return;
     const cur = this.model?.resources?.health ?? {};
-    this._pushUndo({ desc: `${amount} Strain (attack)`, prior: { ...cur } });
     this._dispatchHealth({ damage: (cur.damage ?? 0) + amount });
-  }
-  _undo() {
-    const stack = this._undoStack ?? [];
-    const entry = stack.at(-1);
-    if (!entry) return;
-    this._dispatchHealth({ ...entry.prior });
-    this._undoStack = stack.slice(0, -1);
-  }
-  _resultCard() {
-    const undo = (this._undoStack ?? []).at(-1);
-    if (undo) {
-      return html`<div class="applybar" role="status">
-        <span class="sp">Applied — <b>${undo.desc}</b></span>
-        <button class="abtn prime" @click=${this._undo}>Undo</button>
-        <button class="ax" aria-label="Dismiss" title="Dismiss (Escape)" @click=${() => (this._undoStack = this._undoStack.slice(0, -1))}>✕</button>
-      </div>`;
-    }
-    return '';
   }
 
   // --- dispatch up ---
@@ -749,12 +709,6 @@ export class EdCombat extends LitElement {
     this._damageDraft = { take: 0, heal: 0 };
     this._damageModal = true;
   }
-  _dmgDesc(take, heal) {
-    const parts = [];
-    if (take) parts.push(`${take} damage`);
-    if (heal) parts.push(`${heal} healed`);
-    return parts.join(', ') || 'no change';
-  }
   _applyDamage() {
     const d = this._damageDraft ?? {};
     const cur = this.model?.resources?.health ?? {};
@@ -764,9 +718,7 @@ export class EdCombat extends LitElement {
     // The Wound is derived from the hit vs. the Wound Threshold — never typed
     // in (store only inputs), and the engine decides it like the Overview tab.
     const wound = take > 0 ? woundsFromHit(take, wt) : 0;
-    const prior = { ...cur };
     const next = applyHealth(cur, { damage: take - heal, wounds: wound, recoveriesUsed: 0 });
-    this._pushUndo({ desc: this._dmgDesc(take, heal), prior });
     this._dispatchHealth(next);
     this._damageModal = false;
     // A hit five or more over the Wound Threshold forces a Knockdown test.
@@ -784,11 +736,10 @@ export class EdCombat extends LitElement {
   _recoveryTest() {
     const tou = (this.model?.attributes ?? []).find((a) => a.name === 'Toughness');
     if (tou?.step == null) return;
-    this._recoveryPrior = { ...(this.model?.resources?.health ?? {}) };
     this._roll('Recovery test', tou.step, null, undefined, { apply: { action: 'recovery-heal', label: 'Heal this amount' } });
   }
 
-  // --- Combat log (device-local Roll Log view, roll-only) ---
+  // --- Combat log (device-local Roll Log view: rolls + actions) ---
   _loadRolls() {
     if (!this.characterId) { this._rolls = []; return; }
     this._rolls = loadRollLog(this.characterId).entries;
@@ -798,6 +749,14 @@ export class EdCombat extends LitElement {
     if (this.characterId) { clearRollLog(this.characterId); this._loadRolls(); }
   }
   _logRow(r) {
+    // Non-roll entries (e.g. Stand up) render as a plain action line — no
+    // fabricated step or total (UI-GUIDELINES §5).
+    if (r.kind === 'action') {
+      return html`<div class="logrow">
+        <span class="lt" aria-hidden="true">↑</span>
+        <span class="lx"><b>${r.label ?? 'Action'}</b></span>
+      </div>`;
+    }
     const mods = r.mods ?? [];
     const glyph = /attack|damage/i.test(r.label ?? '') ? '⚔' : '⚄';
     const outcome = r.outcome
@@ -888,7 +847,6 @@ export class EdCombat extends LitElement {
           ${this._optSection()}
           ${this._sitSection()}
           ${this._charmSection()}
-          ${this._resultCard()}
         </div>
 
         <div class="rail">
