@@ -301,10 +301,10 @@
       ]
     },
     "health": {
-      "damage": 2,
-      "wounds": 0,
-      "recoveriesUsed": 0,
-      "knockedDown": false
+      "damage": 8,
+      "wounds": 1,
+      "recoveriesUsed": 1,
+      "knockedDown": true
     },
     "roundTracker": 218
   },
@@ -418,7 +418,7 @@
     {
       "name": "Booster Potion",
       "equipped": true,
-      "qty": 3
+      "qty": 2
     }
   ],
   "wealth": {
