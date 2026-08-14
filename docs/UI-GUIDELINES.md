@@ -15,10 +15,39 @@ On narrow screens the multi-column layouts fold to a **single stacked column**
 horizontally.
 
 ## 3. Minimal chrome
-Tight padding, small section labels (never below 11px), and **two font weights
-only** (400 / 500). Whitespace is distributed so related panels align to shared
-top/bottom edges ("spaced within the dimensions of relative others") — e.g. on
-Overview the portrait, Movement, and Combat panels share one bottom edge.
+Tight padding, small section labels, and **two font weights only** (400 / 500).
+Whitespace is distributed so related panels align to shared top/bottom edges
+("spaced within the dimensions of relative others") — e.g. on Overview the
+portrait, Movement, and Combat panels share one bottom edge. Font sizes come from
+the **type scale in §3a** — the smallest step (`--fs-eyebrow`, 0.62rem ≈ 10px) is
+the floor; nothing renders smaller.
+
+## 3a. Type scale
+The UI uses **one canonical seven-step type scale**, defined once as CSS custom
+properties on `:root` in `index.html` (custom properties inherit through every
+component's shadow DOM, so any `ui/*.js` references them without redefining).
+**Always use a scale token for `font-size`; never a raw `rem`/`px` literal.** A
+new size that doesn't fit is a signal to reuse the nearest step, not to invent a
+value — the scale is what keeps headings and body text consistent across tabs.
+
+| Token | Size | Use for |
+|-------|------|---------|
+| `--fs-eyebrow` | 0.62rem | Uppercase section labels / card headers (`.h`, `h4`, `.k`, `.lab`). The floor. |
+| `--fs-fine` | 0.68rem | Hints, thresholds, fine print, captions |
+| `--fs-small` | 0.74rem | Dense body: chips, table rows, tiles |
+| `--fs-body` | 0.82rem | Standard body text, buttons, modal copy |
+| `--fs-value` | 0.95rem | Inline numeric values / emphasis |
+| `--fs-title` | 1.1rem | Panel & modal titles |
+| `--fs-hero` | 1.6rem | Hero name / large display numbers |
+
+Weight stays two-only (400 / 500) at every step; emphasis is weight or the
+`--accent` colour, not a new size. Existing components still carry ad-hoc `rem`
+values from before the scale — migrate a component's `font-size`s to the nearest
+token whenever you touch it (no mass rewrite was done when the scale landed).
+
+*Type scale added 2026-08-14 by owner sign-off — reconciles §3 (the old "never
+below 11px" line contradicted the ~10px section labels the UI already shipped;
+the real floor is `--fs-eyebrow`) and replaces ~29 ad-hoc sizes with 7 steps.*
 
 ## 4. Tabs
 Six tabs, each a distinct lens on the character:
@@ -33,7 +62,7 @@ Six tabs, each a distinct lens on the character:
 | Notes | Running character history / log over time |
 
 *Sixth tab (Combat) added 2026-08-11 by owner sign-off
-([PLAN-COMBAT-TAB.md](PLAN-COMBAT-TAB.md) — six labels still fit the desktop
+([PLAN-COMBAT-TAB.md](../plans/PLAN-COMBAT-TAB.md) — six labels still fit the desktop
 tab bar on one row; the bar wraps to stacked rows on mobile). Reordered
 2026-08-11 by owner request to sit directly after Disciplines (Overview ·
 Disciplines · Combat · Spells · Gear · Notes).*
@@ -85,7 +114,7 @@ Every modal/overlay follows the same keyboard contract:
 When a GitHub save finds the character changed on another device or player since
 you last loaded it (the save's `base` no longer matches the branch file), the app
 shows a conflict modal instead of silently overwriting (per-character optimistic
-concurrency — docs/PLAN-SAVE-CONCURRENCY.md):
+concurrency — plans/PLAN-SAVE-CONCURRENCY.md):
 - Copy: **"This character changed on another device or player."**
 - **Keep mine** (primary, **Enter** confirms) — re-saves your draft over the
   branch copy, knowingly overwriting the newer version.

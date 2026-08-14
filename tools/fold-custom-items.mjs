@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// tools/fold-custom-items.mjs — the CI fold job (docs/PLAN-CUSTOM-ITEMS.md
+// tools/fold-custom-items.mjs — the CI fold job (plans/PLAN-CUSTOM-ITEMS.md
 // §6, Phase 6).
 //
 // Mirrors the player-created custom-item catalog (`data/custom-items.json`,

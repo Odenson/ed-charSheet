@@ -4,7 +4,7 @@ How to author a **homebrew rule**: the file, the rule shape, the formula term
 grammar, the ref vocabulary, and the engine semantics that consume it. This doc
 is the authority for the `rules/homebrew.json` format — read it before creating
 or editing a rule. The active build plan lives in
-[PLAN-HOMEBREW.md](PLAN-HOMEBREW.md); the effect vocabulary that a rule's
+[PLAN-HOMEBREW.md](../plans/PLAN-HOMEBREW.md); the effect vocabulary that a rule's
 `effects` reuse lives in [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md).
 
 > A homebrew rule is **pure data**: inputs plus plain-English notes. It never
@@ -21,7 +21,7 @@ or editing a rule. The active build plan lives in
 | Rules file | `rules/homebrew.json` | `ed-homebrew/2` |
 | Loading | `store.js` `loadCharacter` — optional (`loadJSONOptional`, knacks/thread-items precedent) | — |
 | Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v3 |
-| Build plan | `docs/PLAN-HOMEBREW.md` | — |
+| Build plan | `plans/PLAN-HOMEBREW.md` | — |
 
 The file is **optional**: if it's absent the app behaves exactly as before.
 Rules are **global** — an enabled rule applies to every character (there is no

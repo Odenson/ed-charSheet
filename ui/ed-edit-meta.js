@@ -36,19 +36,19 @@ export class EdEditMeta extends LitElement {
     }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 32rem; max-width: 100%; max-height: 88vh; overflow: auto; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 0.8rem; }
     .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .field.wide { grid-column: 1 / -1; }
-    label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-    input, textarea { font: inherit; font-size: 0.85rem; color: var(--text); background: light-dark(#f7f8fa, #1b1f27); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
+    label { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    input, textarea { font: inherit; font-size: var(--fs-body); color: var(--text); background: light-dark(#f7f8fa, #1b1f27); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
     textarea { resize: vertical; line-height: 1.4; }
     input:focus, textarea:focus { outline: none; border-color: var(--accent); }
     .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 0.25rem; }
-    button.btn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
+    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
     button.btn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-    .hint { grid-column: 1 / -1; font-size: 0.68rem; color: var(--muted); margin: -0.2rem 0 0; }
+    .hint { grid-column: 1 / -1; font-size: var(--fs-fine); color: var(--muted); margin: -0.2rem 0 0; }
     @media (max-width: 480px) { form { grid-template-columns: 1fr; } }
   `;
 

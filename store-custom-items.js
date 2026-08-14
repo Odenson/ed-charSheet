@@ -1,5 +1,5 @@
 // store-custom-items.js — save + overlay plumbing for the player-created custom
-// item catalog (docs/PLAN-CUSTOM-ITEMS.md). Mirrors the character save split:
+// item catalog (plans/PLAN-CUSTOM-ITEMS.md). Mirrors the character save split:
 // store-server.js owns the /save POST; this module owns the /save-items POST plus
 // the local `ed-custom-items` overlay the manager modal writes instantly (pending
 // edits survive a reload and an offline worker) and a confirmed save reconciles
@@ -130,7 +130,7 @@ export function applyCustomEdits(file, delta) {
  * the *previous* commit's file — same item names, old content — and a
  * name-presence check alone then passes wrongly: the overlay would be cleared
  * while the branch still carries the old content, silently losing the fresh
- * edit from the modal until a page refresh (docs/PLAN-CUSTOM-ITEMS.md §6.6).
+ * edit from the modal until a page refresh (plans/PLAN-CUSTOM-ITEMS.md §6.6).
  */
 export function isItemsReflected(savedItems, deletedNames, committedItems) {
   for (const [name, item] of Object.entries(savedItems ?? {})) {

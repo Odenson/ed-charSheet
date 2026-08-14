@@ -1,5 +1,5 @@
 // save-action.test.js — run with `npm test` (node --test, no deps).
-// Pins the conflict-modal → next-save-step mapping (docs/PLAN-SAVE-CONCURRENCY
+// Pins the conflict-modal → next-save-step mapping (plans/PLAN-SAVE-CONCURRENCY
 // Phase C2). ed-app routes a modal choice through nextSaveAction; this test is
 // the only harness for that transition logic.
 

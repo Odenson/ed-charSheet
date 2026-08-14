@@ -33,33 +33,33 @@ export class EdRollModal extends LitElement {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
     .head { display: flex; justify-content: space-between; align-items: flex-start; }
-    .title { font-size: 1rem; font-weight: 500; }
-    .sub { font-size: 0.75rem; color: light-dark(#5a6472, #93a0b3); }
-    .x { background: none; border: none; color: light-dark(#5a6472, #93a0b3); cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px; }
+    .title { font-size: var(--fs-value); font-weight: 500; }
+    .sub { font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); }
+    .x { background: none; border: none; color: light-dark(#5a6472, #93a0b3); cursor: pointer; font-size: var(--fs-value); line-height: 1; padding: 2px; }
     .grp { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid light-dark(#e2e5ea, #2c313b); }
-    .glbl { width: 34px; font-size: 0.75rem; color: light-dark(#5a6472, #93a0b3); flex: none; }
+    .glbl { width: 34px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); flex: none; }
     .chain { display: flex; align-items: center; gap: 4px; flex: 1; flex-wrap: wrap; }
-    .die { width: 32px; height: 32px; border: 1px solid light-dark(#c9ccd3, #3a4150); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500; font-size: 0.9rem; background: light-dark(#f1f2f5, #1b1f27); }
+    .die { width: 32px; height: 32px; border: 1px solid light-dark(#c9ccd3, #3a4150); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500; font-size: var(--fs-value); background: light-dark(#f1f2f5, #1b1f27); }
     .die.max { border: 1.5px solid light-dark(#d9944e, #d9944e); color: var(--accent, #b26a00); background: light-dark(#f6e9dc, #3a2a17); }
     .die.kdie { border: 1.5px solid var(--karma); color: var(--karma); background: var(--karma-bg); }
-    .arrow { color: var(--accent, #b26a00); font-size: 0.8rem; }
-    .gsub { font-size: 0.85rem; font-weight: 500; min-width: 26px; text-align: right; }
-    .boom { font-size: 0.62rem; color: var(--accent, #b26a00); background: light-dark(#f6e9dc, #3a2a17); border-radius: 999px; padding: 1px 6px; }
+    .arrow { color: var(--accent, #b26a00); font-size: var(--fs-body); }
+    .gsub { font-size: var(--fs-body); font-weight: 500; min-width: 26px; text-align: right; }
+    .boom { font-size: var(--fs-eyebrow); color: var(--accent, #b26a00); background: light-dark(#f6e9dc, #3a2a17); border-radius: 999px; padding: 1px 6px; }
     .total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; }
-    .total .n { font-size: 1.6rem; font-weight: 500; }
+    .total .n { font-size: var(--fs-hero); font-weight: 500; }
     .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
-    .hint { font-size: 0.68rem; color: light-dark(#8a93a3, #6b7688); }
-    button.again { font: inherit; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#c9ccd3, #3a4150); background: none; color: inherit; cursor: pointer; }
-    button.appbtn { font: inherit; font-size: 0.8rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#d9944e, #d9944e); background: light-dark(#f6e9dc, #3a2a17); color: var(--accent, #b26a00); cursor: pointer; }
+    .hint { font-size: var(--fs-fine); color: light-dark(#8a93a3, #6b7688); }
+    button.again { font: inherit; font-size: var(--fs-body); padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#c9ccd3, #3a4150); background: none; color: inherit; cursor: pointer; }
+    button.appbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid light-dark(#d9944e, #d9944e); background: light-dark(#f6e9dc, #3a2a17); color: var(--accent, #b26a00); cursor: pointer; }
     .appfoot { display: flex; align-items: center; gap: 8px; }
     .karma-grp .glbl { color: var(--karma); }
     .karma-ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
-    .kbtn { font: inherit; font-size: 0.78rem; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--karma); background: none; color: var(--karma); cursor: pointer; }
+    .kbtn { font: inherit; font-size: var(--fs-small); padding: 5px 11px; border-radius: 999px; border: 1px solid var(--karma); background: none; color: var(--karma); cursor: pointer; }
     .kbtn.on { background: var(--karma-bg); font-weight: 500; }
     .kbtn:disabled { opacity: 0.4; cursor: default; }
-    .kavail { font-size: 0.7rem; color: light-dark(#8a93a3, #6b7688); }
-    .modchip { font-size: 0.68rem; font-weight: 500; color: light-dark(#5a6472, #93a0b3); background: light-dark(#f1f2f5, #1b1f27); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
-    .outcome { margin-top: 8px; font-size: 0.78rem; font-weight: 500; text-align: right; }
+    .kavail { font-size: var(--fs-fine); color: light-dark(#8a93a3, #6b7688); }
+    .modchip { font-size: var(--fs-fine); font-weight: 500; color: light-dark(#5a6472, #93a0b3); background: light-dark(#f1f2f5, #1b1f27); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+    .outcome { margin-top: 8px; font-size: var(--fs-small); font-weight: 500; text-align: right; }
     .outcome.ok { color: light-dark(#3d6b4a, #82c39a); }
     .outcome.fail { color: light-dark(#a63a2b, #e0846f); }
   `;

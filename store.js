@@ -635,6 +635,10 @@ export function deriveModel(character, rules) {
     return {
       name: owned.name,
       equipped: owned.equipped !== false,
+      // Thread items are unique — the quantity model never applies. Pinned to 1
+      // so the Equipment UI shows no stepper and the consume flow skips them.
+      qty: 1,
+      consumable: null,
       known: ref != null,
       kind: ref?.kind ?? owned.kind ?? 'item',
       living: false,
@@ -663,6 +667,13 @@ export function deriveModel(character, rules) {
     return {
       name: owned.name,
       equipped,
+      // Quantity is an input (default 1). One row per item name with an amount;
+      // the consume flow decrements it, `engine/weight.js` multiplies by it.
+      qty: owned.qty ?? 1,
+      // The catalog's consumable marker (rules/items.json), null when the item
+      // has none. Read by the Equipment/Combat Use button + engine/potions.js;
+      // never engine-folded like `effects`.
+      consumable: ref?.consumable ?? null,
       known: ref != null,
       kind: ref?.kind ?? owned.kind ?? 'item',
       living: ref?.living ?? false,
@@ -818,7 +829,7 @@ export function deriveModel(character, rules) {
   }));
   const foldedEffects = [...activeEffects, ...conditionDefenseEffects, ...encumbranceConditionEffects];
 
-  // Karma ledger (docs/PLAN-LEGEND-KARMA-RITUAL-LOG.md): `available` is DERIVED from the
+  // Karma ledger (plans/PLAN-LEGEND-KARMA-RITUAL-LOG.md): `available` is DERIVED from the
   // stored inputs `resources.karma.converted` (lifetime gained) minus `spent` (lifetime
   // spent rolling dice), clamped to `[0, max]` — never stored. Rule-off and legacy
   // characters simply have no ledger inputs ⇒ 0. `karmaRitualCost` (rule on) feeds both
@@ -847,7 +858,7 @@ export function deriveModel(character, rules) {
     karma:
       karmaMod != null
         ? {
-            // Homebrew Karma economy (ed-homebrew/2, docs/PLAN-HOMEBREW-KARMA.md): a race
+            // Homebrew Karma economy (ed-homebrew/2, plans/PLAN-HOMEBREW-KARMA.md): a race
             // `karma.maxCap` caps the max, `karma.step` overrides the die, and
             // `karma.ritualCost` (when present) switches the ritual to the paid
             // Legend buy-back flow. Absent overrides ⇒ the standard values. `available`
@@ -1103,7 +1114,7 @@ export function deriveModel(character, rules) {
     customCatalog: customItems,
     // The branch-truth custom set (pre-overlay) and the canon item names — the
     // manager modal's delta baseline and collision-warning list respectively
-    // (docs/PLAN-CUSTOM-ITEMS.md §5.2 / §5.4).
+    // (plans/PLAN-CUSTOM-ITEMS.md §5.2 / §5.4).
     customCommittedCatalog: customItemsCommittedFile?.items ?? {},
     customCanonKeys: Object.keys(canonItems),
     // Thread-item catalogue (rules/thread-items.json) — the add-picker offers its

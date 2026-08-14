@@ -33,9 +33,9 @@ export class EdDisciplines extends LitElement {
     }
     .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
     .seg { display: inline-flex; background: var(--bg-card); border-radius: 999px; padding: 3px; gap: 2px; }
-    .seg button { border: none; background: none; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+    .seg button { border: none; background: none; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: var(--fs-body); color: var(--muted); cursor: pointer; }
     .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
-    .circle { font-size: 0.72rem; padding: 2px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
+    .circle { font-size: var(--fs-small); padding: 2px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
     /* Durability fits its label, Half-magic grows into the freed space, Artisan
        keeps its natural content width. */
     .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -43,16 +43,16 @@ export class EdDisciplines extends LitElement {
     .mcell.dur { flex: 0 0 auto; }
     .mcell.half { flex: 1 1 200px; min-width: 0; }
     .mcell.art { flex: 0 0 auto; }
-    .mcell .k { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-    .mcell .v { font-size: 0.8rem; margin-top: 1px; }
+    .mcell .k { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .mcell .v { font-size: var(--fs-body); margin-top: 1px; }
     .card { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
-    h4 { margin: 0 0 6px; font-size: 0.62rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .trow { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 44px 100px 76px 24px; gap: 8px; align-items: center; font-size: 0.8rem; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    h4 { margin: 0 0 6px; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .trow { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 44px 100px 76px 24px; gap: 8px; align-items: center; font-size: var(--fs-body); padding: 5px 0; border-bottom: 1px solid var(--border); }
     .trow:last-child { border-bottom: none; }
-    .trow.h { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; }
+    .trow.h { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .sd { font-size: 0.72rem; color: var(--muted); }
-    .eff { font-size: 0.74rem; color: light-dark(#3a4250, #cbd3de); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd { font-size: var(--fs-small); color: var(--muted); }
+    .eff { font-size: var(--fs-small); color: light-dark(#3a4250, #cbd3de); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tname { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
     .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .thpad { padding-left: 22px; }
@@ -60,7 +60,7 @@ export class EdDisciplines extends LitElement {
        the info button that opens the detail modal. */
     .tinfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
-      font: 500 italic 0.5rem/1 system-ui, sans-serif;
+      font-weight: 500; font-style: italic; font-size: var(--fs-eyebrow); line-height: 1; font-family: system-ui, sans-serif;
       transition: filter 0.12s ease, border-color 0.12s ease; }
     .tinfo.req { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-bg); }
     .tinfo.opt { background: transparent; border: 1.5px solid var(--muted); color: var(--muted); box-sizing: border-box; }
@@ -68,13 +68,13 @@ export class EdDisciplines extends LitElement {
     .tinfo.opt:hover { border-color: var(--accent); color: var(--fg); }
     .tinfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
     .trow.opt .lbl, .trow.opt .num, .trow.opt .sd, .trow.opt .eff { color: var(--muted); }
-    .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 0 0 6px; font-size: 0.62rem; color: var(--muted); }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 0 0 6px; font-size: var(--fs-eyebrow); color: var(--muted); }
     .legend .li { display: inline-flex; align-items: center; gap: 7px; }
     .legend .tinfo { cursor: default; }
-    .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; padding: 0; }
+    .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); padding: 0; }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
-    .abil { display: flex; gap: 10px; padding: 5px 0; font-size: 0.8rem; align-items: baseline; }
-    .cbadge { font-size: 0.62rem; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
+    .abil { display: flex; gap: 10px; padding: 5px 0; font-size: var(--fs-body); align-items: baseline; }
+    .cbadge { font-size: var(--fs-eyebrow); padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
     .section-gap { margin-top: 14px; }
 
     /* Rank editing (edit mode): the Rank cell becomes a − rank + stepper. The
@@ -82,36 +82,36 @@ export class EdDisciplines extends LitElement {
        400/500 weights, theme-aware. */
     .trow.edit { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 96px 100px 76px 24px; }
     .stepctl { display: inline-flex; align-items: center; gap: 5px; justify-self: end; }
-    .step { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); font: inherit; font-size: 0.9rem; line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .step { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); font: inherit; font-size: var(--fs-value); line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
     .step:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .step:disabled { opacity: 0.35; cursor: default; }
     .srank { min-width: 20px; text-align: center; font-variant-numeric: tabular-nums; }
     .legendbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-    .lchip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+    .lchip { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
     .lchip b { font-weight: 500; color: var(--accent); font-family: var(--mono); }
-    .hint { font-size: 0.72rem; color: var(--karma); }
-    .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+    .hint { font-size: var(--fs-small); color: var(--karma); }
+    .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
 
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
        row beneath the row that governs them. */
-    .knrow { display: flex; align-items: center; padding: 3px 0 3px 24px; font-size: 0.76rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .knrow { display: flex; align-items: center; padding: 3px 0 3px 24px; font-size: var(--fs-small); color: var(--muted); border-bottom: 1px solid var(--border); }
     .knrow:last-child { border-bottom: none; }
     .knrow .arr { color: var(--accent); margin-right: 6px; }
     .kninfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
-      font: 500 italic 0.5rem/1 system-ui, sans-serif; box-sizing: border-box;
+      font-weight: 500; font-style: italic; font-size: var(--fs-eyebrow); line-height: 1; font-family: system-ui, sans-serif; box-sizing: border-box;
       background: transparent; border: 1.5px solid var(--muted); color: var(--muted);
       margin-right: 7px; transition: border-color 0.12s ease, color 0.12s ease; }
     .kninfo:hover { border-color: var(--accent); color: var(--fg); }
     .kninfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
     .knlbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ktag { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 7px; }
+    .ktag { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 7px; }
     /* Neutral info control per skill (skills have no required/optional split). Opens
        a detail modal — mirrors the talent info button. */
     .sinfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
-      font: 500 italic 0.5rem/1 system-ui, sans-serif; box-sizing: border-box;
+      font-weight: 500; font-style: italic; font-size: var(--fs-eyebrow); line-height: 1; font-family: system-ui, sans-serif; box-sizing: border-box;
       background: transparent; border: 1.5px solid var(--muted); color: var(--muted);
       transition: border-color 0.12s ease, color 0.12s ease; }
     .sinfo:hover { border-color: var(--accent); color: var(--fg); }
@@ -121,13 +121,13 @@ export class EdDisciplines extends LitElement {
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; max-width: 30rem; width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 500; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; }
+    .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-value); font-weight: 500; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
     .mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .chip { font-size: 0.62rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+    .chip { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
     .chip.effc { color: var(--accent); background: var(--accent-bg); border-color: transparent; }
-    .mtext { font-size: 0.82rem; line-height: 1.5; margin: 6px 0; }
-    .mnote { font-size: 0.76rem; color: var(--karma); background: var(--karma-bg); border-radius: 6px; padding: 6px 9px; margin-top: 8px; }
+    .mtext { font-size: var(--fs-body); line-height: 1.5; margin: 6px 0; }
+    .mnote { font-size: var(--fs-small); color: var(--karma); background: var(--karma-bg); border-radius: 6px; padding: 6px 9px; margin-top: 8px; }
 
     @media (max-width: 620px) {
       .trow { grid-template-columns: minmax(0, 1fr) 40px 92px 24px; }

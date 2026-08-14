@@ -6,6 +6,28 @@
   },
   "releases": [
     {
+      "version": "1.12.0",
+      "date": "2026-08-14",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Combat healing flow: the take-damage entry no longer has a Heal field — healing is done through a Recovery test. Drinking a potion that heals now opens the Recovery roll straight after you confirm the drink (an unused boost still waits on its pill if you dismiss the roll). The Damage-taken card shows your Recoveries used, the take-damage button is styled as an emergency action, and rolling Initiative now also clears the round's declared Combat options."
+        },
+        {
+          "type": "changed",
+          "text": "The Combat tab is organised around your attack: a new Defence & Armour card sits right below the attack block (Physical, Mystic and Social Defence plus Physical and Mystic Armour, so the numbers you need mid-fight are in view), and Combat options, Situational, and Blood charms now share one bordered 'Combat Modifiers' card — each still its own collapsible section. On narrow screens the Defence & Armour card starts collapsed, like the modifier sections, and your taps still win either way."
+        },
+        {
+          "type": "added",
+          "text": "Items can now be owned in a quantity: each row shows ×N, and in Edit mode a − N + stepper adjusts it (picking an item you already own just adds one more). Weight counts every dose, so a stack of three potions weighs three. Thread items stay unique — no quantity. Equipping a stack equips all of it."
+        },
+        {
+          "type": "added",
+          "text": "Drink your potions. A Use / Drink button sits on each consumable in the Equipment tab, and the Combat tab has a new Potions card beside Defence & Armour with a dropdown of every potion you own (equipped or stored) — pick one and Drink. A Booster Potion arms +8 steps on your next Recovery test; a Healing Potion heals a Wound now and arms the same +8, or — if you've used all your Recovery tests — arms a one-off, budget-free Step 8 'heal only' roll that appears on the Overview's Active Effects. Cure Disease and Halt Illness are logged and consumed (no dice yet). Every drink logs the action and uses up one dose, even when there's nothing to heal (you're warned first). Potions don't stack — use or clear an armed boost before drinking another — and an unused boost clears when you start a new day."
+        }
+      ]
+    },
+    {
       "version": "1.11.0",
       "date": "2026-08-13",
       "changes": [

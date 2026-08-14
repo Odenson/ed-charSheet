@@ -17,6 +17,8 @@ export class EdConfirm extends LitElement {
     message: { type: String },
     confirmLabel: { type: String },
     tone: { type: String }, // 'danger' (default) | 'accent'
+    warn: { type: String }, // optional highlighted caution line above the buttons
+    disabled: { type: Boolean }, // when true the primary action is blocked (Cancel-only)
   };
 
   static styles = css`
@@ -32,13 +34,16 @@ export class EdConfirm extends LitElement {
     }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
-    .msg { font-size: 0.85rem; line-height: 1.5; color: var(--text); margin: 0 0 1rem; }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.5rem; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
+    .msg { font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0 0 1rem; }
     .actions { display: flex; justify-content: flex-end; gap: 8px; }
-    button.btn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
+    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
     button.btn.danger { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); font-weight: 500; }
     button.btn.accent { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+    button.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+    .warn { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-body); line-height: 1.4; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; margin: 0 0 1rem; }
+    .warn.block { color: var(--danger); background: var(--danger-bg); border-color: var(--danger); }
   `;
 
   connectedCallback() {
@@ -55,9 +60,11 @@ export class EdConfirm extends LitElement {
   }
 
   // Focus the primary (confirm) button so Enter confirms. The button carries a
-  // tone class (`danger` by default, `accent` for non-destructive choices).
+  // tone class (`danger` by default, `accent` for non-destructive choices). When
+  // the action is blocked (`disabled`), focus Cancel instead so Enter can't fire.
   firstUpdated() {
-    this.renderRoot.querySelector('.btn.danger, .btn.accent')?.focus();
+    const primary = this.disabled ? null : this.renderRoot.querySelector('.btn.danger, .btn.accent');
+    (primary ?? this.renderRoot.querySelector('.btn')).focus();
   }
 
   _close() {
@@ -65,6 +72,7 @@ export class EdConfirm extends LitElement {
   }
 
   _confirm() {
+    if (this.disabled) return;
     this.dispatchEvent(new CustomEvent('confirm', { bubbles: true, composed: true }));
   }
 
@@ -77,9 +85,12 @@ export class EdConfirm extends LitElement {
             <button class="mclose" aria-label="Close" @click=${this._close}>✕</button>
           </div>
           <p class="msg">${this.message}</p>
+          ${this.warn
+            ? html`<div class="warn ${this.disabled ? 'block' : ''}"><span aria-hidden="true">${this.disabled ? '⛔' : '⚠'}</span><span>${this.warn}</span></div>`
+            : ''}
           <div class="actions">
             <button type="button" class="btn" @click=${this._close}>Cancel</button>
-            <button type="button" class="btn ${this.tone === 'accent' ? 'accent' : 'danger'}" @click=${this._confirm}>${this.confirmLabel || 'Confirm'}</button>
+            <button type="button" class="btn ${this.tone === 'accent' ? 'accent' : 'danger'}" ?disabled=${this.disabled} @click=${this._confirm}>${this.confirmLabel || 'Confirm'}</button>
           </div>
         </div>
       </div>

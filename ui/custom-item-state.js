@@ -1,5 +1,5 @@
 // ui/custom-item-state.js — the custom-item manager modal's working-set logic as
-// pure functions (docs/PLAN-CUSTOM-ITEMS.md §5.2 / §6). Extracted from
+// pure functions (plans/PLAN-CUSTOM-ITEMS.md §5.2 / §6). Extracted from
 // ui/ed-custom-item.js so the modal's open → draft → save → reopen lifecycle is
 // testable with `node --test`, no DOM, no Lit.
 //

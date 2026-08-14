@@ -1,4 +1,4 @@
-// ui/ed-custom-item.js — the custom-item manager modal (docs/PLAN-CUSTOM-ITEMS.md
+// ui/ed-custom-item.js — the custom-item manager modal (plans/PLAN-CUSTOM-ITEMS.md
 // §5.2 / §6). Opened from the Equipment tab's "＋ Custom items" affordance in edit
 // mode; owns the kind-driven item form (ref fields + effect quick-templates) and
 // the working-set list with staged deletes.
@@ -251,7 +251,7 @@ export class EdCustomItem extends LitElement {
     }
     // Keep the auto summary in sync with the fields unless the user typed one.
     // (Fix: the old reset blanked the summary, and the clean step then silently
-    // dropped the effect on save — docs/PLAN-CUSTOM-ITEMS.md §6.6.)
+    // dropped the effect on save — plans/PLAN-CUSTOM-ITEMS.md §6.6.)
     if (effects[i].type !== 'note' && !this._summaryOverride.has(i)) {
       effects[i] = { ...effects[i], summary: summaryFor(effects[i]) };
     }
@@ -522,10 +522,10 @@ export class EdCustomItem extends LitElement {
     .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 40rem; max-width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; box-sizing: border-box; }
     .modal.sml { width: 24rem; }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .mtitle { font-size: 1rem; font-weight: 500; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; }
-    .sub { font-size: 0.72rem; color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
-    .msg { font-size: 0.85rem; line-height: 1.5; color: var(--fg); margin: 0 0 0.75rem; }
+    .mtitle { font-size: var(--fs-value); font-weight: 500; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
+    .sub { font-size: var(--fs-small); color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
+    .msg { font-size: var(--fs-body); line-height: 1.5; color: var(--fg); margin: 0 0 0.75rem; }
 
     /* List */
     .clist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
@@ -533,17 +533,17 @@ export class EdCustomItem extends LitElement {
     .crow.del { opacity: 0.55; }
     .cinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--fg); }
     .cinfo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-    .cnm { font-size: 0.88rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .csub { font-size: 0.62rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ctag { font-size: 0.62rem; color: var(--danger); border: 1px solid var(--danger); border-radius: 999px; padding: 2px 9px; }
-    .cdel { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.92rem; line-height: 1; padding: 2px 4px; border-radius: 6px; flex: 0 0 auto; }
+    .cnm { font-size: var(--fs-body); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .csub { font-size: var(--fs-eyebrow); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ctag { font-size: var(--fs-eyebrow); color: var(--danger); border: 1px solid var(--danger); border-radius: 999px; padding: 2px 9px; }
+    .cdel { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-value); line-height: 1; padding: 2px 4px; border-radius: 6px; flex: 0 0 auto; }
     .cdel:hover { color: var(--danger); }
     .cdel:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
-    .empty { color: var(--muted); font-size: 0.78rem; padding: 4px 2px; }
+    .empty { color: var(--muted); font-size: var(--fs-small); padding: 4px 2px; }
 
     .mfoot { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; }
     .mfoot .spacer { flex: 1; }
-    .fbtn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
+    .fbtn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
     .fbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .fbtn[disabled] { opacity: 0.45; cursor: default; }
     .fbtn.m-primary, .fbtn.f-primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
@@ -553,8 +553,8 @@ export class EdCustomItem extends LitElement {
     form { display: flex; flex-direction: column; gap: 4px; }
     .frow { display: flex; gap: 10px; flex-wrap: wrap; }
     .fld { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; }
-    .fld label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 500; }
-    .fld input, .fld select, .fld textarea { font: inherit; font-size: 0.82rem; color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; outline: none; min-width: 0; }
+    .fld label { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 500; }
+    .fld input, .fld select, .fld textarea { font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; outline: none; min-width: 0; }
     .fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--accent); }
     .fld.name { flex: 1 1 180px; }
     .fld.kind { flex: 0 0 150px; }
@@ -564,16 +564,16 @@ export class EdCustomItem extends LitElement {
     .fld.target { flex: 1 1 170px; }
     .fld.target input.other { margin-top: 2px; }
     .fld.summary { flex: 1 1 100%; margin-top: 4px; }
-    .fld .hint { font-size: 0.62rem; color: var(--muted); }
-    .chk { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--fg); padding: 7px 0; }
-    .warn { font-size: 0.72rem; color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 8px; padding: 5px 9px; margin: 2px 0 8px; }
-    .errs { margin: 4px 0 0; padding: 0 0 0 18px; color: var(--danger); font-size: 0.7rem; line-height: 1.5; }
+    .fld .hint { font-size: var(--fs-eyebrow); color: var(--muted); }
+    .chk { display: flex; align-items: center; gap: 6px; font-size: var(--fs-body); color: var(--fg); padding: 7px 0; }
+    .warn { font-size: var(--fs-small); color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 8px; padding: 5px 9px; margin: 2px 0 8px; }
+    .errs { margin: 4px 0 0; padding: 0 0 0 18px; color: var(--danger); font-size: var(--fs-fine); line-height: 1.5; }
 
     .fgroup { border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; margin-bottom: 8px; }
-    .fh { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; margin-bottom: 7px; }
+    .fh { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; margin-bottom: 7px; }
     .refgrid { display: flex; flex-wrap: wrap; gap: 8px; }
     .qt { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-    .qtbtn { font: inherit; font-size: 0.72rem; border: 1px dashed var(--accent); background: var(--accent-bg); color: var(--accent); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+    .qtbtn { font: inherit; font-size: var(--fs-small); border: 1px dashed var(--accent); background: var(--accent-bg); color: var(--accent); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
     .qtbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .qtbtn.add { margin-top: 6px; }
     .elist { display: flex; flex-direction: column; gap: 8px; }

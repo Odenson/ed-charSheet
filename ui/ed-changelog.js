@@ -39,7 +39,7 @@ class EdChangelog extends LitElement {
       background: var(--accent-bg);
       color: var(--accent);
       border: 1px solid var(--accent);
-      font: 500 0.7rem/1.4 system-ui, sans-serif;
+      font-weight: 500; font-size: var(--fs-fine); line-height: 1.4; font-family: system-ui, sans-serif;
       letter-spacing: 0.03em;
       cursor: pointer;
     }
@@ -58,26 +58,26 @@ class EdChangelog extends LitElement {
     }
     .mhead {
       display: flex; justify-content: space-between; align-items: center;
-      gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem;
+      gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem;
     }
     .mclose {
       background: none; border: none; color: var(--muted);
-      font-size: 1rem; line-height: 1; cursor: pointer;
+      font-size: var(--fs-value); line-height: 1; cursor: pointer;
     }
     .rel { margin-bottom: 1rem; }
     .rel:last-child { margin-bottom: 0; }
     .relhead { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; }
-    .relver { font-weight: 500; color: var(--fg); font-size: 0.9rem; }
-    .reldate { font-size: 0.7rem; color: var(--muted); }
+    .relver { font-weight: 500; color: var(--fg); font-size: var(--fs-value); }
+    .reldate { font-size: var(--fs-fine); color: var(--muted); }
     ul { margin: 0; padding: 0; list-style: none; }
     li {
       display: flex; gap: 0.5rem; align-items: baseline;
-      font-size: 0.82rem; line-height: 1.5; color: var(--muted);
+      font-size: var(--fs-body); line-height: 1.5; color: var(--muted);
       margin-bottom: 0.25rem;
     }
     .tag {
       flex: none; min-width: 4.2em; text-align: center;
-      font-size: 0.6rem; font-weight: 500;
+      font-size: var(--fs-eyebrow); font-weight: 500;
       text-transform: uppercase; letter-spacing: 0.04em;
       padding: 1px 6px; border-radius: 999px;
       background: var(--accent-bg); color: var(--accent);

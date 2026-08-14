@@ -38,7 +38,7 @@ Concurrency analysis of that design:
    own id**, re-PUTs. Both persist — but every save rewrites a file holding
    *every* character (noisy diffs, big PUTs), and a **burst of concurrent writers
    can exhaust the bounded `MAX_RETRIES=3` and fail a save**. Recorded as an
-   accepted cost in `docs/PLAN-MULTI-CHARACTER.md`.
+   accepted cost in `plans/PLAN-MULTI-CHARACTER.md`.
 2. **Same character, two writers (two devices, player + GM, a stale tab) →
    silent last-writer-wins.** B's retry re-reads the file — now holding A's
    version of that id — and replaces `characters[id]` wholesale with its own full
@@ -342,7 +342,7 @@ are current; the whole suite is green.
 - [x] D3. **Docs:** `docs/GITHUB-SERVERLESS-SAVE.md` — rewrite the save model
       (per-file writes, base contract, `stale_base` + modal, index-not-trusted
       rule, ETag==blob-sha base, read path); `docs/GITHUB-SERVERLESS-SAVE-RUNBOOK.md`
-      — worker env/path change; `docs/PLAN-MULTI-CHARACTER.md` — record the layout
+      — worker env/path change; `plans/PLAN-MULTI-CHARACTER.md` — record the layout
       change and `ed-characters-index/1`, resolve the accepted-costs paragraph;
       `data/changelog.json` — unreleased entries.
 - [x] D4. **Verification:** `npm test` (all suites, import check) green; manual
@@ -481,7 +481,7 @@ rate limit; degrades only to today's overwrite). Owner chose **C** (2026-08-12).
   wording (per-character file), §6.1/6.2/6.3 what-changes, §7 history.
   `docs/GITHUB-SERVERLESS-SAVE-RUNBOOK.md`: env inventory + `wrangler.toml` +
   smoke-test + §3.1/§4.1/§5.3 + §7 status row all per-file (`GITHUB_CHARS_DIR`,
-  "PENDING — needs redeploy + smoke test" owner action). `docs/PLAN-MULTI-CHARACTER.md`
+  "PENDING — needs redeploy + smoke test" owner action). `plans/PLAN-MULTI-CHARACTER.md`
   gained a **Superseded 2026-08-12** banner pointing at this plan (historical
   record; picker/overlay decisions still hold). `data/changelog.json` unreleased
   gained 3 entries (conflict prompt, per-character files, concurrency-checked

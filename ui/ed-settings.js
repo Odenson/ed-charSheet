@@ -86,17 +86,17 @@ export class EdSettings extends LitElement {
           --text: light-dark(#111418, #f0f3f7);
         }
         .eds-modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; box-sizing: border-box; }
-        .eds-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
-        .eds-close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
-        .eds-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 0.85rem; }
+        .eds-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
+        .eds-close { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
+        .eds-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: var(--fs-body); }
         .eds-row + .eds-row { border-top: 1px solid var(--border); }
         .eds-row .lbl { font-weight: 500; }
-        .eds-row .hint { font-size: 0.72rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
-        .eds-num { font: inherit; font-size: 0.85rem; width: 5rem; text-align: right; color: var(--text); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
+        .eds-row .hint { font-size: var(--fs-small); color: var(--muted); margin-top: 2px; font-weight: 400; }
+        .eds-num { font: inherit; font-size: var(--fs-body); width: 5rem; text-align: right; color: var(--text); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
         .eds-num:focus { outline: none; border-color: var(--accent); }
         .eds-num:disabled { opacity: 0.5; }
         .eds-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1rem; }
-        .eds-btn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
+        .eds-btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
         .eds-btn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
         /* Switch */
         .eds-switch { position: relative; width: 40px; height: 22px; flex: none; }

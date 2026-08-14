@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, resolveAttack, netDamage, collectCombatEffects, attackTalentNamesFor, attackSuccessLevels } from './combat.js';
+import { attackPool, damagePool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -226,4 +226,45 @@ test('collectCombatEffects: blood-charm effects fold (result-measure → resultM
   assert.equal(ap.step, TALENT);
   assert.deepEqual(ap.resultMods, [{ label: '+6 to the Attack result.', value: 6 }]);
   assert.equal(ap.strain, 1);
+});
+
+test('collectCombatEffects: armor-modifier effects collect as armorMods, never the pools', () => {
+  const charm = {
+    name: 'Petrified Oak',
+    effects: [
+      { type: 'armor-modifier', target: { domain: 'armor', name: 'Physical' }, operation: 'add', value: 2, measure: 'rating', condition: 'situational', source: 'condition', summary: 'Physical armour +2.' },
+    ],
+  };
+  const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [charm], rules: RULES, conditions: {} });
+  assert.deepEqual(r.armorMods, [{ source: 'Petrified Oak', name: 'Physical', value: 2 }]);
+  assert.equal(r.defenseMods.length, 0, 'armour is not a defence');
+  assert.ok(!r.attackEffects.includes(charm.effects[0]), 'armor mods never enter a pool');
+  assert.ok(!r.damageEffects.includes(charm.effects[0]), 'armor mods never enter a pool');
+});
+
+// --- foldCombatRatings (Overview-style live Defence & Armour figure) ---
+
+test('foldCombatRatings: folds toggled mods onto the derived base for display', () => {
+  const r = foldCombatRatings(
+    { physicalDefense: 21, mysticDefense: 17, socialDefense: 14, physicalArmor: 10, mysticArmor: 8 },
+    [
+      { source: 'Aggressive Attack', name: 'Physical', value: -3 },
+      { source: 'Aggressive Attack', name: 'Mystic', value: -3 },
+      { source: 'Partial Cover', name: 'Physical', value: 2 },
+    ],
+    [{ source: 'Petrified Oak', name: 'Physical', value: 2 }],
+  );
+  assert.deepEqual(r.defence.Physical, { base: 21, mods: [{ source: 'Aggressive Attack', name: 'Physical', value: -3 }, { source: 'Partial Cover', name: 'Physical', value: 2 }], delta: -1, value: 20 });
+  assert.deepEqual(r.defence.Mystic, { base: 17, mods: [{ source: 'Aggressive Attack', name: 'Mystic', value: -3 }], delta: -3, value: 14 });
+  assert.deepEqual(r.defence.Social, { base: 14, mods: [], delta: 0, value: 14 });
+  assert.deepEqual(r.armour.Physical, { base: 10, mods: [{ source: 'Petrified Oak', name: 'Physical', value: 2 }], delta: 2, value: 12 });
+  assert.deepEqual(r.armour.Mystic, { base: 8, mods: [], delta: 0, value: 8 });
+});
+
+test('foldCombatRatings: no derived base → null value (placeholder-pill rule, never fabricated)', () => {
+  const r = foldCombatRatings({}, [{ source: 'Aggressive Attack', name: 'Physical', value: -3 }], []);
+  assert.equal(r.defence.Physical.value, null);
+  assert.equal(r.defence.Mystic.value, null);
+  assert.equal(r.armour.Physical.value, null);
+  assert.equal(r.defence.Social.value, null);
 });

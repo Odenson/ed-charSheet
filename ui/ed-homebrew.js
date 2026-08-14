@@ -30,7 +30,7 @@ class EdHomebrew extends LitElement {
       background: var(--accent-bg);
       color: var(--accent);
       border: 1px solid var(--accent);
-      font: 500 0.7rem/1.4 system-ui, sans-serif;
+      font-weight: 500; font-size: var(--fs-fine); line-height: 1.4; font-family: system-ui, sans-serif;
       letter-spacing: 0.03em;
       cursor: pointer;
     }
@@ -49,30 +49,30 @@ class EdHomebrew extends LitElement {
     }
     .mhead {
       display: flex; justify-content: space-between; align-items: center;
-      gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem;
+      gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem;
     }
     .mclose {
       background: none; border: none; color: var(--muted);
-      font-size: 1rem; line-height: 1; cursor: pointer;
+      font-size: var(--fs-value); line-height: 1; cursor: pointer;
     }
     .rule { margin-bottom: 1rem; }
     .rule:last-child { margin-bottom: 0; }
-    .rname { font-size: 0.92rem; font-weight: 500; }
-    .rover { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
-    .rsum { font-size: 0.82rem; line-height: 1.5; margin: 6px 0 8px; }
+    .rname { font-size: var(--fs-value); font-weight: 500; }
+    .rover { font-size: var(--fs-fine); color: var(--muted); margin-top: 1px; }
+    .rsum { font-size: var(--fs-body); line-height: 1.5; margin: 6px 0 8px; }
     .frm { border-top: 1px solid var(--border); padding-top: 6px; }
     .fhead {
-      font-size: 0.6rem; font-weight: 500; color: var(--muted);
+      font-size: var(--fs-eyebrow); font-weight: 500; color: var(--muted);
       text-transform: uppercase; letter-spacing: 0.06em; margin: 2px 0 4px;
     }
     .rating { margin: 4px 0; }
     .rt {
-      font-size: 0.78rem; font-weight: 500; color: var(--accent);
+      font-size: var(--fs-small); font-weight: 500; color: var(--accent);
       text-transform: capitalize;
     }
-    .note { font-size: 0.78rem; line-height: 1.45; color: var(--muted); }
+    .note { font-size: var(--fs-small); line-height: 1.45; color: var(--muted); }
     .term {
-      display: flex; gap: 6px; font-size: 0.78rem; line-height: 1.45;
+      display: flex; gap: 6px; font-size: var(--fs-small); line-height: 1.45;
       color: var(--muted); margin: 1px 0 1px 8px;
     }
     .term .dot { color: var(--accent); flex: none; }

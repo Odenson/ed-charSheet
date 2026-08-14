@@ -26,7 +26,7 @@
 //                                            read), so the isItemsReflected
 //                                            reconcile logic can be verified
 //                                            against a stale read
-//                                            (docs/PLAN-CUSTOM-ITEMS.md §6.6).
+//                                            (plans/PLAN-CUSTOM-ITEMS.md §6.6).
 //
 // `npm test` boots it on an ephemeral port with a temp docroot
 // (tools/dev-server.test.js); exports keep the routes testable without a fork.

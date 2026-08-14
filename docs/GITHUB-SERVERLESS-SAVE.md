@@ -19,7 +19,7 @@ Deno Deploy and a Vercel function are portability alternatives) — that commit
 the character store (one file per character, `data/characters/<id>.json`, via
 `/save`) **and** the shared custom-item catalog `data/custom-items.json` (via
 `/save-items`) to the repo **on the app's behalf**, so the GitHub credential
-never enters the browser. The `/save-items` route (docs/PLAN-CUSTOM-ITEMS.md)
+never enters the browser. The `/save-items` route (plans/PLAN-CUSTOM-ITEMS.md)
 mirrors `/save` exactly: same CORS, same fail-closed `x-save-key`, same GET-sha
 → PUT bounded-409-retry write to the `character-data` branch, with every item
 validated by the shared `engine/validate-item.js` gate before the commit.
@@ -463,7 +463,7 @@ both environments show the same characters.
 A missing index or missing character file surfaces a clear error — "character
 store not found" / "unknown character" — **never a fallback to the retired
 grouped `data/characters.json`**: the split is a coordinated migration on the
-`character-data` branch (docs/PLAN-SAVE-CONCURRENCY.md Phase D), and the skew
+`character-data` branch (plans/PLAN-SAVE-CONCURRENCY.md Phase D), and the skew
 window is a visible error on either side, not a silent legacy read. The
 portrait image (`meta.portrait`, e.g. `data/chakka.jpg`) is read from the
 branch's raw CDN — a static repo asset doesn't need the git-consistent contents
@@ -634,7 +634,7 @@ worker redeployed, two-browser smoke passed.
 | Endpoint URL in app | Hardcoded default (Settings override deferred) |
 | Save model | One primary Save → GitHub, over the autosave overlay; Export = local download (§4.5) |
 | Read-after-write | App reads the branch via the git-consistent GitHub contents API (§4.5) |
-| Concurrency | **Per-character files + optimistic concurrency** (docs/PLAN-SAVE-CONCURRENCY.md, Option C): `/save` writes `data/characters/<id>.json` with a `base` (ETag==blob-sha) check; stale → `409 stale_base` + sha → keep-mine/take-theirs modal; index (`ed-characters-index/1`) is create-only and never a save base. The grouped `ed-characters/1` store is retired. |
+| Concurrency | **Per-character files + optimistic concurrency** (plans/PLAN-SAVE-CONCURRENCY.md, Option C): `/save` writes `data/characters/<id>.json` with a `base` (ETag==blob-sha) check; stale → `409 stale_base` + sha → keep-mine/take-theirs modal; index (`ed-characters-index/1`) is create-only and never a save base. The grouped `ed-characters/1` store is retired. |
 
 ---
 

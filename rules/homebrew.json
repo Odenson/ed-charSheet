@@ -54,7 +54,7 @@
       "overrides": "Players' Guide p.83 — Karma Ritual (house rule)",
       "summary": "The Karma Ritual is no longer a free refill: you buy Karma back with Legend at a race-driven cost, up to a race-driven maximum, and the Karma die is race-driven. This rule makes karma use rarer and increases its etherial position",
       "enabled": true,
-      "note": "Uses the ed-homebrew/2 `set` lever (docs/HOMEBREW-RULES.md §5.5, docs/PLAN-HOMEBREW-KARMA.md). karma.maxCap is the racial ceiling (engine applies min(Modifier×Circle, cap)); karma.step is the Karma die Step (= the racial Modifier); karma.ritualCost is the Legend spent per Karma point on the paid ritual (a dated, undoable Legend sink). Ships disabled.",
+      "note": "Uses the ed-homebrew/2 `set` lever (docs/HOMEBREW-RULES.md §5.5, plans/PLAN-HOMEBREW-KARMA.md). karma.maxCap is the racial ceiling (engine applies min(Modifier×Circle, cap)); karma.step is the Karma die Step (= the racial Modifier); karma.ritualCost is the Legend spent per Karma point on the paid ritual (a dated, undoable Legend sink). Ships disabled.",
       "set": {
         "karma.step":       { "Dwarf": 4,  "Elf": 4,  "Human": 5,  "Obsidiman": 3,  "Ork": 5,  "T'skrang": 4,  "Troll": 3,  "Windling": 6  },
         "karma.maxCap":     { "Dwarf": 25, "Elf": 25, "Human": 40, "Obsidiman": 20, "Ork": 40, "T'skrang": 25, "Troll": 20, "Windling": 60 },

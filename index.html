@@ -6,7 +6,20 @@
     <title>Earthdawn Character Sheet</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <style>
-      :root { color-scheme: light dark; }
+      :root {
+        color-scheme: light dark;
+        /* Canonical type scale (docs/UI-GUIDELINES.md §3a). Seven steps, defined
+           once here — custom properties inherit through every component's shadow
+           DOM, so any ui/*.js may reference these without redefining them. Use a
+           token, never a raw rem, for font-size. */
+        --fs-eyebrow: 0.62rem; /* uppercase section labels (.h, h4, .k, .lab) — the floor */
+        --fs-fine: 0.68rem;    /* hints, thresholds, fine print */
+        --fs-small: 0.74rem;   /* dense body: chips, table rows, tiles */
+        --fs-body: 0.82rem;    /* standard body, buttons, modal copy */
+        --fs-value: 0.95rem;   /* inline numeric values / emphasis */
+        --fs-title: 1.1rem;    /* panel & modal titles */
+        --fs-hero: 1.6rem;     /* hero name / big display numbers */
+      }
       body {
         margin: 0;
         background: light-dark(#f4f5f7, #12151b);
