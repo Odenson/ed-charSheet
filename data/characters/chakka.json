@@ -409,6 +409,16 @@
     {
       "name": "Ork Dagger",
       "equipped": true
+    },
+    {
+      "name": "Healing Potion",
+      "equipped": true,
+      "qty": 2
+    },
+    {
+      "name": "Booster Potion",
+      "equipped": true,
+      "qty": 3
     }
   ],
   "wealth": {
