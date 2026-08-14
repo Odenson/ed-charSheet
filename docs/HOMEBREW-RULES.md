@@ -21,7 +21,7 @@ or editing a rule. The active build plan lives in
 | Rules file | `rules/homebrew.json` | `ed-homebrew/2` |
 | Loading | `store.js` `loadCharacter` — optional (`loadJSONOptional`, knacks/thread-items precedent) | — |
 | Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v3 |
-| Build plan | `docs/PLAN-HOMEBREW.md` | — |
+| Build plan | `plans/PLAN-HOMEBREW.md` | — |
 
 The file is **optional**: if it's absent the app behaves exactly as before.
 Rules are **global** — an enabled rule applies to every character (there is no

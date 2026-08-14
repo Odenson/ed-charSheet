@@ -22,7 +22,7 @@
 //     talent ranks"). The tier is read off the thread-item catalog passed in as
 //     opts.threadItemCatalog (rules/thread-items.json items); an owned item matching a
 //     catalog name is a thread item, and an unknown tier stays unpriced (—).
-//   • Karma on Legend (homebrew rule, docs/PLAN-HOMEBREW-KARMA.md): with the rule on
+//   • Karma on Legend (homebrew rule, plans/PLAN-HOMEBREW-KARMA.md): with the rule on
 //     (opts.karmaRitualCost = the race's Legend-per-Karma cost) the Karma ledger's
 //     lifetime `converted` is all bought with Legend, so the sink is `converted × cost`
 //     — a single figure broken into a virtual historic line plus one line per dated
@@ -316,7 +316,7 @@ export function auditLegendSpent(character, costs, opts = {}) {
     sections.push({ key: 'threads', kind: 'threads', label: 'Thread Items', total: sumLines(threadLines), lines: threadLines });
   }
 
-  // --- Karma on Legend (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md): with the
+  // --- Karma on Legend (homebrew Karma economy, plans/PLAN-HOMEBREW-KARMA.md): with the
   //     rule on, `opts.karmaRitualCost` is the race's Legend-per-Karma cost and the
   //     Karma a character holds is a ledger — `resources.karma.converted` (lifetime
   //     Karma gained, incl. starting) — every point bought with Legend, so the sink is

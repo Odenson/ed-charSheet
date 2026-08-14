@@ -221,8 +221,8 @@ retired. See ARCHITECTURE §7 and design §4.5.
   Extended for multi-character + concurrency: an `id` writes its own file
   (`data/characters/<id>.json`), a stale `base` → `409 stale_base` + current sha
   (no retry), invalid ids → `400 invalid_id`, a `404` file is created fresh, and
-  the create-only `index.json` row is ensured once (docs/PLAN-MULTI-CHARACTER.md
-  Phase E, docs/PLAN-SAVE-CONCURRENCY.md Phases A–C). Since v1.6.0 the id is
+  the create-only `index.json` row is ensured once (plans/PLAN-MULTI-CHARACTER.md
+  Phase E, plans/PLAN-SAVE-CONCURRENCY.md Phases A–C). Since v1.6.0 the id is
   **required** — the legacy no-id path and its tests were removed.
 
 ### Phase 5 — Docs & status flip (CLAUDE)
@@ -371,9 +371,9 @@ override (5.3) still works against it for cross-origin test rigs.
 | Deployed | 2026-08-06 (smoke-test 200 + commit; `character-data` branch created) |
 | App integration merged | 2026-08-06 on `dev` (commit `c2593e1`); read fix `7e6b8ab` |
 | Docs flipped to "shipped" | 2026-08-06 — released as **v1.5.0** |
-| Multi-character store | Grouped `GITHUB_STORE` + `id` upsert shipped (docs/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
+| Multi-character store | Grouped `GITHUB_STORE` + `id` upsert shipped (plans/PLAN-MULTI-CHARACTER.md, Phases A–E); store deployed to `character-data` |
 | v1.6.0 promotion | Released 2026-08-07 — grouped store is the only save target; legacy `GITHUB_PATH`/`data/character.json` and the worker no-`id` path removed. **Redeploy the worker after this release** (`npx wrangler deploy`). |
-| Per-character split + concurrency | **Verified 2026-08-12.** `character-data` migrated (grouped file deleted; `data/characters/` per-character files + `index.json`), worker redeployed with `GITHUB_CHARS_DIR`, app shipped on `dev` (`457e39d`). Owner two-browser smoke passed (conflict modal, keep-mine/take-theirs, cross-character no false conflict). See docs/PLAN-SAVE-CONCURRENCY.md. |
+| Per-character split + concurrency | **Verified 2026-08-12.** `character-data` migrated (grouped file deleted; `data/characters/` per-character files + `index.json`), worker redeployed with `GITHUB_CHARS_DIR`, app shipped on `dev` (`457e39d`). Owner two-browser smoke passed (conflict modal, keep-mine/take-theirs, cross-character no false conflict). See plans/PLAN-SAVE-CONCURRENCY.md. |
 | Custom items (`/save-items`) | Built (PLAN-CUSTOM-ITEMS.md P1–P6); worker route + `GITHUB_ITEMS_PATH` shipped. **Phase B verified 2026-08-09** — all four smoke curls passed (401 / 400 invalid_items / 200 upsert + branch file / 200 delete). Owner rollout runsheet: §8 below. |
 
 ---
@@ -381,7 +381,7 @@ override (5.3) still works against it for cross-origin test rigs.
 ## 8. Custom items — build & rollout runsheet
 
 The companion write endpoint (`/save-items`) and the CI fold job
-(docs/PLAN-CUSTOM-ITEMS.md). Claude built the code and tests (Phases 1–6 of the
+(plans/PLAN-CUSTOM-ITEMS.md). Claude built the code and tests (Phases 1–6 of the
 plan); the **owner** deploys the worker and verifies live, exactly like the
 original rollout above. Work top-to-bottom; status boxes track it.
 

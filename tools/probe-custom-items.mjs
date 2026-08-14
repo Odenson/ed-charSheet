@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // tools/probe-custom-items.mjs — headless logic-level smoke for the custom-item
-// feature (docs/PLAN-CUSTOM-ITEMS.md Phase 8). Run: `node tools/probe-custom-items.mjs`.
+// feature (plans/PLAN-CUSTOM-ITEMS.md Phase 8). Run: `node tools/probe-custom-items.mjs`.
 //
 // P8.2 of the plan asked for a browser-level probe (picker, modal keyboard,
 // light/dark, viewport) "using the existing probe pattern" — no such pattern

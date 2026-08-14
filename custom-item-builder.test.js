@@ -1,5 +1,5 @@
 // custom-item-builder.test.js — regression tests for the pure custom-item form
-// builders (ui/custom-item-builder.js). Two bugs pinned here (docs/PLAN-CUSTOM-
+// builders (ui/custom-item-builder.js). Two bugs pinned here (plans/PLAN-CUSTOM-
 // ITEMS.md §6.6):
 //   1. Effects were silently dropped on save. A type change reset the row via
 //      blankEffect(newType) whose summary is '' and the old clean step filtered

@@ -7,7 +7,7 @@
 // does not watch that branch, so a save is a data commit — never an app rebuild.
 // The app reads the branch live (store.js), so a save shows up on next load.
 //
-// Since the per-character-files split (docs/PLAN-SAVE-CONCURRENCY.md) the save
+// Since the per-character-files split (plans/PLAN-SAVE-CONCURRENCY.md) the save
 // target is ONE file per character: `data/characters/<id>.json`, holding the raw
 // `schema: "ed-character/1"` entry (no grouped wrapper). The `id` is validated
 // against a strict class (`[a-z0-9][a-z0-9-]{0,63}`) that is also a safe
@@ -31,7 +31,7 @@
 // POST /save-items  { "items": { "<name>": <item> }, "delete"?: ["<name>", …] }
 //
 // The companion write endpoint for the player-created custom-item catalog
-// (docs/PLAN-CUSTOM-ITEMS.md): GET `data/custom-items.json` (ed-items/2) on the
+// (plans/PLAN-CUSTOM-ITEMS.md): GET `data/custom-items.json` (ed-items/2) on the
 // same branch, merge the posted items (custom wins on a canon-name collision),
 // apply the delete list, PUT it back — same bounded GET-sha → PUT 409-retry
 // contract as /save. Every item is validated by engine/validate-item.js (shared

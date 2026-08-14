@@ -1,5 +1,5 @@
 // ui/ed-conflict.js — the keep-mine / take-theirs modal for a `stale_base`
-// conflict (docs/PLAN-SAVE-CONCURRENCY Phase C1).
+// conflict (plans/PLAN-SAVE-CONCURRENCY Phase C1).
 //
 // The worker rejected a save because the character changed on the branch since
 // this client last read or saved it. The overlay still holds the local draft;

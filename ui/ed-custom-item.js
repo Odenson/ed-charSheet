@@ -1,4 +1,4 @@
-// ui/ed-custom-item.js — the custom-item manager modal (docs/PLAN-CUSTOM-ITEMS.md
+// ui/ed-custom-item.js — the custom-item manager modal (plans/PLAN-CUSTOM-ITEMS.md
 // §5.2 / §6). Opened from the Equipment tab's "＋ Custom items" affordance in edit
 // mode; owns the kind-driven item form (ref fields + effect quick-templates) and
 // the working-set list with staged deletes.
@@ -251,7 +251,7 @@ export class EdCustomItem extends LitElement {
     }
     // Keep the auto summary in sync with the fields unless the user typed one.
     // (Fix: the old reset blanked the summary, and the clean step then silently
-    // dropped the effect on save — docs/PLAN-CUSTOM-ITEMS.md §6.6.)
+    // dropped the effect on save — plans/PLAN-CUSTOM-ITEMS.md §6.6.)
     if (effects[i].type !== 'note' && !this._summaryOverride.has(i)) {
       effects[i] = { ...effects[i], summary: summaryFor(effects[i]) };
     }

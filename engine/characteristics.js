@@ -520,7 +520,7 @@ export function talentKarmaUse(talent) {
  * Discipline Circle. (PG, Creating a Character.)
  *
  * `maximum` (optional) is a hard cap — the homebrew Karma-economy rule's race
- * `karma.maxCap` (docs/PLAN-HOMEBREW-KARMA.md). Absent/`null` ⇒ no cap ⇒ the standard
+ * `karma.maxCap` (plans/PLAN-HOMEBREW-KARMA.md). Absent/`null` ⇒ no cap ⇒ the standard
  * `Modifier × Circle`; present ⇒ `min(Modifier × Circle, maximum)`. One
  * derivation, no branch: the off path passes no `maximum` and is unchanged.
  *

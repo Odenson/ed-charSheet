@@ -14,7 +14,7 @@ in the log rather than editing the past.
   not started.
 - **Landed:** all phases A–E complete on `dev` (2026-08-07); **90/90 tests pass**.
 
-> **Superseded 2026-08-12 by the per-character split** (docs/PLAN-SAVE-CONCURRENCY.md,
+> **Superseded 2026-08-12 by the per-character split** (plans/PLAN-SAVE-CONCURRENCY.md,
 > Option C): the grouped store `data/characters.json` is retired in favor of one
 > raw `ed-character/1` file per character at `data/characters/<id>.json` plus a
 > create-only discovery index `data/characters/index.json` (`ed-characters-index/1`).

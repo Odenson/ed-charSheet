@@ -408,7 +408,7 @@ test('auditLegendSpent handles a character with no legend inputs', () => {
   assert.equal(r.delta, null);
 });
 
-// --- Karma Rituals sink (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md) ----------
+// --- Karma Rituals sink (homebrew Karma economy, plans/PLAN-HOMEBREW-KARMA.md) ----------
 
 test('auditLegendSpent sinks `converted × cost` and splits it into historic + event lines', () => {
   const char = {

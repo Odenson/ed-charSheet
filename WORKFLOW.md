@@ -33,7 +33,7 @@ committed by the serverless save target (docs/GITHUB-SERVERLESS-SAVE.md) on the
 app's behalf, alongside the portrait image each entry references via
 `meta.portrait`. The legacy single-file `data/character.json` was **removed at
 the v1.6.0 promotion**, and the grouped `data/characters.json` store was retired
-by the per-character split (docs/PLAN-SAVE-CONCURRENCY.md); the per-character
+by the per-character split (plans/PLAN-SAVE-CONCURRENCY.md); the per-character
 files + index are the only character save targets.
 
 Both environments **source the character detail from this one branch**: on the
@@ -54,7 +54,7 @@ copies only).
 runs on a push to `character-data` touching `data/custom-items.json` (or
 manually) and mirrors that file into **`rules/custom-items.json` on `dev`** — a
 real rule file, part of the build input. The consequence is deliberate and
-`dev`-only (docs/PLAN-CUSTOM-ITEMS.md §3): a custom-item save triggers one extra
+`dev`-only (plans/PLAN-CUSTOM-ITEMS.md §3): a custom-item save triggers one extra
 `dev` rebuild (so `/dev/` bundles the catalog as a durability fallback), while
 `main`'s tree is untouched — production never rebuilds from a custom-item save.
 The fold validates every item and the merged catalog through the shared
@@ -175,7 +175,7 @@ entirely while reconnecting the histories, then push.
   exception: a **custom-item** save (via `/save-items`) triggers the fold job,
   which mirrors the catalog into `rules/custom-items.json` **on `dev`** — a
   build input — so `/dev/` rebuilds while `main` stays untouched
-  (docs/PLAN-CUSTOM-ITEMS.md §3).
+  (plans/PLAN-CUSTOM-ITEMS.md §3).
 - **Local character copies.** `data/characters/` (per-character files + index),
   `data/custom-items.json`
   and the portrait images (e.g. `data/chakka.jpg`) are gitignored (see

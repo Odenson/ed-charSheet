@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // tools/split-character-store.mjs — one-shot migration of the legacy grouped
-// store to per-character files (docs/PLAN-SAVE-CONCURRENCY Phase D1).
+// store to per-character files (plans/PLAN-SAVE-CONCURRENCY Phase D1).
 //
 // Reads the local gitignored working copy `data/characters.json` (the grouped
 // `ed-characters/1` store, as written by the pre-split worker) and writes:

@@ -4,7 +4,7 @@
 // mutates state or computes a game value, so the Tier-1 architecture rule
 // (engine pure and DOM-free; UI never derives values) is untouched.
 //
-// The rule that matters (docs/PLAN-CUSTOM-ITEMS.md §6.6 P8.4): the merged
+// The rule that matters (plans/PLAN-CUSTOM-ITEMS.md §6.6 P8.4): the merged
 // `itemCatalog` appends player-created items AFTER ~179 canon entries
 // (store.js) and the picker caps results at PICKER_CAP — so without
 // prioritisation a freshly saved custom item would sit past the cap and never

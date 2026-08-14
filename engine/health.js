@@ -91,7 +91,7 @@ export function recoveriesRemaining(used, max) {
 
 // --- Wounds & knockdown (a wounding hit) --------------------------------------
 //
-// Owner-stated rules (plan docs/PLAN-WOUNDS-KNOCKDOWN.md):
+// Owner-stated rules (plan plans/PLAN-WOUNDS-KNOCKDOWN.md):
 //   - Wound: a single hit with damage >= Wound Threshold inflicts one Wound.
 //   - Knockdown: only when that hit is 5 or more over the Wound Threshold. The
 //     character rolls an open-ended Strength test (the Knockdown step) against

@@ -62,7 +62,7 @@ recorded so a later change knows they were made on purpose, not overlooked.
 ## 🏠 Homebrew rules — scope notes (2026-08-10)
 
 Homebrew Rules (rules/homebrew.json, engine/formula.js, docs/HOMEBREW-RULES.md —
-see docs/PLAN-HOMEBREW.md) ship with these **deliberate scope decisions**:
+see plans/PLAN-HOMEBREW.md) ship with these **deliberate scope decisions**:
 
 - **Pre-existing `rules/races.json` health-modifier gap (PG p.64 "Some races
   receive special modifiers…").** The standard app applies no race-level
@@ -84,7 +84,7 @@ see docs/PLAN-HOMEBREW.md) ship with these **deliberate scope decisions**:
 
 ## 🎲 Talent & skill rank editing — scope notes (2026-08-10)
 
-Talent/Skill rank editing (docs/PLAN-RANK-EDITING.md) ships with these
+Talent/Skill rank editing (plans/PLAN-RANK-EDITING.md) ships with these
 **deliberate scope decisions**:
 
 - **Pre-existing skill-tier numeric/string quirk — deliberately NOT fixed.**

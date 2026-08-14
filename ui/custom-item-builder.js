@@ -1,5 +1,5 @@
 // ui/custom-item-builder.js — pure, DOM-free builders for the custom-item form
-// (docs/PLAN-CUSTOM-ITEMS.md §6.2–§6.4). No Lit, no state, no game values: given
+// (plans/PLAN-CUSTOM-ITEMS.md §6.2–§6.4). No Lit, no state, no game values: given
 // a form's working item it produces the cleaned item the shared validator gate
 // accepts, and it owns the effect-summary auto-generation ("auto-generated —
 // edit to override"). Lives apart from the modal so node --test can pin the
@@ -8,7 +8,7 @@
 // Why this module exists: a shipped bug silently dropped effects on save. A
 // type change reset the row via blankEffect(newType) whose summary is '', and
 // the old clean step filtered out every summary-less row — so any effect whose
-// type you changed vanished from the saved file (docs/PLAN-CUSTOM-ITEMS.md
+// type you changed vanished from the saved file (plans/PLAN-CUSTOM-ITEMS.md
 // §6.6). Here the summary is always derived from the row's fields and effects
 // are never dropped; the modal's _setEffect keeps the summary in sync the same
 // way.

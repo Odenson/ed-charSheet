@@ -1,5 +1,5 @@
 // engine/validate-item.js — pure, DOM-free validation for the ed-items/2 custom
-// item catalog (docs/PLAN-CUSTOM-ITEMS.md). The single gate that anything landing
+// item catalog (plans/PLAN-CUSTOM-ITEMS.md). The single gate that anything landing
 // in rules/custom-items.json must pass, used in three runtimes: the UI (blocks
 // Save with inline errors), the serverless worker (POST /save-items, fail-closed),
 // and the fold job (before pushing to dev). Zero dependencies.

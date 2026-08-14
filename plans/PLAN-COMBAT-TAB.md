@@ -536,13 +536,13 @@ prose above:
   setup ephemeral; options/situational as `rules/combat.json` effect bundles;
   equipped-magic-item contributions surfaced via the existing fold). No code yet.
 - **2026-08-10** — Mock iterated with the owner to a final layout and saved to
-  `docs/mock-combat-tab.html` (see the [Mock](#mock) section for the deltas it
+  `plans/mock-combat-tab.html` (see the [Mock](#mock) section for the deltas it
   locks in): full tab width + Overview sizing; wide attack panel + thin
   "Damage taken" column; compact Attack/Damage/Strain stat-lines with an inline
   target-# field; collapsible option/situational/**blood-charm chip** sections;
   Opponent panel dropped; Wounds/Knockdown deferred in v1. Phase D to follow this
   layout. Still no code.
-- **2026-08-10** — Two more mock rounds locked in (final `docs/mock-combat-tab.html`):
+- **2026-08-10** — Two more mock rounds locked in (final `plans/mock-combat-tab.html`):
   a **square weapon-image** area (missing-image marker fallback) left of the top
   three rows, and a right-rail **Combat log** that is a **roll-only view of the
   device-local Roll Log** (`store-rolllog.js`) — options are summarized on each

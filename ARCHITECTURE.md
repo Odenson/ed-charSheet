@@ -399,7 +399,7 @@ A save always carries an `id` (required since v1.6.0); the worker writes
 `data/characters/<id>.json` with an optimistic-concurrency check — the client
 sends `base` (the file's blob sha from the read ETag) and a stale base returns
 `409 stale_base`, surfacing a keep-mine/take-theirs conflict instead of a silent
-lost write (docs/PLAN-SAVE-CONCURRENCY.md). The index row is ensured only on
+lost write (plans/PLAN-SAVE-CONCURRENCY.md). The index row is ensured only on
 create, so saves never read or rewrite it (renames lag — the file's `meta.name`
 is authoritative). The app fetches the index once to list characters, then loads
 one file per character. The grouped `ed-characters/1` store was **retired** with
@@ -532,7 +532,7 @@ and its runbook.
   (`ed-character-edits:${id}`, always on, every browser) is the resilient
   autosave *beneath* the primary Save, which writes `data/characters/<id>.json`
   (raw `ed-character/1`, per-character files + a create-only index,
-  docs/PLAN-SAVE-CONCURRENCY.md) straight to the `character-data` branch via the
+  plans/PLAN-SAVE-CONCURRENCY.md) straight to the `character-data` branch via the
   serverless worker with a per-file optimistic-concurrency check (stale saves
   surface a keep-mine/take-theirs conflict); on success the overlay
   reconciles so the live branch read wins. A portable **Export** download is the
@@ -555,9 +555,9 @@ and its runbook.
   character for now; the `character.json` structure stays clean enough to
   generalize to multi-character later without a rewrite. *(Updated 2026-08-07:
   multi-character loading landed with a first-run picker,
-  docs/PLAN-MULTI-CHARACTER.md; the grouped store shipped then was retired by
+  plans/PLAN-MULTI-CHARACTER.md; the grouped store shipped then was retired by
   the per-character split + concurrency check 2026-08-12,
-  docs/PLAN-SAVE-CONCURRENCY.md; a delete-character feature
+  plans/PLAN-SAVE-CONCURRENCY.md; a delete-character feature
   remains future work.)*
 - **Cascade — DECIDED: recompute-all, not a dependency graph.** For one
   character, a pure `derive(inputs) → derived` that recomputes everything is

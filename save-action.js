@@ -1,6 +1,6 @@
 // save-action.js — pure mapping from a conflict-modal choice to the next save
 // step. Kept dependency-free and DOM-free so ed-app's conflict transition is
-// unit-testable (no DOM harness exists). See docs/PLAN-SAVE-CONCURRENCY.md
+// unit-testable (no DOM harness exists). See plans/PLAN-SAVE-CONCURRENCY.md
 // Phase C.
 //
 // The modal offers three choices after a `stale_base` conflict (the character

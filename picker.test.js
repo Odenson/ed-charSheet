@@ -1,5 +1,5 @@
 // picker.test.js — regression tests for the pure add-picker selection
-// (ui/picker.js). The D3 bug (docs/PLAN-CUSTOM-ITEMS.md §6.6 P8.4): the merged
+// (ui/picker.js). The D3 bug (plans/PLAN-CUSTOM-ITEMS.md §6.6 P8.4): the merged
 // itemCatalog appends custom items after ~179 canon entries and the picker caps
 // results at 50 — a freshly saved custom item never appeared in the browse list.
 import { test } from 'node:test';
