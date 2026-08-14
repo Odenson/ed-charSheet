@@ -326,19 +326,11 @@
       "equipped": true
     },
     {
-      "name": "Hardened Leather",
-      "equipped": false
-    },
-    {
       "name": "Medium Crossbow",
       "equipped": true
     },
     {
       "name": "Broadsword",
-      "equipped": true
-    },
-    {
-      "name": "Backpack",
       "equipped": true
     },
     {
@@ -391,14 +383,6 @@
       "equipped": true
     },
     {
-      "name": "Beer Mug of Brawling",
-      "equipped": true
-    },
-    {
-      "name": "Hide Armor",
-      "equipped": false
-    },
-    {
       "name": "Climbing Kit",
       "equipped": true
     },
@@ -417,8 +401,19 @@
     },
     {
       "name": "Booster Potion",
-      "equipped": true,
-      "qty": 1
+      "equipped": true
+    },
+    {
+      "name": "Throwing Dagger",
+      "equipped": true
+    },
+    {
+      "name": "Traveler's Mug",
+      "equipped": true
+    },
+    {
+      "name": "Heat Stone",
+      "equipped": true
     }
   ],
   "wealth": {
