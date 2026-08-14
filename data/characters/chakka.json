@@ -301,9 +301,9 @@
       ]
     },
     "health": {
-      "damage": 8,
-      "wounds": 1,
-      "recoveriesUsed": 1,
+      "damage": 4,
+      "wounds": 0,
+      "recoveriesUsed": 0,
       "knockedDown": false
     },
     "roundTracker": 218
