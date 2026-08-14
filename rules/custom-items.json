@@ -57,6 +57,16 @@
       "presentation": {
         "shortEffect": "+1 attack in brawls"
       }
+    },
+    "Dire Wolf Skin Cloak": {
+      "kind": "gear",
+      "effects": [],
+      "ref": {
+        "cost": 100,
+        "weight": "2",
+        "availability": "very rare",
+        "description": "Hunted by Chakka at the Zeta Prime location and tailed by the party scoute"
+      }
     }
   }
 }
