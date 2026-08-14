@@ -154,6 +154,8 @@ export class EdCombat extends LitElement {
     .dmgbonus { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
     .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-small); flex: none; padding: 0; line-height: 1; }
     .roll:disabled { opacity: 0.4; cursor: default; }
+    /* Take-damage carries the emergency (danger) tone to read apart from the rolls. */
+    .roll.dmg { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
 
     .vs { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-fine); color: var(--muted); }
     .vs input { width: 46px; font: inherit; font-size: var(--fs-body); font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
@@ -237,6 +239,8 @@ export class EdCombat extends LitElement {
     /* Wounds sits inline beside damage — same row, no extra height. */
     .dtcol .curwnd { color: var(--danger); }
     .dtcol .thr { font-size: var(--fs-fine); color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .dtcol .thr.rec { margin-top: 3px; }
+    .dtcol .thr.rec b { color: var(--fg); font-weight: 500; }
     .dtcol .dtbtns { display: flex; gap: 6px; margin-top: auto; padding-top: 9px; }
     .status { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
     .status.warn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
@@ -562,6 +566,9 @@ export class EdCombat extends LitElement {
     // Equipped/Stored toggle once its Blood Magic Damage has healed). The spend
     // is an input write (ed-edit-items), never a game-value computation here.
     this._spendRoundCharms();
+    // A new round also clears the round's declared Combat options (they are
+    // chosen fresh each round); situational modifiers persist.
+    this._opts = [];
     this._roll('Initiative', c.value, this._karmaCtx(c.karma), 'initiative');
   }
 
@@ -927,8 +934,9 @@ export class EdCombat extends LitElement {
         <div class="h"><span>Damage taken</span>${this._statusPill()}</div>
         <div class="cur"><span class="lab">Current</span>${this._curDmg()}<span class="lab">Wounds</span>${this._curWounds()}</div>
         <div class="thr">${this._rating(u)} unconscious<br />${this._rating(d)} death</div>
+        <div class="thr rec">Recoveries <b>${h.recoveriesUsed ?? 0} / ${maxRec ?? this._rating(maxRec)}</b> used</div>
         <div class="dtbtns">
-          <button class="roll" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✚</button>
+          <button class="roll dmg" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✚</button>
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
             title=${recTitle}
             aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>⚄</button>
@@ -936,19 +944,19 @@ export class EdCombat extends LitElement {
       </div>`;
   }
   _openDamage() {
-    this._damageDraft = { take: 0, heal: 0 };
+    this._damageDraft = { take: 0 };
     this._damageModal = true;
   }
   _applyDamage() {
     const d = this._damageDraft ?? {};
     const cur = this.model?.resources?.health ?? {};
     const take = d.take ?? 0;
-    const heal = d.heal ?? 0;
     const wt = this.model?.characteristics?.woundThreshold?.value;
     // The Wound is derived from the hit vs. the Wound Threshold — never typed
     // in (store only inputs), and the engine decides it like the Overview tab.
+    // Healing is done through a Recovery test, not here.
     const wound = take > 0 ? woundsFromHit(take, wt) : 0;
-    const next = applyHealth(cur, { damage: take - heal, wounds: wound, recoveriesUsed: 0 });
+    const next = applyHealth(cur, { damage: take, wounds: wound, recoveriesUsed: 0 });
     this._dispatchHealth(next);
     this._damageModal = false;
     // A hit five or more over the Wound Threshold forces a Knockdown test.
@@ -1126,8 +1134,7 @@ export class EdCombat extends LitElement {
           <p class="mpara">Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious ${this._rating(this.model?.characteristics?.unconsciousness?.value)} · Death ${this._rating(this.model?.characteristics?.death?.value)}</p>
           <form @submit=${(e) => { e.preventDefault(); this._applyDamage(); }}>
             <div class="hrow"><span>Take damage</span><input type="number" min="0" step="1" .value=${d.take ?? 0} aria-label="Damage to take" @input=${(e) => (d.take = Math.max(0, Number(e.target.value) || 0))} /></div>
-            <div class="hrow"><span>Heal</span><input type="number" min="0" step="1" .value=${d.heal ?? 0} aria-label="Damage to heal" @input=${(e) => (d.heal = Math.max(0, Number(e.target.value) || 0))} /></div>
-            <p class="mpara hint">A hit at or above the Wound Threshold ${this._rating(wt)} records one Wound; a hit five or more over it triggers a Knockdown test.</p>
+            <p class="mpara hint">A hit at or above the Wound Threshold ${this._rating(wt)} records one Wound; a hit five or more over it triggers a Knockdown test. Healing is done through a Recovery test.</p>
             <div class="hfoot">
               <span class="hint">Enter applies · Escape closes</span>
               <button type="submit" class="hbtn">Apply</button>

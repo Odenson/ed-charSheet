@@ -511,7 +511,26 @@ export class EdApp extends LitElement {
       this._editHealth(applyHealth(this._character.resources?.health ?? {}, { wounds: -heal }));
     }
     // Arm the one-shot benefit (null for a consume-only aid).
-    if (armed) this._pendingUse = armed;
+    if (armed) {
+      this._pendingUse = armed;
+      // Chain straight into the heal roll so the player rolls it right after the
+      // drink, rather than hunting for the recovery button. The pending pill
+      // remains as a fallback if they dismiss the roll modal.
+      if (armed.kind === 'emergency-heal') {
+        this.dispatchEvent(new CustomEvent('ed-roll', {
+          detail: { label: `${name} — emergency heal`, step: armed.step, apply: { action: 'emergency-recovery-heal', label: 'Heal this amount' } },
+          bubbles: true, composed: true,
+        }));
+      } else if (armed.kind === 'step-boost') {
+        const tou = (this._model?.attributes ?? []).find((a) => a.name === 'Toughness');
+        if (tou?.step != null) {
+          this.dispatchEvent(new CustomEvent('ed-roll', {
+            detail: { label: 'Recovery test', step: tou.step, apply: { action: 'recovery-heal', label: 'Heal this amount' } },
+            bubbles: true, composed: true,
+          }));
+        }
+      }
+    }
   }
 
   // The curated arming state passed down to the tabs: the single pending entry

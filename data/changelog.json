@@ -11,6 +11,10 @@
       "changes": [
         {
           "type": "changed",
+          "text": "Combat healing flow: the take-damage entry no longer has a Heal field — healing is done through a Recovery test. Drinking a potion that heals now opens the Recovery roll straight after you confirm the drink (an unused boost still waits on its pill if you dismiss the roll). The Damage-taken card shows your Recoveries used, the take-damage button is styled as an emergency action, and rolling Initiative now also clears the round's declared Combat options."
+        },
+        {
+          "type": "changed",
           "text": "The Combat tab is organised around your attack: a new Defence & Armour card sits right below the attack block (Physical, Mystic and Social Defence plus Physical and Mystic Armour, so the numbers you need mid-fight are in view), and Combat options, Situational, and Blood charms now share one bordered 'Combat Modifiers' card — each still its own collapsible section. On narrow screens the Defence & Armour card starts collapsed, like the modifier sections, and your taps still win either way."
         },
         {
