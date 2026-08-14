@@ -62,7 +62,7 @@ Six tabs, each a distinct lens on the character:
 | Notes | Running character history / log over time |
 
 *Sixth tab (Combat) added 2026-08-11 by owner sign-off
-([PLAN-COMBAT-TAB.md](PLAN-COMBAT-TAB.md) — six labels still fit the desktop
+([PLAN-COMBAT-TAB.md](../plans/PLAN-COMBAT-TAB.md) — six labels still fit the desktop
 tab bar on one row; the bar wraps to stacked rows on mobile). Reordered
 2026-08-11 by owner request to sit directly after Disciplines (Overview ·
 Disciplines · Combat · Spells · Gear · Notes).*

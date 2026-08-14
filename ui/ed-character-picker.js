@@ -40,26 +40,26 @@ export class EdCharacterPicker extends LitElement {
       border-radius: 12px; width: 24rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem;
       box-sizing: border-box;
     }
-    .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
-    .close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
-    .hint { font-size: 0.68rem; color: var(--muted); margin: 0 0 0.6rem; line-height: 1.4; }
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
+    .close { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
+    .hint { font-size: var(--fs-fine); color: var(--muted); margin: 0 0 0.6rem; line-height: 1.4; }
     .list { display: flex; flex-direction: column; gap: 6px; max-height: 45vh; overflow-y: auto; }
     .row {
       display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
       padding: 8px 10px; border-radius: 8px; cursor: pointer; box-sizing: border-box;
       border: 1px solid var(--border); background: light-dark(#f7f8fa, #1b1f27); color: var(--text);
-      font: inherit; font-size: 0.85rem;
+      font: inherit; font-size: var(--fs-body);
     }
     .row:hover { border-color: var(--accent); }
     .row.current { border-color: var(--accent); background: var(--accent-bg); }
     .thumb { width: 38px; height: 38px; border-radius: 6px; flex: 0 0 auto; object-fit: cover; background: var(--accent-bg); }
     .thumb.fallback {
       display: flex; align-items: center; justify-content: center;
-      font-weight: 500; color: var(--accent); font-size: 0.9rem; text-transform: uppercase;
+      font-weight: 500; color: var(--accent); font-size: var(--fs-value); text-transform: uppercase;
     }
     .who { display: flex; flex-direction: column; min-width: 0; }
     .nm { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .id { font-size: 0.68rem; color: var(--muted); }
+    .id { font-size: var(--fs-fine); color: var(--muted); }
   `;
 
   constructor() {

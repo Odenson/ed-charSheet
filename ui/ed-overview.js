@@ -50,34 +50,34 @@ export class EdOverview extends LitElement {
        focus. Outline never reflows, so read-mode layout is untouched. */
     .editable { cursor: pointer; outline: 1px dashed var(--border); outline-offset: 3px; transition: outline-color 0.15s ease, background 0.15s ease; }
     .editable:hover, .editable:focus-visible { outline-color: var(--accent); background: var(--accent-bg); }
-    .name { font-size: 1.25rem; font-weight: 500; line-height: 1.1; }
-    .meta { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+    .name { font-size: var(--fs-title); font-weight: 500; line-height: 1.1; }
+    .meta { font-size: var(--fs-small); color: var(--muted); margin-top: 1px; }
     .discs { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-    .dtile { font-size: 0.72rem; font-weight: 500; padding: 3px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); white-space: nowrap; }
-    .blurb { font-size: 0.75rem; color: var(--muted); font-style: italic; margin-top: 6px; line-height: 1.35; }
+    .dtile { font-size: var(--fs-small); font-weight: 500; padding: 3px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); white-space: nowrap; }
+    .blurb { font-size: var(--fs-small); color: var(--muted); font-style: italic; margin-top: 6px; line-height: 1.35; }
     .portrait { flex: 1; min-height: 160px; margin-top: 8px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; }
     .portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .portrait .ph { color: var(--muted); font-size: 2rem; }
+    .portrait .ph { color: var(--muted); font-size: var(--fs-hero); }
     /* Mobile-only avatar in the header (desktop uses the large .portrait). */
     .avatar { display: none; flex: none; width: 52px; height: 52px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; }
     .lightbox-img { max-width: 92vw; max-height: 88vh; border-radius: 12px; object-fit: contain; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
     .right { display: flex; flex-direction: column; gap: 8px; }
     .blk { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
-    .blk h4 { margin: 0 0 6px; font-size: 0.62rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .blk h4 { margin: 0 0 6px; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .agrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .acell { background: var(--bg-chip); border-radius: 8px; padding: 5px 8px; }
-    .acell .an { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; }
+    .acell .an { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; }
     .acell .r { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
-    .acell .av { font-size: 1rem; font-weight: 500; line-height: 1; }
-    .acell .asd { font-size: 0.62rem; color: var(--muted); }
-    .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; flex: none; padding: 0; }
+    .acell .av { font-size: var(--fs-value); font-weight: 500; line-height: 1; }
+    .acell .asd { font-size: var(--fs-eyebrow); color: var(--muted); }
+    .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); flex: none; padding: 0; }
     .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     .kmark { color: var(--karma); }
     .roll:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
     /* Karma Ritual "+": reuses the .info affordance (amber glyph, hover-reveal),
        matching the "Add Legend earned" plus. Disabled → muted when Karma is full. */
     .info:disabled { color: var(--muted); cursor: default; opacity: 0.5; }
-    .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0; }
+    .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: none; background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 0; }
     .hreset:hover { color: var(--accent); }
     /* Top row: attributes (compacted) beside the Legend panel, sharing one height. */
     .toprow { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 8px; align-items: stretch; }
@@ -86,53 +86,53 @@ export class EdOverview extends LitElement {
        total's font and the panel's internal spacing are tuned to fit, not grow. */
     .legend h4 { margin-bottom: 3px; }
     .ltotal { position: relative; text-align: center; padding: 1px 0 2px; }
-    .ltotal .lnum { display: block; font-size: 1.25rem; font-weight: 500; line-height: 1; }
-    .ltotal .lsub { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .ltotal .lnum { display: block; font-size: var(--fs-title); font-weight: 500; line-height: 1; }
+    .ltotal .lsub { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
     /* Add-Legend affordance: shares the .info hover-reveal (it never clutters the
        read view; touch always shows it), but is absolutely positioned so the
        centered block .lnum doesn't wrap an inline button and the panel keeps its
        fixed height. Sits at the total's top-right, clear of the centred number. */
-    .ltotal .lplus { position: absolute; right: 0; top: 0; padding: 0 3px; font-size: 0.9rem; }
+    .ltotal .lplus { position: absolute; right: 0; top: 0; padding: 0 3px; font-size: var(--fs-value); }
     .llines { border-top: 1px solid var(--border); padding-top: 4px; margin-top: auto; }
     .legend .line { padding: 0; }
-    .lstatus { font-size: 0.72rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
+    .lstatus { font-size: var(--fs-small); font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
     .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1; }
     .stack { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
-    .line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 0.8rem; }
+    .line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: var(--fs-body); }
     .line .rl { display: flex; align-items: center; gap: 6px; }
-    .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+    .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
     /* Health panel: the heading carries the standing chip + the take-damage/hurt
        affordance; edit-mode rows swap to small number fields. */
     .hhead { display: flex; align-items: center; gap: 6px; }
-    .hstate { font-size: 0.6rem; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
+    .hstate { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
     .hstate.warn { background: var(--accent-bg); color: var(--accent); }
     .hstate.bad { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
-    .hfield { width: 46px; font: inherit; font-size: 0.8rem; font-weight: 500; color: light-dark(#111418, #f0f3f7); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
+    .hfield { width: 46px; font: inherit; font-size: var(--fs-body); font-weight: 500; color: light-dark(#111418, #f0f3f7); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
     .hfield:focus { border-bottom-color: var(--accent); }
     .hrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; }
-    .hnum { width: 72px; font: inherit; font-size: 0.85rem; font-weight: 500; color: light-dark(#111418, #f0f3f7); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; outline: none; text-align: right; }
+    .hnum { width: 72px; font: inherit; font-size: var(--fs-body); font-weight: 500; color: light-dark(#111418, #f0f3f7); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; outline: none; text-align: right; }
     .hnum:focus { border-color: var(--accent); }
-    .hbtn { font: inherit; font-size: 0.78rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
+    .hbtn { font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
     .hbtn.plain { border-color: var(--border); background: none; color: var(--muted); }
     .hrec { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 9px; width: 100%; }
     .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
-    .hint { font-size: 0.68rem; color: var(--muted); }
+    .hint { font-size: var(--fs-fine); color: var(--muted); }
     .val { font-weight: 500; }
     /* A stat currently reduced/buffed by a live condition (e.g. Knocked Down):
        the number takes the condition colour and a signed badge shows the net
        amount. Both are presentation only — the value stays the engine's real
        derived number. */
     .val.cond { color: light-dark(#a63a2b, #e0846f); }
-    .val .delt { margin-left: 3px; font-size: 0.58rem; font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); vertical-align: 1px; white-space: nowrap; }
-    .feat { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; font-size: 0.72rem; }
+    .val .delt { margin-left: 3px; font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); vertical-align: 1px; white-space: nowrap; }
+    .feat { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; font-size: var(--fs-small); }
     .feat .txt { flex: 1; min-width: 0; line-height: 1.35; }
-    .ftag { flex: none; margin-top: 1px; font-size: 0.6rem; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
+    .ftag { flex: none; margin-top: 1px; font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); }
     .ftag.race { background: var(--accent-bg); color: var(--accent); }
     /* Active Effects list: one compact line per condition (a condition's effects
        collapse to a single row), the strip bounded with internal scroll so the
        Overview keeps its no-page-scroll contract. */
     .aefx .aelist { max-height: 172px; overflow: auto; margin-right: -2px; padding-right: 2px; }
-    .aefx-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: 0.7rem; }
+    .aefx-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-size: var(--fs-fine); }
     .aefx-row .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
     /* Condition lead is set in 500 — the UI only uses 400/500 (UI-GUIDELINES §2). */
     .aefx-row .txt b { font-weight: 500; }
@@ -141,10 +141,10 @@ export class EdOverview extends LitElement {
        condition red — it's a benefit to act on, not a penalty. */
     .aefx-row.emergency { background: var(--accent-bg); border: 1px dashed var(--accent); border-radius: 6px; padding: 3px 6px; margin: 2px -2px; }
     .ftag.cond { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
-    .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .stand { flex: none; font: inherit; font-size: var(--fs-eyebrow); font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
     .emroll { white-space: nowrap; }
-    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
+    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: var(--fs-body); padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
     /* Universal hover-reveal: ANY info icon stays hidden until you hover (or
        keyboard-focus) the element it sits in, so it never clutters the read view.
        The icon is placed as a child of the label it annotates, so hovering that
@@ -154,22 +154,22 @@ export class EdOverview extends LitElement {
     @media (hover: none) { .info { opacity: 1; } }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); border-radius: 12px; max-width: 32rem; max-height: 80vh; overflow: auto; padding: 1rem 1.25rem; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; }
-    .mbody { font-size: 0.85rem; line-height: 1.5; color: var(--muted); }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.5rem; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; }
+    .mbody { font-size: var(--fs-body); line-height: 1.5; color: var(--muted); }
     .mpara { margin: 0 0 0.6rem; }
     .mpara b { color: light-dark(#111418, #f0f3f7); font-weight: 500; }
     /* Karma-Ritual modal */
-    .kbuyrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0.4rem 0; font-size: 0.85rem; color: light-dark(#111418, #f0f3f7); }
-    .kbuy { font: inherit; font-size: 0.9rem; width: 4.5rem; text-align: right; color: inherit; background: var(--bg-chip, light-dark(#f7f8fa,#1b1f27)); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; margin: 0 4px; }
+    .kbuyrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0.4rem 0; font-size: var(--fs-body); color: light-dark(#111418, #f0f3f7); }
+    .kbuy { font: inherit; font-size: var(--fs-value); width: 4.5rem; text-align: right; color: inherit; background: var(--bg-chip, light-dark(#f7f8fa,#1b1f27)); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; margin: 0 4px; }
     .kbuy:focus { outline: none; border-color: var(--accent); }
     .kbuyfor { color: var(--muted); }
     .kfoot { display: flex; justify-content: flex-end; margin: 0.6rem 0 0.2rem; }
     .hbtn:disabled { opacity: 0.4; cursor: default; }
     .khist { margin-top: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
-    .khhead { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
-    .khrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); padding: 2px 0; }
-    .khundo { flex: none; font: inherit; font-size: 0.85rem; line-height: 1; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--accent); cursor: pointer; }
+    .khhead { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+    .khrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-small); color: var(--muted); padding: 2px 0; }
+    .khundo { flex: none; font: inherit; font-size: var(--fs-body); line-height: 1; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--accent); cursor: pointer; }
     .khundo:hover { background: var(--accent-bg); }
     .mtrigger { border-top: 1px solid var(--border); padding-top: 0.6rem; margin-top: 0.2rem; }
     .mtlabel { font-weight: 500; color: light-dark(#111418, #f0f3f7); margin-bottom: 0.25rem; }
@@ -178,8 +178,8 @@ export class EdOverview extends LitElement {
     .meta-dl { margin: 0; }
     .meta-item { padding: 6px 0; border-bottom: 1px solid var(--border); }
     .meta-item:last-child { border-bottom: none; }
-    .meta-item dt { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-    .meta-item dd { margin: 2px 0 0; font-size: 0.88rem; line-height: 1.45; color: light-dark(#111418, #f0f3f7); }
+    .meta-item dt { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .meta-item dd { margin: 2px 0 0; font-size: var(--fs-body); line-height: 1.45; color: light-dark(#111418, #f0f3f7); }
     /* Legend-spent modal: collapsible per-section breakdown + reconciliation footer. */
     .lspent-sec { border-bottom: 1px solid var(--border); }
     .lspent-sec > summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; color: light-dark(#111418, #f0f3f7); padding: 6px 0; list-style: none; }
@@ -188,7 +188,7 @@ export class EdOverview extends LitElement {
     .lspent-sec .sleft::before { content: '▸'; color: var(--muted); font-size: 0.8em; transition: transform 0.12s ease; }
     .lspent-sec[open] > summary .sleft::before { transform: rotate(90deg); }
     .lspent-sec.additional > summary { color: var(--accent); }
-    .sbadge { font-size: 0.6rem; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
+    .sbadge { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
     .sbadge.add { background: var(--accent-bg); color: var(--accent); }
     .lspent-sec .lines { padding: 0 0 6px 14px; }
     .lspent-sec .ldetail { color: var(--muted); font-size: 0.9em; }

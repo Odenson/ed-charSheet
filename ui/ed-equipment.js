@@ -194,31 +194,31 @@ export class EdEquipment extends LitElement {
 
     /* Add bar */
     .addbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; position: relative; }
-    .addbtn { font: inherit; font-size: 0.82rem; font-weight: 500; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 8px 14px; border-radius: 9px; white-space: nowrap; }
+    .addbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 8px 14px; border-radius: 9px; white-space: nowrap; }
     .addbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .combo { position: relative; flex: 1; min-width: 0; }
-    .combo input { width: 100%; font: inherit; font-size: 0.88rem; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--accent); border-radius: 9px; padding: 8px 11px; outline: none; }
+    .combo input { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--accent); border-radius: 9px; padding: 8px 11px; outline: none; }
     .drop { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 20; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); max-height: 300px; overflow-y: auto; padding: 6px; }
     .res { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
     .res:hover, .res.hi { background: var(--bg-chip); border-color: var(--border); }
-    .res .rk { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 84px; flex: 0 0 84px; }
+    .res .rk { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 84px; flex: 0 0 84px; }
     .res.mg .rk { color: var(--arcane); }
-    .res .rn { font-size: 0.86rem; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res .rn { font-size: var(--fs-body); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .res.owned { opacity: 0.45; }
     .res .star { color: var(--arcane); width: 12px; }
-    .nores { padding: 20px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+    .nores { padding: 20px; text-align: center; color: var(--muted); font-size: var(--fs-body); }
 
     /* Two-column board — each column is an independent stack (CSS multi-column),
        so sections sit flush under the one above and never wait on the block
        across the gap (a grid's shared row track would push them down together). */
     .board { column-count: 2; column-gap: 12px; }
     .blk { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; break-inside: avoid; margin-bottom: 12px; }
-    .blk > h4 { display: flex; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 2px 2px 9px; }
+    .blk > h4 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 2px 2px 9px; }
     .blk > h4 .ct { margin-left: auto; color: var(--muted); font-weight: 400; letter-spacing: 0; }
-    .blk > h4 .total { margin-left: auto; color: var(--accent); font-weight: 500; letter-spacing: 0; font-family: var(--mono); font-size: 0.76rem; }
+    .blk > h4 .total { margin-left: auto; color: var(--accent); font-weight: 500; letter-spacing: 0; font-family: var(--mono); font-size: var(--fs-small); }
     /* In a section header the count already right-aligns; the weight sits beside it. */
     .blk > h4 .ct + .total { margin-left: 8px; }
-    .glyph { font-size: 0.82rem; color: var(--accent); }
+    .glyph { font-size: var(--fs-body); color: var(--accent); }
 
     .item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 9px; background: var(--bg-chip); border: 1px solid var(--border); margin-bottom: 6px; }
     .item:last-child { margin-bottom: 0; }
@@ -226,126 +226,126 @@ export class EdEquipment extends LitElement {
     .item.compact { padding-top: 4px; padding-bottom: 4px; }
     .iteminfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--fg); }
     .iteminfo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-    .nm { font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nm { font-size: var(--fs-value); font-weight: 500; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .item.magic .nm { color: var(--arcane); }
-    .nm .star { color: var(--arcane); font-size: 0.76rem; }
-    .sub { font-size: 0.62rem; color: var(--muted); }
-    .eq { font: inherit; font-size: 0.66rem; font-weight: 500; border: 1px solid var(--border); background: var(--bg-card); color: var(--muted); padding: 4px 11px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
+    .nm .star { color: var(--arcane); font-size: var(--fs-small); }
+    .sub { font-size: var(--fs-eyebrow); color: var(--muted); }
+    .eq { font: inherit; font-size: var(--fs-fine); font-weight: 500; border: 1px solid var(--border); background: var(--bg-card); color: var(--muted); padding: 4px 11px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
     .eq.on { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
     .eq:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-    .statechip { font-size: 0.62rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+    .statechip { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
     /* Encumbrance stage chip — muted at clear, accent when burdened, danger past it. */
     .statechip.wstage { white-space: nowrap; }
     .wstage.burdened { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
     .wstage.overburdened, .wstage.excess { color: var(--danger); border-color: var(--danger); background: light-dark(rgba(192, 57, 43, 0.08), rgba(229, 115, 115, 0.12)); }
 
     /* Carried-weight banner */
-    .wrow { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--fg); margin: 2px 2px 4px; flex-wrap: wrap; }
+    .wrow { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body); color: var(--fg); margin: 2px 2px 4px; flex-wrap: wrap; }
     .wrow b { font-weight: 500; font-family: var(--mono); }
-    .wline { font-size: 0.7rem; color: var(--muted); margin: 0 2px; }
+    .wline { font-size: var(--fs-fine); color: var(--muted); margin: 0 2px; }
     .wline b { font-weight: 500; font-family: var(--mono); color: var(--fg); }
     /* Unavailable capacity renders as the muted dashed placeholder pill
        (UI-GUIDELINES §5 — never a fabricated number). */
-    .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+    .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
     /* Quiet main-effect on the right of an equipped tile: notes read as plain muted
        text; numeric effects emphasise the value. */
-    .quiet { font-size: 0.72rem; color: var(--muted); white-space: nowrap; flex: 0 0 auto; text-align: right; }
+    .quiet { font-size: var(--fs-small); color: var(--muted); white-space: nowrap; flex: 0 0 auto; text-align: right; }
     .quiet b { font-weight: 500; color: var(--accent); font-family: var(--mono); }
-    .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.92rem; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+    .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-value); line-height: 1; padding: 2px 4px; border-radius: 6px; }
     .del:hover { color: var(--danger); }
     .del:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
-    .empty { color: var(--muted); font-size: 0.78rem; padding: 3px 2px; }
+    .empty { color: var(--muted); font-size: var(--fs-small); padding: 3px 2px; }
 
     /* Quantity: read mode shows a static ×N (only when >1); edit mode gives a
        − N + stepper. Thread items are unique and get neither. */
-    .xn { font-size: 0.64rem; font-weight: 500; font-family: var(--mono); color: var(--muted); flex: 0 0 auto; }
+    .xn { font-size: var(--fs-eyebrow); font-weight: 500; font-family: var(--mono); color: var(--muted); flex: 0 0 auto; }
     .item.magic .xn { color: var(--arcane); }
     .qty { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); flex: 0 0 auto; overflow: hidden; }
-    .qty button { font: inherit; font-size: 0.82rem; line-height: 1; border: none; background: none; color: var(--accent); cursor: pointer; width: 22px; height: 22px; }
+    .qty button { font: inherit; font-size: var(--fs-body); line-height: 1; border: none; background: none; color: var(--accent); cursor: pointer; width: 22px; height: 22px; }
     .qty button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-    .qty .n { font-size: 0.68rem; font-weight: 500; font-family: var(--mono); min-width: 18px; text-align: center; color: var(--fg); }
+    .qty .n { font-size: var(--fs-fine); font-weight: 500; font-family: var(--mono); min-width: 18px; text-align: center; color: var(--fg); }
 
     /* Use / Drink a consumable — present in both read and edit mode. */
-    .use { font: inherit; font-size: 0.66rem; font-weight: 500; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 4px 11px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
+    .use { font: inherit; font-size: var(--fs-fine); font-weight: 500; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 4px 11px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
     .use:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     /* Armed one-shot benefit (session-only): a dashed accent pill inside the
        Charms & Consumables section. */
     .pending { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 9px; background: var(--accent-bg); border: 1px dashed var(--accent); margin-top: 6px; }
-    .pending .pglyph { color: var(--accent); font-size: 0.85rem; }
-    .pending .ptxt { flex: 1; font-size: 0.74rem; color: var(--fg); }
+    .pending .pglyph { color: var(--accent); font-size: var(--fs-body); }
+    .pending .ptxt { flex: 1; font-size: var(--fs-small); color: var(--fg); }
     .pending .ptxt b { color: var(--accent); font-weight: 500; }
-    .pending .proll { flex: 0 0 auto; font: inherit; font-size: 0.62rem; font-weight: 500; white-space: nowrap; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .pending .proll { flex: 0 0 auto; font: inherit; font-size: var(--fs-eyebrow); font-weight: 500; white-space: nowrap; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .pending .proll:hover { background: var(--accent-bg); }
-    .pending .pclear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+    .pending .pclear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-value); line-height: 1; padding: 2px 4px; border-radius: 6px; }
     .pending .pclear:hover { color: var(--danger); }
 
     /* Wealth */
-    .subh { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; margin: 2px 2px 6px; }
+    .subh { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; margin: 2px 2px 6px; }
     .subh.arc { color: var(--arcane); }
     .coingroup { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin-bottom: 10px; }
     .coin { display: flex; align-items: center; gap: 7px; background: var(--bg-chip); border: 1px solid var(--border); border-radius: 9px; padding: 4px 6px 4px 10px; }
     .coin.ro { padding: 4px 10px; }
     .coin.elem { border-color: var(--arcane-line); }
-    .coin .clab { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 500; }
+    .coin .clab { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 500; }
     .coin.elem .clab { color: var(--arcane); }
-    .coin .cval { font-size: 0.9rem; font-weight: 500; font-family: var(--mono); }
-    .coin input { width: 62px; font: inherit; font-size: 0.9rem; font-weight: 500; font-family: var(--mono); color: var(--fg); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
+    .coin .cval { font-size: var(--fs-value); font-weight: 500; font-family: var(--mono); }
+    .coin input { width: 62px; font: inherit; font-size: var(--fs-value); font-weight: 500; font-family: var(--mono); color: var(--fg); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
     .coin input:focus { border-bottom-color: var(--accent); }
-    .coin .crm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; line-height: 1; padding: 2px 3px; border-radius: 5px; }
+    .coin .crm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-fine); line-height: 1; padding: 2px 3px; border-radius: 5px; }
     .coin .crm:hover { color: var(--danger); }
     .addcoin { position: relative; }
-    .addcoin > button { font: inherit; font-size: 0.72rem; border: 1px dashed var(--border); background: none; color: var(--muted); border-radius: 9px; padding: 5px 11px; cursor: pointer; }
+    .addcoin > button { font: inherit; font-size: var(--fs-small); border: 1px dashed var(--border); background: none; color: var(--muted); border-radius: 9px; padding: 5px 11px; cursor: pointer; }
     .addcoin > button:hover { border-color: var(--accent); color: var(--accent); }
     .coinmenu { position: absolute; z-index: 15; top: calc(100% + 5px); left: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); padding: 5px; min-width: 170px; }
-    .coinmenu .mgh { font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 5px 8px 3px; }
-    .coinmenu button { display: flex; justify-content: space-between; gap: 12px; width: 100%; font: inherit; font-size: 0.78rem; border: none; background: none; color: var(--fg); padding: 6px 8px; border-radius: 6px; cursor: pointer; text-align: left; }
+    .coinmenu .mgh { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 5px 8px 3px; }
+    .coinmenu button { display: flex; justify-content: space-between; gap: 12px; width: 100%; font: inherit; font-size: var(--fs-small); border: none; background: none; color: var(--fg); padding: 6px 8px; border-radius: 6px; cursor: pointer; text-align: left; }
     .coinmenu button:hover { background: var(--bg-chip); }
-    .coinmenu button .mr { color: var(--muted); font-family: var(--mono); font-size: 0.68rem; }
+    .coinmenu button .mr { color: var(--muted); font-family: var(--mono); font-size: var(--fs-fine); }
     .coinmenu button.arc { color: var(--arcane); }
     .gems { display: flex; flex-direction: column; gap: 6px; }
     .gem { display: flex; align-items: center; gap: 9px; background: var(--bg-chip); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; }
-    .gem .gn { flex: 1; min-width: 0; font-size: 0.83rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .gem .gq { font-size: 0.62rem; color: var(--muted); font-family: var(--mono); }
-    .gem .gv { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
-    .gem .gdel { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px; border-radius: 6px; }
+    .gem .gn { flex: 1; min-width: 0; font-size: var(--fs-body); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gem .gq { font-size: var(--fs-eyebrow); color: var(--muted); font-family: var(--mono); }
+    .gem .gv { font-size: var(--fs-small); color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+    .gem .gdel { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); padding: 2px 4px; border-radius: 6px; }
     .gem .gdel:hover { color: var(--danger); }
     .gemadd { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-    .gemadd input { font: inherit; font-size: 0.8rem; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; outline: none; min-width: 0; }
+    .gemadd input { font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; outline: none; min-width: 0; }
     .gemadd input:focus { border-color: var(--accent); }
     .gemadd .gname { flex: 1 1 100px; }
     .gemadd .gvalw { width: 78px; flex: 0 0 auto; }
     .gemadd .gqtyw { width: 52px; flex: 0 0 auto; }
-    .gemadd button { font: inherit; font-size: 0.76rem; font-weight: 500; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
-    .resale { font-size: 0.66rem; color: var(--muted); margin: 8px 2px 0; }
+    .gemadd button { font: inherit; font-size: var(--fs-small); font-weight: 500; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+    .resale { font-size: var(--fs-fine); color: var(--muted); margin: 8px 2px 0; }
 
     /* Detail modal — matches the Disciplines talent modal. */
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; max-width: 30rem; width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; }
     .modal.magic { box-shadow: var(--shadow); }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 500; }
+    .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-value); font-weight: 500; }
     .modal.magic .mtitle { color: var(--arcane); }
-    .mtitle .star { color: var(--arcane); font-size: 0.76rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; }
+    .mtitle .star { color: var(--arcane); font-size: var(--fs-small); }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
     .mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .chip { font-size: 0.62rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+    .chip { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
     .chip.effc { color: var(--accent); background: var(--accent-bg); border-color: transparent; }
     .chip.mag { color: var(--arcane); background: var(--arcane-bg); border-color: transparent; }
-    .mtext { font-size: 0.82rem; line-height: 1.5; margin: 6px 0; }
+    .mtext { font-size: var(--fs-body); line-height: 1.5; margin: 6px 0; }
     /* Flavour description (layer 1) reads as italic lore; the effect paragraph
        (layer 2, .mtext) carries the rules in plain text. */
-    .mdesc { font-size: 0.82rem; line-height: 1.5; margin: 6px 0; font-style: italic; color: var(--muted); }
+    .mdesc { font-size: var(--fs-body); line-height: 1.5; margin: 6px 0; font-style: italic; color: var(--muted); }
     .mact { display: flex; align-items: center; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .mact .spacer { flex: 1; }
     /* Thread-item rank list — woven ranks are accent-tinted, unwoven muted. */
     .mthread { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 9px; display: flex; flex-direction: column; gap: 6px; }
-    .trk { border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 0.74rem; line-height: 1.45; color: var(--muted); }
+    .trk { border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: var(--fs-small); line-height: 1.45; color: var(--muted); }
     .trk.woven { border-color: var(--arcane-line); background: var(--arcane-bg); color: var(--fg); }
-    .trh { display: inline-block; font-size: 0.6rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--arcane); margin-bottom: 2px; }
+    .trh { display: inline-block; font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--arcane); margin-bottom: 2px; }
     .tkey { font-style: italic; color: var(--muted); }
     .teff { color: inherit; }
-    .eq.rank { font-size: 0.62rem; padding: 3px 8px; background: var(--bg-card); }
+    .eq.rank { font-size: var(--fs-eyebrow); padding: 3px 8px; background: var(--bg-card); }
 
     @media (max-width: 620px) {
       .board { column-count: 1; }
@@ -878,7 +878,7 @@ export class EdEquipment extends LitElement {
             ? html`<div class="mact">
                 <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}>${it.equipped ? 'Equipped' : 'Stored'}</button>
                 <span class="spacer"></span>
-                <button class="del" @click=${() => this._remove(it.name)} style="font-size:0.8rem">Remove item</button>
+                <button class="del" @click=${() => this._remove(it.name)} style="font-size: var(--fs-body)">Remove item</button>
               </div>`
             : ''}
         </div>

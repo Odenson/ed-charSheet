@@ -127,8 +127,8 @@ export class EdCombat extends LitElement {
     .top > .logblk { grid-area: log; align-self: start; }
 
     .blk { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
-    .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
-    .h .r { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 6px; }
+    .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+    .h .r { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: var(--fs-small); display: inline-flex; align-items: center; gap: 6px; }
     .h .r b { color: var(--fg); font-weight: 500; }
 
     /* Weapon image: a square as tall as the pickers + statlines. Grid (not flex)
@@ -142,64 +142,64 @@ export class EdCombat extends LitElement {
     .artbox img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
     .artbox .missing { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
     .artbox svg { width: 30px; height: 30px; opacity: 0.6; }
-    .artbox .cap { font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .artbox .cap { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; }
 
-    select { font: inherit; font-size: 0.8rem; width: 100%; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-chip); color: inherit; }
+    select { font: inherit; font-size: var(--fs-body); width: 100%; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-chip); color: inherit; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
 
-    .statline { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.8rem; border-top: 1px solid var(--border); }
-    .statline .k { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 54px; flex: none; }
+    .statline { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: var(--fs-body); border-top: 1px solid var(--border); }
+    .statline .k { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 54px; flex: none; }
     .statline .v { flex: 1; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .statline .v.ranged { font-size: 0.62rem; color: var(--muted); font-weight: 400; margin-left: 4px; }
-    .dmgbonus { font-size: 0.6rem; font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
-    .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.72rem; flex: none; padding: 0; line-height: 1; }
+    .statline .v.ranged { font-size: var(--fs-eyebrow); color: var(--muted); font-weight: 400; margin-left: 4px; }
+    .dmgbonus { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
+    .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-small); flex: none; padding: 0; line-height: 1; }
     .roll:disabled { opacity: 0.4; cursor: default; }
 
-    .vs { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--muted); }
-    .vs input { width: 46px; font: inherit; font-size: 0.8rem; font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+    .vs { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-fine); color: var(--muted); }
+    .vs input { width: 46px; font: inherit; font-size: var(--fs-body); font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
     .vs input:focus { outline: none; border-color: var(--accent); }
-    .strain-k { margin-left: 14px; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: none; }
+    .strain-k { margin-left: 14px; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: none; }
     .strain { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--danger); flex: none; min-width: 14px; text-align: right; }
 
     /* Collapsible chip sections. */
     .sec { margin-top: 8px; }
-    .sechead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font: 500 0.62rem/1.4 inherit; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
-    .sechead .chev { font-size: 0.66rem; }
+    .sechead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font-weight: 500; font-size: var(--fs-eyebrow); line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
+    .sechead .chev { font-size: var(--fs-fine); }
     .sechead .cnt { color: var(--accent); }
     .sec.collapsed .secbody { display: none; }
     .secbody { margin-top: 6px; }
     .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-    .chip { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-chip); color: inherit; cursor: pointer; user-select: none; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: var(--fs-small); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-chip); color: inherit; cursor: pointer; user-select: none; }
     .chip:hover { border-color: var(--accent); }
     .chip[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
     .chip.locked { opacity: 0.85; cursor: default; }
     .chip.locked:hover { border-color: var(--border); }
     .chip.charm[aria-pressed='true'] { border-color: var(--blood); background: var(--blood-bg); color: var(--blood); }
-    .badge { font-size: 0.56rem; padding: 0 4px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+    .badge { font-size: var(--fs-eyebrow); padding: 0 4px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
     .chip[aria-pressed='true'] .badge { border-color: currentColor; }
     .badge.pos { color: var(--karma); }
     .badge.neg { color: var(--danger); }
     .badge.strain { color: var(--danger); }
-    .empty { background: var(--bg-card); border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; text-align: center; font-size: 0.72rem; color: var(--muted); line-height: 1.45; }
+    .empty { background: var(--bg-card); border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; text-align: center; font-size: var(--fs-small); color: var(--muted); line-height: 1.45; }
 
     /* Live folded Defence/Armour figures (Overview-style): tinted with the
        danger colour while toggled session mods are active (signed delta badge). */
     .dval.cond { color: var(--danger); }
-    .dval .delt { margin-left: 3px; font-size: 0.58rem; font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: var(--danger-bg); color: var(--danger); vertical-align: 1px; white-space: nowrap; }
+    .dval .delt { margin-left: 3px; font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: var(--danger-bg); color: var(--danger); vertical-align: 1px; white-space: nowrap; }
 
     /* Stand-up affordance — mirrors the Overview active-effect row (§2 Stand up). */
-    .standrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.68rem; color: var(--danger); padding: 4px 8px; margin-bottom: 6px; background: var(--danger-bg); border-radius: 6px; }
-    .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .standrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: var(--fs-fine); color: var(--danger); padding: 4px 8px; margin-bottom: 6px; background: var(--danger-bg); border-radius: 6px; }
+    .stand { flex: none; font: inherit; font-size: var(--fs-eyebrow); font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
 
     /* Defence & Armour block: derived readouts only — a value the engine hasn't
        produced yet renders as a placeholder pill, never a fabricated number
        (UI-GUIDELINES §5). Collapsible like the chip sections; defaults to
        collapsed on narrow screens (owner decision), expanded on desktop. */
-    .dabhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font: 500 0.62rem/1.4 inherit; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
-    .dabhead .chev { font-size: 0.66rem; }
-    .dabrow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 0.72rem; padding: 2px 0; font-variant-numeric: tabular-nums; }
-    .dabrow .k { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 52px; flex: none; }
+    .dabhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font-weight: 500; font-size: var(--fs-eyebrow); line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
+    .dabhead .chev { font-size: var(--fs-fine); }
+    .dabrow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: var(--fs-small); padding: 2px 0; font-variant-numeric: tabular-nums; }
+    .dabrow .k { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 52px; flex: none; }
     .dabrow .v { font-weight: 500; }
     .dabrow .v .sep { color: var(--muted); font-weight: 400; margin: 0 5px; }
     .dablk.collapsed .dabbody { display: none; }
@@ -212,65 +212,65 @@ export class EdCombat extends LitElement {
     @media (max-width: 720px) { .dabpair { grid-template-columns: 1fr; } }
     .dabpair > .blk { height: 100%; box-sizing: border-box; }
     .potpick { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
-    select.pot { font: inherit; font-size: 0.72rem; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 5px 7px; flex: 1; min-width: 0; }
-    .drink { font: inherit; font-size: 0.66rem; font-weight: 500; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; }
+    select.pot { font: inherit; font-size: var(--fs-small); color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 5px 7px; flex: 1; min-width: 0; }
+    .drink { font: inherit; font-size: var(--fs-fine); font-weight: 500; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; }
     .drink:disabled { opacity: 0.4; cursor: not-allowed; }
-    .emptyhint { font-size: 0.66rem; color: var(--muted); padding: 2px 0; }
+    .emptyhint { font-size: var(--fs-fine); color: var(--muted); padding: 2px 0; }
     .potpend { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; background: var(--accent-bg); border: 1px dashed var(--accent); margin-top: 6px; }
-    .potpend .ptxt { flex: 1; font-size: 0.68rem; color: var(--fg); }
+    .potpend .ptxt { flex: 1; font-size: var(--fs-fine); color: var(--fg); }
     .potpend .ptxt b { color: var(--accent); font-weight: 500; }
-    .potpend .proll { flex: 0 0 auto; font: inherit; font-size: 0.6rem; font-weight: 500; white-space: nowrap; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .potpend .proll { flex: 0 0 auto; font: inherit; font-size: var(--fs-eyebrow); font-weight: 500; white-space: nowrap; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .potpend .proll:hover { background: var(--accent-bg); }
-    .potpend .pclear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 2px 4px; }
+    .potpend .pclear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 2px 4px; }
 
     /* Placeholder pill (UI-GUIDELINES §5) — a derived value the engine hasn't
        produced yet renders dashed, never as a fabricated number. */
-    .pend { font-weight: 400; color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 0 6px; font-size: 0.72rem; }
+    .pend { font-weight: 400; color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 0 6px; font-size: var(--fs-small); }
 
     /* Damage-taken rail. Flex column so, when the card stretches to match the
        Attack card's height, the take-damage/recovery buttons sink to the bottom. */
     .dtcol { display: flex; flex-direction: column; }
     .dtcol .cur { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
-    .dtcol .cur .lab { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
-    .dtcol .curdmg { width: 46px; font: inherit; font-size: 0.95rem; font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; box-sizing: border-box; }
+    .dtcol .cur .lab { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
+    .dtcol .curdmg { width: 46px; font: inherit; font-size: var(--fs-value); font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; box-sizing: border-box; }
     .dtcol .curdmg.val { width: auto; min-width: 16px; border: none; background: none; padding-left: 0; font-variant-numeric: tabular-nums; }
     /* Wounds sits inline beside damage — same row, no extra height. */
     .dtcol .curwnd { color: var(--danger); }
-    .dtcol .thr { font-size: 0.68rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .dtcol .thr { font-size: var(--fs-fine); color: var(--muted); margin-top: 6px; line-height: 1.5; }
     .dtcol .dtbtns { display: flex; gap: 6px; margin-top: auto; padding-top: 9px; }
-    .status { font-size: 0.6rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
+    .status { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
     .status.warn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
 
     /* Combat log — a view of the device-local Roll Log (rolls + actions). */
-    .clear { font: inherit; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
+    .clear { font: inherit; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
     .clear:hover { color: var(--danger); border-color: var(--danger); }
     .clear:disabled { opacity: 0.4; cursor: default; }
     .log { display: flex; flex-direction: column; max-height: 320px; overflow: auto; }
-    .logrow { display: flex; gap: 7px; align-items: baseline; font-size: 0.72rem; padding: 4px 0; border-top: 1px solid var(--border); }
+    .logrow { display: flex; gap: 7px; align-items: baseline; font-size: var(--fs-small); padding: 4px 0; border-top: 1px solid var(--border); }
     .logrow:first-child { border-top: none; }
-    .logrow .lt { flex: none; width: 14px; text-align: center; color: var(--accent); font-size: 0.7rem; }
+    .logrow .lt { flex: none; width: 14px; text-align: center; color: var(--accent); font-size: var(--fs-fine); }
     .logrow .lx { min-width: 0; color: var(--muted); line-height: 1.35; }
     .logrow .lx b { color: var(--fg); font-weight: 500; }
     .logrow .lx .hit { color: var(--karma); font-weight: 500; }
     .logrow .lx .miss { color: var(--danger); font-weight: 500; }
     .logrow .lx .mods { color: var(--muted); }
-    .logempty { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+    .logempty { font-size: var(--fs-small); color: var(--muted); line-height: 1.4; }
 
     /* Take-damage modal (UI-GUIDELINES §7 — Escape closes, Enter confirms). */
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
     .modal { background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     form { display: flex; flex-direction: column; gap: 0.6rem; }
-    .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.8rem; }
-    .hrow input { font: inherit; font-size: 0.85rem; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 6rem; text-align: right; }
+    .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-body); }
+    .hrow input { font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 6rem; text-align: right; }
     .hrow input:focus { outline: none; border-color: var(--accent); }
-    .mpara { font-size: 0.78rem; line-height: 1.5; margin: 0; }
+    .mpara { font-size: var(--fs-small); line-height: 1.5; margin: 0; }
     .mpara b { font-weight: 500; }
-    .mpara.hint { font-size: 0.68rem; color: var(--muted); }
+    .mpara.hint { font-size: var(--fs-fine); color: var(--muted); }
     .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-    .hint { font-size: 0.68rem; color: var(--muted); }
-    .hbtn { font: inherit; font-size: 0.82rem; font-weight: 500; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); }
+    .hint { font-size: var(--fs-fine); color: var(--muted); }
+    .hbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); }
   `;
 
   constructor() {

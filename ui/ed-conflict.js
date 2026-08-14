@@ -76,12 +76,12 @@ export class EdConflict extends LitElement {
           --text: light-dark(#111418, #f0f3f7);
         }
         .edc-modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; box-sizing: border-box; }
-        .edc-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
-        .edc-close { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
-        .edc-body { font-size: 0.82rem; color: var(--muted); margin: 0 0 1rem; line-height: 1.5; }
+        .edc-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
+        .edc-close { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
+        .edc-body { font-size: var(--fs-body); color: var(--muted); margin: 0 0 1rem; line-height: 1.5; }
         .edc-body strong { color: var(--text); font-weight: 500; }
         .edc-actions { display: flex; justify-content: flex-end; gap: 8px; }
-        .edc-btn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
+        .edc-btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
         .edc-btn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
       </style>
       <div class="edc-overlay" @click=${this._close}>

@@ -4,7 +4,7 @@ How to author a **homebrew rule**: the file, the rule shape, the formula term
 grammar, the ref vocabulary, and the engine semantics that consume it. This doc
 is the authority for the `rules/homebrew.json` format — read it before creating
 or editing a rule. The active build plan lives in
-[PLAN-HOMEBREW.md](PLAN-HOMEBREW.md); the effect vocabulary that a rule's
+[PLAN-HOMEBREW.md](../plans/PLAN-HOMEBREW.md); the effect vocabulary that a rule's
 `effects` reuse lives in [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md).
 
 > A homebrew rule is **pure data**: inputs plus plain-English notes. It never

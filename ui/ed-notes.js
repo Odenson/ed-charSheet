@@ -58,40 +58,40 @@ export class EdNotes extends LitElement {
     }
     /* Segmented control — the ed-disciplines .seg pill pattern, as a tablist. */
     .seg { display: inline-flex; flex-wrap: wrap; background: var(--bg-card); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 12px; }
-    .seg button { border: none; background: none; padding: 6px 14px; border-radius: 999px; font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .seg button { border: none; background: none; padding: 6px 14px; border-radius: 999px; font: inherit; font-size: var(--fs-body); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
     .seg button[aria-selected='true'] { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
     .seg button .ico { color: var(--accent); }
     .headline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-    .hbig { font-size: 0.95rem; font-weight: 500; }
+    .hbig { font-size: var(--fs-value); font-weight: 500; }
     .htotal { display: inline-flex; align-items: baseline; gap: 6px; }
-    .htotal .val { font-size: 1.1rem; font-weight: 500; font-variant-numeric: tabular-nums; }
-    .hsub { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .addbtn { margin-left: auto; font: inherit; font-size: 0.78rem; font-weight: 500; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
-    .pend { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
-    .empty { background: var(--bg-card); border: 1px dashed var(--border); border-radius: 8px; padding: 22px 14px; text-align: center; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .htotal .val { font-size: var(--fs-title); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .hsub { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .addbtn { margin-left: auto; font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
+    .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+    .empty { background: var(--bg-card); border: 1px dashed var(--border); border-radius: 8px; padding: 22px 14px; text-align: center; font-size: var(--fs-body); color: var(--muted); line-height: 1.5; }
 
     /* Notes: untimed info cards (decision #4). */
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 8px; }
     .ncard { background: var(--bg-card); border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 8px; }
-    .ntext { font-size: 0.85rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+    .ntext { font-size: var(--fs-body); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
     .nactions { display: flex; gap: 4px; justify-content: flex-end; }
-    .edit, .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 2px 4px; }
+    .edit, .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 2px 4px; }
     .edit:hover { color: var(--accent); }
     .del:hover { color: var(--danger); }
 
     /* Roll Log: newest-first rows (store order). */
-    .rctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); }
-    .rctl select { font: inherit; font-size: 0.78rem; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
-    .clearbtn { font: inherit; font-size: 0.72rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
+    .rctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-small); color: var(--muted); }
+    .rctl select { font: inherit; font-size: var(--fs-small); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+    .clearbtn { font: inherit; font-size: var(--fs-small); padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
     .clearbtn:hover { color: var(--danger); border-color: var(--danger); }
     .clearbtn:disabled { opacity: 0.4; cursor: default; }
     .rlist { display: flex; flex-direction: column; gap: 6px; }
     .rrow { background: var(--bg-card); border-radius: 8px; padding: 7px 10px; }
     .rtop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-    .rlbl { font-size: 0.85rem; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .rtotal { font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; flex: none; }
+    .rlbl { font-size: var(--fs-body); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rtotal { font-size: var(--fs-value); font-weight: 500; font-variant-numeric: tabular-nums; flex: none; }
     .rsub { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 5px; align-items: center; }
-    .chip { font-size: 0.68rem; color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+    .chip { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
     /* The actual die outcome for a row — each die's rolled faces (an exploded
        die shows its chain, e.g. D6 6↦3). Recorded at roll time, never derived. */
     .chip.dieout { font-variant-numeric: tabular-nums; }
@@ -99,44 +99,44 @@ export class EdNotes extends LitElement {
     .chip.no { color: var(--danger); border-color: var(--danger); }
     .chip.karma { color: var(--karma); border-color: var(--karma); }
     .chip.mod { color: var(--accent); border-color: var(--accent); }
-    .ttime { margin-left: auto; font-size: 0.62rem; color: var(--muted); flex: none; }
+    .ttime { margin-left: auto; font-size: var(--fs-eyebrow); color: var(--muted); flex: none; }
 
     /* Legend-earned table: amount, description, date, delete. The virtual
        "Starting total" row renders read-only / non-deletable (decision #6). */
     .ltable { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-    .lrow { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 7rem auto; gap: 8px; align-items: center; padding: 6px 10px; font-size: 0.8rem; border-top: 1px solid var(--border); }
+    .lrow { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr) 7rem auto; gap: 8px; align-items: center; padding: 6px 10px; font-size: var(--fs-body); border-top: 1px solid var(--border); }
     .lrow:first-child { border-top: none; }
     .lamt { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--karma); }
     .ldesc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ldate { font-size: 0.72rem; color: var(--muted); }
+    .ldate { font-size: var(--fs-small); color: var(--muted); }
     .vrow { color: var(--muted); }
     .vrow .lamt { color: var(--muted); }
-    .vtag { font-size: 0.6rem; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); border: 1px dashed var(--muted); color: var(--muted); white-space: nowrap; justify-self: end; }
+    .vtag { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); border: 1px dashed var(--muted); color: var(--muted); white-space: nowrap; justify-self: end; }
     .lrow .del { justify-self: end; }
-    .lcaption { font-size: 0.68rem; color: var(--muted); padding: 6px 10px; }
+    .lcaption { font-size: var(--fs-fine); color: var(--muted); padding: 6px 10px; }
 
     /* History: dated, reverse-chronological timeline (decision #4). */
     .timeline { display: flex; flex-direction: column; }
-    .trow { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+    .trow { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-body); }
     .trow:last-child { border-bottom: none; }
-    .tdate { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tdate { font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .ttext { white-space: pre-wrap; word-break: break-word; line-height: 1.4; }
 
     /* Modal (UI-GUIDELINES §7): Escape closes; Enter confirms where the form
        has a single-line control, and the primary button for textareas. */
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
     .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 30rem; max-width: 100%; max-height: 88vh; overflow: auto; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1rem; font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0; }
+    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
+    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     form { display: flex; flex-direction: column; gap: 0.7rem; }
     .fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-    label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-    input, textarea { font: inherit; font-size: 0.85rem; color: var(--fg); background: light-dark(#f7f8fa, #1b1f27); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
+    label { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    input, textarea { font: inherit; font-size: var(--fs-body); color: var(--fg); background: light-dark(#f7f8fa, #1b1f27); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
     textarea { resize: vertical; line-height: 1.4; }
     input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-    .hint { font-size: 0.68rem; color: var(--muted); }
+    .hint { font-size: var(--fs-fine); color: var(--muted); }
     .actions { display: flex; justify-content: flex-end; gap: 8px; }
-    button.btn { font: inherit; font-size: 0.82rem; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
+    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
     button.btn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
 
     @media (max-width: 720px) {

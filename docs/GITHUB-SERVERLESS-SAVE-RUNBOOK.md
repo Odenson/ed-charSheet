@@ -500,7 +500,7 @@ original rollout above. Work top-to-bottom; status boxes track it.
 ## References
 
 - [GITHUB-SERVERLESS-SAVE.md](GITHUB-SERVERLESS-SAVE.md) — design (why/how it works)
-- [PLAN-CUSTOM-ITEMS.md](PLAN-CUSTOM-ITEMS.md) — the custom-items feature the `/save-items` fold/rollout implements (§8 of the runbook = the plan's owner phases)
+- [PLAN-CUSTOM-ITEMS.md](../plans/PLAN-CUSTOM-ITEMS.md) — the custom-items feature the `/save-items` fold/rollout implements (§8 of the runbook = the plan's owner phases)
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — §7.4/§7.5 save targets, §10 status
 - [WORKFLOW.md](../WORKFLOW.md) — deploy model; why `character-data` never rebuilds
 - [store.js](../store.js) — the live read this write half pairs with

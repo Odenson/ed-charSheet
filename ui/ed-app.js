@@ -117,18 +117,18 @@ export class EdApp extends LitElement {
     }
     .tab {
       display: flex; align-items: center; gap: 6px;
-      padding: 7px 13px; font-size: 0.85rem; font-family: inherit;
+      padding: 7px 13px; font-size: var(--fs-body); font-family: inherit;
       color: var(--muted, #6b7280); background: none; border: none;
       border-bottom: 2px solid transparent; cursor: pointer;
     }
     .tab[aria-selected='true'] { color: light-dark(#111418, #f0f3f7); border-bottom-color: var(--accent, #b26a00); }
-    .tab .ico { font-size: 0.8rem; opacity: 0.8; }
+    .tab .ico { font-size: var(--fs-body); opacity: 0.8; }
     /* Edit / Save / Theme: uniform round icon-only buttons. */
     .icon-btn {
       position: relative; width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       background: none; border: 1px solid var(--border, light-dark(#e2e5ea, #2c313b));
-      color: var(--muted, #6b7280); cursor: pointer; font-size: 0.9rem; line-height: 1;
+      color: var(--muted, #6b7280); cursor: pointer; font-size: var(--fs-value); line-height: 1;
     }
     .icon-btn + .icon-btn { margin-left: 6px; }
     .icon-btn:hover { color: light-dark(#111418, #f0f3f7); }
@@ -148,7 +148,7 @@ export class EdApp extends LitElement {
     .toast {
       position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
       z-index: 2200; max-width: 90vw;
-      padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.8rem;
+      padding: 0.5rem 0.9rem; border-radius: 8px; font-size: var(--fs-body);
       background: light-dark(#fff, #232833);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     }
@@ -157,17 +157,17 @@ export class EdApp extends LitElement {
     .toast a { color: inherit; font-weight: 500; }
     .status { padding: 2rem 0; color: var(--muted, #667); font-weight: 500; }
     .status.error { color: #c0392b; }
-    .stub { text-align: center; color: var(--muted, #889); padding: 3rem 0; font-size: 0.9rem; }
-    .stub .big { font-size: 1.6rem; display: block; margin-bottom: 0.5rem; opacity: 0.7; }
+    .stub { text-align: center; color: var(--muted, #889); padding: 3rem 0; font-size: var(--fs-value); }
+    .stub .big { font-size: var(--fs-hero); display: block; margin-bottom: 0.5rem; opacity: 0.7; }
     footer {
-      margin-top: 1.25rem; font-size: 0.72rem;
+      margin-top: 1.25rem; font-size: var(--fs-small);
       color: var(--muted, #889);
     }
     .dev-pill {
       position: fixed; top: 0.75rem; right: 0.75rem; z-index: 1000;
       padding: 0.25rem 0.7rem; border-radius: 999px;
       background: #b26a00; color: #fff;
-      font: 500 0.7rem/1 system-ui, sans-serif; letter-spacing: 0.08em;
+      font-weight: 500; font-size: var(--fs-fine); line-height: 1; font-family: system-ui, sans-serif; letter-spacing: 0.08em;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); pointer-events: none;
     }
   `;
