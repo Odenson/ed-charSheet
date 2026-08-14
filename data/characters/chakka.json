@@ -371,18 +371,6 @@
       "threadRank": 2
     },
     {
-      "name": "Artisan Tools: Carving",
-      "equipped": true
-    },
-    {
-      "name": "Artisan Tools: Embroidery/Sewing",
-      "equipped": true
-    },
-    {
-      "name": "Artisan Tools: Painting",
-      "equipped": true
-    },
-    {
       "name": "Climbing Kit",
       "equipped": true
     },
@@ -397,11 +385,12 @@
     {
       "name": "Healing Potion",
       "equipped": true,
-      "qty": 2
+      "qty": 3
     },
     {
       "name": "Booster Potion",
-      "equipped": true
+      "equipped": true,
+      "qty": 4
     },
     {
       "name": "Throwing Dagger",
@@ -413,6 +402,14 @@
     },
     {
       "name": "Heat Stone",
+      "equipped": true
+    },
+    {
+      "name": "Hot Pot",
+      "equipped": true
+    },
+    {
+      "name": "Sack",
       "equipped": true
     }
   ],
