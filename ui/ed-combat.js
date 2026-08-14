@@ -118,13 +118,19 @@ export class EdCombat extends LitElement {
     }
     @media (max-width: 720px) {
       .top { grid-template-columns: 1fr; grid-template-areas: "atk" "dmg" "dab" "mods" "log"; }
+      /* Stacked on mobile: the log is its own row again, capped so it never runs long. */
+      .logblk .log { max-height: 320px; flex: none; }
     }
     .top > * { min-width: 0; } /* let grid children shrink instead of overflow */
     .top > .atkblk { grid-area: atk; }
     .top > .dtcol { grid-area: dmg; }
     .top > .dabpair { grid-area: dab; }
     .top > .mods { grid-area: mods; }
-    .top > .logblk { grid-area: log; align-self: start; }
+    /* The log spans the dab+mods rows and STRETCHES to fill them, so its bottom
+       lines up with the Combat Modifiers card. min-height:0 keeps its content from
+       inflating the grid rows; the inner .log scrolls instead. */
+    .top > .logblk { grid-area: log; min-height: 0; }
+    .logblk { display: flex; flex-direction: column; }
 
     .blk { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
     .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
@@ -249,7 +255,7 @@ export class EdCombat extends LitElement {
     .clear { font: inherit; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
     .clear:hover { color: var(--danger); border-color: var(--danger); }
     .clear:disabled { opacity: 0.4; cursor: default; }
-    .log { display: flex; flex-direction: column; max-height: 320px; overflow: auto; }
+    .log { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: auto; }
     .logrow { display: flex; gap: 7px; align-items: baseline; font-size: var(--fs-small); padding: 4px 0; border-top: 1px solid var(--border); }
     .logrow:first-child { border-top: none; }
     .logrow .lt { flex: none; width: 14px; text-align: center; color: var(--accent); font-size: var(--fs-fine); }
@@ -936,7 +942,7 @@ export class EdCombat extends LitElement {
         <div class="thr">${this._rating(u)} unconscious<br />${this._rating(d)} death</div>
         <div class="thr rec">Recoveries <b>${h.recoveriesUsed ?? 0} / ${maxRec ?? this._rating(maxRec)}</b> used</div>
         <div class="dtbtns">
-          <button class="roll dmg" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✚</button>
+          <button class="roll dmg" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✗</button>
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
             title=${recTitle}
             aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>⚄</button>
