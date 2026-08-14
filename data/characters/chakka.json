@@ -301,7 +301,7 @@
       ]
     },
     "health": {
-      "damage": 1,
+      "damage": 2,
       "wounds": 0,
       "recoveriesUsed": 0,
       "knockedDown": false
