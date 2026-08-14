@@ -64,3 +64,22 @@ test('carriedWeight: empty and missing inputs are safe', () => {
   assert.deepEqual(carriedWeight([]), { carried: 0, unweighed: 0 });
   assert.deepEqual(carriedWeight(undefined), { carried: 0, unweighed: 0 });
 });
+
+test('carriedWeight: quantity multiplies both the weight and the unweighed count', () => {
+  const items = [
+    { ref: { weight: '2 lb' }, qty: 3 }, // 2 × 3 = 6
+    { ref: { weight: '10 lb' } }, // no qty → defaults to 1
+    { ref: { weight: 'NA' }, qty: 4 }, // 4 unknowns, not 1
+  ];
+  const w = carriedWeight(items);
+  assert.equal(w.carried, 16); // 6 + 10
+  assert.equal(w.unweighed, 4); // the NA stack counts per dose
+});
+
+test('carriedWeight: a non-finite or zero quantity is safe', () => {
+  const w = carriedWeight([
+    { ref: { weight: '5 lb' }, qty: undefined }, // defaults to 1
+    { ref: { weight: '5 lb' }, qty: 0 }, // contributes nothing
+  ]);
+  assert.equal(w.carried, 5);
+});

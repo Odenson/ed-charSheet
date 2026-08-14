@@ -160,3 +160,42 @@ test('moving items never mutates the derived weight — it recomputes from input
   assert.equal(heavier.weight.carried, 100);
   assert.equal(light.weight.carried, 10, 'the first model is untouched');
 });
+
+// --- item quantity (plans/PLAN-POTIONS.md) ------------------------------------
+
+test('quantity: store forwards qty (default 1) and weight scales by it', () => {
+  memory.clear();
+  const model = deriveModel(
+    { ...baseCharacter(), items: [{ name: 'Dagger', equipped: true, qty: 3 }, { name: 'Club', equipped: true }] },
+    rules,
+  );
+  const dagger = model.items.find((it) => it.name === 'Dagger');
+  const club = model.items.find((it) => it.name === 'Club');
+  assert.equal(dagger.qty, 3); // forwarded input
+  assert.equal(club.qty, 1); // default when absent
+  // 1 lb × 3 + 3 lb × 1 = 6 lb carried.
+  assert.equal(model.weight.carried, 6);
+});
+
+test('quantity: a consumable forwards its catalog `consumable` marker', () => {
+  memory.clear();
+  const model = deriveModel(
+    { ...baseCharacter(), items: [{ name: 'Booster Potion', equipped: true, qty: 2 }] },
+    rules,
+  );
+  const booster = model.items.find((it) => it.name === 'Booster Potion');
+  assert.equal(booster.qty, 2);
+  assert.ok(booster.consumable, 'Booster carries a consumable marker');
+  assert.equal(booster.consumable.use.armNextRoll, true);
+});
+
+test('quantity: thread items are pinned to qty 1 (unique, quantity model never applies)', () => {
+  memory.clear();
+  const model = deriveModel(
+    { ...baseCharacter(), items: [{ name: 'Bracers of Aras', equipped: true, threadRank: 0 }] },
+    rules,
+  );
+  const bracers = model.items.find((it) => it.name === 'Bracers of Aras');
+  assert.equal(bracers.qty, 1);
+  assert.equal(bracers.consumable, null);
+});

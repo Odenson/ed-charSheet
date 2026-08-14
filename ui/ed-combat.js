@@ -22,6 +22,7 @@
 import { LitElement, html, css } from 'lit';
 import { attackPool, damagePool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
+import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { portraitUrlFor } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
@@ -62,6 +63,10 @@ export class EdCombat extends LitElement {
     model: { attribute: false },
     editMode: { type: Boolean },
     characterId: { type: String },
+    // Armed-potion session state from ed-app: { pending, potions } (data down).
+    arming: { attribute: false },
+    _potionSel: { state: true }, // selected potion name in the Drink dropdown
+    _usePrompt: { state: true }, // potion name — Drink confirmation open
     // Ephemeral encounter state (decision #4) — cleared on character switch and
     // on every tab-switch re-mount (ed-app renders only the active tab).
     _weapon: { state: true },
@@ -98,9 +103,28 @@ export class EdCombat extends LitElement {
       --blood-bg: light-dark(#f8e7e4, #3a201d);
       display: block;
     }
-    .top { display: grid; grid-template-columns: 1fr 240px; gap: 10px; align-items: start; }
-    @media (max-width: 720px) { .top { grid-template-columns: 1fr; } }
-    .rail { display: flex; flex-direction: column; gap: 10px; }
+    /* Attack and Damage-taken share the top row so they stretch to the SAME
+       height; Defence/Potions and Combat Modifiers stack under Attack, and the
+       Combat log spans down the right column beside them. */
+    .top {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      grid-template-areas:
+        "atk  dmg"
+        "dab  log"
+        "mods log";
+      gap: 10px;
+      align-items: stretch;
+    }
+    @media (max-width: 720px) {
+      .top { grid-template-columns: 1fr; grid-template-areas: "atk" "dmg" "dab" "mods" "log"; }
+    }
+    .top > * { min-width: 0; } /* let grid children shrink instead of overflow */
+    .top > .atkblk { grid-area: atk; }
+    .top > .dtcol { grid-area: dmg; }
+    .top > .dabpair { grid-area: dab; }
+    .top > .mods { grid-area: mods; }
+    .top > .logblk { grid-area: log; align-self: start; }
 
     .blk { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
     .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.62rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
@@ -168,10 +192,6 @@ export class EdCombat extends LitElement {
     .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
 
-    /* Left column: the attack card, the Defence & Armour block, then Combat
-       Modifiers — three bordered cards, stacked (same flex pattern as .rail). */
-    .left { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-
     /* Defence & Armour block: derived readouts only — a value the engine hasn't
        produced yet renders as a placeholder pill, never a fabricated number
        (UI-GUIDELINES §5). Collapsible like the chip sections; defaults to
@@ -186,17 +206,38 @@ export class EdCombat extends LitElement {
     .dabbody { margin-top: 4px; }
     .mods { display: flex; flex-direction: column; }
 
+    /* Defence & Armour and Potions share one row, side by side; they fold to two
+       stacked cards on narrow screens (same 720px breakpoint as .top). */
+    .dabpair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+    @media (max-width: 720px) { .dabpair { grid-template-columns: 1fr; } }
+    .dabpair > .blk { height: 100%; box-sizing: border-box; }
+    .potpick { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+    select.pot { font: inherit; font-size: 0.72rem; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 5px 7px; flex: 1; min-width: 0; }
+    .drink { font: inherit; font-size: 0.66rem; font-weight: 500; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; }
+    .drink:disabled { opacity: 0.4; cursor: not-allowed; }
+    .emptyhint { font-size: 0.66rem; color: var(--muted); padding: 2px 0; }
+    .potpend { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; background: var(--accent-bg); border: 1px dashed var(--accent); margin-top: 6px; }
+    .potpend .ptxt { flex: 1; font-size: 0.68rem; color: var(--fg); }
+    .potpend .ptxt b { color: var(--accent); font-weight: 500; }
+    .potpend .proll { flex: 0 0 auto; font: inherit; font-size: 0.6rem; font-weight: 500; white-space: nowrap; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .potpend .proll:hover { background: var(--accent-bg); }
+    .potpend .pclear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 2px 4px; }
+
     /* Placeholder pill (UI-GUIDELINES §5) — a derived value the engine hasn't
        produced yet renders dashed, never as a fabricated number. */
     .pend { font-weight: 400; color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 0 6px; font-size: 0.72rem; }
 
-    /* Damage-taken rail. */
-    .dtcol .cur { display: flex; align-items: center; gap: 8px; }
-    .dtcol .cur .lab { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-    .dtcol .curdmg { width: 62px; font: inherit; font-size: 0.95rem; font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
-    .dtcol .curdmg.val { border: none; background: none; padding-left: 0; font-variant-numeric: tabular-nums; }
+    /* Damage-taken rail. Flex column so, when the card stretches to match the
+       Attack card's height, the take-damage/recovery buttons sink to the bottom. */
+    .dtcol { display: flex; flex-direction: column; }
+    .dtcol .cur { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+    .dtcol .cur .lab { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
+    .dtcol .curdmg { width: 46px; font: inherit; font-size: 0.95rem; font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; box-sizing: border-box; }
+    .dtcol .curdmg.val { width: auto; min-width: 16px; border: none; background: none; padding-left: 0; font-variant-numeric: tabular-nums; }
+    /* Wounds sits inline beside damage — same row, no extra height. */
+    .dtcol .curwnd { color: var(--danger); }
     .dtcol .thr { font-size: 0.68rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-    .dtcol .dtbtns { display: flex; gap: 6px; margin-top: 9px; }
+    .dtcol .dtbtns { display: flex; gap: 6px; margin-top: auto; padding-top: 9px; }
     .status { font-size: 0.6rem; font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
     .status.warn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
 
@@ -714,6 +755,110 @@ export class EdCombat extends LitElement {
     `;
   }
 
+  // The Potions card — sits beside Defence & Armour. Lists EVERY owned potion
+  // (equipped or stored, from ed-app's arming.potions) with its ×N, and a Drink
+  // button that arms a confirm then dispatches ed-use-potion. The armed one-shot
+  // benefit renders as a dashed pill here too (session-only).
+  _potionsSection() {
+    const potions = this.arming?.potions ?? [];
+    const sel = this._potionSel && potions.some((p) => p.name === this._potionSel)
+      ? this._potionSel
+      : potions[0]?.name ?? '';
+    const p = this.arming?.pending ?? null;
+    return html`
+      <div class="blk dablk">
+        <div class="dabhead" style="cursor: default"><span>Potions</span></div>
+        <div class="dabbody">
+          ${potions.length
+            ? html`<div class="potpick">
+                <select class="pot" aria-label="Choose a potion to drink" @change=${(e) => (this._potionSel = e.target.value)}>
+                  ${potions.map((it) => html`<option value=${it.name} ?selected=${it.name === sel}>${it.name}${it.qty > 1 ? ` ×${it.qty}` : ''}</option>`)}
+                </select>
+                <button class="drink" ?disabled=${!sel} @click=${() => this._askDrink(sel)}>Drink</button>
+              </div>`
+            : html`<div class="emptyhint">— no potions owned —</div>`}
+          ${p ? this._potionPill(p) : ''}
+        </div>
+      </div>
+    `;
+  }
+  _potionPill(p) {
+    const emergency = p.kind === 'emergency-heal';
+    const txt = emergency
+      ? html`${p.name} — <b>Heal only (Step ${p.step})</b>`
+      : html`${p.name} — <b>next Recovery +${p.value}</b>`;
+    return html`<div class="potpend">
+      <span class="ptxt">${txt}</span>
+      ${emergency
+        ? html`<button class="proll" title="Roll the Step ${p.step} heal — no Recovery test used" aria-label="Roll emergency heal"
+            @click=${() => this._rollEmergency(p)}>⚄ Roll</button>`
+        : ''}
+      <button class="pclear" aria-label="Clear pending ${p.name}" title="Clear"
+        @click=${() => this.dispatchEvent(new CustomEvent('ed-clear-pending-use', { bubbles: true, composed: true }))}>✕</button>
+    </div>`;
+  }
+  // Trigger the budget-free emergency heal from the Potions pill (mirrors the
+  // Overview Active Effects row) — ed-app applies it with no Recovery test used.
+  _rollEmergency(p) {
+    this.dispatchEvent(new CustomEvent('ed-roll', {
+      detail: {
+        label: `${p.name} — emergency heal`,
+        step: p.step,
+        apply: { action: 'emergency-recovery-heal', label: 'Heal this amount' },
+      },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+  _askDrink(name) {
+    if (name) this._usePrompt = name;
+  }
+  _closeDrink() {
+    this.renderRoot.activeElement?.blur();
+    this._usePrompt = null;
+  }
+  _confirmDrink() {
+    const name = this._usePrompt;
+    this._closeDrink();
+    if (name) this.dispatchEvent(new CustomEvent('ed-use-potion', { detail: { name }, bubbles: true, composed: true }));
+  }
+  _useModal() {
+    const name = this._usePrompt;
+    if (!name) return '';
+    const it = (this.arming?.potions ?? []).find((x) => x.name === name);
+    const use = this.model?.itemCatalog?.[name]?.consumable?.use ?? {};
+    const pending = this.arming?.pending ?? null;
+    const willArm = !!(use.armNextRoll || use.emergencyHeal);
+    const alreadyArmed = willArm && !!pending;
+    const h = this.model?.resources?.health ?? {};
+    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(h.recoveriesUsed, maxRec);
+    const nothingToHeal = !!use.healWounds && (Number(h.wounds) || 0) <= 0 && (Number(h.damage) || 0) <= 0;
+    const noEffectBoost = boostHasNoEffect(use, remaining);
+    const emergencyDrink = !!use.emergencyHeal && remaining === 0 && !nothingToHeal;
+    // Hard block when already armed or a pure boost with no Recovery test to use.
+    const blocked = alreadyArmed || noEffectBoost;
+    const warn = alreadyArmed
+      ? 'A Recovery boost is already pending — use or clear it first. Potions don’t stack.'
+      : noEffectBoost
+        ? 'No Recovery tests left today — there is nothing to boost, so this potion would have no effect. Drinking it is blocked.'
+        : emergencyDrink
+          ? `No Recovery tests left — this heals a Wound now and arms an immediate Step ${use.emergencyHeal.step} heal (no Recovery test used). Roll it from the Potions pill or Active Effects.`
+          : nothingToHeal
+            ? 'No Wound and no damage to heal — the heal does nothing, but the dose will still be spent.'
+            : '';
+    return html`<ed-confirm
+      tone="accent"
+      heading="Drink ${name}?"
+      message=${`Consumes one dose of ${name}${it && it.qty > 1 ? ` (×${it.qty} → ×${it.qty - 1})` : ''}.`}
+      warn=${warn}
+      ?disabled=${blocked}
+      confirmLabel="Drink"
+      @confirm=${this._confirmDrink}
+      @close=${this._closeDrink}
+    ></ed-confirm>`;
+  }
+
   // Combat Modifiers group (owner-agreed Combat-UI change): the three collapsible
   // chip sections — Combat options, Situational, Blood charms — share one bordered
   // card, each keeping its own header, active count, and live chips.
@@ -755,6 +900,13 @@ export class EdCombat extends LitElement {
     }
     return html`<span class="curdmg val">${h.damage ?? 0}</span>`;
   }
+  _curWounds() {
+    const h = this.model?.resources?.health ?? {};
+    if (this.editMode) {
+      return html`<input class="curdmg curwnd" type="number" min="0" step="1" .value=${String(h.wounds ?? 0)} aria-label="Current wounds" @change=${(e) => this._dispatchHealth({ wounds: Math.max(0, Number(e.target.value) || 0) })} />`;
+    }
+    return html`<span class="curdmg curwnd val">${h.wounds ?? 0}</span>`;
+  }
   _damageTbl() {
     const u = this.model?.characteristics?.unconsciousness?.value;
     const d = this.model?.characteristics?.death?.value;
@@ -762,16 +914,24 @@ export class EdCombat extends LitElement {
     const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
     const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
     const noRecoveries = remaining != null && remaining <= 0;
+    // A step-boost armed from a potion bumps the next Recovery test — surface the
+    // +N on the button so the player knows before rolling (the bump lives in ed-app).
+    const boost = armedRecoveryBonus(this.arming?.pending).stepBonus;
+    const recTitle = noRecoveries
+      ? 'No Recovery Tests left today — reset for a new day'
+      : boost
+        ? `Recovery test (+${boost} step armed) — heals the Toughness Effect result, uses one`
+        : 'Recovery test — heals the Toughness Effect result, uses one';
     return html`
       <div class="blk dtcol">
         <div class="h"><span>Damage taken</span>${this._statusPill()}</div>
-        <div class="cur"><span class="lab">Current</span>${this._curDmg()}</div>
+        <div class="cur"><span class="lab">Current</span>${this._curDmg()}<span class="lab">Wounds</span>${this._curWounds()}</div>
         <div class="thr">${this._rating(u)} unconscious<br />${this._rating(d)} death</div>
         <div class="dtbtns">
           <button class="roll" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✚</button>
-          <button class="roll" ?disabled=${noRecoveries} @click=${this._recoveryTest}
-            title=${noRecoveries ? 'No Recovery Tests left today — reset for a new day' : 'Recovery test — heals the Toughness Effect result, uses one'}
-            aria-label="Recovery test">⚄</button>
+          <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
+            title=${recTitle}
+            aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>⚄</button>
         </div>
       </div>`;
   }
@@ -852,7 +1012,7 @@ export class EdCombat extends LitElement {
   }
   _logBlock() {
     return html`
-      <div class="blk">
+      <div class="blk logblk">
         <div class="h"><span>Combat log</span>
           <button class="clear" @click=${() => (this._confirmClear = true)} ?disabled=${!this._rolls.length}>clear</button>
         </div>
@@ -884,8 +1044,7 @@ export class EdCombat extends LitElement {
       : '';
     return html`
       <div class="top">
-        <div class="left">
-          <div class="blk">
+          <div class="blk atkblk">
             <div class="h">
               <span>Your attack</span>
               <span class="r">Initiative <b>${init?.value ?? this._pend()}</b>
@@ -922,14 +1081,14 @@ export class EdCombat extends LitElement {
             </div>
           </div>
 
-          ${this._defArmourSection()}
-          ${this._modsGroup()}
-        </div>
-
-        <div class="rail">
           ${this._damageTbl()}
+
+          <div class="dabpair">
+            ${this._defArmourSection()}
+            ${this._potionsSection()}
+          </div>
+          ${this._modsGroup()}
           ${this._logBlock()}
-        </div>
       </div>
 
       ${this._damageModal
@@ -944,6 +1103,7 @@ export class EdCombat extends LitElement {
             @close=${() => (this._confirmClear = false)}
           ></ed-confirm>`
         : ''}
+      ${this._useModal()}
     `;
   }
 

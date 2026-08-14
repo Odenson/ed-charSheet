@@ -4,6 +4,7 @@
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
+import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
 import './ed-confirm.js';
 import './ed-add-legend.js';
@@ -14,6 +15,8 @@ export class EdOverview extends LitElement {
   static properties = {
     model: { attribute: false },
     editMode: { attribute: false },
+    // Armed-potion session state from ed-app: { pending, potions } (data down).
+    arming: { attribute: false },
     _modal: { state: true },
     _lightbox: { state: true },
     _edit: { state: true },
@@ -134,9 +137,13 @@ export class EdOverview extends LitElement {
     /* Condition lead is set in 500 — the UI only uses 400/500 (UI-GUIDELINES §2). */
     .aefx-row .txt b { font-weight: 500; }
     .aefx-row.cond { background: var(--accent-bg); border-radius: 6px; padding: 3px 6px; margin: 2px -2px; }
+    /* The armed emergency-heal row: accent-toned (healing-aid colour), not a
+       condition red — it's a benefit to act on, not a penalty. */
+    .aefx-row.emergency { background: var(--accent-bg); border: 1px dashed var(--accent); border-radius: 6px; padding: 3px 6px; margin: 2px -2px; }
     .ftag.cond { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
     .stand { flex: none; font: inherit; font-size: 0.6rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
+    .emroll { white-space: nowrap; }
     .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
     /* Universal hover-reveal: ANY info icon stays hidden until you hover (or
        keyboard-focus) the element it sits in, so it never clutters the read view.
@@ -587,8 +594,12 @@ export class EdOverview extends LitElement {
         A hit at or above the Wound Threshold ${rating(wt)} records one Wound; a
         hit five or more over it triggers a Knockdown test.
       </p>
-      <button class="hbtn hrec" ?disabled=${noRecoveries} @click=${this._recoveryTest}
-        title=${noRecoveries ? 'No Recovery Tests left today — reset for a new day' : 'Recovery test — heals the result, uses one'}>⚄ Recovery test — heals the result, uses one</button>
+      ${(() => {
+        const boost = armedRecoveryBonus(this.arming?.pending).stepBonus;
+        return html`<button class="hbtn hrec" ?disabled=${noRecoveries} @click=${this._recoveryTest}
+          title=${noRecoveries ? 'No Recovery Tests left today — reset for a new day' : boost ? `Recovery test (+${boost} step armed) — heals the result, uses one` : 'Recovery test — heals the result, uses one'}
+          >⚄ Recovery test — heals the result, uses one${boost ? html` <b>(+${boost} step)</b>` : ''}</button>`;
+      })()}
       ${noRecoveries ? html`<p class="mpara hint">No Recovery Tests left today — reset Recoveries to start a new day.</p>` : ''}
       <div class="hfoot">
         <span class="hint">Enter applies · Escape closes</span>
@@ -737,7 +748,11 @@ export class EdOverview extends LitElement {
   _activeEffects() {
     const HIDDEN = new Set(['race', 'discipline', 'item', 'thread']);
     const effects = (this.model?.activeEffects ?? []).filter((e) => !HIDDEN.has(e.origin?.kind));
-    if (!effects.length) return html``;
+    // A Healing Potion drunk at 0 Recovery tests arms a budget-free emergency
+    // heal — surfaced here as a transient row (session-only, from ed-app). The
+    // Step comes from the potion's data, never a view literal.
+    const emergency = this.arming?.pending?.kind === 'emergency-heal' ? this.arming.pending : null;
+    if (!effects.length && !emergency) return html``;
     const tag = (e) => {
       const o = e.origin ?? {};
       if (o.kind === 'condition') return 'condition';
@@ -772,6 +787,25 @@ export class EdOverview extends LitElement {
       <div class="blk aefx">
         <h4>Active Effects</h4>
         <div class="aelist">
+          ${emergency
+            ? html`<div class="aefx-row emergency">
+                <span class="ftag">potion</span>
+                <span class="txt"><b>${emergency.name}</b> — Step ${emergency.step} heal, no test</span>
+                <button class="stand emroll" title="Roll the emergency Step ${emergency.step} heal — no Recovery test used"
+                  aria-label="Roll emergency heal"
+                  @click=${() =>
+                    this.dispatchEvent(new CustomEvent('ed-roll', {
+                      detail: {
+                        label: `${emergency.name} — emergency heal`,
+                        step: emergency.step,
+                        apply: { action: 'emergency-recovery-heal', label: 'Heal this amount' },
+                      },
+                      bubbles: true,
+                      composed: true,
+                    }))}
+                >⚄ Roll</button>
+              </div>`
+            : ''}
           ${grouped.map(
             ([name, es]) => html`
               <div class="aefx-row ${name ? 'cond' : ''}">

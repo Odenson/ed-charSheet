@@ -59,12 +59,15 @@ export function carriedWeight(items = []) {
   let carried = 0;
   let unweighed = 0;
   for (const it of items ?? []) {
+    // Quantity scales both the weight and the unknown-weight count: a stack of 3
+    // unweighed items is 3 unknowns, not 1, so the UI never under-reports.
+    const qty = Number.isFinite(it?.qty) ? Math.max(0, it.qty) : 1;
     const w = parseWeight(it?.ref?.weight);
     if (w == null) {
-      unweighed += 1;
+      unweighed += qty;
       continue;
     }
-    carried += w;
+    carried += w * qty;
   }
   return { carried: round2(carried), unweighed };
 }

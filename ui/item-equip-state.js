@@ -81,6 +81,35 @@ export function unequipSpentCharms(items, spentNames) {
   return items.map((it) => ({
     name: it.name,
     equipped: spent.has(it.name) ? false : it.equipped,
+    ...(it.qty > 1 ? { qty: it.qty } : {}),
     ...(it.thread ? { threadRank: it.thread.threadRank } : {}),
   }));
+}
+
+/**
+ * Apply `delta` to the named entry's quantity, returning the next input list.
+ * The entry is **removed when its quantity would reach 0** (a spent last dose).
+ * Thread items are unique — the quantity model never applies, so a thread name
+ * (per the caller's `isThread` predicate) is a no-op. Quantity is an input; this
+ * only reshapes it, computing no game value.
+ *
+ * @param {Array<{name:string, qty?:number}>} items  current inputs
+ * @param {string} name  the entry whose quantity changes
+ * @param {number} delta  +1 to add a dose, -1 to consume one
+ * @param {(name:string)=>boolean} [isThread]  true for unique/thread items (no-op)
+ * @returns {Array<{name:string, qty?:number}>} the next input list
+ */
+export function bumpQuantity(items, name, delta, isThread = () => false) {
+  if (isThread(name)) return items ?? [];
+  const out = [];
+  for (const i of items ?? []) {
+    if (i.name !== name) {
+      out.push(i);
+      continue;
+    }
+    const qty = (Number.isFinite(i.qty) ? i.qty : 1) + delta;
+    if (qty > 0) out.push({ ...i, qty });
+    // qty <= 0 drops the entry entirely (last dose spent).
+  }
+  return out;
 }

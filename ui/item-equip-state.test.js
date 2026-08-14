@@ -156,3 +156,49 @@ test('unequipSpentCharms never removes an item, only stores it', () => {
   const next = unequipSpentCharms(items, ['Desperate Blow']);
   assert.deepEqual(next.map((i) => i.name), ['Desperate Blow', 'Dagger']);
 });
+
+// --- bumpQuantity (potion/item quantity, plans/PLAN-POTIONS.md) ---------------
+
+import { bumpQuantity } from './item-equip-state.js';
+
+test('bumpQuantity: increments the named entry, defaulting a missing qty to 1', () => {
+  const items = [{ name: 'Booster Potion', equipped: true }, { name: 'Dagger', equipped: true }];
+  assert.deepEqual(bumpQuantity(items, 'Booster Potion', 1), [
+    { name: 'Booster Potion', equipped: true, qty: 2 },
+    { name: 'Dagger', equipped: true },
+  ]);
+});
+
+test('bumpQuantity: decrements, and removes the entry when the last dose is spent', () => {
+  const items = [{ name: 'Healing Potion', equipped: true, qty: 2 }, { name: 'Dagger', equipped: true }];
+  assert.deepEqual(bumpQuantity(items, 'Healing Potion', -1), [
+    { name: 'Healing Potion', equipped: true, qty: 1 },
+    { name: 'Dagger', equipped: true },
+  ]);
+  const last = [{ name: 'Healing Potion', equipped: true, qty: 1 }, { name: 'Dagger', equipped: true }];
+  assert.deepEqual(bumpQuantity(last, 'Healing Potion', -1), [{ name: 'Dagger', equipped: true }]);
+});
+
+test('bumpQuantity: a thread-item name is a no-op (unique, no quantity)', () => {
+  const items = [{ name: 'Bracers of Aras', equipped: true, threadRank: 2 }];
+  const isThread = (n) => n === 'Bracers of Aras';
+  assert.deepEqual(bumpQuantity(items, 'Bracers of Aras', 1, isThread), items);
+});
+
+test('bumpQuantity: never mutates the input list', () => {
+  const items = [{ name: 'Booster Potion', equipped: true, qty: 1 }];
+  const snapshot = JSON.parse(JSON.stringify(items));
+  bumpQuantity(items, 'Booster Potion', 1);
+  assert.deepEqual(items, snapshot);
+});
+
+test('unequipSpentCharms forwards a stack quantity (>1) untouched', () => {
+  const items = [
+    { name: 'Booster Potion', equipped: true, qty: 3 },
+    { name: 'Desperate Blow', equipped: true },
+  ];
+  assert.deepEqual(unequipSpentCharms(items, ['Desperate Blow']), [
+    { name: 'Booster Potion', equipped: true, qty: 3 },
+    { name: 'Desperate Blow', equipped: false },
+  ]);
+});

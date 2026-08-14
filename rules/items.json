@@ -7,7 +7,8 @@
     "shield": "Shields do NOT add to Armor — they raise Physical/Mystic DEFENSE (`defense-modifier`) and carry an Initiative penalty. `shatterThreshold` is display-only reference.",
     "weapon": "Weapons carry an `attack-modifier` on the attack's Damage step (target `attack`/`Damage`, `operation: add`, measure: step). Every category — melee, missile, and thrown — adds its Damage Step to the Strength-step base (EFFECT-TAXONOMY v3 §4.1; the base is the engine default, not stored here). STR/DEX minima, size, ranges, and entangle details are display-only in `ref`. Ammo rows from the missile table are separate `ammunition` entries.",
     "blood-charm": "Blood charms are activated items: their bonuses are `situational` typed effects (with `scope`), the one-time implant Blood Magic Damage is a `note` and is also captured as numeric `characteristic-modifier` effects (operation: subtract, measure: rating, `condition`: always) on the Death and Unconsciousness ratings — the engine folds these while the charm is equipped (it collects effects from equipped items only), so wearing the charm genuinely lowers the character's ratings. The Alchemy crafting difficulty (the rulebook's EDN) is display-only in `ref` as `craftingDifficultyNumber`.",
-    "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers; `craftingDifficultyNumber` (the Alchemy crafting difficulty, the rulebook's EDN) is display-only in `ref`.",
+    "healing-aid": "Healing aids grant one-shot bonuses encoded as `situational` test modifiers (ALWAYS `measure: step`, never `result` — owner decision, plans/PLAN-POTIONS.md); `craftingDifficultyNumber` (the Alchemy crafting difficulty, the rulebook's EDN) is display-only in `ref`.",
+    "consumable": "OPTIONAL marker (plans/PLAN-POTIONS.md) that makes an item drinkable/usable: `consumable.use` describes the one-shot behaviour — `armNextRoll` arms the item's Recovery `test-modifier` (measure: step) on the next Recovery test; `healWounds: N` heals N Wounds immediately; `emergencyHeal: { step }` arms a budget-free Recovery test at that step when drunk with 0 Recovery tests left; `{}` is consume-only (logged, no arm). Read by the Equipment/Combat Use button + engine/potions.js — it is NOT a taxonomy `effect` and is never engine-folded.",
     "magic-item": "Common magic items: numeric, always-relevant mechanics are typed effects; one-shot, non-numeric, or activated properties are `note` effects.",
     "gear": "Adventuring gear is mostly display-only (`effects: []`); kits record their contents in a `note`, and items with a specific game rule (e.g. Healing Kit +1 Recovery, chain/rope break tests) carry that rule as an effect.",
     "presentation": "PRESENTATION LAYER ONLY. Optional `presentation` object holds display strings for the UI and is never read by the engine — it carries no game mechanics. `shortEffect` is a 3-4 word label shown in the Equipment tile's right-hand space for note-type items; the authoritative rule always lives in `effects` (and its full `summary`). Items with a numeric effect derive their tile label in the view instead, so they carry no `shortEffect`."
@@ -3301,6 +3302,7 @@
         "craftingDifficultyNumber": 7,
         "description": "A potion that boosts the next Recovery test with a +8 bonus."
       },
+      "consumable": { "use": { "armNextRoll": true } },
       "effects": [
         {
           "type": "test-modifier",
@@ -3310,11 +3312,11 @@
           },
           "operation": "add",
           "value": 8,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "next Recovery test within 24 hours",
           "source": "item",
-          "summary": "+8 to the next Recovery test made within 24 hours."
+          "summary": "+8 steps to the next Recovery test made within 24 hours."
         }
       ]
     },
@@ -3327,6 +3329,7 @@
         "craftingDifficultyNumber": 11,
         "description": "A potion granting a fresh Resistance test against a disease."
       },
+      "consumable": { "use": {} },
       "effects": [
         {
           "type": "test-modifier",
@@ -3336,11 +3339,11 @@
           },
           "operation": "add",
           "value": 5,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "tests to resist disease, for 24 hours",
           "source": "item",
-          "summary": "+5 to any tests made to resist the effects of a disease for 24 hours."
+          "summary": "+5 steps to any tests made to resist the effects of a disease for 24 hours."
         },
         {
           "type": "note",
@@ -3359,6 +3362,7 @@
         "craftingDifficultyNumber": 8,
         "description": "A potion that halts a disease's progress for eight hours."
       },
+      "consumable": { "use": {} },
       "effects": [
         {
           "type": "note",
@@ -3381,6 +3385,7 @@
         "craftingDifficultyNumber": 12,
         "description": "A potion that heals a Wound and boosts the next Recovery test."
       },
+      "consumable": { "use": { "armNextRoll": true, "healWounds": 1, "emergencyHeal": { "step": 8 } } },
       "effects": [
         {
           "type": "test-modifier",
@@ -3390,11 +3395,11 @@
           },
           "operation": "add",
           "value": 8,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "next Recovery test within 24 hours",
           "source": "item",
-          "summary": "+8 to the next Recovery test made within 24 hours."
+          "summary": "+8 steps to the next Recovery test made within 24 hours."
         },
         {
           "type": "note",
@@ -3437,24 +3442,17 @@
       },
       "effects": [
         {
-          "type": "test-modifier",
-          "target": {
-            "domain": "test",
-            "name": "Action"
-          },
-          "operation": "add",
-          "value": 5,
-          "measure": "result",
+          "type": "note",
           "condition": "situational",
           "scope": "tests to resist poison",
           "source": "item",
-          "summary": "+5 to any tests made to resist the effects of poison."
+          "summary": "+5 to any tests made to resist the effects of poison (+3 instead of +5 if no wound exists to apply the poultice to)."
         },
         {
           "type": "note",
           "condition": "situational",
           "source": "item",
-          "summary": "Grants a new Resistance test. The bonus is +3 instead of +5 if no wound exists to apply the poultice to."
+          "summary": "Grants a new Resistance test against poison already suffered."
         }
       ]
     },

@@ -14,7 +14,9 @@
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
 import { pickItemKeys, PICKER_LABELS } from './picker.js';
-import { equipArmour, applyArmourSwap } from './item-equip-state.js';
+import { equipArmour, applyArmourSwap, bumpQuantity } from './item-equip-state.js';
+import { boostHasNoEffect } from '../engine/potions.js';
+import { recoveriesRemaining } from '../engine/health.js';
 import './ed-confirm.js';
 
 const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid', 'thread-item']);
@@ -90,6 +92,8 @@ export class EdEquipment extends LitElement {
   static properties = {
     model: { attribute: false },
     editMode: { attribute: false },
+    // Armed-potion session state from ed-app: { pending, potions } (data down).
+    arming: { attribute: false },
     // Custom-item manager modal inputs (data flows down from ed-app): the
     // branch-truth custom catalog, the pending `ed-custom-items` delta, and the
     // canon item names for the collision warning.
@@ -104,6 +108,7 @@ export class EdEquipment extends LitElement {
     _shownCoins: { state: true },     // coin keys pinned visible at 0 (edit mode)
     _customItemsOpen: { state: true }, // custom-item manager modal open
     _swapPrompt: { state: true },     // { name, via } — armour swap confirmation
+    _usePrompt: { state: true },      // item name — Use/Drink confirmation
   };
 
   constructor() {
@@ -116,6 +121,7 @@ export class EdEquipment extends LitElement {
     this._shownCoins = new Set();
     this._customItemsOpen = false;
     this._swapPrompt = null;
+    this._usePrompt = null;
     this._onKeydown = (e) => {
       if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
       else if (e.key === 'Escape' && this._addOpen) { e.stopPropagation(); this._closePicker(); }
@@ -250,6 +256,30 @@ export class EdEquipment extends LitElement {
     .del:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
     .empty { color: var(--muted); font-size: 0.78rem; padding: 3px 2px; }
 
+    /* Quantity: read mode shows a static ×N (only when >1); edit mode gives a
+       − N + stepper. Thread items are unique and get neither. */
+    .xn { font-size: 0.64rem; font-weight: 500; font-family: var(--mono); color: var(--muted); flex: 0 0 auto; }
+    .item.magic .xn { color: var(--arcane); }
+    .qty { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); flex: 0 0 auto; overflow: hidden; }
+    .qty button { font: inherit; font-size: 0.82rem; line-height: 1; border: none; background: none; color: var(--accent); cursor: pointer; width: 22px; height: 22px; }
+    .qty button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .qty .n { font-size: 0.68rem; font-weight: 500; font-family: var(--mono); min-width: 18px; text-align: center; color: var(--fg); }
+
+    /* Use / Drink a consumable — present in both read and edit mode. */
+    .use { font: inherit; font-size: 0.66rem; font-weight: 500; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 4px 11px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
+    .use:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Armed one-shot benefit (session-only): a dashed accent pill inside the
+       Charms & Consumables section. */
+    .pending { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 9px; background: var(--accent-bg); border: 1px dashed var(--accent); margin-top: 6px; }
+    .pending .pglyph { color: var(--accent); font-size: 0.85rem; }
+    .pending .ptxt { flex: 1; font-size: 0.74rem; color: var(--fg); }
+    .pending .ptxt b { color: var(--accent); font-weight: 500; }
+    .pending .proll { flex: 0 0 auto; font: inherit; font-size: 0.62rem; font-weight: 500; white-space: nowrap; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
+    .pending .proll:hover { background: var(--accent-bg); }
+    .pending .pclear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+    .pending .pclear:hover { color: var(--danger); }
+
     /* Wealth */
     .subh { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; margin: 2px 2px 6px; }
     .subh.arc { color: var(--arcane); }
@@ -329,6 +359,9 @@ export class EdEquipment extends LitElement {
     return (this.model?.items ?? []).map((it) => ({
       name: it.name,
       equipped: it.equipped,
+      // Quantity is an input; carry it through every equip/toggle/rank reshape so
+      // a stack is never silently reset to 1. Default (1) stays implicit.
+      ...(it.qty > 1 ? { qty: it.qty } : {}),
       ...(it.thread ? { threadRank: it.thread.threadRank } : {}),
     }));
   }
@@ -361,9 +394,29 @@ export class EdEquipment extends LitElement {
     }
     this._commitItems(r.items);
   }
+  // Thread items are unique (their own catalogue / a woven `thread` block) and
+  // never carry a quantity.
+  _isThread(name) {
+    return !!(
+      this.model?.items?.find((i) => i.name === name)?.thread ||
+      this.model?.threadItemCatalog?.[name]
+    );
+  }
   _add(name) {
-    if (!name || this._inputs().some((i) => i.name === name)) return;
+    if (!name) return;
+    if (this._inputs().some((i) => i.name === name)) {
+      // A duplicate pick of an already-owned item increments its quantity —
+      // except thread items, which stay a unique no-op.
+      if (this._isThread(name)) return;
+      this._commitItems(bumpQuantity(this._inputs(), name, +1, (n) => this._isThread(n)));
+      return;
+    }
     this._equip(name, 'add');
+  }
+  // The row stepper (edit mode) nudges a quantity up or down; -1 on the last dose
+  // removes the entry (item-equip-state.bumpQuantity).
+  _bumpQty(name, delta) {
+    this._commitItems(bumpQuantity(this._inputs(), name, delta, (n) => this._isThread(n)));
   }
   _remove(name) {
     this._commitItems(this._inputs().filter((i) => i.name !== name));
@@ -485,6 +538,23 @@ export class EdEquipment extends LitElement {
               html`<option value=${r}>${r === 0 ? 'No thread' : `Thread ${r}`}</option>`)}
           </select>`
       : '';
+    // Quantity is unique-free: thread items never carry it. Read mode shows a
+    // static ×N (only when a stack), edit mode gives the − N + stepper.
+    const qty = it.qty ?? 1;
+    const qtyRead = !thread && !this.editMode && qty > 1
+      ? html`<span class="xn">×${qty}</span>`
+      : '';
+    const qtyStepper = !thread && this.editMode
+      ? html`<span class="qty">
+          <button aria-label="Decrease ${it.name} quantity" title="Remove one" @click=${() => this._bumpQty(it.name, -1)}>−</button>
+          <span class="n" aria-label="${it.name} quantity">${qty}</span>
+          <button aria-label="Increase ${it.name} quantity" title="Add one" @click=${() => this._bumpQty(it.name, 1)}>+</button>
+        </span>`
+      : '';
+    // Use / Drink — present in both read and edit mode on a consumable row.
+    const useBtn = it.consumable
+      ? html`<button class="use" title="Drink one ${it.name}" @click=${() => this._askUse(it.name)}>Use / Drink</button>`
+      : '';
     return html`
       <div class=${cls}>
         <button class="iteminfo" @click=${() => (this._modal = it.name)} title="View ${it.name} details">
@@ -494,6 +564,7 @@ export class EdEquipment extends LitElement {
         ${eff
           ? html`<span class="quiet">${eff.text != null ? eff.text : html`${eff.label} <b>${eff.val}</b>`}</span>`
           : ''}
+        ${qtyRead}${qtyStepper}${useBtn}
         ${this.editMode
           ? html`
               ${rankSelect}
@@ -508,6 +579,102 @@ export class EdEquipment extends LitElement {
             : html`<span class="statechip">Stored</span>`}
       </div>
     `;
+  }
+
+  // --- consumable Use/Drink + pending pill ---------------------------------
+  // The armed one-shot benefit from ed-app (session-only). Rendered as a dashed
+  // pill in the Charms & Consumables section — it lives even after the last dose
+  // is drunk (the item may be gone but the benefit is armed).
+  _pending() {
+    return this.arming?.pending ?? null;
+  }
+  _pendingText(p) {
+    if (!p) return '';
+    if (p.kind === 'emergency-heal') return html`${p.name} — <b>Heal only (Step ${p.step})</b>`;
+    return html`${p.name} — <b>next Recovery +${p.value} step</b>`;
+  }
+  _pendingPill() {
+    const p = this._pending();
+    if (!p) return '';
+    const emergency = p.kind === 'emergency-heal';
+    return html`<div class="pending">
+      <span class="pglyph" aria-hidden="true">✧</span>
+      <span class="ptxt">${this._pendingText(p)}</span>
+      ${emergency
+        ? html`<button class="proll" title="Roll the Step ${p.step} heal — no Recovery test used" aria-label="Roll emergency heal"
+            @click=${() => this._rollEmergency(p)}>⚄ Roll</button>`
+        : ''}
+      <button class="pclear" aria-label="Clear pending ${p.name}" title="Clear"
+        @click=${() => this.dispatchEvent(new CustomEvent('ed-clear-pending-use', { bubbles: true, composed: true }))}>✕</button>
+    </div>`;
+  }
+  // Trigger the budget-free emergency heal from the pending pill (mirrors the
+  // Overview Active Effects row) — ed-app applies it with no Recovery test used.
+  _rollEmergency(p) {
+    this.dispatchEvent(new CustomEvent('ed-roll', {
+      detail: {
+        label: `${p.name} — emergency heal`,
+        step: p.step,
+        apply: { action: 'emergency-recovery-heal', label: 'Heal this amount' },
+      },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+  // Open the Drink confirmation. Escape/Enter handled by ed-confirm.
+  _askUse(name) {
+    this._usePrompt = name;
+  }
+  _closeUse() {
+    this.renderRoot.activeElement?.blur();
+    this._usePrompt = null;
+  }
+  _confirmUse() {
+    const name = this._usePrompt;
+    this._closeUse();
+    if (name) this.dispatchEvent(new CustomEvent('ed-use-potion', { detail: { name }, bubbles: true, composed: true }));
+  }
+  // The confirm dialog's warning state: (a) already-armed → block the drink;
+  // (b) Healing Potion with nothing to heal → still spends the dose.
+  _useModal() {
+    const name = this._usePrompt;
+    if (!name) return '';
+    const it = this.model?.items?.find((i) => i.name === name);
+    const use = this.model?.itemCatalog?.[name]?.consumable?.use ?? {};
+    const pending = this._pending();
+    const willArm = !!(use.armNextRoll || use.emergencyHeal);
+    const alreadyArmed = willArm && !!pending;
+    const health = this.model?.resources?.health ?? {};
+    const wounds = Number(health.wounds) || 0;
+    const damage = Number(health.damage) || 0;
+    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(health.recoveriesUsed, maxRec);
+    const nothingToHeal = !!use.healWounds && wounds <= 0 && damage <= 0;
+    const noEffectBoost = boostHasNoEffect(use, remaining);
+    // A Healing-style aid drunk at 0 remaining arms the emergency Step heal.
+    const emergencyDrink = !!use.emergencyHeal && remaining === 0 && !nothingToHeal;
+    // Hard block — the drink is refused — when it is already armed or a pure
+    // boost with no Recovery test to use. A nothing-to-heal drink is a soft warn.
+    const blocked = alreadyArmed || noEffectBoost;
+    const warn = alreadyArmed
+      ? 'A Recovery boost is already pending — use or clear it first. Potions don’t stack.'
+      : noEffectBoost
+        ? 'No Recovery tests left today — there is nothing to boost, so this potion would have no effect. Drinking it is blocked.'
+        : emergencyDrink
+          ? `No Recovery tests left — this heals a Wound now and arms an immediate Step ${use.emergencyHeal.step} heal (no Recovery test used). Roll it from the pending pill or Active Effects.`
+          : nothingToHeal
+            ? 'No Wound and no damage to heal — the heal does nothing, but the dose will still be spent.'
+            : '';
+    return html`<ed-confirm
+      tone="accent"
+      heading="Drink ${name}?"
+      message=${`Consumes one dose of ${name}${it && (it.qty ?? 1) > 1 ? ` (×${it.qty} → ×${it.qty - 1})` : ''}.`}
+      warn=${warn}
+      ?disabled=${blocked}
+      confirmLabel="Drink"
+      @confirm=${this._confirmUse}
+      @close=${this._closeUse}
+    ></ed-confirm>`;
   }
 
   // The carried-weight banner: the engine's total (every owned item) judged
@@ -541,10 +708,14 @@ export class EdEquipment extends LitElement {
     const rows = items.filter((it) => sec.kinds.includes(it.kind));
     // Equipped items first (in their existing order), stored items last.
     const ordered = [...rows.filter((it) => it.equipped), ...rows.filter((it) => !it.equipped)];
+    // The armed one-shot benefit lives in the consumables section (healing aids),
+    // even after the last dose is drunk (item gone, benefit still armed).
+    const showPending = sec.kinds.includes('healing-aid') && this._pending();
     return html`
       <div class="blk">
         <h4><span class="glyph">${sec.glyph}</span>${sec.title}<span class="ct">${rows.length}</span>${rows.length ? html`<span class="total">${grp(secWeight(rows))} lb</span>` : ''}</h4>
         ${ordered.length ? ordered.map((it) => this._itemRow(it)) : html`<div class="empty">— nothing here —</div>`}
+        ${showPending ? this._pendingPill() : ''}
       </div>
     `;
   }
@@ -763,6 +934,8 @@ export class EdEquipment extends LitElement {
       ${modalItem ? this._detailModal(modalItem) : ''}
 
       ${this._swapModal()}
+
+      ${this._useModal()}
 
       ${this._customItemsOpen
         ? html`<ed-custom-item

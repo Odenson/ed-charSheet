@@ -2,6 +2,7 @@
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
+import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
 import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../store-server.js';
@@ -59,6 +60,11 @@ export class EdApp extends LitElement {
     _noSelection: { state: true },
     _conflict: { state: true },
     _settings: { state: true }, // Settings modal open?
+    // Session-only armed-potion state (dies on reload). At most ONE armed
+    // recovery entry (no stacking); never persisted (store-only-inputs), same
+    // ephemeral contract as the Combat scratchpad. Cleared on character switch,
+    // manual clear, a successful roll, and the new-day recovery reset.
+    _pendingUse: { state: true },
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -197,7 +203,7 @@ export class EdApp extends LitElement {
     // Autosave prefs (localStorage): on by default, 60s idle interval. Off = pure
     // manual save (the always-visible Save icon). The idle timer coalesces a lull
     // in edits into one background save; a max-wait cap bounds continuous activity;
-    // and visibilitychange/pagehide flush on leaving. See docs/PLAN-SAVE-VISIBILITY.
+    // and visibilitychange/pagehide flush on leaving. See plans/PLAN-SAVE-VISIBILITY.
     this._autosaveEnabled = localStorage.getItem('ed-autosave') !== 'off';
     const secs = Number(localStorage.getItem('ed-autosave-seconds'));
     this._autosaveSeconds = Number.isFinite(secs) && secs >= 10 ? secs : 60;
@@ -216,7 +222,13 @@ export class EdApp extends LitElement {
     window.addEventListener('pagehide', this._onPageHide);
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
-      const { label, step, karma, apply, kind, difficulty } = e.detail;
+      const { label, karma, apply, kind, difficulty } = e.detail;
+      // A recovery roll made while a step-boost is armed rolls at the bumped step
+      // (Booster/Healing +8) — the dice and the log then show the boosted step.
+      // The +N comes from the armed potion's catalog data, never a view literal.
+      let step = e.detail.step;
+      const recBonus = armedRecoveryBonus(this._pendingUse);
+      if (apply?.action === 'recovery-heal' && recBonus.stepBonus) step += recBonus.stepBonus;
       const stepRow = this._model?.stepByNumber?.[step];
       if (!stepRow) return;
       // Resolve the Karma die's step row (D6) so the modal can offer +D6.
@@ -294,7 +306,23 @@ export class EdApp extends LitElement {
           return;
         }
         this._editHealth(applyHealth(health, { damage: -result, recoveriesUsed: 1 }));
+        // The armed step-boost is spent once the recovery roll actually lands —
+        // it survives a refused roll (the 0-remaining guard returns above before
+        // the heal), matching "stays until rolled AND recorded".
+        if (this._pendingUse?.kind === 'step-boost') this._pendingUse = null;
         this._roll = null; // button-driven: apply and close
+      } else if (action === 'emergency-recovery-heal') {
+        // The Healing Potion emergency: an immediate, budget-free Recovery test —
+        // heal by the result with NO recoveriesUsed increment. Fail closed if no
+        // emergency is armed, so a stale modal can never grant a free heal.
+        if (this._pendingUse?.kind !== 'emergency-heal') {
+          this._roll = null;
+          return;
+        }
+        const health = this._character?.resources?.health ?? {};
+        this._editHealth(applyHealth(health, { damage: -result }));
+        this._pendingUse = null;
+        this._roll = null;
       } else if (action === 'knockdown-result') {
         // A Knockdown test resolves itself at roll time — no verify button: a
         // failed test knocks the character down. The big hit's damage and any
@@ -309,6 +337,10 @@ export class EdApp extends LitElement {
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
+    // Drink/Use a consumable potion (Equipment or Combat). Clear an armed one-shot
+    // benefit (the pending pill's ✕).
+    this.addEventListener('ed-use-potion', (e) => this._usePotion(e.detail?.name));
+    this.addEventListener('ed-clear-pending-use', () => { this._pendingUse = null; });
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     // A roll spent Karma (the shared roll modal, so this fires for ANY tab's
@@ -396,6 +428,9 @@ export class EdApp extends LitElement {
       this._character = character;
       this._rules = rules;
       this._model = deriveModel(character, rules);
+      // A character switch starts with no armed potion (session state is per
+      // character and never persisted).
+      this._pendingUse = null;
       this._baseSha = base;
       this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
       this._picker = false;
@@ -436,6 +471,60 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
+  // Drink/Use a consumable potion (plans/PLAN-POTIONS.md). The engine decides what
+  // the consume does from the catalog; ed-app owns the persistence + session arm.
+  // Always: decrement one dose (removes the entry at 0) + log the consume — even
+  // a no-effect one. Then apply any immediate wound heal and arm the one-shot
+  // recovery benefit. No stacking: a second arm is blocked while one is pending.
+  _usePotion(name) {
+    if (!this._character || !name) return;
+    const model = this._model;
+    const item = model?.items?.find((i) => i.name === name);
+    if (!item || !item.consumable || (item.qty ?? 1) < 1) return;
+    const entry = model?.itemCatalog?.[name] ?? null;
+    if (!entry) return;
+    const health = this._character.resources?.health ?? {};
+    const maxRec = model?.characteristics?.recoveries?.value ?? null;
+    const remaining = recoveriesRemaining(health.recoveriesUsed, maxRec);
+    const armed = armPotion({ name, entry, recoveriesRemaining: remaining });
+    // No stacking — block a second arm while one is pending (the UI also disables
+    // the confirm; this is the fail-safe if a stale view slips one through).
+    if (armed && this._pendingUse) {
+      this._showNotice('A Recovery boost is already pending — use or clear it before drinking another potion.');
+      return;
+    }
+    // Hard block — a pure step-boost with no Recovery test to use has no effect,
+    // so refuse the drink entirely (the dose is not spent). The UI disables the
+    // confirm; this is the fail-safe.
+    if (boostHasNoEffect(entry.consumable?.use, remaining)) {
+      this._showNotice('No Recovery tests left today — that potion would have no effect, so it was not used.');
+      return;
+    }
+    // Always spend the dose + log, whether or not it did anything.
+    this._editItems(consumePotion({ items: this._character.items ?? [], name }));
+    saveRollLog({ rollId: uid(), at: new Date().toISOString(), kind: 'action', label: `Drink ${name}` }, this._characterId);
+    // Immediate wound heal (Healing Potion), only when there IS a Wound to heal —
+    // otherwise the dose is still spent (the confirm dialog warned).
+    const heal = immediateWoundHeal(entry);
+    const wounds = Number(this._character.resources?.health?.wounds) || 0;
+    if (heal > 0 && wounds > 0) {
+      this._editHealth(applyHealth(this._character.resources?.health ?? {}, { wounds: -heal }));
+    }
+    // Arm the one-shot benefit (null for a consume-only aid).
+    if (armed) this._pendingUse = armed;
+  }
+
+  // The curated arming state passed down to the tabs: the single pending entry
+  // and the owned consumable potions (equipped or stored) with their quantity.
+  _arming() {
+    return {
+      pending: this._pendingUse ?? null,
+      potions: (this._model?.items ?? [])
+        .filter((it) => it.consumable)
+        .map((it) => ({ name: it.name, qty: it.qty ?? 1, equipped: it.equipped })),
+    };
+  }
+
   // A view changed the character's wealth (coin counts / gems). Same inputs-only
   // flow: replace the wealth input, persist the overlay, mark the file dirty, and
   // re-derive so the totals recompute (data flows down).
@@ -456,7 +545,11 @@ export class EdApp extends LitElement {
   // replace the recorded damage/wounds on the next replay.
   _editHealth(health) {
     if (!this._character || !health) return;
+    const prevUsed = Number(this._character.resources?.health?.recoveriesUsed) || 0;
     const merged = { ...(this._character.resources?.health || {}), ...health };
+    // New-day reset: recoveries drop from used back to 0 — the armed potion boost
+    // expires with the day (an incidental 0→0 wound-heal must not clear it).
+    if (prevUsed > 0 && (Number(merged.recoveriesUsed) || 0) === 0) this._pendingUse = null;
     this._character = {
       ...this._character,
       resources: {
@@ -469,7 +562,7 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
-  // The Karma ledger (docs/PLAN-LEGEND-KARMA-RITUAL-LOG.md): the stored inputs are
+  // The Karma ledger (plans/PLAN-LEGEND-KARMA-RITUAL-LOG.md): the stored inputs are
   // `resources.karma.converted` (lifetime Karma gained) and `spent` (lifetime Karma
   // spent rolling dice); the spendable pool `available` is DERIVED
   // (`clamp(converted − spent, 0, max)`) and never written. Every branch below is an
@@ -487,7 +580,7 @@ export class EdApp extends LitElement {
       Number.isFinite(max) && max != null ? Math.max(0, Math.min(max, converted - spent)) : null;
     let nextKarma;
     if (detail?.ritual) {
-      // Paid Karma Ritual (homebrew Karma economy, docs/PLAN-HOMEBREW-KARMA.md): buy N
+      // Paid Karma Ritual (homebrew Karma economy, plans/PLAN-HOMEBREW-KARMA.md): buy N
       // Karma for N × race cost Legend. Clamp defensively to the room under max and to
       // what Legend affords, so available Legend can never go negative even if the
       // caller over-asks. The spend is a dated, undoable log event; the Legend sink is
@@ -973,7 +1066,7 @@ export class EdApp extends LitElement {
     const m = this._model;
     switch (this._tab) {
       case 'overview':
-        return html`<ed-overview .model=${m} .editMode=${this._editMode}></ed-overview>`;
+        return html`<ed-overview .model=${m} .editMode=${this._editMode} .arming=${this._arming()}></ed-overview>`;
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
@@ -982,6 +1075,7 @@ export class EdApp extends LitElement {
         return html`<ed-equipment
           .model=${m}
           .editMode=${this._editMode}
+          .arming=${this._arming()}
           .customCommitted=${m.customCommittedCatalog}
           .customOverlay=${loadCustomEdits()}
           .customCanonKeys=${m.customCanonKeys}
@@ -991,6 +1085,7 @@ export class EdApp extends LitElement {
           .model=${m}
           .editMode=${this._editMode}
           .characterId=${this._characterId}
+          .arming=${this._arming()}
         ></ed-combat>`;
       case 'notes':
         return html`<ed-notes
