@@ -30,6 +30,7 @@ import {
   KARMA_STEP,
   karmaUse,
   talentKarmaUse,
+  collapseByTarget,
 } from './engine/characteristics.js';
 import { carriedWeight, parseWeight } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
@@ -644,6 +645,18 @@ export function deriveModel(character, rules) {
       living: false,
       ref: ref?.ref ?? {},
       effects: [...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])],
+      // The weave collapsed to its currently-in-force survivors, per fold target
+      // (engine/characteristics.js collapseByTarget): rank effects that share a
+      // target with `stacking: "replace"` keep only the last (Orc Stinger rank 4
+      // → Damage +7 AND Attack +2, never the accumulated +5/+6/+1/+7/+2). The
+      // Equipment modal renders THESE; the static/combat folds consume the full
+      // `effects` list the same way the engine already does.
+      currentEffects: collapseByTarget([...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])]),
+      // Item-scoped combat/action option bundles (rules/thread-items.json
+      // `combatOptions`): offered on the Combat tab only while this item is the
+      // selected weapon. Same bundle shape as rules/combat.json options; the
+      // model carries them through so the Combat tab never reads the rules file.
+      combatOptions: ref?.combatOptions ?? [],
       presentation: {},
       // The parsed carried weight in pounds (engine/weight.js), for the per-section
       // totals. Derived, never stored.
@@ -1076,16 +1089,42 @@ export function deriveModel(character, rules) {
       };
     }),
     equippedWeapons: items
-      .filter((it) => it.equipped && it.kind === 'weapon')
-      .map((it) => ({
-        name: it.name,
-        known: it.known,
-        category: it.ref?.category ?? null,
-        damageStep: it.ref?.damageStep ?? null,
-        shortRange: it.ref?.shortRange ?? null,
-        longRange: it.ref?.longRange ?? null,
-        image: it.ref?.image ?? null,
-      })),
+      .filter((it) => it.equipped && (it.kind === 'weapon' || (it.thread && it.ref?.category)))
+      .map((it) => {
+        // A thread weapon's Damage step comes from the woven effects carried on
+        // the item itself: the base sets the step and each woven rank replaces
+        // it (stacking: "replace" with the new set value, in ascending order).
+        // Fall back to the reference damageStep for plain weapons.
+        let damageStep = it.ref?.damageStep ?? null;
+        if (it.thread) {
+          for (const e of it.effects ?? []) {
+            if (
+              e.type === 'attack-modifier' &&
+              e.target?.domain === 'attack' &&
+              e.target?.name === 'Damage' &&
+              e.measure === 'step' &&
+              e.operation === 'add' &&
+              e.stacking === 'replace'
+            ) {
+              damageStep = e.value;
+            }
+          }
+        }
+        return {
+          name: it.name,
+          known: it.known,
+          category: it.ref?.category ?? null,
+          damageStep,
+          shortRange: it.ref?.shortRange ?? null,
+          longRange: it.ref?.longRange ?? null,
+          image: it.ref?.image ?? null,
+          combatOptions: it.combatOptions ?? [],
+          // The weapon's own effects ride along so the Combat tab can fold its
+          // always-on woven test modifiers into the roll pool (engine/combat.js
+          // `collectCombatEffects` collapses them per target).
+          effects: it.effects ?? [],
+        };
+      }),
     strengthStep: strStep,
     conditions: {
       knockedDown: character.resources?.health?.knockedDown === true,

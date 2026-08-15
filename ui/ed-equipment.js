@@ -70,7 +70,7 @@ const deriveTileEffect = (effects) => {
 };
 const tileEffect = (it) => {
   const short = it?.presentation?.shortEffect;
-  return short ? { text: short } : deriveTileEffect(it?.effects);
+  return short ? { text: short } : deriveTileEffect(it?.currentEffects ?? it?.effects);
 };
 
 // Modal presentation-only formatters. The detail modal renders four zones in a
@@ -533,9 +533,9 @@ export class EdEquipment extends LitElement {
     const thread = it.thread;
     const rankSelect = thread
       ? html`<select class="eq rank" aria-label="Woven thread rank for ${it.name}"
-            .value=${String(thread.threadRank ?? 0)} @change=${(e) => this._setThreadRank(it.name, Number(e.target.value))}>
+            @change=${(e) => this._setThreadRank(it.name, Number(e.target.value))}>
             ${[0, ...thread.threadRanks.map((r) => r.rank)].map((r) =>
-              html`<option value=${r}>${r === 0 ? 'No thread' : `Thread ${r}`}</option>`)}
+              html`<option value=${r} ?selected=${r === (thread.threadRank ?? 0)}>${r === 0 ? 'No thread' : `Thread ${r}`}</option>`)}
           </select>`
       : '';
     // Quantity is unique-free: thread items never carry it. Read mode shows a
@@ -818,7 +818,14 @@ export class EdEquipment extends LitElement {
       ref.shatterThreshold != null ? { v: `Shatter ${ref.shatterThreshold}` } : null,
       ref.craftingDifficultyNumber != null ? { v: `Craft DN ${ref.craftingDifficultyNumber}` } : null,
     ].filter(Boolean);
-    const effects = it.known ? (it.effects ?? []).filter((e) => e.summary) : [];
+    // Current (weave-collapsed) effects for the chips/paragraph: a thread
+    // item's rank effects share targets with stacking:"replace", so the modal
+    // must show the surviving set — Orc Stinger rank 4 → Damage +7 & Attack +2,
+    // not the accumulated +5/+6/+1/+7/+2. The store exposes `currentEffects`
+    // (engine/characteristics.js collapseByTarget); plain items fall back to
+    // their full `effects`. The per-rank reference zone below lists every rank
+    // verbatim, so nothing is lost.
+    const effects = it.known ? ((it.currentEffects ?? it.effects) ?? []).filter((e) => e.summary) : [];
     const always = (e) => (e.condition ?? 'always') !== 'situational';
     // ② Main-effect chips — always-on numeric modifiers as a short `Label ±N`
     // quick-read; their full wording also lands in the summary paragraph below.

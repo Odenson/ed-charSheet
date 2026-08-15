@@ -242,6 +242,32 @@ test('collectCombatEffects: armor-modifier effects collect as armorMods, never t
   assert.ok(!r.damageEffects.includes(charm.effects[0]), 'armor mods never enter a pool');
 });
 
+test('collectCombatEffects: the selected weapon folds its woven always-on test modifiers', () => {
+  // Orc Stinger at Thread Rank 4: the weave carries BOTH rank 2's +1 and rank
+  // 4's +2 to Attack tests as STEP bonuses. The thread weave is stacking:"replace"
+  // — rank 4 must supersede rank 2, never sum (+3): the Attack step rises by
+  // exactly +2. The weave's Damage-step attack-modifier does NOT (it already
+  // rides equippedWeapons.damageStep; feeding it twice would double-count).
+  const weaponEffects = [
+    { type: 'attack-modifier', target: { domain: 'attack', name: 'Damage' }, operation: 'add', value: 5, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: 'base 5' },
+    { type: 'attack-modifier', target: { domain: 'attack', name: 'Damage' }, operation: 'add', value: 7, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: 'rank 3, replaces to 7' },
+    { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 1, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+1 to Attack tests.' },
+    { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+2 to Attack tests.' },
+  ];
+  const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: weaponEffects, rules: RULES, conditions: {} });
+  const ap = attackPool({ talentStep: TALENT, effects: r.attackEffects });
+  // +2 replaces +1 → the Attack step rises by exactly 2 (never +3).
+  assert.equal(ap.step, TALENT + 2);
+  assert.deepEqual(ap.resultMods, [], 'step-measure weave folds into step, not flat mods');
+  assert.equal(ap.strain, 0);
+  // The Damage attack-modifier must not leak into the damage pool (it already
+  // rides weaponDamageStep downstream).
+  assert.ok(!r.damageEffects.some((e) => e.type === 'attack-modifier'), 'attachment attack-modifier damage step stays out of the fold');
+  // A fresh weapon with no woven effects folds nothing.
+  const none = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: [], rules: RULES, conditions: {} });
+  assert.equal(none.attackEffects.length, 0);
+});
+
 // --- foldCombatRatings (Overview-style live Defence & Armour figure) ---
 
 test('foldCombatRatings: folds toggled mods onto the derived base for display', () => {

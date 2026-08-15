@@ -157,3 +157,47 @@ test('combatRules exposes the rule bundles the chips render from (ed-combat/1)',
   assert.equal(harried.mapsToCondition, 'harried');
   assert.ok(harried.effects.some((e) => e.type === 'test-modifier'));
 });
+
+test('a woven thread weapon joins equippedWeapons with folded damage step', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Orc Stinger', equipped: true, threadRank: 3 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  const weapon = modelC.combat.equippedWeapons.find((w) => w.name === 'Orc Stinger');
+  assert.ok(weapon, 'Orc Stinger should appear as an equipped weapon');
+  assert.equal(weapon.category, 'missile');
+  // Damage step = the woven attack-modifier (rank 3 replaces base 5) → 7.
+  assert.equal(weapon.damageStep, 7);
+  assert.equal(weapon.shortRange, '2-30');
+  assert.equal(weapon.longRange, '31-60');
+  // The item-scoped option rides along for the Combat tab to render.
+  assert.ok(Array.isArray(weapon.combatOptions) && weapon.combatOptions.length === 1);
+  assert.equal(weapon.combatOptions[0].name, 'Double Bolt');
+});
+
+test('a woven thread weapon carries its effects so the pool can fold rank test-modifiers', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Orc Stinger', equipped: true, threadRank: 4 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  const weapon = modelC.combat.equippedWeapons.find((w) => w.name === 'Orc Stinger');
+  // The weave at rank 4: +1 (rank 2) and +2 (rank 4) Attack step test
+  // modifiers — both ride on equippedWeapons.effects; engine/combat.js collapses
+  // them (replace → only +2 folds, never +3), so the Attack step rises +2.
+  const attackMods = (weapon.effects ?? []).filter((e) => e.type === 'test-modifier' && e.target?.name === 'Attack');
+  assert.equal(attackMods.length, 2);
+  assert.equal(attackMods[1].measure, 'step');
+  assert.equal(weapon.damageStep, 7);
+});
+
+test('a thread item with no ref.category stays out of equippedWeapons', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Bracers of Aras', equipped: true, threadRank: 1 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  const names = modelC.combat.equippedWeapons.map((w) => w.name);
+  assert.ok(!names.includes('Bracers of Aras'), 'non-weapon thread items are not weapons');
+});

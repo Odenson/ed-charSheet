@@ -8,12 +8,16 @@
     "Test bonuses/penalties are test-modifier on test/Attack, test/Damage, or test/Action with measure:\"step\" (they change the dice Step) — except the Knocked Down Action penalty, which is measure:\"result\" to match engine/health.js KNOCKED_DOWN_EFFECT.",
     "defense-modifier effects are Physical & Mystic only; Social Defence applies at the gamemaster's discretion (Situation Modifiers Table footnote). In the Combat tab these are informational only (PLAN-COMBAT-TAB.md B7): they are shown as 'derived Defence + toggled mods' and are never dispatched into the always-on derived defence.",
     "note-type entries carry rules that have no machine-applicable taxonomy encoding (Full Cover 'unhittable', Surprised 'no tests allowed', Stun/Knockdown damage subtypes, movement maneuvers) — display-only riders.",
-    "excludes lists mutually-exclusive options (Aggressive Attack <-> Defensive Stance, PG p.382). mapsToCondition marks a situation the sheet already tracks (Knocked Down, encumbrance Harried); the tab pre-selects and locks those chips from the model so their effects are not double-counted."
+    "excludes lists mutually-exclusive options (Aggressive Attack <-> Defensive Stance, PG p.382). mapsToCondition marks a situation the sheet already tracks (Knocked Down, encumbrance Harried); the tab pre-selects and locks those chips from the model so their effects are not double-counted.",
+    "appliesTo scopes an option to the attack types that may use it, using the engine's weapon-category tags (melee, missile, throwing, unarmed). Absent = available to any attack pick. The Combat tab hides a scoped option unless the selected weapon's category — or, for the 'None' weapon, the mapped category of the selected attack talent, e.g. Unarmed Combat → unarmed — is in its list. Source: close-combat options (Aggressive Attack, Attacking to Knockdown/Stun, Shattering a Shield) require a close combat Attack test, PG p.382-385; Setting Against a Charge needs a melee weapon long enough to reach past the mount's fore section, PG p.385.",
+    "restricted likewise gates an option to a race: its value is the exact rules/races.json race name (e.g. \"T'skrang\") and the tab hides the option unless the character's meta.race matches (Tail Attack, PG p.382).",
+    "In addition to these global options, a single thread weapon may carry its own item-scoped option bundles (rules/thread-items.json item `combatOptions`, e.g. the custom Orc Stinger's Double Bolt) — same bundle shape, rendered and folded by the Combat tab only while that weapon is selected (docs/THREAD-ITEMS.md §4.1)."
   ],
 
   "options": [
     {
       "name": "Aggressive Attack",
+      "appliesTo": ["melee", "unarmed"],
       "excludes": ["Defensive Stance"],
       "summary": "+3 to Attack and Damage tests; −3 Physical & Mystic Defence; 1 Strain per attack.",
       "effects": [
@@ -26,6 +30,7 @@
     },
     {
       "name": "Attacking to Knockdown",
+      "appliesTo": ["melee", "unarmed"],
       "summary": "Possibly knocks the opponent down; inflicts no real damage.",
       "effects": [
         { "type": "note", "source": "condition", "summary": "The attack may knock the opponent down but inflicts no real damage (PG p.383). Resolution is opponent-side; the sheet tracks no opponent, so this is a display-only rider." }
@@ -33,6 +38,7 @@
     },
     {
       "name": "Attacking to Stun",
+      "appliesTo": ["melee", "unarmed"],
       "summary": "The Damage test inflicts Stun damage.",
       "effects": [
         { "type": "note", "source": "condition", "summary": "The Damage test inflicts Stun damage — a damage subtype the sheet does not track separately (PG p.383)." }
@@ -66,6 +72,7 @@
     },
     {
       "name": "Setting Against a Charge",
+      "appliesTo": ["melee"],
       "summary": "Unhorse a charging opponent.",
       "effects": [
         { "type": "note", "source": "condition", "summary": "Lets the character unhorse a charging mounted opponent; may be combined with Defensive Stance and Attacking to Knockdown (PG p.385)." }
@@ -73,6 +80,7 @@
     },
     {
       "name": "Shattering a Shield",
+      "appliesTo": ["melee", "unarmed"],
       "summary": "Break the opponent's shield; 1 Strain.",
       "effects": [
         { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
@@ -89,7 +97,7 @@
     },
     {
       "name": "Tail Attack",
-      "restricted": "t'skrang",
+      "restricted": "T'skrang",
       "summary": "t'skrang only: an extra Unarmed Combat attack this round at −2 to all tests.",
       "effects": [
         { "type": "note", "source": "condition", "summary": "t'skrang racial ability: make one additional Unarmed Combat attack this round at −2 to all tests. The extra attack is rolled separately, so it is a display-only rider in v1." }

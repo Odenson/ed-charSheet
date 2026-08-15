@@ -65,6 +65,7 @@ The engine never reads them.
 | `legendary` | no | no | `true` flags a legendary item (same shape, usually more ranks/deeds). Display-only. |
 | `rankLimit` | no | no | Entry-level override of the tier's typical max ranks. Display-only. |
 | `base` | yes | **yes** | `{ "effects": [] }` — the item's state with **no thread woven**. Most items are mundane until threaded; `[]` means "nothing until threaded". |
+| `combatOptions` | no | **yes** | Item-scoped combat/action option bundles offered on the **Combat tab while this item is the selected weapon** — same bundle shape as `rules/combat.json` options (§4.1). |
 | `ref` | no | no | Source page + flavour description for the detail modal. Display-only. |
 | `threadRanks` | yes | **yes** | Ordered rank entries (§4); the rank-gated effect source. |
 
@@ -117,6 +118,74 @@ the UI renders. It emits **two** things with different fates:
 The `thread` block deliberately mirrors catalogue data rather than *being* the
 catalogue — the UI never re-derives; it reads what the store resolved.
 
+`resolveThreadItem` carries a third value through: **`combatOptions`**
+(`ref.combatOptions ?? []`). It is engine-read on the Combat tab only (§4.1).
+
+---
+
+### 4.1 Item-scoped combat options (weapon abilities)
+
+**Pattern (user-defined, non-rulebook constraint):** a thread weapon may ship its
+own combat `options`-style bundles — e.g. the custom *Orc Stinger* crossbow's
+**Double Bolt**: "+2 to the Damage test, 1 Strain, reload takes a whole round."
+
+The bundle shape is **identical** to a `rules/combat.json` option
+(effects in taxonomy vocabulary): the engine and the chip renderer need zero
+new logic. Delivery differs:
+
+| Mechanism | Where the bundle lives | Availability |
+|---|---|---|
+| `enable-option` (taxonomy) | an item's *effect* points at a **global** option in `rules/combat.json` by name (Tail Attack, races) | always, once enabled |
+| Global option | `rules/combat.json` `options[]` | every combat session |
+| **`combatOptions`** | the **item entry itself** (`items.<name>.combatOptions[]`) | **only while this item is the selected weapon** |
+
+**How it reaches a roll:** `equippedWeapons` carries `combatOptions` through to
+the model; the Combat tab merges them into the option list it renders
+(`_allOptions()` = selected weapon's `combatOptions` + `model.combatRules.options`),
+and feeds the merged list to `collectCombatEffects` exactly as if they were
+global options — the engine's name-lookup sees both. A toggled bundle name that
+no longer resolves (switched away from the weapon) simply contributes nothing.
+
+**Optional scoping** (same fields as `rules/combat.json`, respected for any
+bundle the tab renders): `appliesTo` lists the engine weapon-category tags
+(`melee`, `missile`, `throwing`, `unarmed`) that may use the option; `restricted`
+is an exact `rules/races.json` race name. The tab hides a bundle unless the
+selected pick's attack type and the character's race both permit it.
+
+**Authoring rules:**
+- Keep the option's `summary` self-contained — the menu label is just the
+  effect summaries (badges + tooltips), and options render *before* the global
+  ones to sit next to the weapon that grants them.
+- The Damage-step bonus uses `test-modifier` on `{ test, Damage }` (+2 `step`),
+  **not** a fall-through `attack-modifier` — the Combat-tab pool fold only reads
+  `test-modifier` / `resource-modifier`; the item's *base/rank* damage step stays
+  an `attack-modifier` (it folds into the respective static rating, §7).
+- Cost it in the taxonomy's existing vocabulary: `resource-modifier` on
+  `{ resource, Strain }` for the 1 Strain, a `note` for the reload rider.
+- `condition: "situational"`, `source: "condition"` — the combat-options
+  convention (options apply on demand; `"condition"` is the nearest §9 source;
+  "combat option" is not itself a taxonomy source).
+- Reset applies: switching weapons clears toggled options (the bundle may belong
+  to the weapon you left).
+
+**Woven rank effects and the Combat pool:** a weapon rank's always-on
+(`condition: "always"`) `test-modifier` effects — e.g. Orc Stinger rank 2
+`+1` / rank 4 `+2` to Attack tests as **step** bonuses — are **not** options;
+they ride `equippedWeapons.effects` and fold into the Combat-tab roll pool
+whenever that weapon is selected. `collectCombatEffects` applies the same
+`stacking: replace` collapse the static fold uses (the weave's +2 supersedes its
++1; they never sum to +3), and only `test-modifier` / `resource-modifier` types
+enter — the woven Damage-step `attack-modifier` stays out (it already rides
+`equippedWeapons.damageStep`, so feeding it again would double-count).
+
+**Modal/tile readout and `currentEffects`:** `resolveThreadItem` also emits
+`currentEffects` — the weave collapsed per fold target via
+engine/characteristics.js `collapseByTarget` (the *surviving* set, e.g. Orc
+Stinger rank 4 → Damage +7 and Attack +2, *never* the accumulated
++5/+6/+1/+7/+2). The Equipment detail modal and the tile subtitle render
+`currentEffects`; the engine folds the full `effects` list (it applies the same
+collapse itself).
+
 ---
 
 ## 5. Every effect attribute, in thread-item context
@@ -134,7 +203,7 @@ An effect in a thread rank uses the same object grammar as any other effect
 
 | Field | Required | In thread items |
 |---|---|---|
-| `type` | always | The dispatch key. Bracers uses `defense-modifier`, `test-modifier`, `note`. A thread *weapon/armour* would use `attack-modifier` / `armor-modifier`; a thread item granting a talent would use `grant-ability`. |
+| `type` | always | The dispatch key. Bracers uses `defense-modifier`, `test-modifier`, `note`. A thread *weapon/armour* would use `attack-modifier` / `armor-modifier`; a thread item granting a talent would use `grant-ability`. Effects *inside* an item-scoped `combatOptions` bundle use `test-modifier` / `resource-modifier` / `note` (the Combat-tab fold reads only those; §4.1). |
 | `target` | modifiers | `{ "domain", "name" }` path — e.g. `{defense, Physical}`. The same `target` across two ranks is what triggers stacking (§6). |
 | `operation` | modifiers | `add` / `subtract` / `set` / … — how `value` combines. Thread rank effects are almost always `add`. |
 | `value` | modifiers | The magnitude. Numeric for static bonuses; `{ "ref": "…" }` when it mirrors another value. |
@@ -271,7 +340,10 @@ the modal as situational/reference text, never folded.
 3. Write `base.effects` (empty for a mundane-until-threaded item) and ordered
    `threadRanks`, each effect in taxonomy vocabulary with a `summary`.
 4. Mark rank effects that share a `target` `stacking: "replace"` (or `highest`).
-5. Verify: `npm test` green; spot-check the derived value (fold) and the Legend
+5. For a thread **weapon**, give `ref.category` (+ `damageStep` overwritten by
+   the woven `attack-modifier`) so it joins `equippedWeapons`, and add any
+   on-demand abilities as an item-scoped `combatOptions` array (§4.1).
+6. Verify: `npm test` green; spot-check the derived value (fold) and the Legend
    audit line (cumulative tier cost) for a representative rank.
 
 > Changing the *shape* of the item entry, renaming fields, or editing the

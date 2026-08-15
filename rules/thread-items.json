@@ -24,6 +24,58 @@
     "9": 16, "10": 17, "11": 18, "12": 19, "13": 20, "14": 21, "15": 22
   },
   "items": {
+    "Band of the Elements": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 10,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG p. 207",
+        "description": "Metal bands worn on the upper arm, adorned with five stones each infused with one of the true elements. Given by Warrior brotherhoods to those who have shown the qualities the brotherhood prizes."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the band.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Wood Skin" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Wood Skin." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Air Dance" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Air Dance." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the creator of the band.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Waterfall Slam" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Waterfall Slam." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Earth Skin" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Earth Skin." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn where the stones and their true elements were harvested.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Fire Heal" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Fire Heal." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "Counts one Circle higher when calculating Durability." }
+          ]
+        }
+      ]
+    },
     "Bracers of Aras": {
       "kind": "thread-item",
       "tier": "Journeyman",
@@ -114,6 +166,508 @@
             { "type": "note", 
             "source": "thread", 
             "summary": "For 2 Strain, the owner may breathe underwater for 10 minutes." }
+          ]
+        }
+      ]
+    },
+    "Bracers of Obsidiman Strength": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 12,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG p. 209",
+        "description": "Bracers shaped from stone that form perfectly to the owner once a thread is attached, usually both from a single stone. Decorations may include metal inlay or carvings; obsidimen are generally believed to have originated them."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the bracers.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "For 1 Strain, +3 to any Strength-based test, except Damage or Knockdown tests." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 1, "measure": "result", "condition": "always", "stacking": "replace", "scope": "close combat", "source": "thread", "summary": "+1 to close combat Damage tests." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the creator of the bracers.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "For 1 Strain, +6 to any Strength-based test, except Damage or Knockdown tests." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 2, "measure": "result", "condition": "always", "stacking": "replace", "scope": "close combat", "source": "thread", "summary": "+2 to close combat Damage tests." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn where the stones and their true elements were harvested.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "Wield weapons one size larger than normal (e.g. a human could wield a Size 4 weapon one-handed or up to Size 7 two-handed). Alternatively, the magic may increase the Size and Damage Step of a melee weapon wielded by one." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "attribute-modifier", "target": { "domain": "attribute", "name": "Strength" }, "operation": "add", "value": 2, "measure": "value", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 to Strength attribute value." }
+          ]
+        }
+      ]
+    },
+    "Conspicuous Smuggler": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 14,
+      "base": {
+        "effects": [
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Physical Armor 5 (treated as hide armor)." },
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Mystic Armor 1 (treated as hide armor)." },
+          { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Initiative penalty 1 (treated as hide armor)." }
+        ]
+      },
+      "ref": {
+        "source": "GMG p. 210",
+        "description": "Alligator hide armor covered with buckles, pouches, and places to store, hang, or hide nearly anything. Soft and supple, water beads off the surface. Bright colored patches stand out in any setting. Without a thread it is treated as normal hide armor."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the armor.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Conceal Object" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Conceal Object." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 0, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor no longer has an Initiative penalty." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the armor's first owner.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Conceal Object" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Conceal Object." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Mystic Armor 2." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn the details of the first owner's most famous smuggling adventure.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "For 1 Strain, the armor's appearance may be altered for 10 minutes, granting +3 ranks to Disguise Self; the time may be extended 10 more minutes for each additional 1 Strain." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Physical Armor 6." }
+          ]
+        }
+      ]
+    },
+    "Elemental Long Spear": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 12,
+      "base": {
+        "effects": [
+          { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 5, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Melee damage: Strength step + 5 (as a long spear)." }
+        ]
+      },
+      "ref": {
+        "source": "GMG pp. 210-211",
+        "description": "A six- to eight-foot wooden spear incorporating each of the five True Elements: the shaft woven with True Wood, the hollow core filled with True Air, the metal tip woven with True Earth, soaked in liquid rich in True Water, and hardened in True Fire. Spears float in water. Without a thread it has the same characteristics as a normal long spear.",
+        "category": "melee",
+        "strMin": 13,
+        "size": 5,
+        "damageStep": 5
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the spear.",
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 6, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Melee damage: Strength step + 6." },
+            { "type": "note", "source": "thread", "summary": "Immune to damage from fire and from effects of spells or abilities that damage it; will not splinter when leveled against an opponent on a Charging Attack." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "add", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 to Initiative tests." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the spear's creator.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Wound Balance" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Wound Balance." },
+            { "type": "note", "source": "thread", "summary": "Become extremely resilient; tremendous force can bend but not break it." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 7, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Melee damage: Strength step + 7." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn what type of wood the spear haft is constructed from and where it was grown.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "The tip can become glowing red-hot; for 1 Strain, the owner rolls a bonus Step 4/D6 Flame die on the next Damage test." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 8, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Melee damage: Strength step + 8." }
+          ]
+        }
+      ]
+    },
+    "Espagra Boots": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 12,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG pp. 211-212",
+        "description": "Fine boots made from the hides of espagra — bright blue interwoven with brown leather, with a brilliant luster from the scales. Often worn by those whose work requires stealth, secrecy, or great agility."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the boots.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Avoid Blow" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Avoid Blow." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Stealthy Stride" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Stealthy Stride." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the creator of the boots.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Avoid Blow" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Avoid Blow." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Stealthy Stride" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Stealthy Stride." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn the number of espagra hides used to create the boots.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Great Leap" }, "operation": "add", "value": 3, "measure": "rank", "condition": "situational", "scope": "for one test, for 1 Strain", "stacking": "replace", "source": "thread", "summary": "For 1 Strain, +3 ranks to Great Leap for one test." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "For 2 Strain per round, fly at Movement Rate 10; spend additional Strain to add +2 Movement Rate per 1 Strain. Cannot be combined with talents or skills that increase movement. After stopping, cannot use it again that day." }
+          ]
+        }
+      ]
+    },
+    "Espagra Saddle": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 10,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG p. 212",
+        "description": "A saddle of espagra hide and scales with a shimmering blue luster. The hanging flaps are made entirely of the creatures' hide; one saddle typically requires three to seven hides."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the saddle.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "The mount gains +1 to Physical Armor." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "The mount gains +1 to Physical Defense." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the creator of the saddle.",
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "situational", "scope": "while mounted in the saddle", "stacking": "replace", "source": "thread", "summary": "The owner gains +1 to Physical Armor while mounted in the saddle." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "situational", "scope": "while mounted in the saddle", "stacking": "replace", "source": "thread", "summary": "The owner gains +1 to Physical Defense while mounted in the saddle." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The rider must learn how many espagra hides the maker used to create the saddle.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "The mount may gain +2 to Movement Rate, at the owner's choice." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "RecoveryTests" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Either the owner or his mount (owner's choice) gains an additional Recovery test each day." }
+          ]
+        }
+      ]
+    },
+    "Faerie Mail": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 14,
+      "base": {
+        "effects": [
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Physical Armor 7 (as chain mail)." },
+          { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 3, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Initiative penalty 3 (as chain mail)." }
+        ]
+      },
+      "ref": {
+        "source": "GMG p. 213",
+        "description": "Very high-quality armor of fine links, up to half the size of normal chain mail, fitting the owner better. Color varies from steel-gray to bronze or orichalcum-like. Without a thread it has the same characteristics as normal chain mail."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the armor.",
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 2, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor has an Initiative penalty of 2." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor has Mystic Armor 1." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must find out what type of faerie creature or enchanted beast gave its blood for the armor.",
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor has an Initiative penalty of 1." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor has Mystic Armor 2." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn the Name of the individual who created the armor.",
+          "effects": [
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 0, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor has no Initiative penalty." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor has Mystic Armor 3." }
+          ]
+        }
+      ]
+    },
+    "Fastoon's Very Impressive Staff": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 1,
+      "mysticDefense": 14,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG p. 214",
+        "description": "A staff of black and white wood perfectly fitted in an intricate interlacing design, adorned with a collection of bones and feathers braided with leather. The shaft is carved with runes affirming how very impressive is Fastoon."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the staff.",
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "The staff holds a Standard Matrix of a rank equal to the thread rank." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Spellcasting" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Spellcasting." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn what the runic carvings on the staff say and where Fastoon called home.",
+          "deed": "The owner must carve a new, sincere affirmation of how very impressive is Fastoon on the staff, in the same style of runes.",
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 to Physical Defense." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Willforce" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Willforce." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn where the wood used to craft the staff was harvested from.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Spellcasting" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Spellcasting." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Willforce" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Willforce." }
+          ]
+        }
+      ]
+    },
+    "Feral Bracers": {
+      "kind": "thread-item",
+      "tier": "Journeyman",
+      "maximumThreads": 2,
+      "mysticDefense": 10,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "GMG pp. 214-215",
+        "description": "Rugged leather bracers popular with Beastmasters — thick leather with beadwork or tooling, sometimes elaborate metal inlay and precious stones. All share prominent markings suggesting the bracers were gashed by claws."
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the bracers.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Unarmed Combat" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Unarmed Combat." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Claw Shape" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Claw Shape." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the creator of the bracers.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Claw Shape" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Claw Shape." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 to Physical Defense." }
+          ]
+        },
+        {
+          "rank": 5,
+          "keyKnowledge": "The owner must learn from what creature the leather used for the bracers came and where the creature was killed.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Claw Shape" }, "operation": "add", "value": 3, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+3 ranks to Claw Shape." }
+          ]
+        },
+        {
+          "rank": 6,
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "For 1 Strain, the owner may gain a +3 bonus to Damage tests against an opponent who is Blindsided or Surprised." }
+          ]
+        }
+      ]
+    },
+    "Orc Stinger": {
+      "kind": "thread-item",
+      "tier": "Novice",
+      "maximumThreads": 1,
+      "mysticDefense": 10,
+      "combatOptions": [
+        {
+          "name": "Double Bolt",
+          "summary": "Fire both loaded bolts at once: +2 to the Damage test; 1 Strain; reloading both bolts takes a whole round.",
+          "effects": [
+            { "type": "test-modifier", "target": { "domain": "test", "name": "Damage" }, "operation": "add", "value": 2, "measure": "step", "condition": "situational", "source": "condition", "summary": "+2 to the Damage test." },
+            { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
+            { "type": "note", "source": "condition", "summary": "Reloading both bolts takes a whole round." }
+          ]
+        }
+      ],
+      "base": {
+        "effects": [
+          { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 5, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Missile damage: Strength step + 5 (single bolt)." }
+        ]
+      },
+      "ref": {
+        "source": "User custom thread item (GMG-style, not from the rulebook)",
+        "description": "An orc heavy assault crossbow loaded with 2 bolts and fired at once. If both bolts are fired, the base Damage step is raised by 2 and the shot causes 1 Strain; reloading 2 bolts takes a whole round.",
+        "category": "missile",
+        "strMin": 15,
+        "dexMin": 15,
+        "size": 4,
+        "damageStep": 5,
+        "shortRange": "2-30",
+        "longRange": "31-60",
+        "weight": "15 lb",
+        "cost": 4650,
+        "availability": "Rare"
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the crossbow; each is given a unique name.",
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 6, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Damage step increased by 1: single bolt 6, or 8 with the Double Bolt combat option." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" }, "operation": "add", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 to Attack tests." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the orc war cry for an archer.",
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 7, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Damage step increased by 2: single bolt 7, or 9 with the Double Bolt combat option." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" }, "operation": "add", "value": 2, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 to Attack tests." }
           ]
         }
       ]

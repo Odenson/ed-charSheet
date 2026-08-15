@@ -97,6 +97,14 @@ Perception, Initiative, ranged Damage). `target` is a `test`; use `scope` to
 narrow it ("sight-based", "ranged weapons", "vs Horrors/undead"). It carries no
 `value`/`operation` — it is a permission, not a numeric change.
 
+> `enable-option` **unlocks a global option** — its `target.name` must match an
+> option's `name` in `rules/combat.json` (e.g. `Tail Attack`), and it is always
+> on once granted. A *different* delivery — a single thread weapon shipping its
+> own option for the Combat tab while selected — is data, not vocabulary: the
+> bundles live in the item entry as `combatOptions` (same bundle shape, see
+> THREAD-ITEMS.md §4.1) and their effects reuse the types above
+> (`test-modifier`, `resource-modifier`, `note`). No vocabulary change, no bump.
+
 ---
 
 ## 3. `target` — what is affected

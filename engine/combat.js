@@ -38,6 +38,8 @@
 
 const isFiniteNum = (n) => typeof n === 'number' && Number.isFinite(n);
 
+import { collapseStacking } from './characteristics.js';
+
 /**
  * Which attack talents/skills can wield a weapon of a given category. Melee →
  * Melee Weapon; missile → Missile Weapon; throwing → Throwing Weapon (owner
@@ -160,6 +162,36 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
 }
 
 /**
+ * The selected weapon's own always-on woven effects (thread-rank test
+ * modifiers, e.g. Orc Stinger rank 4's "+2 to Attack tests"). The rank weave is
+ * collapsed per-target exactly like the static fold (`stacking` from
+ * engine/characteristics.js — `replace` means a later rank supersedes an
+ * earlier one, never sums: rank 4's +2 replaces rank 2's +1). Only the effect
+ * types a pool reads (test-modifier / resource-modifier) are folded in here:
+ * the weapon's `attack-modifier` Damage step already rides `weaponDamageStep`,
+ * and its defense/armor mods are already in the derived ratings — neither may
+ * enter the pool a second time.
+ */
+function weaponPoolEffects(effects, name) {
+  const byTarget = new Map();
+  for (const e of effects ?? []) {
+    if (!e || typeof e !== 'object') continue;
+    if (e.type !== 'test-modifier' && e.type !== 'resource-modifier') continue;
+    if ((e.condition ?? 'always') !== 'always' || e.gmDiscretion) continue;
+    const t = e.target ?? {};
+    const key = `${e.type}|${t.domain}|${t.name}|${e.measure ?? ''}|${e.scope ?? ''}`;
+    if (!byTarget.has(key)) byTarget.set(key, []);
+    byTarget.get(key).push(e);
+  }
+  const collapsed = [];
+  for (const [key, group] of byTarget) {
+    const tagged = group.map((e) => ({ ...e, origin: { kind: 'thread', name: `${name}#${key}` } }));
+    for (const e of collapseStacking(tagged)) collapsed.push(e);
+  }
+  return collapsed;
+}
+
+/**
  * Build the effect lists the Combat tab feeds to `attackPool` / `damagePool`
  * from the player's selections, applying the **asymmetric locked-condition
  * strip** (PLAN-COMBAT-TAB B11). The view never computes these selections
@@ -177,12 +209,19 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
  *   defence mods ARE returned (informational display only — they never touch the
  *   derived defence, B7).
  *
+ * The **selected weapon's own woven effects** (`selectedWeaponEffects`) fold as
+ * an always-on source (thread-rank test modifiers, e.g. +Attack from the Orc
+ * Stinger's ranks) — collapsed per target so the weave's `replace` stacking is
+ * honored, and restricted to pool-read types (see `weaponPoolEffects`).
+ *
  * @param {object} args
  * @param {string[]} args.selectedOptions  toggled combat-option bundle names
  * @param {string[]} args.selectedSituations  toggled situation bundle names
  *   (player-added only — locked Knocked Down/Harried come from `conditions`)
  * @param {Array<{name:string, effects:object[]}>} args.selectedCharms  toggled
  *   equipped blood-charm items (their activatable effects)
+ * @param {object[]} [args.selectedWeaponEffects]  the selected weapon's woven
+ *   effects (from its `equippedWeapons` entry)
  * @param {{options:object[], situations:object[]}} args.rules  rules/combat.json
  * @param {{knockedDown?:boolean, harried?:boolean}} args.conditions
  *   model.combat.conditions
@@ -193,13 +232,18 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
  *   Defence & Armour block folds into the sheet's derived ratings for display
  *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
-export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], rules, conditions = {} }) {
+export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
   const sitList = rules?.situations ?? [];
   const attackEffects = [];
   const damageEffects = [];
   const defenseMods = [];
   const armorMods = [];
+
+  for (const e of weaponPoolEffects(selectedWeaponEffects, 'weapon')) {
+    attackEffects.push(e);
+    damageEffects.push(e);
+  }
 
   const addBundle = (bundle, source) => {
     for (const e of bundle?.effects ?? []) {
