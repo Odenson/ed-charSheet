@@ -209,8 +209,8 @@ test('an equipped non-weapon thread item surfaces its combatOptions in combat.it
     items: [{ name: 'Dark Archer Armour', equipped: true, threadRank: 0 }],
   };
   const modelC = deriveModel(charC, rules);
-  const ward = modelC.combat.itemOptions.find((o) => o.name === 'Horror Ward');
-  assert.ok(ward, 'Horror Ward should be offered as an item-scoped combat option');
+  const ward = modelC.combat.itemOptions.find((o) => o.name === 'Horror Defence');
+  assert.ok(ward, 'Horror Defence should be offered as an item-scoped combat option');
   // The bundle carries the two situational Defence modifiers — never folded into
   // the static Defence pills (condition: situational), applied only on toggle.
   const defs = ward.effects.filter((e) => e.type === 'defense-modifier');
@@ -224,7 +224,7 @@ test('an equipped item-option is not offered while stored (unequipped)', () => {
     items: [{ name: 'Dark Archer Armour', equipped: false, threadRank: 0 }],
   };
   const modelC = deriveModel(charC, rules);
-  assert.ok(!modelC.combat.itemOptions.some((o) => o.name === 'Horror Ward'));
+  assert.ok(!modelC.combat.itemOptions.some((o) => o.name === 'Horror Defence'));
 });
 
 test('a thread weapon keeps its combatOptions off itemOptions (weapon-scoped, no double-offer)', () => {
@@ -236,14 +236,14 @@ test('a thread weapon keeps its combatOptions off itemOptions (weapon-scoped, no
   assert.ok(!modelC.combat.itemOptions.some((o) => o.name === 'Double Bolt'));
 });
 
-test('toggling Horror Ward folds +1 PD / +1 MD onto the Combat-tab Defence readout only', () => {
+test('toggling Horror Defence folds +1 PD / +1 MD onto the Combat-tab Defence readout only', () => {
   const charC = {
     ...charA,
     items: [{ name: 'Dark Archer Armour', equipped: true, threadRank: 0 }],
   };
   const modelC = deriveModel(charC, rules);
   const { defenseMods } = collectCombatEffects({
-    selectedOptions: ['Horror Ward'],
+    selectedOptions: ['Horror Defence'],
     rules: { options: modelC.combat.itemOptions, situations: [] },
     conditions: {},
   });
@@ -251,4 +251,87 @@ test('toggling Horror Ward folds +1 PD / +1 MD onto the Combat-tab Defence reado
   const r = foldCombatRatings({ physicalDefense: 9, mysticDefense: 7 }, defenseMods, []);
   assert.equal(r.defence.Physical.value, 10); // base 9 + toggled 1
   assert.equal(r.defence.Mystic.value, 8); //  base 7 + toggled 1
+});
+
+// --- talent-granted combat options (True Shot) --------------------------------
+
+test('an owned talent with combatOptions surfaces in combat.talentOptions, rank injected', () => {
+  const charT = {
+    ...charA,
+    disciplines: [{ name: 'Archer', circle: 5, talents: [{ name: 'Missile Weapon', rank: 5 }, { name: 'True Shot', rank: 3 }] }],
+  };
+  const m = deriveModel(charT, rules);
+  const ts = m.combat.talentOptions.find((o) => o.name === 'True Shot');
+  assert.ok(ts, 'True Shot should be offered as a talent-scoped combat option');
+  assert.equal(ts.karmaDice.max, 3); // resolved from the talent rank
+  assert.equal(ts.karmaDice.source, 'rank');
+  assert.deepEqual(ts.appliesTo, ['missile', 'throwing']);
+  assert.equal(ts.grantedBy, 'True Shot');
+});
+
+test('a talent combatOption is absent when the talent is unowned / rank 0', () => {
+  const m = deriveModel(charA, rules); // charA has no True Shot
+  assert.ok(!m.combat.talentOptions.some((o) => o.name === 'True Shot'));
+  const charZero = {
+    ...charA,
+    disciplines: [{ name: 'Archer', circle: 5, talents: [{ name: 'True Shot', rank: 0 }] }],
+  };
+  const mz = deriveModel(charZero, rules);
+  assert.ok(!mz.combat.talentOptions.some((o) => o.name === 'True Shot'));
+});
+
+test('True Shot across two Disciplines dedupes to the highest rank', () => {
+  const charT = {
+    ...charA,
+    disciplines: [
+      { name: 'Archer', circle: 5, talents: [{ name: 'True Shot', rank: 2 }] },
+      { name: 'Warrior', circle: 4, talents: [{ name: 'True Shot', rank: 4 }] },
+    ],
+  };
+  const m = deriveModel(charT, rules);
+  const opts = m.combat.talentOptions.filter((o) => o.name === 'True Shot');
+  assert.equal(opts.length, 1);
+  assert.equal(opts[0].karmaDice.max, 4);
+});
+
+test('True Shot bundle carries its 2-Strain effect (folds via the pool like any option)', () => {
+  const charT = {
+    ...charA,
+    disciplines: [{ name: 'Archer', circle: 5, talents: [{ name: 'Missile Weapon', rank: 5 }, { name: 'True Shot', rank: 3 }] }],
+  };
+  const m = deriveModel(charT, rules);
+  const ts = m.combat.talentOptions.find((o) => o.name === 'True Shot');
+  const strain = ts.effects.find((e) => e.type === 'resource-modifier' && e.target?.name === 'Strain');
+  assert.ok(strain);
+  assert.equal(strain.value, 2);
+});
+
+// --- Mystic Aim (aim-roll talent option) --------------------------------------
+
+test('Mystic Aim surfaces as a talent option with the talent Step injected into aimRoll', () => {
+  const charT = {
+    ...charA,
+    disciplines: [{ name: 'Archer', circle: 5, talents: [{ name: 'Missile Weapon', rank: 5 }, { name: 'Mystic Aim', rank: 4 }] }],
+  };
+  const m = deriveModel(charT, rules);
+  const aim = m.combat.talentOptions.find((o) => o.name === 'Mystic Aim');
+  assert.ok(aim, 'Mystic Aim should be offered as a talent-scoped combat option');
+  assert.deepEqual(aim.appliesTo, ['missile', 'throwing']);
+  assert.equal(aim.aimRoll.vs, 'Mystic');
+  assert.equal(aim.aimRoll.strain, 1);
+  // Perception 14 → step 6; + rank 4 = step 10. The aim test rolls this Step.
+  assert.equal(aim.aimRoll.step, 10);
+  // The aim test is Karma-eligible: the talent's karma context rides aimRoll.
+  assert.ok(aim.aimRoll.karma, 'aimRoll carries the talent karma context');
+  // Its on-success +2-STEP perSuccess bundle effect is present (folds, scaled by
+  // successes, only once armed).
+  const onSuccess = aim.effects.find((e) => e.condition === 'on-success' && e.measure === 'step');
+  assert.ok(onSuccess);
+  assert.equal(onSuccess.value, 2);
+  assert.equal(onSuccess.perSuccess, true);
+});
+
+test('Mystic Aim is absent when the talent is unowned', () => {
+  const m = deriveModel(charA, rules); // charA has no Mystic Aim
+  assert.ok(!m.combat.talentOptions.some((o) => o.name === 'Mystic Aim'));
 });

@@ -75,6 +75,20 @@ export function attackSuccessLevels(result, target) {
   return Math.max(0, Math.floor((result - target) / 5));
 }
 
+/**
+ * Earthdawn success count for a test total vs a Difficulty: meeting it is 1
+ * success, and every additional 5 over it is one more (= 1 + attackSuccessLevels
+ * on a hit). A miss (or unusable numbers) is 0. Used by Mystic Aim — each success
+ * arms +2 steps to the Attack test.
+ * @param {number|null|undefined} total the test's final total
+ * @param {number|null|undefined} target the Difficulty to meet
+ * @returns {number} successes ≥ 0 (0 on a miss)
+ */
+export function successCount(total, target) {
+  if (!isFiniteNum(total) || !isFiniteNum(target)) return 0;
+  return total >= target ? 1 + Math.floor((total - target) / 5) : 0;
+}
+
 /** The signed value an effect contributes (operation subtract negates). */
 const opValue = (e) => (e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0);
 
@@ -222,6 +236,10 @@ function weaponPoolEffects(effects, name) {
  *   equipped blood-charm items (their activatable effects)
  * @param {object[]} [args.selectedWeaponEffects]  the selected weapon's woven
  *   effects (from its `equippedWeapons` entry)
+ * @param {Object<string,number>|string[]} [args.armedOptions]  a map
+ *   `{ optionName: successCount }` of options whose precursor roll succeeded
+ *   (Mystic Aim hit); a `perSuccess` on-success effect scales by the count. A
+ *   plain name array is accepted and treated as count 1.
  * @param {{options:object[], situations:object[]}} args.rules  rules/combat.json
  * @param {{knockedDown?:boolean, harried?:boolean}} args.conditions
  *   model.combat.conditions
@@ -232,7 +250,7 @@ function weaponPoolEffects(effects, name) {
  *   Defence & Armour block folds into the sheet's derived ratings for display
  *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
-export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], rules, conditions = {} }) {
+export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], armedOptions = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
   const sitList = rules?.situations ?? [];
   const attackEffects = [];
@@ -245,9 +263,23 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
     damageEffects.push(e);
   }
 
+    // How many successes armed this option: `armedOptions` is a map
+    // `{ optionName: successCount }` (a legacy name-array counts as 1). 0/absent =
+    // not armed.
+  const armedCountFor = (name) => (Array.isArray(armedOptions) ? (armedOptions.includes(name) ? 1 : 0) : Number(armedOptions?.[name]) || 0);
   const addBundle = (bundle, source) => {
-    for (const e of bundle?.effects ?? []) {
+    for (let e of bundle?.effects ?? []) {
       if (!e || typeof e !== 'object') continue;
+      // An `on-success` effect (e.g. Mystic Aim's +2 to the Attack test) folds
+      // only when its option has been ARMED by a successful precursor roll. A
+      // `perSuccess` effect scales by the success count (2 successes → +4 steps):
+      // bake the scaled value into a copy and drop `perSuccess`, so the pool folds
+      // it as a flat modifier. Toggling the option alone is not enough.
+      if (e.condition === 'on-success') {
+        const count = armedCountFor(source);
+        if (count < 1) continue;
+        if (e.perSuccess) e = { ...e, value: (e.value ?? 0) * count, perSuccess: false };
+      }
       if (e.type === 'defense-modifier') {
         defenseMods.push({ source, name: e.target?.name ?? 'Defence', value: opValue(e) });
         continue;

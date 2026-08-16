@@ -231,15 +231,23 @@ export class EdApp extends LitElement {
       if (apply?.action === 'recovery-heal' && recBonus.stepBonus) step += recBonus.stepBonus;
       const stepRow = this._model?.stepByNumber?.[step];
       if (!stepRow) return;
-      // Resolve the Karma die's step row (D6) so the modal can offer +D6.
+      // Resolve the Karma die's step row (D6) so the modal can offer +D6. A
+      // set-dice roll (True Shot) carries `maxDice`/`rank` for the extra-Karma
+      // stepper and top-up; they default so ordinary rolls stay single-die.
       const karmaCtx =
         karma?.step != null && this._model?.stepByNumber?.[karma.step]
-          ? { grants: karma.grants, available: karma.available, stepRow: this._model.stepByNumber[karma.step] }
+          ? {
+              grants: karma.grants,
+              available: karma.available,
+              stepRow: this._model.stepByNumber[karma.step],
+              maxDice: karma.maxDice ?? 1,
+              rank: karma.rank ?? null,
+            }
           : null;
       // Rolling the Karma die IS spending a point of Karma: the Overview's Karma
       // roll has no +D6 toggle (it is the die), so charge the spend here. Charge,
       // no refund (owner decision) — each button click opens a fresh roll
-      // interaction, while the modal's "Roll again" never re-fires `ed-roll`.
+      // interaction.
       if (kind === 'karma') this._editKarma({ spend: 1 });
       this._roll = {
         rollId: uid(),
@@ -252,15 +260,29 @@ export class EdApp extends LitElement {
         // the universal Knocked Down −3 (every test, Karma die only excluded)
         // is added after — it applies to every roll, combat or not.
         mods: [...(e.detail.mods ?? []), ...this._rollTimeMods({ kind, apply })],
+        // Deferred Strain for a set-dice roll — charged at the modal's commit
+        // (see the `ed-strain` handler), 0 for ordinary rolls (already paid).
+        strain: e.detail.strain ?? 0,
+        // An aim roll (Mystic Aim): the modal takes the target's defence as input,
+        // rolls the talent vs it, and resolves Hit/Miss. `aim` carries { vs, strain }.
+        aim: e.detail.aim ?? null,
       };
+    });
+    // A set-dice roll's Strain is charged when the modal commits the roll (not at
+    // Attack-click), so Escaping the set-dice modal costs nothing. The modal fires
+    // this once, with the option's Strain amount.
+    this.addEventListener('ed-strain', (e) => {
+      const amount = e.detail?.amount;
+      if (!this._character || !amount) return;
+      this._editHealth(applyHealth(this._character.resources?.health ?? {}, { damage: amount }));
     });
     // A completed roll in the modal (PLAN-NOTES-TAB, decision #5): the modal
     // sends ONLY the dice result it just computed — `_result`, the resolved
     // `_karmaResult`, the derived outcome, and the per-open `rollId`. This
     // listener merges them with the roll config it already holds (`this._roll`)
     // and saves one Roll Log entry per interaction, upserted by rollId — so
-    // Karma toggles / "Roll again" replace the row, never duplicate it. The log
-    // is device-local (decision #2) and never rides the overlay or an export.
+    // Karma toggles replace the row, never duplicate it. The log is
+    // device-local (decision #2) and never rides the overlay or an export.
     this.addEventListener('ed-roll-logged', (e) => {
       if (!this._roll || !this._characterId) return;
       const { rollId, result, karmaResult, outcome } = e.detail ?? {};
@@ -280,7 +302,10 @@ export class EdApp extends LitElement {
           // recorded `mods`/`karma` sub-objects explain a total that isn't the
           // raw dice sum without double-counting on render (decision #8).
           total: r.total + (karmaResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0),
-          difficulty: this._roll.difficulty?.value ?? null,
+          // An aim roll's difficulty is entered in the modal, so it rides the
+          // logged event (`e.detail.difficulty`); ordinary rolls carry it on the
+          // roll config. The stored outcome is what the Combat tab reads to arm.
+          difficulty: this._roll.difficulty?.value ?? e.detail.difficulty ?? null,
           outcome: outcome ?? null,
           karma: karmaResult ? { step: karmaResult.step, dice: karmaResult.dice, total: karmaResult.total } : null,
           mods: this._roll.mods ?? [],
@@ -1252,6 +1277,8 @@ export class EdApp extends LitElement {
             .apply=${this._roll.apply}
             .difficulty=${this._roll.difficulty}
             .mods=${this._roll.mods}
+            .strain=${this._roll.strain}
+            .aim=${this._roll.aim}
             @close=${() => (this._roll = null)}
           ></ed-roll-modal>`
         : ''}

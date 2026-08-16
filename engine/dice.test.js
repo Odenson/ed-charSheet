@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { rollDie, rollStep } from './dice.js';
+import { rollDie, rollStep, rollKarmaDice } from './dice.js';
 
 // Deterministic RNG: yields the given values in order; throws if a roll needs
 // more than provided (catches an unexpected/runaway explosion).
@@ -94,4 +94,36 @@ test('rollStep tolerates an empty or missing breakdown', () => {
   const missing = rollStep({ step: 1, dice: '', modifier: 0 }, () => 0);
   assert.equal(missing.groups.length, 0);
   assert.equal(missing.total, 0);
+});
+
+// --- rollKarmaDice (True Shot: N Karma dice as one rollStep-shaped result) -----
+
+test('rollKarmaDice rolls N dice and returns a rollStep-shaped result', () => {
+  const r = rollKarmaDice(row(8), 3, () => 0); // 3 × 2D6, all minimum → 6 dice of 1
+  assert.equal(r.step, 8);
+  assert.equal(r.dice, '2D6');
+  assert.equal(r.groups.length, 6); // 3 dice × 2D6 groups each
+  assert.equal(r.total, 6);
+});
+
+test('rollKarmaDice sums exploded chains across dice', () => {
+  const r = rollKarmaDice(row(4), 2, seq([5 / 6, 0, 0])); // step 4 = 1D6: explode (6,1)=7, then D6=1
+  assert.equal(r.total, 8);
+  assert.equal(r.groups.length, 2);
+  assert.deepEqual(r.groups.map((g) => g.rolls), [[6, 1], [1]]);
+});
+
+test('rollKarmaDice with count ≤ 0 is an empty result, total 0', () => {
+  for (const n of [0, -1, null, undefined]) {
+    const r = rollKarmaDice(row(8), n, () => 0);
+    assert.equal(r.groups.length, 0, `count ${n}`);
+    assert.equal(r.total, 0, `count ${n}`);
+  }
+});
+
+test('rollKarmaDice one die matches a single rollStep total (shape-compatible)', () => {
+  const one = rollKarmaDice(row(4), 1, seq([5 / 6, 0])); // step 4 = 1D6, explode
+  const single = rollStep(row(4), seq([5 / 6, 0]));
+  assert.equal(one.total, single.total);
+  assert.deepEqual(one.groups, single.groups);
 });

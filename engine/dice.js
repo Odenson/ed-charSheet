@@ -39,3 +39,27 @@ export function rollStep(stepRow, rng = Math.random) {
   total += modifier;
   return { step: stepRow.step, dice: stepRow.dice, groups, modifier, total };
 }
+
+/**
+ * Roll `count` Karma dice as ONE result, shaped exactly like `rollStep` so every
+ * existing consumer (the roll modal's die-chain render, its `_grandTotal`, and
+ * ed-app's Roll Log reader `karmaResult.step/dice/total`) works unchanged whether
+ * one die or several were rolled. Each die is a full `rollStep(stepRow)` (the same
+ * "one Karma die" the single-die path already rolls), and its groups are flattened
+ * into the combined result. Used by True Shot, which adds up to `rank` Karma dice
+ * to a ranged Attack test (plans/PLAN-TALENT-COMBAT-OPTIONS.md).
+ * @param {object} stepRow the Karma die's steps.json row
+ * @param {number} count how many Karma dice to roll (≤ 0 → empty, total 0)
+ * @returns {{step:number, dice:string, groups:object[], total:number}}
+ */
+export function rollKarmaDice(stepRow, count, rng = Math.random) {
+  const n = Math.max(0, Number.isFinite(count) ? Math.floor(count) : 0);
+  const groups = [];
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const r = rollStep(stepRow, rng);
+    groups.push(...r.groups);
+    total += r.total;
+  }
+  return { step: stepRow?.step ?? null, dice: stepRow?.dice ?? '', groups, total };
+}

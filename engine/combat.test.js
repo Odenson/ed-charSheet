@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels } from './combat.js';
+import { attackPool, damagePool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -293,4 +293,62 @@ test('foldCombatRatings: no derived base → null value (placeholder-pill rule, 
   assert.equal(r.defence.Mystic.value, null);
   assert.equal(r.armour.Physical.value, null);
   assert.equal(r.defence.Social.value, null);
+});
+
+// --- armedOptions gate + per-success scaling (Mystic Aim) ---------------------
+
+const aimBundle = {
+  name: 'Mystic Aim',
+  effects: [
+    { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', condition: 'on-success', perSuccess: true, source: 'talent' },
+  ],
+};
+
+test('collectCombatEffects: an on-success effect is withheld until its option is armed', () => {
+  const rules = { options: [aimBundle], situations: [] };
+  const off = collectCombatEffects({ selectedOptions: ['Mystic Aim'], rules, conditions: {} });
+  assert.ok(!off.attackEffects.some((e) => e.condition === 'on-success'), 'unarmed: withheld');
+  assert.equal(attackPool({ talentStep: 10, effects: off.attackEffects }).step, 10);
+});
+
+test('collectCombatEffects: a perSuccess on-success effect scales by the success count (map)', () => {
+  const rules = { options: [aimBundle], situations: [] };
+  // 1 success → +2 steps; 3 successes → +6 steps. The scaled effect is flat
+  // (perSuccess dropped) so the pool folds it once at the scaled value.
+  const one = collectCombatEffects({ selectedOptions: ['Mystic Aim'], armedOptions: { 'Mystic Aim': 1 }, rules, conditions: {} });
+  assert.equal(attackPool({ talentStep: 10, effects: one.attackEffects }).step, 12);
+  const three = collectCombatEffects({ selectedOptions: ['Mystic Aim'], armedOptions: { 'Mystic Aim': 3 }, rules, conditions: {} });
+  const scaled = three.attackEffects.find((e) => e.target?.name === 'Attack');
+  assert.equal(scaled.value, 6);
+  assert.equal(scaled.perSuccess, false);
+  assert.equal(attackPool({ talentStep: 10, effects: three.attackEffects }).step, 16);
+});
+
+test('collectCombatEffects: count 0 (miss) withholds the effect', () => {
+  const rules = { options: [aimBundle], situations: [] };
+  const r = collectCombatEffects({ selectedOptions: ['Mystic Aim'], armedOptions: { 'Mystic Aim': 0 }, rules, conditions: {} });
+  assert.equal(attackPool({ talentStep: 10, effects: r.attackEffects }).step, 10);
+});
+
+test('collectCombatEffects: a legacy name-array arms as count 1', () => {
+  const rules = { options: [aimBundle], situations: [] };
+  const r = collectCombatEffects({ selectedOptions: ['Mystic Aim'], armedOptions: ['Mystic Aim'], rules, conditions: {} });
+  assert.equal(attackPool({ talentStep: 10, effects: r.attackEffects }).step, 12);
+});
+
+test('collectCombatEffects: armedOptions only frees the named option, not others', () => {
+  const aimA = { name: 'Aim A', effects: [{ type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', condition: 'on-success', perSuccess: true }] };
+  const aimB = { name: 'Aim B', effects: [{ type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 3, measure: 'step', condition: 'on-success', perSuccess: true }] };
+  const rules = { options: [aimA, aimB], situations: [] };
+  const r = collectCombatEffects({ selectedOptions: ['Aim A', 'Aim B'], armedOptions: { 'Aim A': 1 }, rules, conditions: {} });
+  assert.equal(attackPool({ talentStep: 10, effects: r.attackEffects }).step, 12); // only A's +2
+});
+
+test('successCount: 1 for meeting the target, +1 per 5 over, 0 on a miss', () => {
+  assert.equal(successCount(10, 10), 1);
+  assert.equal(successCount(14, 10), 1);
+  assert.equal(successCount(15, 10), 2);
+  assert.equal(successCount(20, 10), 3);
+  assert.equal(successCount(9, 10), 0);
+  assert.equal(successCount(null, 10), 0);
 });

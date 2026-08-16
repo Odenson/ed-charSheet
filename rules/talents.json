@@ -622,13 +622,24 @@
           },
           "operation": "add",
           "value": 2,
-          "measure": "result",
+          "measure": "step",
           "condition": "on-success",
           "perSuccess": true,
           "scope": "ranged attacks vs the marked target",
           "duration": "special",
           "source": "talent",
-          "summary": "+2 to ranged attacks against the marked target (per success)."
+          "summary": "+2 steps to ranged attacks against the marked target (per success)."
+        }
+      ],
+      "combatOptions": [
+        {
+          "name": "Mystic Aim",
+          "appliesTo": ["missile", "throwing"],
+          "aimRoll": { "vs": "Mystic", "strain": 1 },
+          "summary": "Roll Mystic Aim vs the target's Mystic Defence; +2 steps to the Attack test per success. 1 Strain.",
+          "effects": [
+            { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" }, "operation": "add", "value": 2, "measure": "step", "condition": "on-success", "perSuccess": true, "source": "talent", "summary": "+2 steps to the Attack test per Mystic Aim success." }
+          ]
         }
       ]
     },
@@ -801,6 +812,28 @@
           "condition": "on-success",
           "source": "talent",
           "summary": "Adds extra Karma (up to rank) to a ranged Attack test."
+        }
+      ],
+      "combatOptions": [
+        {
+          "name": "True Shot",
+          "appliesTo": ["missile", "throwing"],
+          "karmaDice": { "source": "rank" },
+          "summary": "Add up to (rank) Karma dice to a ranged Attack test at the cost of 2 Strain.",
+          "effects": [
+            { "type": "resource-modifier", 
+              "target": 
+                { "domain": "resource", 
+                  "name": "Strain" 
+                }, 
+              "operation": "add", 
+              "value": 2, 
+              "measure": "points", 
+              "condition": "situational", 
+              "source": "condition", 
+              "summary": "2 Strain." 
+            }
+          ]
         }
       ]
     },

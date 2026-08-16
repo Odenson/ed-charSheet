@@ -1160,6 +1160,37 @@ export function deriveModel(character, rules) {
     itemOptions: items
       .filter((it) => it.equipped && (it.combatOptions?.length ?? 0) > 0 && it.kind !== 'weapon' && !it.ref?.category)
       .flatMap((it) => it.combatOptions ?? []),
+    // Talent-scoped combat-option bundles (a talent may declare `combatOptions`
+    // in rules/talents.json — e.g. True Shot). The talent's current rank is
+    // resolved into each bundle's `karmaDice.max`, so the roll modal can cap the
+    // extra Karma dice without looking the talent up. Only owned talents at rank
+    // ≥ 1 contribute; a talent held in two Disciplines is deduped keeping the
+    // highest rank (plans/PLAN-TALENT-COMBAT-OPTIONS.md §4).
+    talentOptions: (() => {
+      const byName = new Map();
+      for (const d of disciplines) {
+        for (const t of d.talents ?? []) {
+          const defs = talentCatalog[t.name]?.combatOptions;
+          if (!defs?.length || (t.rank ?? 0) < 1) continue;
+          for (const o of defs) {
+            const prev = byName.get(o.name);
+            if (prev && (prev._rank ?? 0) >= t.rank) continue;
+            byName.set(o.name, {
+              ...o,
+              // True Shot: cap the extra Karma dice at the talent rank.
+              karmaDice: o.karmaDice ? { ...o.karmaDice, max: t.rank } : null,
+              // Mystic Aim: the aim test is the talent's own test — inject its
+              // derived Step and karma context so the Combat tab can roll it
+              // (Karma-eligible) without re-deriving.
+              aimRoll: o.aimRoll ? { ...o.aimRoll, step: t.step ?? null, karma: t.karma ?? null } : null,
+              grantedBy: t.name,
+              _rank: t.rank,
+            });
+          }
+        }
+      }
+      return [...byName.values()].map(({ _rank, ...o }) => o);
+    })(),
     strengthStep: strStep,
     conditions: {
       knockedDown: character.resources?.health?.knockedDown === true,
