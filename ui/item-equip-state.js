@@ -113,3 +113,32 @@ export function bumpQuantity(items, name, delta, isThread = () => false) {
   }
   return out;
 }
+
+/**
+ * The item-list half of a confirmed trade (plans/PLAN-TRADE-ITEMS.md): buy adds
+ * the row (or +1 on an owned stack), sell removes one unit — a thread item is
+ * unique and goes as a whole row. A bought second armour lands 'stored'
+ * (equipped:false) rather than triggering the Equip-time swap prompt — equipping
+ * stays the conscious action. Pure inputs → inputs; the money moves separately
+ * through engine/wealth.js allocations.
+ *
+ * @param {Array<{name:string, qty?:number}>} items  current inputs
+ * @param {string} name  the item being bought or sold
+ * @param {'buy'|'sell'} mode
+ * @param {{isThread?:(string)=>boolean, kindOf?:(string)=>string|null}} opts
+ * @returns {Array} the next input list
+ */
+export function nextTradeItems(items, name, mode, { isThread = () => false, kindOf = () => null } = {}) {
+  if (mode === 'sell') {
+    return isThread(name)
+      ? items.filter((i) => i.name !== name)
+      : bumpQuantity(items, name, -1, isThread);
+  }
+  if (items.some((i) => i.name === name)) {
+    if (isThread(name)) return items ?? []; // unique — a second copy cannot exist
+    return bumpQuantity(items, name, +1, isThread);
+  }
+  const r = equipArmour(items, kindOf, name, 'add');
+  if (r.blocked) return [...items, { name, equipped: false }];
+  return r.items;
+}

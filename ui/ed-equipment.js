@@ -14,10 +14,12 @@
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
 import { pickItemKeys, PICKER_LABELS } from './picker.js';
-import { equipArmour, applyArmourSwap, bumpQuantity } from './item-equip-state.js';
+import { equipArmour, applyArmourSwap, bumpQuantity, nextTradeItems } from './item-equip-state.js';
 import { boostHasNoEffect } from '../engine/potions.js';
 import { recoveriesRemaining } from '../engine/health.js';
+import { spendAllocation, creditAllocation } from '../engine/wealth.js';
 import './ed-confirm.js';
+import './ed-trade-modal.js';
 
 const MAGIC_KINDS = new Set(['magic-item', 'blood-charm', 'healing-aid', 'thread-item']);
 // Kind labels shared with the pure picker module (ui/picker.js).
@@ -104,6 +106,7 @@ export class EdEquipment extends LitElement {
     _addOpen: { state: true },        // searchable picker visible
     _query: { state: true },          // picker search text
     _hi: { state: true },             // highlighted picker result index
+    _trade: { state: true },          // { name, mode } — the buy/sell dialog in flight
     _coinMenu: { state: true },       // "add coin" menu open
     _shownCoins: { state: true },     // coin keys pinned visible at 0 (edit mode)
     _customItemsOpen: { state: true }, // custom-item manager modal open
@@ -117,6 +120,7 @@ export class EdEquipment extends LitElement {
     this._addOpen = false;
     this._query = '';
     this._hi = 0;
+    this._trade = null;
     this._coinMenu = false;
     this._shownCoins = new Set();
     this._customItemsOpen = false;
@@ -402,25 +406,70 @@ export class EdEquipment extends LitElement {
       this.model?.threadItemCatalog?.[name]
     );
   }
+  // Every owned-item edit (picker add, stepper +/−, ✕) routes through the buy/
+  // sell dialog first (plans/PLAN-TRADE-ITEMS.md). Buy: picker-add (+1 on an
+  // owned stack) and stepper +1. Sell: stepper −1 and ✕ — one unit at a time,
+  // the row is dropped only when quantity reaches 0. A duplicate pick of an
+  // already-owned thread item stays a unique no-op (no second copy can exist).
   _add(name) {
     if (!name) return;
-    if (this._inputs().some((i) => i.name === name)) {
-      // A duplicate pick of an already-owned item increments its quantity —
-      // except thread items, which stay a unique no-op.
-      if (this._isThread(name)) return;
-      this._commitItems(bumpQuantity(this._inputs(), name, +1, (n) => this._isThread(n)));
-      return;
-    }
-    this._equip(name, 'add');
+    if (this._inputs().some((i) => i.name === name) && this._isThread(name)) return;
+    this._openTrade(name, 'buy');
   }
-  // The row stepper (edit mode) nudges a quantity up or down; -1 on the last dose
-  // removes the entry (item-equip-state.bumpQuantity).
   _bumpQty(name, delta) {
-    this._commitItems(bumpQuantity(this._inputs(), name, delta, (n) => this._isThread(n)));
+    this._openTrade(name, delta > 0 ? 'buy' : 'sell');
   }
   _remove(name) {
-    this._commitItems(this._inputs().filter((i) => i.name !== name));
-    if (this._modal === name) this._modal = null;
+    this._openTrade(name, 'sell');
+  }
+  // The item may not be owned yet (a picker pick): resolve from the model's owned
+  // rows first, then the merged catalog, so both the detail line and the suggested
+  // price are correct. Unknown/custom names degrade to a plain entry (cost → 0).
+  // The catalog stores each name as its KEY, not a field, so the resolved entry
+  // must carry `name` explicitly — otherwise the trade dialog's confirm detail
+  // loses itemName and _confirmTrade bails before dispatching anything.
+  _tradeItem(name) {
+    const known =
+      this.model?.items?.find((it) => it.name === name) ??
+      this._catalogs()[name];
+    return known ? { ...known, name: known.name ?? name } : { name, ref: {}, effects: [] };
+  }
+  _openTrade(name, mode) {
+    if (!name) return;
+    this._trade = { name, mode };
+    if (this._addOpen) this._closePicker();
+  }
+  _closeTrade() {
+    this._trade = null;
+  }
+  // The player confirmed a buy/sell: compute the next item list AND the next
+  // purse through the pure modules, then dispatch the ONE atomic ed-trade so
+  // ed-app persists both and re-derives once (store-only-inputs holds — the
+  // accepted price is never written).
+  _confirmTrade({ mode, itemName, amount, alloc }) {
+    if (!itemName) return;
+    const inputs = this._inputs();
+    const wealth = { coins: this._wealth().coins ?? {}, gems: this._wealth().gems ?? [] };
+    // --- items (pure decision, item-equip-state.nextTradeItems) ---
+    const items = nextTradeItems(inputs, itemName, mode, {
+      isThread: (n) => this._isThread(n),
+      kindOf: (n) => this._kindOf(n),
+    });
+    // --- purse ---
+    let next = { coins: wealth.coins, gems: wealth.gems };
+    if (mode === 'buy') {
+      const spent = spendAllocation(wealth.coins, wealth.gems, alloc);
+      if (!spent.ok) return; // gated by the dialog; defensive
+      next = { coins: spent.coins, gems: spent.gems };
+    } else {
+      next = creditAllocation(wealth.coins, wealth.gems, alloc);
+    }
+    this.dispatchEvent(new CustomEvent('ed-trade', {
+      detail: { items, wealth: next },
+      bubbles: true, composed: true,
+    }));
+    this._closeTrade();
+    if (this._modal === itemName) this._modal = null;
   }
   _toggle(name) {
     this._equip(name, 'toggle');
@@ -517,6 +566,23 @@ export class EdEquipment extends LitElement {
       @confirm=${this._confirmSwap}
       @close=${() => { this.renderRoot.activeElement?.blur(); this._swapPrompt = null; }}
     ></ed-confirm>`;
+  }
+
+  // Buy/sell dialog (plans/PLAN-TRADE-ITEMS.md): item detail + editable amount +
+  // allocation grid, driven by the resolved item and the derived wealth. The
+  // view passes the item and wealth DOWN; the dialog reports the allocation UP
+  // via `confirm`; this view computes the next inputs + purse and dispatches the
+  // single ed-trade (data down / events up).
+  _tradeModal() {
+    const { name, mode } = this._trade ?? {};
+    if (!name) return '';
+    return html`<ed-trade-modal
+      .item=${this._tradeItem(name)}
+      mode=${mode}
+      .wealth=${this._wealth()}
+      @confirm=${(e) => this._confirmTrade(e.detail)}
+      @close=${() => { this.renderRoot.activeElement?.blur(); this._closeTrade(); }}
+    ></ed-trade-modal>`;
   }
 
   _itemRow(it) {
@@ -941,6 +1007,8 @@ export class EdEquipment extends LitElement {
       ${modalItem ? this._detailModal(modalItem) : ''}
 
       ${this._swapModal()}
+
+      ${this._trade ? this._tradeModal() : ''}
 
       ${this._useModal()}
 

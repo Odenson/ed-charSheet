@@ -135,7 +135,12 @@ never a fabricated cheaper price.
 `threadRank` items carry no reliable catalogue price; their trade dialog pre-fills
 **amount 0** and stays editable. Buying/selling thread items therefore credits or debits
 whatever the player types (or nothing). Consistent with your "editable amount, default 0"
-(owner confirmed).
+(owner confirmed). **Revised 2026-08-15 (review):** when a thread item *does* carry a
+parseable `ref.cost` (e.g. the Orc Stinger, `4650`), default to that parsed amount and
+fall back to 0 when absent/unparseable — the same rule as every other item, so the
+special case is retired. Thread rows are qty-unique: buy adds the row (`threadRank` 0,
+no `qty`), sell removes it — Phase C wiring must be thread-aware (`bumpQuantity` is a
+no-op for threads).
 
 ### E. Storage — only inputs, and only where the shape already exists
 
@@ -285,6 +290,9 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
 11. **Custom / unparseable-cost items use the same buy/sell dialogs at amount 0**
     (editable); the plain remove-confirm is retired for owned items. Buy and sell stay
     symmetric. ✓ (2026-08-14)
+12. **Thread-item trade default = parsed `ref.cost` when parseable, else 0** — same rule
+    as all items (Orc Stinger 4650 sp pre-fills 4650, Band of the Elements pre-fills 0).
+    Thread rows buy/sell as whole-row add/remove (qty-unique). ✓ (2026-08-15)
 
 ## Progress log
 
@@ -296,6 +304,17 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
   unparseable items go through the dialogs at amount 0 (plain-remove retired, buy/sell
   symmetric); `parseCostSilver` fractional-copper path (`"8 cp"` → 8 cp) called out for a
   dedicated Phase A test. Decisions #8–#11 recorded. Implementation not started.
+- 2026-08-15 — Code review (post thread-weapons commit): plan references verified against
+  the code (wealth.js exports, equipment edit-dispatch paths, ed-confirm family, item-
+  equip-state helpers, cost formats in items.json). Two adjustments adopted: thread-item
+  trade default = parsed `ref.cost` else 0 (Decision D revised, #12); thread rows are
+  qty-unique so Phase C wiring is thread-aware. Ready to begin Phase A.
+- 2026-08-16 — Phase C bugfix + price flexibility: `_tradeItem` returns the merged catalog
+  entry WITH its `name` (the catalog keys by name, so a pick on an unowned item previously
+  carried no `itemName` and the confirm silently bailed). Amount is freely editable for buy
+  and sell; editing it re-seeds the default all-silver allocation against the new price
+  (sell: the credit can sum exactly; buy: it just needs to cover), so trading at any price
+  — not just the catalogue value — is one dial, not a hand-fiddled grid.
 
 ## WDYT
 

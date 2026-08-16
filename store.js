@@ -297,6 +297,22 @@ export function saveWealthEdits(wealth, id) {
 }
 
 /**
+ * Persist a single trade to the edits overlay (plans/PLAN-TRADE-ITEMS.md): one
+ * write for BOTH the item list and the resulting wealth purse, so a buy/sell is
+ * stored atomically and the app can run one re-derive. Both categories are the
+ * exact input shapes `saveItemEdits` / `saveWealthEdits` write — no trade ledger,
+ * no price fields (the accepted amount was a session fact, never a property of
+ * the item). "Store only inputs, never derived" holds.
+ */
+export function saveTradeEdits({ items, wealth }, id) {
+  const edits = loadEdits(id);
+  edits.items = items;
+  edits.wealth = wealth;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
  * Persist the character's health inputs to the edits overlay. Health is pure
  * input — current Damage, Wounds, and Recovery tests used today — so the object
  * is stored as-is; the ratings and the conscious/dead standing are derived by

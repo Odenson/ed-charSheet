@@ -641,7 +641,8 @@
         "longRange": "31-60",
         "weight": "15 lb",
         "cost": 4650,
-        "availability": "Rare"
+        "availability": "Rare",
+        "image": "data/Orc-Stinger.png"
       },
       "threadRanks": [
         {
