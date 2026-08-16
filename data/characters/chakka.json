@@ -415,6 +415,15 @@
       "name": "Orc Stinger",
       "equipped": true,
       "threadRank": 4
+    },
+    {
+      "name": "Braces Of Defence",
+      "equipped": true,
+      "threadRank": 0
+    },
+    {
+      "name": "Dark Archer Armour",
+      "equipped": true
     }
   ],
   "wealth": {
