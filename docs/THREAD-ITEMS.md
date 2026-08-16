@@ -65,7 +65,7 @@ The engine never reads them.
 | `legendary` | no | no | `true` flags a legendary item (same shape, usually more ranks/deeds). Display-only. |
 | `rankLimit` | no | no | Entry-level override of the tier's typical max ranks. Display-only. |
 | `base` | yes | **yes** | `{ "effects": [] }` — the item's state with **no thread woven**. Most items are mundane until threaded; `[]` means "nothing until threaded". |
-| `combatOptions` | no | **yes** | Item-scoped combat/action option bundles offered on the **Combat tab while this item is the selected weapon** — same bundle shape as `rules/combat.json` options (§4.1). |
+| `combatOptions` | no | **yes** | Item-scoped combat/action option bundles offered on the **Combat tab** — same bundle shape as `rules/combat.json` options (§4.1). Weapon items (with `ref.category`) offer them only while selected; non-weapon items (armour/trinkets) offer them while equipped. |
 | `ref` | no | no | Source page + flavour description for the detail modal. Display-only. |
 | `threadRanks` | yes | **yes** | Ordered rank entries (§4); the rank-gated effect source. |
 
@@ -137,7 +137,21 @@ new logic. Delivery differs:
 |---|---|---|
 | `enable-option` (taxonomy) | an item's *effect* points at a **global** option in `rules/combat.json` by name (Tail Attack, races) | always, once enabled |
 | Global option | `rules/combat.json` `options[]` | every combat session |
-| **`combatOptions`** | the **item entry itself** (`items.<name>.combatOptions[]`) | **only while this item is the selected weapon** |
+| **`combatOptions`** (weapon) | the **item entry itself** (`items.<name>.combatOptions[]`), item has `ref.category` | **only while this item is the selected weapon** |
+| **`combatOptions`** (non-weapon) | the **item entry itself**, item has **no** `ref.category` (armour, trinkets) | **while the item is equipped** (weapon pick irrelevant) |
+
+Delivery splits by whether the item is a weapon (`ref.category` present):
+- **Weapon** thread items ride `equippedWeapons[].combatOptions` — offered only
+  while that weapon is the selected pick (Orc Stinger's *Double Bolt*).
+- **Non-weapon** thread items (armour like *Dark Archer Armour*, trinkets) ride
+  `combat.itemOptions` — `store.js` gathers the `combatOptions` of every equipped
+  item with no `ref.category`, so a defensive reaction (e.g. the *Horror Ward*:
+  +1 Physical & Mystic Defence vs Horrors) is a pill the player arms on demand,
+  independent of the weapon pick. `ed-combat.js` `_allOptions()` merges both
+  sources (weapon bundles + `itemOptions` + global) so `collectCombatEffects`
+  sees one list; a bundle's `defense-modifier` effects flow into `defenseMods`
+  and fold onto the Combat-tab Defence readout via `foldCombatRatings` **only
+  when toggled** — never into the always-on derived Defence (B7).
 
 **How it reaches a roll:** `equippedWeapons` carries `combatOptions` through to
 the model; the Combat tab merges them into the option list it renders

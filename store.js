@@ -523,7 +523,7 @@ async function loadRules() {
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
 // may only override these; any other target name is ignored. Kept here (not in a
 // rule file) so the code that consumes each target and the registry stay together.
-export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost']);
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
@@ -869,6 +869,13 @@ export function deriveModel(character, rules) {
       ? Math.max(0, Math.min(karmaMax, (Number(character.resources?.karma?.converted) || 0) - (Number(character.resources?.karma?.spent) || 0)))
       : null;
   const karmaRitualCost = homebrewSets['karma.ritualCost'] ?? null;
+  // Homebrew additional-Discipline tier shift (plans/PLAN-HOMEBREW-LEGEND-TIER.md):
+  // with the `legend.additionalTierShift` set target, an additional-Discipline
+  // talent prices each rank at its own tier bumped up (Novice→Journeyman→Warden→
+  // Master) instead of the New-Discipline/Equivalent-Tier tables. Absent/0 ⇒
+  // standard tables. Fed to the audit and to the rank-editing pricing below, so
+  // step costs always equal audit(after) − audit(before) under the rule.
+  const tierShift = Number(homebrewSets['legend.additionalTierShift']) || 0;
 
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), foldedEffects, lookupChar),
@@ -971,6 +978,7 @@ export function deriveModel(character, rules) {
     knacks,
     threadItemCatalog,
     karmaRitualCost,
+    tierShift,
   });
   // Legend-earned log (PLAN-NOTES-TAB, decisions #1/#6): `totalEarnt` is the PURE
   // SUM of a display list — one synthesized, non-persisted virtual "Starting
@@ -1027,6 +1035,7 @@ export function deriveModel(character, rules) {
           bands: legendBands,
           spent,
           spends: legendSpends(),
+          tierShift, // homebrew additional-Discipline tier shift (0 = standard), read by the UI's rank guard
         }
       : null;
 
@@ -1048,8 +1057,8 @@ export function deriveModel(character, rules) {
       ...disc,
       talents: disc.talents.map((t, ti) => {
         const raw = discInputs[di]?.talents?.[ti] ?? {};
-        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1);
-        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank) : null;
+        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, { tierShift });
+        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, { tierShift }) : null;
         return {
           ...t,
           pricing: {
@@ -1141,6 +1150,16 @@ export function deriveModel(character, rules) {
           effects: it.effects ?? [],
         };
       }),
+    // Item-scoped combat-option bundles from equipped thread items that are NOT
+    // weapons (armour, trinkets — no `ref.category`, so they never join
+    // `equippedWeapons`). These surface on the Combat tab independent of the
+    // weapon pick, so a defensive reaction like Dark Archer Armour's Horror-ward
+    // is a toggle the player arms on demand. Weapon-scoped bundles still ride
+    // `equippedWeapons[].combatOptions` (offered only while that weapon is
+    // selected) — this list deliberately excludes them to avoid double-offering.
+    itemOptions: items
+      .filter((it) => it.equipped && (it.combatOptions?.length ?? 0) > 0 && it.kind !== 'weapon' && !it.ref?.category)
+      .flatMap((it) => it.combatOptions ?? []),
     strengthStep: strStep,
     conditions: {
       knockedDown: character.resources?.health?.knockedDown === true,

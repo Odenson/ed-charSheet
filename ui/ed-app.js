@@ -729,6 +729,7 @@ export class EdApp extends LitElement {
     if (totalEarnt == null) return false;
     const spent = auditLegendSpent(character, this._rules.legendFile?.costs, {
       knacks: this._model?.knacks ?? [],
+      tierShift: this._model?.legend?.tierShift ?? 0,
     });
     return legendAvailable(totalEarnt, spent.total) >= 0;
   }

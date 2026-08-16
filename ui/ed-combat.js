@@ -433,7 +433,12 @@ export class EdCombat extends LitElement {
   // the list), so switching to an applicable pick re-shows the same chips.
   _allOptions() {
     const global = this.model?.combatRules?.options ?? [];
-    const list = [...(this._selWeapon()?.combatOptions ?? []), ...global];
+    // Item-scoped bundles come from two places: the selected weapon (offered only
+    // while it is picked) and equipped non-weapon thread items (`combat.itemOptions`
+    // — armour/trinkets, always offered while equipped, e.g. Dark Archer Armour's
+    // Horror-ward). Both render before the global rules bundles.
+    const itemOpts = this.model?.combat?.itemOptions ?? [];
+    const list = [...(this._selWeapon()?.combatOptions ?? []), ...itemOpts, ...global];
     const scopes = this._attackScopes();
     const race = this.model?.meta?.race;
     return list.filter((o) => {

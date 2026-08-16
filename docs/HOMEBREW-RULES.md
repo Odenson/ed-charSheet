@@ -199,6 +199,13 @@ with a scalar or a **race-keyed map**.
   - `karma.ritualCost` — Legend per Karma point for the paid Karma Ritual
     (read by the ritual feature; not a rating). Its presence switches the ritual
     from the free refill to the paid buy-back.
+  - `legend.additionalTierShift` — scalar (≥ 0; typically 1): prices every rank
+    of an additional-Discipline talent at its own tier bumped that many steps up
+    (Novice→Journeyman→Warden→Master, Master stays Master), replacing the
+    New-Discipline Rank-1 and Equivalent-Tier tables for those talents (plans/
+    PLAN-HOMEBREW-LEGEND-TIER.md). Absent/0 ⇒ the standard tables. Read by the
+    Legend-spent audit and the rank-editing pricing (engine/legend-spent.js,
+    store.js `tierShift`).
 - **Semantics.** `set` **replaces** the target's standard value; a rule may pair
   `set` with `effects`/`formula` on *different* targets. **Last-enabled-wins** if
   two enabled rules `set` the same target. A `set` value is a **constant** in v2

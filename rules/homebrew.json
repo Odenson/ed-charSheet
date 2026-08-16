@@ -1,6 +1,6 @@
 {
   "schema": "ed-homebrew/2",
-  "source": "Homebrew rules — optional campaign rules that override the standard Earthdawn 4E rulebooks. Authoring guide: docs/HOMEBREW-RULES.md. Each rule is pure data (inputs + plain-English notes); nothing here stores a derived value. A rule applies globally (every character) when `enabled` is true. A rule may `formula` (replace a rating with a term sum), `effects` (adjust values via the standard taxonomy, docs/EFFECT-TAXONOMY.md), and/or `set` (v2: override a registry target — karma.step / karma.maxCap / karma.ritualCost — with a scalar or a race-keyed map). Refs resolve against the character (engine/characteristics.js); the set-target registry lives in store.js (HOMEBREW_SET_TARGETS).",
+  "source": "Homebrew rules — optional campaign rules that override the standard Earthdawn 4E rulebooks. Authoring guide: docs/HOMEBREW-RULES.md. Each rule is pure data (inputs + plain-English notes); nothing here stores a derived value. A rule applies globally (every character) when `enabled` is true. A rule may `formula` (replace a rating with a term sum), `effects` (adjust values via the standard taxonomy, docs/EFFECT-TAXONOMY.md), and/or `set` (v2: override a registry target — karma.step / karma.maxCap / karma.ritualCost / legend.additionalTierShift — with a scalar or a race-keyed map). Refs resolve against the character (engine/characteristics.js); the set-target registry lives in store.js (HOMEBREW_SET_TARGETS).",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "note": "This file is loaded optionally (knacks/thread-items precedent): if it is absent the app behaves exactly as before. Rules ship `enabled: false` until the owner turns them on.",
   "rules": [
@@ -59,6 +59,17 @@
         "karma.step":       { "Dwarf": 4,  "Elf": 4,  "Human": 5,  "Obsidiman": 3,  "Ork": 5,  "T'skrang": 4,  "Troll": 3,  "Windling": 6  },
         "karma.maxCap":     { "Dwarf": 25, "Elf": 25, "Human": 40, "Obsidiman": 20, "Ork": 40, "T'skrang": 25, "Troll": 20, "Windling": 60 },
         "karma.ritualCost": { "Dwarf": 10, "Elf": 10, "Human": 6,  "Obsidiman": 10, "Ork": 7,  "T'skrang": 8,  "Troll": 10, "Windling": 5  }
+      }
+    },
+    {
+      "id": "hb-additional-tier-shift",
+      "name": "Additional-Discipline talents priced one tier higher",
+      "overrides": "Players' Guide — New Discipline Talent Cost Table & Equivalent Talent Circle Table (house rule)",
+      "summary": "A talent learned in an additional Discipline (2nd and later) costs Legend as if it were one tier higher than its own tier — Novice→Journeyman, Journeyman→Warden, Warden→Master, Master stays Master — replacing the New-Discipline Rank-1 and Equivalent-Tier tables entirely.",
+      "enabled": true,
+      "note": "Uses the ed-homebrew/2 `set` lever (docs/HOMEBREW-RULES.md §5.5, plans/PLAN-HOMEBREW-LEGEND-TIER.md). `legend.additionalTierShift: 1` prices every rank of an additional-Discipline talent at its own tier bumped one step (e.g. a Novice talent at Rank 3 costs 200+300+500=1000 instead of the surcharge-table price). Value 0/absent keeps the standard tables. Owner-enabled for the current campaign.",
+      "set": {
+        "legend.additionalTierShift": 1
       }
     }
   ]

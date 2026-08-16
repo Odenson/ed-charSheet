@@ -10,6 +10,12 @@
 //   • additional-Discipline talent ranks (Phase 2): Rank 1 from the New Discipline
 //     Talent Cost Table, ranks 2+ at the higher equivalent tier — talents from a 2nd/
 //     3rd/4th+ Discipline cost more than the same talent would in the first Discipline.
+//     Homebrew override (rules/homebrew.json `legend.additionalTierShift`, plans/
+//     PLAN-HOMEBREW-LEGEND-TIER.md): with the rule on, an additional-Discipline talent
+//     is instead every rank at its own tier bumped one step up (Novice→Journeyman→
+//     Warden→Master, Master stays Master), both surcharge tables ignored — pass
+//     `opts.tierShift` into auditLegendSpent/additionalDisciplineTalentCost/
+//     talentRankStepCost.
 //   • skills: cumulative sum by tier over the Skill Training Table's Novice/Journeyman
 //     columns — skills DO cost Legend (Player's Guide 'Improving Skill Ranks'); the
 //     silver training fee is a separate cost we don't track.
@@ -132,6 +138,21 @@ export function equivalentTier(realCircle, ordinal, costs) {
   return rows.find((r) => realCircle <= r.maxCircle)?.tier ?? null;
 }
 
+/**
+ * A tier label bumped one step up the `costs.tiers` ladder (Novice → Journeyman →
+ * Warden → Master). `shift` is the number of steps; `Master` is the ceiling — a
+ * Master-tier talent keeps Master prices (no higher column exists). Unknown tier
+ * labels pass through unchanged (the caller flags via the talentRank table miss).
+ * Homebrew rule (rules/homebrew.json `legend.additionalTierShift`).
+ */
+export function shiftedTier(tier, costs, shift = 1) {
+  if (!shift || shift <= 0) return tier;
+  const labels = (costs?.tiers ?? []).map((t) => t.label);
+  const i = labels.indexOf(tier);
+  if (i === -1) return tier;
+  return labels[Math.min(i + shift, labels.length - 1)];
+}
+
 /** Rank-1 cost of a talent in an additional Discipline (New Discipline Talent Cost Table). */
 export function newDisciplineRank1Cost(lowestCircle, ordinal, costs) {
   if (ordinal <= 1 || lowestCircle == null) return null;
@@ -141,12 +162,28 @@ export function newDisciplineRank1Cost(lowestCircle, ordinal, costs) {
 }
 
 /**
- * Total Legend for one additional-Discipline talent: Rank 1 from the New Discipline
- * table, ranks 2..N at the equivalent tier. Returns { cost, tier, rank1 }; cost is
- * null when any step is unpriceable (flagged, never fabricated).
+ * Total Legend for one additional-Discipline talent.
+ *
+ * Standard model: Rank 1 from the New Discipline table, ranks 2..N at the
+ * equivalent tier. Returns { cost, tier, rank1 }; cost is null when any step is
+ * unpriceable (flagged, never fabricated).
+ *
+ * Homebrew model (opts.tierShift > 0, rules/homebrew.json
+ * `legend.additionalTierShift`): every rank is priced at the talent's own tier
+ * bumped one step up (Novice → Journeyman → Warden → Master, Master stays
+ * Master) — the New-Discipline Rank-1 table and the Equivalent-Tier table are
+ * both ignored, so the whole talent costs exactly `talentRanksCost(rank, shifted)`
+ * with no separate rank-1 surcharge. A missing `tier` input defaults to Novice,
+ * then shifts (mirroring the audit's skill default). `rank1` is null under the
+ * rule (no table price); `tier` is the shifted column actually used.
  */
-export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowestCircle, costs) {
+export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowestCircle, costs, opts = {}) {
   if (!rank || rank <= 0) return { cost: 0, tier: null, rank1: null };
+  const tierShift = Number(opts?.tierShift) || 0;
+  if (tierShift > 0) {
+    const tier = shiftedTier(opts?.tier ?? 'Novice', costs, tierShift);
+    return { cost: talentRanksCost(rank, tier, costs?.talentRank), tier, rank1: null };
+  }
   const rank1 = newDisciplineRank1Cost(lowestCircle, ordinal, costs);
   const tier = equivalentTier(realCircle, ordinal, costs);
   if (rank1 == null) return { cost: null, tier, rank1 };
@@ -177,16 +214,21 @@ export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowest
  * @param {number|null} lowestCircle  lowestDisciplineCircle(character.disciplines)
  * @param {object} costs  rules/legend.json `costs` block
  * @param {number} toRank  the rank the step brings the talent to
+ * @param {{tierShift?: number, tier?: string}} opts  homebrew additional-tier
+ *   shift (rules/homebrew.json): when `tierShift > 0`, an ordinal-2+ talent is
+ *   priced from its own `tier` bumped up instead of the New-Discipline/Equivalent
+ *   tables — the step cost then matches the shifted audit exactly.
  */
-export function talentRankStepCost(t, ordinal, lowestCircle, costs, toRank) {
+export function talentRankStepCost(t, ordinal, lowestCircle, costs, toRank, opts = {}) {
   if (!toRank || toRank <= 0) return 0;
   if (ordinal <= 1) {
     const hi = talentRanksCost(toRank, t?.tier, costs?.talentRank);
     const lo = talentRanksCost(toRank - 1, t?.tier, costs?.talentRank);
     return hi == null || lo == null ? null : hi - lo;
   }
-  const hi = additionalDisciplineTalentCost(toRank, t?.circle ?? 1, ordinal, lowestCircle, costs).cost;
-  const lo = additionalDisciplineTalentCost(toRank - 1, t?.circle ?? 1, ordinal, lowestCircle, costs).cost;
+  const shiftOpts = { ...opts, tier: opts?.tier ?? t?.tier ?? 'Novice' };
+  const hi = additionalDisciplineTalentCost(toRank, t?.circle ?? 1, ordinal, lowestCircle, costs, shiftOpts).cost;
+  const lo = additionalDisciplineTalentCost(toRank - 1, t?.circle ?? 1, ordinal, lowestCircle, costs, shiftOpts).cost;
   return hi == null || lo == null ? null : hi - lo;
 }
 
@@ -242,9 +284,14 @@ export function auditLegendSpent(character, costs, opts = {}) {
 
   // --- Talents: one section per Discipline. The first Discipline pays normal rates;
   //     each additional Discipline pays the New-Discipline Rank-1 cost then the higher
-  //     equivalent tier for ranks 2+ (the surcharge is visible per section). ---
+  //     equivalent tier for ranks 2+ (the surcharge is visible per section). With the
+  //     homebrew tier-shift rule on (opts.tierShift > 0), an additional-Discipline
+  //     talent is instead priced at its own tier bumped one step up (Novice →
+  //     Journeyman → Warden → Master, Master stays Master), the New-Discipline and
+  //     Equivalent-Tier tables ignored. ---
   const disciplines = character?.disciplines ?? [];
   const lowestCircle = lowestDisciplineCircle(disciplines);
+  const tierShift = Number(opts?.tierShift) || 0;
   disciplines.forEach((disc, idx) => {
     const ordinal = idx + 1;
     const additional = ordinal > 1;
@@ -252,7 +299,10 @@ export function auditLegendSpent(character, costs, opts = {}) {
       if (!additional) {
         return { name: t.name, detail: `${t.tier} · Rank ${t.rank}`, cost: talentRanksCost(t.rank, t.tier, costs?.talentRank) };
       }
-      const { cost, tier } = additionalDisciplineTalentCost(t.rank, t.circle ?? 1, ordinal, lowestCircle, costs);
+      const { cost, tier } = additionalDisciplineTalentCost(t.rank, t.circle ?? 1, ordinal, lowestCircle, costs, {
+        tierShift,
+        tier: t.tier ?? 'Novice',
+      });
       const tierNote = tier && tier !== t.tier ? `${t.tier} → ${tier}` : tier ?? t.tier;
       return { name: t.name, detail: `${tierNote} · Rank ${t.rank}`, cost };
     });

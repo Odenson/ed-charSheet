@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { deriveModel } from './store.js';
+import { collectCombatEffects, foldCombatRatings } from './engine/combat.js';
 
 const rules = {
   steps: JSON.parse(readFileSync(new URL('./rules/steps.json', import.meta.url))).steps,
@@ -200,4 +201,54 @@ test('a thread item with no ref.category stays out of equippedWeapons', () => {
   const modelC = deriveModel(charC, rules);
   const names = modelC.combat.equippedWeapons.map((w) => w.name);
   assert.ok(!names.includes('Bracers of Aras'), 'non-weapon thread items are not weapons');
+});
+
+test('an equipped non-weapon thread item surfaces its combatOptions in combat.itemOptions', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Dark Archer Armour', equipped: true, threadRank: 0 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  const ward = modelC.combat.itemOptions.find((o) => o.name === 'Horror Ward');
+  assert.ok(ward, 'Horror Ward should be offered as an item-scoped combat option');
+  // The bundle carries the two situational Defence modifiers — never folded into
+  // the static Defence pills (condition: situational), applied only on toggle.
+  const defs = ward.effects.filter((e) => e.type === 'defense-modifier');
+  assert.equal(defs.length, 2);
+  assert.ok(defs.every((e) => e.condition === 'situational'));
+});
+
+test('an equipped item-option is not offered while stored (unequipped)', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Dark Archer Armour', equipped: false, threadRank: 0 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  assert.ok(!modelC.combat.itemOptions.some((o) => o.name === 'Horror Ward'));
+});
+
+test('a thread weapon keeps its combatOptions off itemOptions (weapon-scoped, no double-offer)', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Orc Stinger', equipped: true, threadRank: 1 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  assert.ok(!modelC.combat.itemOptions.some((o) => o.name === 'Double Bolt'));
+});
+
+test('toggling Horror Ward folds +1 PD / +1 MD onto the Combat-tab Defence readout only', () => {
+  const charC = {
+    ...charA,
+    items: [{ name: 'Dark Archer Armour', equipped: true, threadRank: 0 }],
+  };
+  const modelC = deriveModel(charC, rules);
+  const { defenseMods } = collectCombatEffects({
+    selectedOptions: ['Horror Ward'],
+    rules: { options: modelC.combat.itemOptions, situations: [] },
+    conditions: {},
+  });
+  assert.equal(defenseMods.length, 2);
+  const r = foldCombatRatings({ physicalDefense: 9, mysticDefense: 7 }, defenseMods, []);
+  assert.equal(r.defence.Physical.value, 10); // base 9 + toggled 1
+  assert.equal(r.defence.Mystic.value, 8); //  base 7 + toggled 1
 });

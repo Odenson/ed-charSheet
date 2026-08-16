@@ -76,6 +76,49 @@
         }
       ]
     },
+    "Braces Of Defence": {
+      "kind": "thread-item",
+      "tier": "Novice",
+      "maximumThreads": 1,
+      "mysticDefense": 8,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "User custom thread item (GMG-style, not from the rulebook)",
+        "description": "These leather-bound steel arm bracers are primarily used to defend oneself against physical attacks. Well, some bright weaponsmith thought why not extend the scope of the protection and made himself a fat stack of gold. Used by all races and all disciplines to protect themselves. Without a thread they are ordinary bracers.",
+        "size": 2,
+        "cost": 2800,
+        "availability": "Common",
+        "rankLimit": 4
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the maker of the braces.",
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 Physical Defence." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 Mystic Defence." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the city where the braces were made.",
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 Physical Defence." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 2, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 Mystic Defence." }
+          ]
+        }
+      ]
+    },
     "Bracers of Aras": {
       "kind": "thread-item",
       "tier": "Journeyman",
@@ -276,6 +319,65 @@
           "rank": 6,
           "effects": [
             { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Physical Armor 6." }
+          ]
+        }
+      ]
+    },
+    "Dark Archer Armour": {
+      "kind": "thread-item",
+      "tier": "Novice",
+      "maximumThreads": 1,
+      "mysticDefense": 8,
+      "Cost": 7900,
+      "combatOptions": [
+        {
+          "name": "Horror Ward",
+          "summary": "While under attack from a Horror: +1 Physical Defence and +1 Mystic Defence.",
+          "effects": [
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "situational", "scope": "vs-horrors", "source": "condition", "summary": "+1 Physical Defence while under attack from a Horror." },
+            { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "situational", "scope": "vs-horrors", "source": "condition", "summary": "+1 Mystic Defence while under attack from a Horror." }
+          ]
+        }
+      ],
+      "base": {
+        "effects": [
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Physical Armor 5 (treated as hide armor)." },
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Mystic Armor 1 (treated as hide armor)." },
+          { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Initiative penalty 1 (treated as hide armor)." }
+        ]
+      },
+      "ref": {
+        "source": "User custom thread item (GMG-style, not from the rulebook)",
+        "description": "The dark archer is a feared aggressor that strikes hard and without warning. This armour enhances the archer that is a heavy hitter with good strength due to the heavy hide construction. Without a thread it is treated as normal hide armor.",
+        "rankLimit": 4
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the armour.",
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Physical Armor 6 (+1)." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Mystic Armor 4 (+3)." },
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Avoid Blow" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Avoid Blow." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the armorer who made the armour.",
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Physical Armor 7 (+2)." },
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 0, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor no longer has an Initiative penalty." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Mystic Armor 5 (+4)." }
           ]
         }
       ]

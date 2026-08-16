@@ -2,7 +2,20 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      {
+        "type": "added",
+        "text": "New optional homebrew rule — Additional-Discipline talents cost one tier higher (ships enabled for the current campaign). With it on, any talent learned in a 2nd (or later) Discipline is priced at its own tier bumped one step — Novice→Journeyman, Journeyman→Warden, Warden→Master, Master stays Master — replacing the New-Discipline Rank-1 and Equivalent-Tier tables entirely. Example: a Novice-tier talent at Rank 3 in a second Discipline costs 200+300+500 = 1000 Legend instead of the standard surcharge-table price. The Legend-spent breakdown, the per-rank increase/refund prices, and the affordability guard all use the same rule; turn it off in rules/homebrew.json and the standard tables come back unchanged."
+      },
+      {
+        "type": "added",
+        "text": "Item-scoped combat options now reach the Combat tab from equipped non-weapon thread items too (armour, trinkets). While such an item is equipped, its option bundle appears in the Combat Modifiers card independent of which weapon you have selected — so a defensive reaction like the Dark Archer Armour's Horror Ward (+1 Physical and Mystic Defence vs Horrors) is a pill you arm on demand, applied to the Combat-tab Defence readout only when toggled, and never baked into your always-on Defence. Weapon bundles still appear only while that weapon is picked, so nothing is ever offered twice."
+      },
+      {
+        "type": "added",
+        "text": "Two new custom thread items authored: Braces Of Defence (Novice — woven ranks grant Physical and Mystic Defence bonuses) and Dark Archer Armour (Novice — starts as hide armour and weaves up to Physical Armour 7 / Mystic Armour 5, eases and then removes the Initiative penalty, and grants +1 rank of Avoid Blow; carries the Horror Ward combat option)."
+      }
+    ]
   },
   "releases": [
     {
