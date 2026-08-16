@@ -2,34 +2,39 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": [
-      {
-        "type": "added",
-        "text": "Thread weapons: the catalogue adds two new woven weapons — the Orc Stinger (a thread crossbow) and the Band of the Elements — and a threaded weapon now joins the Combat tab's equipped-weapon row (its woven Damage step is replaced by thread ranks). Each woven rank's always-on test bonuses fold into the Combat pool exactly once, and the item's scoped combat options (like the Orc Stinger's Double Bolt) show while that weapon is selected. Combat options can also be scoped to a weapon category and restricted to a race, so melee/close-combat options and the T'skrang Tail Attack only appear for a weapon that can use them."
-      },
-      {
-        "type": "added",
-        "text": "Buy and sell items from the Equipment tab: adding an item you already own or pressing its + now opens a trade dialog instead of silently stacking, and the − / ✕ on an owned row goes through the same dialog to sell. The amount is editable and defaults to the item's listed price, and the coin-and-gem payment grid follows whatever price you type, so items can trade at any value (a gift at 0 is a free transfer). Confirm applies the items and the purse change in one step, and your Available Legend still reconciles normally."
-      },
-      {
-        "type": "added",
-        "text": "New optional homebrew rule — Additional-Discipline talents cost one tier higher (ships enabled for the current campaign). With it on, any talent learned in a 2nd (or later) Discipline is priced at its own tier bumped one step — Novice→Journeyman, Journeyman→Warden, Warden→Master, Master stays Master — replacing the New-Discipline Rank-1 and Equivalent-Tier tables entirely. Example: a Novice-tier talent at Rank 3 in a second Discipline costs 200+300+500 = 1000 Legend instead of the standard surcharge-table price. The Legend-spent breakdown, the per-rank increase/refund prices, and the affordability guard all use the same rule; turn it off in rules/homebrew.json and the standard tables come back unchanged."
-      },
-      {
-        "type": "added",
-        "text": "Item-scoped combat options now reach the Combat tab from equipped non-weapon thread items too (armour, trinkets). While such an item is equipped, its option bundle appears in the Combat Modifiers card independent of which weapon you have selected — so a defensive reaction like the Dark Archer Armour's Horror Ward (+1 Physical and Mystic Defence vs Horrors) is a pill you arm on demand, applied to the Combat-tab Defence readout only when toggled, and never baked into your always-on Defence. Weapon bundles still appear only while that weapon is picked, so nothing is ever offered twice."
-      },
-      {
-        "type": "added",
-        "text": "Two new custom thread items authored: Braces Of Defence (Novice — woven ranks grant Physical and Mystic Defence bonuses) and Dark Archer Armour (Novice — starts as hide armour and weaves up to Physical Armour 7 / Mystic Armour 5, eases and then removes the Initiative penalty, and grants +1 rank of Avoid Blow; carries the Horror Ward combat option)."
-      },
-      {
-        "type": "changed",
-        "text": "The Legend-spent breakdown (the ⓘ beside your Available Legend) now closes with a single Total — the sum of every priced advance — instead of the Modeled total, Recorded, and Unmodeled (delta) reconciliation lines."
-      }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.13.0",
+      "date": "2026-08-16",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Thread weapons: the catalogue adds two new woven weapons — the Orc Stinger (a thread crossbow) and the Band of the Elements — and a threaded weapon now joins the Combat tab's equipped-weapon row (its woven Damage step is replaced by thread ranks). Each woven rank's always-on test bonuses fold into the Combat pool exactly once, and the item's scoped combat options (like the Orc Stinger's Double Bolt) show while that weapon is selected. Combat options can also be scoped to a weapon category and restricted to a race, so melee/close-combat options and the T'skrang Tail Attack only appear for a weapon that can use them."
+        },
+        {
+          "type": "added",
+          "text": "Buy and sell items from the Equipment tab: adding an item you already own or pressing its + now opens a trade dialog instead of silently stacking, and the − / ✕ on an owned row goes through the same dialog to sell. The amount is editable and defaults to the item's listed price, and the coin-and-gem payment grid follows whatever price you type, so items can trade at any value (a gift at 0 is a free transfer). Confirm applies the items and the purse change in one step, and your Available Legend still reconciles normally."
+        },
+        {
+          "type": "added",
+          "text": "New optional homebrew rule — Additional-Discipline talents cost one tier higher (ships enabled for the current campaign). With it on, any talent learned in a 2nd (or later) Discipline is priced at its own tier bumped one step — Novice→Journeyman, Journeyman→Warden, Warden→Master, Master stays Master — replacing the New-Discipline Rank-1 and Equivalent-Tier tables entirely. Example: a Novice-tier talent at Rank 3 in a second Discipline costs 200+300+500 = 1000 Legend instead of the standard surcharge-table price. The Legend-spent breakdown, the per-rank increase/refund prices, and the affordability guard all use the same rule; turn it off in rules/homebrew.json and the standard tables come back unchanged."
+        },
+        {
+          "type": "added",
+          "text": "Item-scoped combat options now reach the Combat tab from equipped non-weapon thread items too (armour, trinkets). While such an item is equipped, its option bundle appears in the Combat Modifiers card independent of which weapon you have selected — so a defensive reaction like the Dark Archer Armour's Horror Ward (+1 Physical and Mystic Defence vs Horrors) is a pill you arm on demand, applied to the Combat-tab Defence readout only when toggled, and never baked into your always-on Defence. Weapon bundles still appear only while that weapon is picked, so nothing is ever offered twice."
+        },
+        {
+          "type": "added",
+          "text": "Two new custom thread items authored: Braces Of Defence (Novice — woven ranks grant Physical and Mystic Defence bonuses) and Dark Archer Armour (Novice — starts as hide armour and weaves up to Physical Armour 7 / Mystic Armour 5, eases and then removes the Initiative penalty, and grants +1 rank of Avoid Blow; carries the Horror Ward combat option)."
+        },
+        {
+          "type": "changed",
+          "text": "The Legend-spent breakdown (the ⓘ beside your Available Legend) now closes with a single Total — the sum of every priced advance — instead of the Modeled total, Recorded, and Unmodeled (delta) reconciliation lines."
+        }
+      ]
+    },
     {
       "version": "1.12.0",
       "date": "2026-08-14",
