@@ -410,6 +410,11 @@
     {
       "name": "Dire Wolf Skin Cloak",
       "equipped": true
+    },
+    {
+      "name": "Orc Stinger",
+      "equipped": true,
+      "threadRank": 4
     }
   ],
   "wealth": {
