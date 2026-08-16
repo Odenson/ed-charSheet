@@ -420,6 +420,46 @@ export class EdCombat extends LitElement {
     return found ?? list[0];
   }
 
+  // Every combat-option bundle the player may toggle: the global rules/combat.json
+  // options plus any offered by the selected weapon itself (its `combatOptions`,
+  // folded by names like a rules bundle — the engine reads `rules.options` so the
+  // merged list keeps the collection pure and unchanged). Weapon-scoped bundles
+  // render first so they sit next to the thing they act on.
+  // Bundles that declare `appliesTo` (engine weapon-category tags) or `restricted`
+  // (an exact rules/races.json race name) are filtered to the current pick: a
+  // scoped option only renders while the selected roll is one of the attack types
+  // it may drive and the character's race permits it. Toggled names that fall out
+  // of scope are simply not folded (collectCombatEffects ignores names absent from
+  // the list), so switching to an applicable pick re-shows the same chips.
+  _allOptions() {
+    const global = this.model?.combatRules?.options ?? [];
+    // Item-scoped bundles come from two places: the selected weapon (offered only
+    // while it is picked) and equipped non-weapon thread items (`combat.itemOptions`
+    // — armour/trinkets, always offered while equipped, e.g. Dark Archer Armour's
+    // Horror-ward). Both render before the global rules bundles.
+    const itemOpts = this.model?.combat?.itemOptions ?? [];
+    const list = [...(this._selWeapon()?.combatOptions ?? []), ...itemOpts, ...global];
+    const scopes = this._attackScopes();
+    const race = this.model?.meta?.race;
+    return list.filter((o) => {
+      if (o.appliesTo && !scopes.some((s) => o.appliesTo.includes(s))) return false;
+      if (o.restricted && o.restricted !== race) return false;
+      return true;
+    });
+  }
+  // The attack types the current pick can roll, as weapon-category tags. A real
+  // weapon fixes its scope from its category; with "None" the scope resolves from
+  // the selected talent/skill name through the engine's category map, so e.g.
+  // Unarmed Combat → 'unarmed'. Non-attack picks (skills, defenses, free actions)
+  // yield no scope, hiding every scoped option.
+  _attackScopes() {
+    const w = this._selWeapon();
+    if (w?.category) return [w.category];
+    const name = this._selTalent()?.name;
+    if (!name) return [];
+    return ['melee', 'missile', 'throwing', 'unarmed'].filter((c) => attackTalentNamesFor(c).includes(name));
+  }
+
   // Every rollable talent + skill the character owns, deduped (talents win over a
   // same-named skill; a talent kept at its highest step). Skills carry no karma
   // context in the model, so they roll without a Karma toggle (karma: null).
@@ -468,7 +508,10 @@ export class EdCombat extends LitElement {
       selectedOptions: this._opts ?? [],
       selectedSituations: this._sits ?? [],
       selectedCharms: this._charmItems().filter((c) => (this._charmsOn ?? []).includes(c.name)),
-      rules: this.model?.combatRules ?? { options: [], situations: [] },
+      selectedWeaponEffects: this._selWeapon()?.effects ?? [],
+      rules: this.model?.combatRules
+        ? { options: this._allOptions(), situations: this.model.combatRules.situations ?? [] }
+        : { options: [], situations: [] },
       conditions: this.model?.combat?.conditions ?? {},
     });
   }
@@ -623,7 +666,7 @@ export class EdCombat extends LitElement {
       list.push(name);
       if (section === 'opts') {
         // Mutual exclusivity (A14): selecting an option clears anything it excludes.
-        const bundle = (this.model?.combatRules?.options ?? []).find((o) => o.name === name);
+        const bundle = this._allOptions().find((o) => o.name === name);
         for (const excl of bundle?.excludes ?? []) {
           const j = list.indexOf(excl);
           if (j >= 0) list.splice(j, 1);
@@ -690,8 +733,9 @@ export class EdCombat extends LitElement {
   }
 
   _optSection() {
-    const opts = this.model?.combatRules?.options ?? [];
-    return this._sec('Combat options', 'opts', (this._opts ?? []).length, this._chips(opts, this._opts, 'opts'));
+    const opts = this._allOptions();
+    const active = opts.filter((o) => (this._opts ?? []).includes(o.name)).length;
+    return this._sec('Combat options', 'opts', active, this._chips(opts, this._opts, 'opts'));
   }
   _sitSection() {
     const sits = this._situations();
@@ -1070,7 +1114,7 @@ export class EdCombat extends LitElement {
               ${this._artBox()}
               <div class="attackrows">
                 <div class="row2">
-                  <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._artOk = true; }}>
+                  <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._artOk = true; }}>
                     ${this._weapons().map((x) => html`<option value=${x.name}>${x.name}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
                   </select>
                   <select aria-label="Attack talent or skill" .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>

@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
@@ -343,6 +343,9 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-clear-pending-use', () => { this._pendingUse = null; });
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
+    // A trade (plans/PLAN-TRADE-ITEMS.md): one dispatch carrying BOTH the next
+    // item list and the resulting purse, persisted atomically + one re-derive.
+    this.addEventListener('ed-trade', (e) => this._editTrade(e.detail));
     // A roll spent Karma (the shared roll modal, so this fires for ANY tab's
     // roll). Decrement the stored `available` balance app-wide — charge, no
     // refund (owner decision).
@@ -555,6 +558,20 @@ export class EdApp extends LitElement {
     this._model = deriveModel(this._character, this._rules);
   }
 
+  // A trade (plans/PLAN-TRADE-ITEMS.md): the Equipment view computes the next
+  // item list (buy: add/bump; sell: drop a unit) and the next purse (spend or
+  // credit allocation) through the pure equity engine, then dispatches both
+  // together as one input write. Persist, mark dirty, and re-derive ONCE so the
+  // whole cascade (armour, weapons, wealth totals) refreshes together — never
+  // two overlapping saves. Nothing but the two existing input shapes is written.
+  _editTrade({ items, wealth }) {
+    if (!this._character || !Array.isArray(items) || !wealth || !wealth.coins) return;
+    this._character = { ...this._character, items, wealth };
+    saveTradeEdits({ items, wealth }, this._characterId);
+    this._markDirty();
+    this._model = deriveModel(this._character, this._rules);
+  }
+
   // A view changed the character's current health (damage / wounds / recovery
   // tests used / knocked-down state). Same inputs-only flow: merge the patch
   // into the health inputs, persist the overlay, mark the file dirty, and
@@ -712,6 +729,7 @@ export class EdApp extends LitElement {
     if (totalEarnt == null) return false;
     const spent = auditLegendSpent(character, this._rules.legendFile?.costs, {
       knacks: this._model?.knacks ?? [],
+      tierShift: this._model?.legend?.tierShift ?? 0,
     });
     return legendAvailable(totalEarnt, spent.total) >= 0;
   }

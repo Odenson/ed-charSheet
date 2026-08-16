@@ -101,6 +101,36 @@ export function collapseStacking(effects) {
 }
 
 /**
+ * Collapse a *mixed-target* effect list (e.g. a thread item's woven effect set:
+ * base + every woven rank) into its **currently-in-force survivors** — one
+ * collapse per exact fold target (type + target + measure + scope), not per
+ * origin as a whole. `collapseStacking` must be fed a single-target list (the
+ * static fold pre-filters by characteristic); this groups first, then collapses
+ * each group the same way, so a weave's `replace` keeps `group[last]` while
+ * distinct targets ALL survive (Orc Stinger rank 4 → Damage +7 AND Attack +2,
+ * never the accumulated +5/+6/+1/+7/+2).
+ * @param {Array<object>} effects  mixed-target effects, in build order
+ *   (base then ranks, ascending)
+ * @returns {Array<object>} the per-target survivors, in original subject order
+ */
+export function collapseByTarget(effects) {
+  const byTarget = new Map();
+  for (const e of effects ?? []) {
+    if (!e || typeof e !== 'object') continue;
+    const t = e.target ?? {};
+    const key = `${e.type}|${t.domain ?? ''}|${t.name ?? ''}|${e.measure ?? ''}|${e.scope ?? ''}`;
+    if (!byTarget.has(key)) byTarget.set(key, []);
+    byTarget.get(key).push(e);
+  }
+  const out = [];
+  for (const [key, group] of byTarget) {
+    const tagged = group.map((e) => ({ ...e, origin: { kind: 'thread', name: `collapse#${key}` } }));
+    for (const e of collapseStacking(tagged)) out.push(e);
+  }
+  return out;
+}
+
+/**
  * Fold every matching, always-on modifier effect onto a base value.
  * `ref`-valued effects are skipped here (they arrive with the dependency work
  * in a later slice); only numeric `value`s apply for now.

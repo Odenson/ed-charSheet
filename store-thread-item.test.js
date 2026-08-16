@@ -121,3 +121,42 @@ test('thread items are priced into the legend audit (cumulative at tier)', () =>
   assert.equal(spent.total, 1000);
   assert.equal(model.legend.available, 5000 - 1000);
 });
+
+test('combatOptions (item-scoped combat options) pass through resolution', () => {
+  const character = baseCharacter();
+  character.meta.race = 'Ork';
+  character.items = [{ name: 'Orc Stinger', equipped: true, threadRank: 3 }];
+  const model = deriveModel(character, rules);
+  const item = model.items.find((i) => i.name === 'Orc Stinger');
+  assert.ok(item.thread);
+  assert.equal(item.thread.tier, 'Novice');
+  assert.equal(item.thread.maximumThreads, 1);
+  // The resolved item carries the catalogue bundle so the Combat tab never
+  // re-reads the rules file.
+  assert.ok(Array.isArray(item.combatOptions) && item.combatOptions.length === 1);
+  assert.equal(item.combatOptions[0].name, 'Double Bolt');
+  assert.ok(item.combatOptions[0].effects.some((e) => e.type === 'test-modifier' && e.summary.includes('+2 to the Damage test')));
+  assert.ok(item.combatOptions[0].effects.some((e) => e.type === 'resource-modifier' && e.target?.name === 'Strain'));
+  // Items without combatOptions resolve as [] (not missing).
+  const bracersModel = deriveModel(baseCharacter(), rules);
+  const bracers = bracersModel.items.find((i) => i.name === 'Bracers of Aras');
+  assert.deepEqual(bracers.combatOptions, []);
+});
+
+test('currentEffects collapses the weave to its in-force survivors per target', () => {
+  const character = baseCharacter();
+  character.meta.race = 'Ork';
+  character.items = [{ name: 'Orc Stinger', equipped: true, threadRank: 4 }];
+  const model = deriveModel(character, rules);
+  const item = model.items.find((i) => i.name === 'Orc Stinger');
+  // Raw effects = base + ranks 1..4 (5 effects). The modal must show the
+  // collapsed survivors: Damage +7 (base 5 → rank 1 6 → rank 3 7, replace) and
+  // Attack +2 (rank 2's +1 → rank 4's +2, replace) — never the accumulated
+  // +5/+6/+1/+7/+2.
+  assert.equal(item.effects.length, 5);
+  assert.equal(item.currentEffects.length, 2);
+  const dmg = item.currentEffects.find((e) => e.target?.domain === 'attack' && e.target?.name === 'Damage');
+  const atk = item.currentEffects.find((e) => e.target?.domain === 'test' && e.target?.name === 'Attack');
+  assert.equal(dmg.value, 7);
+  assert.equal(atk.value, 2);
+});

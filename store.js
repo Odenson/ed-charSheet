@@ -30,6 +30,7 @@ import {
   KARMA_STEP,
   karmaUse,
   talentKarmaUse,
+  collapseByTarget,
 } from './engine/characteristics.js';
 import { carriedWeight, parseWeight } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
@@ -296,6 +297,22 @@ export function saveWealthEdits(wealth, id) {
 }
 
 /**
+ * Persist a single trade to the edits overlay (plans/PLAN-TRADE-ITEMS.md): one
+ * write for BOTH the item list and the resulting wealth purse, so a buy/sell is
+ * stored atomically and the app can run one re-derive. Both categories are the
+ * exact input shapes `saveItemEdits` / `saveWealthEdits` write — no trade ledger,
+ * no price fields (the accepted amount was a session fact, never a property of
+ * the item). "Store only inputs, never derived" holds.
+ */
+export function saveTradeEdits({ items, wealth }, id) {
+  const edits = loadEdits(id);
+  edits.items = items;
+  edits.wealth = wealth;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
  * Persist the character's health inputs to the edits overlay. Health is pure
  * input — current Damage, Wounds, and Recovery tests used today — so the object
  * is stored as-is; the ratings and the conscious/dead standing are derived by
@@ -506,7 +523,7 @@ async function loadRules() {
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
 // may only override these; any other target name is ignored. Kept here (not in a
 // rule file) so the code that consumes each target and the registry stay together.
-export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost']);
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
@@ -644,6 +661,18 @@ export function deriveModel(character, rules) {
       living: false,
       ref: ref?.ref ?? {},
       effects: [...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])],
+      // The weave collapsed to its currently-in-force survivors, per fold target
+      // (engine/characteristics.js collapseByTarget): rank effects that share a
+      // target with `stacking: "replace"` keep only the last (Orc Stinger rank 4
+      // → Damage +7 AND Attack +2, never the accumulated +5/+6/+1/+7/+2). The
+      // Equipment modal renders THESE; the static/combat folds consume the full
+      // `effects` list the same way the engine already does.
+      currentEffects: collapseByTarget([...(ref?.base?.effects ?? []), ...woven.flatMap((r) => r.effects ?? [])]),
+      // Item-scoped combat/action option bundles (rules/thread-items.json
+      // `combatOptions`): offered on the Combat tab only while this item is the
+      // selected weapon. Same bundle shape as rules/combat.json options; the
+      // model carries them through so the Combat tab never reads the rules file.
+      combatOptions: ref?.combatOptions ?? [],
       presentation: {},
       // The parsed carried weight in pounds (engine/weight.js), for the per-section
       // totals. Derived, never stored.
@@ -840,6 +869,13 @@ export function deriveModel(character, rules) {
       ? Math.max(0, Math.min(karmaMax, (Number(character.resources?.karma?.converted) || 0) - (Number(character.resources?.karma?.spent) || 0)))
       : null;
   const karmaRitualCost = homebrewSets['karma.ritualCost'] ?? null;
+  // Homebrew additional-Discipline tier shift (plans/PLAN-HOMEBREW-LEGEND-TIER.md):
+  // with the `legend.additionalTierShift` set target, an additional-Discipline
+  // talent prices each rank at its own tier bumped up (Novice→Journeyman→Warden→
+  // Master) instead of the New-Discipline/Equivalent-Tier tables. Absent/0 ⇒
+  // standard tables. Fed to the audit and to the rank-editing pricing below, so
+  // step costs always equal audit(after) − audit(before) under the rule.
+  const tierShift = Number(homebrewSets['legend.additionalTierShift']) || 0;
 
   const characteristics = {
     physicalDefense: defense('Physical', attrVal(DEFENSE_ATTRIBUTE.Physical), foldedEffects, lookupChar),
@@ -942,6 +978,7 @@ export function deriveModel(character, rules) {
     knacks,
     threadItemCatalog,
     karmaRitualCost,
+    tierShift,
   });
   // Legend-earned log (PLAN-NOTES-TAB, decisions #1/#6): `totalEarnt` is the PURE
   // SUM of a display list — one synthesized, non-persisted virtual "Starting
@@ -998,6 +1035,7 @@ export function deriveModel(character, rules) {
           bands: legendBands,
           spent,
           spends: legendSpends(),
+          tierShift, // homebrew additional-Discipline tier shift (0 = standard), read by the UI's rank guard
         }
       : null;
 
@@ -1019,8 +1057,8 @@ export function deriveModel(character, rules) {
       ...disc,
       talents: disc.talents.map((t, ti) => {
         const raw = discInputs[di]?.talents?.[ti] ?? {};
-        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1);
-        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank) : null;
+        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, { tierShift });
+        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, { tierShift }) : null;
         return {
           ...t,
           pricing: {
@@ -1076,16 +1114,52 @@ export function deriveModel(character, rules) {
       };
     }),
     equippedWeapons: items
-      .filter((it) => it.equipped && it.kind === 'weapon')
-      .map((it) => ({
-        name: it.name,
-        known: it.known,
-        category: it.ref?.category ?? null,
-        damageStep: it.ref?.damageStep ?? null,
-        shortRange: it.ref?.shortRange ?? null,
-        longRange: it.ref?.longRange ?? null,
-        image: it.ref?.image ?? null,
-      })),
+      .filter((it) => it.equipped && (it.kind === 'weapon' || (it.thread && it.ref?.category)))
+      .map((it) => {
+        // A thread weapon's Damage step comes from the woven effects carried on
+        // the item itself: the base sets the step and each woven rank replaces
+        // it (stacking: "replace" with the new set value, in ascending order).
+        // Fall back to the reference damageStep for plain weapons.
+        let damageStep = it.ref?.damageStep ?? null;
+        if (it.thread) {
+          for (const e of it.effects ?? []) {
+            if (
+              e.type === 'attack-modifier' &&
+              e.target?.domain === 'attack' &&
+              e.target?.name === 'Damage' &&
+              e.measure === 'step' &&
+              e.operation === 'add' &&
+              e.stacking === 'replace'
+            ) {
+              damageStep = e.value;
+            }
+          }
+        }
+        return {
+          name: it.name,
+          known: it.known,
+          category: it.ref?.category ?? null,
+          damageStep,
+          shortRange: it.ref?.shortRange ?? null,
+          longRange: it.ref?.longRange ?? null,
+          image: it.ref?.image ?? null,
+          combatOptions: it.combatOptions ?? [],
+          // The weapon's own effects ride along so the Combat tab can fold its
+          // always-on woven test modifiers into the roll pool (engine/combat.js
+          // `collectCombatEffects` collapses them per target).
+          effects: it.effects ?? [],
+        };
+      }),
+    // Item-scoped combat-option bundles from equipped thread items that are NOT
+    // weapons (armour, trinkets — no `ref.category`, so they never join
+    // `equippedWeapons`). These surface on the Combat tab independent of the
+    // weapon pick, so a defensive reaction like Dark Archer Armour's Horror-ward
+    // is a toggle the player arms on demand. Weapon-scoped bundles still ride
+    // `equippedWeapons[].combatOptions` (offered only while that weapon is
+    // selected) — this list deliberately excludes them to avoid double-offering.
+    itemOptions: items
+      .filter((it) => it.equipped && (it.combatOptions?.length ?? 0) > 0 && it.kind !== 'weapon' && !it.ref?.category)
+      .flatMap((it) => it.combatOptions ?? []),
     strengthStep: strStep,
     conditions: {
       knockedDown: character.resources?.health?.knockedDown === true,

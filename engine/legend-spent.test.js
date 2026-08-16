@@ -13,6 +13,7 @@ import {
   skillRanksCost,
   lowestDisciplineCircle,
   equivalentTier,
+  shiftedTier,
   newDisciplineRank1Cost,
   additionalDisciplineTalentCost,
   talentRankStepCost,
@@ -172,6 +173,84 @@ test('additionalDisciplineTalentCost = Rank-1 table + equivalent-tier ranks 2+',
   assert.equal(cost, 500 + 300 + 500); // 1300
 });
 
+// --- homebrew additional-tier shift (plans/PLAN-HOMEBREW-LEGEND-TIER.md) ------
+
+test('shiftedTier moves one step up the ladder, clamping at Master', () => {
+  assert.equal(shiftedTier('Novice', costs, 1), 'Journeyman');
+  assert.equal(shiftedTier('Journeyman', costs, 1), 'Warden');
+  assert.equal(shiftedTier('Warden', costs, 1), 'Master');
+  assert.equal(shiftedTier('Master', costs, 1), 'Master'); // ceiling: no higher column
+  assert.equal(shiftedTier('Novice', costs, 0), 'Novice'); // shift 0 = no change
+  assert.equal(shiftedTier('Novice', costs), 'Journeyman'); // default shift 1
+  assert.equal(shiftedTier('Adept', costs, 1), 'Adept'); // unknown label passes through
+});
+
+test('additionalDisciplineTalentCost with tierShift = plain cumulative at the bumped column', () => {
+  // Owner example: Frighten, Novice 2nd-Discipline talent, Rank 3 → 200+300+500 = 1000.
+  const { cost, tier, rank1 } = additionalDisciplineTalentCost(3, 1, 2, 3, costs, { tierShift: 1, tier: 'Novice' });
+  assert.equal(rank1, null); // New-Discipline table skipped entirely
+  assert.equal(tier, 'Journeyman'); // shifted column actually used
+  assert.equal(cost, 200 + 300 + 500); // 1000
+});
+
+test('additionalDisciplineTalentCost with tierShift: missing tier defaults to Novice then shifts', () => {
+  const { cost, tier } = additionalDisciplineTalentCost(3, 1, 2, 3, costs, { tierShift: 1 });
+  assert.equal(tier, 'Journeyman');
+  assert.equal(cost, 1000);
+});
+
+test('additionalDisciplineTalentCost with tierShift: Master talent keeps Master prices', () => {
+  const { cost, tier, rank1 } = additionalDisciplineTalentCost(2, 1, 2, 3, costs, { tierShift: 1, tier: 'Master' });
+  assert.equal(tier, 'Master'); // no shift above the ceiling
+  assert.equal(rank1, null);
+  // Master column R1+R2 = 500 + 800
+  assert.equal(cost, 500 + 800); // 1300
+});
+
+test('additionalDisciplineTalentCost with tierShift: unknown tier label flags null', () => {
+  const { cost, tier } = additionalDisciplineTalentCost(2, 1, 2, 3, costs, { tierShift: 1, tier: 'Adept' });
+  assert.equal(tier, 'Adept'); // passes through, then the table miss flags it
+  assert.equal(cost, null);
+});
+
+test('tierShift 0 leaves the standard additional-Discipline model untouched', () => {
+  const { cost, rank1 } = additionalDisciplineTalentCost(3, 1, 2, 3, costs, { tierShift: 0, tier: 'Novice' });
+  assert.equal(rank1, 500);
+  assert.equal(cost, 1300);
+});
+
+test('talentRankStepCost with tierShift == audit(after) − audit(before) under the rule', () => {
+  const char = (rank) => ({
+    attributes: {},
+    disciplines: [
+      { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
+      { name: 'Nethermancer', circle: 3, talents: [{ name: 'Frighten', rank, tier: 'Novice', circle: 1 }] },
+    ],
+    skills: [],
+    resources: { legend: { totalEarnt: 10000 } },
+  });
+  const t = { name: 'Frighten', rank: 3, tier: 'Novice', circle: 1 };
+  const shift = { tierShift: 1 };
+  assert.equal(
+    talentRankStepCost(t, 2, 3, costs, 4, shift),
+    auditLegendSpent(char(4), costs, shift).total - auditLegendSpent(char(3), costs, shift).total,
+  );
+  assert.equal(
+    talentRankStepCost(t, 2, 3, costs, 3, shift),
+    auditLegendSpent(char(3), costs, shift).total - auditLegendSpent(char(2), costs, shift).total,
+  );
+});
+
+test('talentRankStepCost with tierShift: each step is the shifted column single step', () => {
+  const t = { name: 'Frighten', rank: 3, tier: 'Novice', circle: 1 };
+  const shift = { tierShift: 1 };
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 1, shift), 200); // Journeyman R1
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 2, shift), 300); // Journeyman R2
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 3, shift), 500); // Journeyman R3
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 1, shift) + talentRankStepCost(t, 2, 3, costs, 2, shift) + talentRankStepCost(t, 2, 3, costs, 3, shift), 1000);
+  assert.equal(talentRankStepCost(t, 2, 3, costs, 0, shift), 0);
+});
+
 // --- rank-step costs (rank editing: increase consumes, decrease refunds) ------
 
 test('talentRankStepCost: the step into a rank equals the single table step', () => {
@@ -276,6 +355,31 @@ test('auditLegendSpent prices a 2nd Discipline with the surcharge', () => {
   assert.equal(neth.ordinalLabel, '2nd');
   assert.equal(neth.total, 1300); // Spellcasting R3, 2nd Discipline (lowest Circle 3)
   assert.equal(r.total, 1900 + 1300);
+});
+
+test('auditLegendSpent with tierShift prices the 2nd Discipline at the bumped column', () => {
+  const twoDisc = {
+    attributes: {},
+    disciplines: [
+      { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
+      { name: 'Nethermancer', circle: 3, talents: [{ name: 'Frighten', rank: 3, tier: 'Novice', circle: 1 }] },
+    ],
+    resources: { legend: { totalEarnt: 10000, totalSpent: 2900 } },
+  };
+  const r = auditLegendSpent(twoDisc, costs, { tierShift: 1 });
+  const arch = r.sections.find((s) => s.key === 'talents:0');
+  const neth = r.sections.find((s) => s.key === 'talents:1');
+  assert.equal(arch.total, 1900); // first Discipline unaffected
+  assert.equal(neth.total, 1000); // Frighten R3, Novice bumped to Journeyman (200+300+500)
+  assert.equal(neth.lines[0].detail, 'Novice → Journeyman · Rank 3');
+  assert.equal(r.total, 1900 + 1000);
+  assert.equal(r.delta, 2900 - (1900 + 1000)); // recorded − modeled
+});
+
+test('auditLegendSpent with tierShift leaves a first Discipline untouched', () => {
+  const r = auditLegendSpent(chakka, costs, { tierShift: 1 });
+  const archer = r.sections.find((s) => s.key === 'talents:0');
+  assert.equal(archer.total, 6000); // bit-for-bit the rule-off value
 });
 
 test('auditLegendSpent adds a Skills section priced by tier', () => {

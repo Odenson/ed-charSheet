@@ -202,3 +202,62 @@ test('unequipSpentCharms forwards a stack quantity (>1) untouched', () => {
     { name: 'Desperate Blow', equipped: false },
   ]);
 });
+
+// --- nextTradeItems (buy/sell item-list half, plans/PLAN-TRADE-ITEMS.md) -----
+
+import { nextTradeItems } from './item-equip-state.js';
+
+test('nextTradeItems: buy appends a new owned row equipped', () => {
+  const items = [{ name: 'Spear', equipped: true }];
+  const next = nextTradeItems(items, 'Broadsword', 'buy', { kindOf: (n) => (n === 'Broadsword' ? 'weapon' : null) });
+  assert.deepEqual(next, [
+    { name: 'Spear', equipped: true },
+    { name: 'Broadsword', equipped: true },
+  ]);
+});
+
+test('nextTradeItems: buy of an owned stack bumps +1', () => {
+  const items = [{ name: 'Booster Potion', equipped: true, qty: 2 }];
+  const next = nextTradeItems(items, 'Booster Potion', 'buy', {});
+  assert.deepEqual(next, [{ name: 'Booster Potion', equipped: true, qty: 3 }]);
+});
+
+test('nextTradeItems: buy of a second armour lands STORED, no equip-time swap', () => {
+  const items = [{ name: 'Hardened Leather', equipped: true }];
+  const kinds = { 'Hardened Leather': 'armor', 'Hide Armor': 'armor' };
+  const next = nextTradeItems(items, 'Hide Armor', 'buy', { kindOf: (n) => kinds[n] ?? null });
+  assert.deepEqual(next, [
+    { name: 'Hardened Leather', equipped: true },
+    { name: 'Hide Armor', equipped: false },
+  ]);
+});
+
+test('nextTradeItems: buy of an owned thread item is a unique no-op', () => {
+  const items = [{ name: 'Orc Stinger', equipped: true, threadRank: 2 }];
+  const isThread = (n) => n === 'Orc Stinger';
+  assert.deepEqual(nextTradeItems(items, 'Orc Stinger', 'buy', { isThread }), items);
+});
+
+test('nextTradeItems: sell drops a unit, removing the row at 0', () => {
+  const items = [{ name: 'Healing Potion', equipped: true, qty: 2 }, { name: 'Spear', equipped: true }];
+  assert.deepEqual(nextTradeItems(items, 'Healing Potion', 'sell', {}), [
+    { name: 'Healing Potion', equipped: true, qty: 1 },
+    { name: 'Spear', equipped: true },
+  ]);
+  const last = [{ name: 'Healing Potion', equipped: true, qty: 1 }];
+  assert.deepEqual(nextTradeItems(last, 'Healing Potion', 'sell', {}), []);
+});
+
+test('nextTradeItems: selling a thread item removes the whole row (unique)', () => {
+  const items = [{ name: 'Orc Stinger', equipped: true, threadRank: 4 }, { name: 'Spear', equipped: true }];
+  const isThread = (n) => n === 'Orc Stinger';
+  assert.deepEqual(nextTradeItems(items, 'Orc Stinger', 'sell', { isThread }), [{ name: 'Spear', equipped: true }]);
+});
+
+test('nextTradeItems: never mutates the input list', () => {
+  const items = [{ name: 'Booster Potion', equipped: true, qty: 1 }];
+  const snapshot = JSON.parse(JSON.stringify(items));
+  nextTradeItems(items, 'Booster Potion', 'buy', {});
+  nextTradeItems(items, 'Booster Potion', 'sell', {});
+  assert.deepEqual(items, snapshot);
+});

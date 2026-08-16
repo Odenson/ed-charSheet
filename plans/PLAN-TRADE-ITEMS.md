@@ -3,7 +3,7 @@
 **Status:** Approved — owner sign-off complete (all WDYT resolved).
 **Owner:** Gary
 **Created:** 2026-08-14
-**Baseline:** `dev` @ 8470483 **+ uncommitted potions work** in the working tree (13 files, +637/−33). This plan layers on top of that branch; presume potions is landed first.
+**Baseline:** `dev`/`main` @ **v1.12.0** — the potions + item-quantity + type-scale work shipped (release commit `6e92391` on `main`, synced into `dev`). This plan layers on top of that release; `qty`, `bumpQuantity`, and the `consumable` marker are already present.
 **Backup:** whole `/Users/garyfebbrarino/Work/workspace/EDCharSheet`.
 
 ## Context
@@ -39,7 +39,9 @@ below lock that down.
 In (all edit-mode only, Equipment tab): buy-new via picker; buy-one-more via the qty
 stepper's **+**; sell/remove-one via the qty stepper's **−**; sell via the ✕. Wealth
 deduction (pay with the character's own coins and gems) and credit (sell price, default
-full catalogue cost). Custom items (no `ref`, cost unknown) keep today's plain remove.
+full catalogue cost). Custom / unparseable-cost items go through the **same dialogs at a
+default amount of 0** (editable) — buy and sell symmetric; the plain remove-confirm is
+retired for owned items.
 
 Out (explicitly kept out, flag if you want them in):
 - Read-mode purchase affordances (edit mode only).
@@ -69,6 +71,12 @@ qty stepper. The grid computes the running total using the engine's exported
   `wealth`** (never the full purse beyond what was allocated; checked against owned
   counts by the engine helper).
 
+**Gem valuation (owner-confirmed):** gems trade at **full face `valueSilver`** on both
+sides — the grids use `gemsSilver` as-is (a 100 sp gem counts 100 sp when spent or
+received). The engine's `GEM_RESALE` (0.75) stays a **wealth-card display concern only**
+(the "if you liquidated your gems" total); it is *not* applied to trade allocation. A
+future reader should not "reconcile" the divergence — it is deliberate.
+
 ### B. Stepper semantics — one item, one unit at a time
 
 Keep the existing stepper rhythm; the dialogs are what change:
@@ -80,21 +88,37 @@ Keep the existing stepper rhythm; the dialogs are what change:
   when qty reaches 0) and credits the proceeds. ✕ is one-at-a-time, not remove-all
   (owner confirmed, WDYT #2).
 - **Picker "add new"** → buy-dialog (same flow as +1 at qty 1).
-- Custom / unparseable-cost items keep the plain remove-confirm.
+- **Custom / unparseable-cost items go through the SAME dialogs, defaulting to amount 0
+  (owner-confirmed).** Every picker-add / **+** opens the buy-dialog (amount 0, editable —
+  pay if you want, or add free at 0); every **−** / **✕** opens the sell-dialog (amount 0,
+  editable). This supersedes the earlier "custom keeps the plain remove-confirm" — buy and
+  sell stay symmetric, and the one dialog path covers priced and custom items alike. The
+  plain remove-confirm is retired for owned items (a 0-amount sell is a give-away).
 - **Potion dose buttons** are left untouched — that flow is read+edit action, not owned
   quantity (see out-of-scope). Their steppers (if any) go through the same sell rule.
 
 ### C. Selling — mirrors buying (receive grid)
 
-Sell opens the same dialog chrome in receive-mode: suggested amount = the catalogue
-cost (parsed), editable; an **allocation grid lets the player choose how the proceeds
-land** — which coins and gems they take back, default all-silver (owner confirmed,
-WDYT #3). Confirm requires the grid to sum **exactly** to the final amount — over-
-crediting would mint silver, so equality is enforced (unlike buy's ≥, where the player
-may overpay with an even coin). "Deduct only the final amount" holds on both sides:
+Sell opens the same dialog chrome in receive-mode: suggested amount = the **full**
+catalogue cost (parsed, owner-confirmed — buy and sell suggest the same price, so churn
+is loss-free; editable down), and an **allocation grid lets the player choose how the
+proceeds land** — which coins **and gems** they take back, default all-silver (owner
+confirmed, WDYT #3). Confirm requires the grid to sum **exactly** to the final amount —
+over-crediting would mint silver, so equality is enforced (unlike buy's ≥, where the
+player may overpay with an even coin). "Deduct only the final amount" holds on both sides:
 edit the amount down and only that much is credited; 0 = destroy / give away (owner
 confirmed). No change-dispensing; if the player wants 137.5 sp as gold, the grid's
 13 gold + the copper remainder handles it.
+
+**Receiving proceeds as a gem (owner-confirmed: coins + gems).** Coins are fungible —
+the grid just increments the count for a denomination. A **gem** is not: to take proceeds
+as a gem the player must define it, so the receive grid embeds the wealth card's existing
+**add-gem sub-form** (`name`, `valueSilver`, `qty`) — "a gem you were paid in." The
+running received total counts it at `valueSilver × qty` (via `gemsSilver`), and a matching
+`{ name, valueSilver, qty }` record is appended to `wealth.gems` on confirm (or merged
+into an existing identical gem). The exactly-equals-amount rule still applies (copper
+tops up any remainder). The buy grid, by contrast, only *spends* gems the player already
+owns (steppers over owned gems), never invents one.
 
 ### C.5 Copper representation — no fractional silver anywhere
 
@@ -111,7 +135,12 @@ never a fabricated cheaper price.
 `threadRank` items carry no reliable catalogue price; their trade dialog pre-fills
 **amount 0** and stays editable. Buying/selling thread items therefore credits or debits
 whatever the player types (or nothing). Consistent with your "editable amount, default 0"
-(owner confirmed).
+(owner confirmed). **Revised 2026-08-15 (review):** when a thread item *does* carry a
+parseable `ref.cost` (e.g. the Orc Stinger, `4650`), default to that parsed amount and
+fall back to 0 when absent/unparseable — the same rule as every other item, so the
+special case is retired. Thread rows are qty-unique: buy adds the row (`threadRank` 0,
+no `qty`), sell removes it — Phase C wiring must be thread-aware (`bumpQuantity` is a
+no-op for threads).
 
 ### E. Storage — only inputs, and only where the shape already exists
 
@@ -162,7 +191,10 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
 ### A. Engine & plumbing (data path first, testable standalone)
 - `engine/wealth.js`: add `parseCostSilver(cost)` (+ unit tests alongside the existing
   wealth tests): number passthrough · `"N cp"`/`"N sp"` suffix handling · thousands
-  separators (`"5,000"`) · ranges (`"100-175"` → midpoint) · non-parseable → 0.
+  separators (`"5,000"`) · ranges (`"100-175"` → midpoint) · non-parseable → 0. **Pin the
+  fractional-silver path explicitly:** `"8 cp"` → 0.8 sp must resolve to **exactly 8
+  copper** (round *up* to the nearest copper, never a fabricated cheaper price), and a
+  range midpoint like 137.5 sp holds as 1,375 cp (C.5).
 - `ui/ed-app.js`: add `ed-trade` handler that accepts `{ items }` + `{ coins, gems }`
   together, persists both (existing save paths), then runs **one** `deriveModel` so the
   Overview armour/init and the wealth card refresh through the normal cascade.
@@ -182,15 +214,17 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
   fidelity with the UI-GUIDELINES.
 
 ### C. Wire the Equipment view
-- Qty stepper **+**/**−** and picker **add** route to the dialog; ✕ routes to sell when
-  `parseCostSilver` accepts the cost, else plain remove.
+- Qty stepper **+**/**−**, picker **add**, and **✕** all route to the trade dialog —
+  buy for **+**/add, sell for **−**/✕. A custom / unparseable-cost item opens the same
+  dialog at amount 0 (no more plain-remove branch for owned items).
 - On buy confirm: dispatch items change (existing `bumpQuantity`-style computation stays
   in `item-equip-state.js`) + wealth deduction, in one `ed-trade` dispatch.
 - On sell confirm: qty −1 (or remove row at 0) + credit the exact received quantity.
 - Armour **swap** (already a pending confirm) stays untouched — trades and swaps are
   distinct prompts; the sale of a swapped-out armour is not part of this plan.
-- **Verify:** all Stepper directions; picker additive path; custom-item remove; armour
-  swap unaffected; wealth card totals move in lockstep with trades.
+- **Verify:** all Stepper directions; picker additive path; custom-item buy/sell at
+  amount 0 (dialog, not plain remove); receive-proceeds-as-gem appends a `wealth.gems`
+  record; armour swap unaffected; wealth card totals move in lockstep with trades.
 
 ### D. Guardrail pass + final checks
 - The CLAUDE.md PR checklist, verbatim:
@@ -245,11 +279,42 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
 6. **No read-mode / potion-dose pulls at this stage.** ✓
 7. **No trade ledger** — prices are forgotten after the trade; `character.json` holds
    only item rows + resulting coin/gem counts. Storage stays Tier 3. ✓
+8. **Gem valuation:** full face `valueSilver` on both buy and sell (grids use `gemsSilver`
+   unchanged); `GEM_RESALE` 0.75 is a wealth-card display concern only, never applied to
+   trades. ✓ (2026-08-14)
+9. **Sell proceeds may be taken as gems**, not coins only — the receive grid embeds the
+   add-gem sub-form (`name`, `valueSilver`, `qty`) and appends the gem to `wealth.gems`;
+   the buy grid only spends already-owned gems. ✓ (2026-08-14)
+10. **Sell default price = full catalogue cost** (100% of parsed `ref.cost`), editable
+    down; buy and sell suggest the same price. ✓ (2026-08-14)
+11. **Custom / unparseable-cost items use the same buy/sell dialogs at amount 0**
+    (editable); the plain remove-confirm is retired for owned items. Buy and sell stay
+    symmetric. ✓ (2026-08-14)
+12. **Thread-item trade default = parsed `ref.cost` when parseable, else 0** — same rule
+    as all items (Orc Stinger 4650 sp pre-fills 4650, Band of the Elements pre-fills 0).
+    Thread rows buy/sell as whole-row add/remove (qty-unique). ✓ (2026-08-15)
 
 ## Progress log
 
 - 2026-08-14 — Plan created; WDYT #1–3 & thread/sell/buy confirmed.
 - 2026-08-14 — Storage ledger resolved: **no ledger** (owner). Plan fully signed off.
+- 2026-08-14 — Review pass (post-v1.12.0): baseline rebased to the shipped v1.12.0;
+  gem valuation pinned to full face (GEM_RESALE display-only); sell proceeds may be taken
+  as gems (receive grid gains the add-gem sub-form); sell default = full cost; custom/
+  unparseable items go through the dialogs at amount 0 (plain-remove retired, buy/sell
+  symmetric); `parseCostSilver` fractional-copper path (`"8 cp"` → 8 cp) called out for a
+  dedicated Phase A test. Decisions #8–#11 recorded. Implementation not started.
+- 2026-08-15 — Code review (post thread-weapons commit): plan references verified against
+  the code (wealth.js exports, equipment edit-dispatch paths, ed-confirm family, item-
+  equip-state helpers, cost formats in items.json). Two adjustments adopted: thread-item
+  trade default = parsed `ref.cost` else 0 (Decision D revised, #12); thread rows are
+  qty-unique so Phase C wiring is thread-aware. Ready to begin Phase A.
+- 2026-08-16 — Phase C bugfix + price flexibility: `_tradeItem` returns the merged catalog
+  entry WITH its `name` (the catalog keys by name, so a pick on an unowned item previously
+  carried no `itemName` and the confirm silently bailed). Amount is freely editable for buy
+  and sell; editing it re-seeds the default all-silver allocation against the new price
+  (sell: the credit can sum exactly; buy: it just needs to cover), so trading at any price
+  — not just the catalogue value — is one dial, not a hand-fiddled grid.
 
 ## WDYT
 

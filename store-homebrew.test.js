@@ -176,6 +176,74 @@ test('set: legend.spends is empty when the Karma economy rule is off (no cost)',
   assert.equal(model.legend.totalEarnt, 500); // unaffected by the display rows
 });
 
+// --- ed-homebrew/2 `set` lever: legend.additionalTierShift (PLAN-HOMEBREW-LEGEND-TIER) ---
+
+// Archer + Nethermancer (2nd Discipline) with a Novice talent at Rank 3, lowest
+// Circle 3 — the standard model prices it 500+300+500 = 1300; the tier-shift
+// rule prices it at the bumped Journeyman column 200+300+500 = 1000.
+const tierShiftChar = (totalEarnt = 10000) => ({
+  schema: 'ed-character/1',
+  meta: { name: 'Mica', race: 'Human' },
+  attributes: {},
+  resources: { legend: { totalEarnt } },
+  disciplines: [
+    { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
+    { name: 'Nethermancer', circle: 3, talents: [{ name: 'Spellcasting', rank: 3, tier: 'Novice', circle: 1 }] },
+  ],
+  skills: [],
+  knacks: [],
+  items: [],
+});
+
+const tierShiftRule = (enabled = true) => ({
+  schema: 'ed-homebrew/2',
+  rules: [{ id: 'hb-additional-tier-shift', name: 'One tier higher', summary: 'tier shift', enabled, set: { 'legend.additionalTierShift': 1 } }],
+});
+
+test('set: legend.additionalTierShift reprices additional-Discipline talents (bumped column)', () => {
+  const model = deriveModel(tierShiftChar(), rulesWith(tierShiftRule()));
+  assert.equal(model.legend.tierShift, 1);
+  const neth = model.legend.spent.sections.find((s) => s.key === 'talents:1');
+  assert.equal(neth.total, 1000); // 200+300+500 vs 1300 standard
+  assert.equal(neth.lines[0].detail, 'Novice → Journeyman · Rank 3');
+  // First Discipline untouched.
+  const arch = model.legend.spent.sections.find((s) => s.key === 'talents:0');
+  assert.equal(arch.total, 1900);
+});
+
+test('set: tier-shift pricing flows into the rank-editing step costs', () => {
+  const model = deriveModel(tierShiftChar(), rulesWith(tierShiftRule()));
+  const neth = model.disciplines[1];
+  const spell = neth.talents[0];
+  // Rank 3 → the refund for dropping to 2 is the step that bought Rank 3:
+  // Journeyman R3 = 500 (under the rule). increaseCost R3→R4 = Journeyman R4 = 800.
+  assert.equal(spell.pricing.refund, 500);
+  assert.equal(spell.pricing.increaseCost, 800);
+});
+
+test('set: rule off keeps the standard New-Discipline pricing and tierShift 0', () => {
+  const off = deriveModel(tierShiftChar(), rulesWith(tierShiftRule(false)));
+  assert.equal(off.legend.tierShift, 0);
+  const neth = off.legend.spent.sections.find((s) => s.key === 'talents:1');
+  assert.equal(neth.total, 1300); // 500 + 300 + 500
+  const spell = off.disciplines[1].talents[0];
+  assert.equal(spell.pricing.refund, 500); // the Rank-1 New-Discipline step stayed
+});
+
+test('set: an enabled rule with an absent/zero shift keeps the standard model', () => {
+  const zero = { schema: 'ed-homebrew/2', rules: [{ id: 'hb-tier0', name: 'x', summary: 'x', enabled: true, set: { 'legend.additionalTierShift': 0 } }] };
+  const model = deriveModel(tierShiftChar(), rulesWith(zero));
+  assert.equal(model.legend.tierShift, 0);
+  assert.equal(model.legend.spent.sections.find((s) => s.key === 'talents:1').total, 1300);
+});
+
+test('set: an unknown legend target is still ignored (registry-gated)', () => {
+  const bogus = { schema: 'ed-homebrew/2', rules: [{ id: 'hb-x', name: 'x', summary: 'x', enabled: true, set: { 'legend.bogus': 1 } }] };
+  const model = deriveModel(tierShiftChar(), rulesWith(bogus));
+  assert.equal(model.legend.tierShift, 0);
+  assert.equal(model.legend.spent.sections.find((s) => s.key === 'talents:1').total, 1300);
+});
+
 test('disabled homebrew rules leave the standard ratings and no homebrew effects', () => {
   const model = deriveModel(character(), rulesWith({ schema: 'ed-homebrew/1', rules: [{ ...homebrewRule.rules[0], enabled: false }] }));
   assert.equal(model.characteristics.unconsciousness.value, 62); // 34 + 7×4
