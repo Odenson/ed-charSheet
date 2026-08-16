@@ -876,19 +876,18 @@ export class EdOverview extends LitElement {
   }
 
   // Modal body: the Legend-spent audit — each advancement priced against the ED4
-  // cost tables, grouped into sections, with a reconciliation footer comparing the
-  // modeled total to the recorded figure. Each section is a collapsible <details>
-  // (default closed — the summaries give a compact overview of a long list), and
-  // talents are grouped per Discipline so the additional-Discipline surcharge stands
-  // out (an accent "Nth Discipline" badge on the 2nd+ Discipline sections).
+  // cost tables, grouped into sections, with a footer summing the sections. Each
+  // section is a collapsible <details> (default closed — the summaries give a compact
+  // overview of a long list), and talents are grouped per Discipline so the
+  // additional-Discipline surcharge stands out (an accent "Nth Discipline" badge on
+  // the 2nd+ Discipline sections).
   _legendSpentModalBody(spent) {
     const fmt = (n) => (n == null ? '—' : n.toLocaleString());
     return html`
       <p class="mpara">
         Legend spent, reconstructed from the sheet by pricing each advancement against
         the cost tables — attributes, talents (2nd+ Discipline talents cost more), skills,
-        knacks, and woven thread items. Spells arrive in a later phase — the delta below
-        is what this audit does not yet account for.
+        knacks, and woven thread items. Spells arrive in a later phase.
       </p>
       ${spent.sections.map(
         (sec) => html`
@@ -912,9 +911,7 @@ export class EdOverview extends LitElement {
         `,
       )}
       <div class="lspent-recon">
-        <div class="line"><span>Modeled total</span><span>${fmt(spent.total)}</span></div>
-        <div class="line"><span>Recorded</span><span>${fmt(spent.recorded)}</span></div>
-        <div class="line"><span>Unmodeled (delta)</span><span>${fmt(spent.delta)}</span></div>
+        <div class="line"><span>Total</span><span>${fmt(spent.total)}</span></div>
       </div>
     `;
   }
