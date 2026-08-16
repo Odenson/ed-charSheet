@@ -419,11 +419,12 @@
     {
       "name": "Braces Of Defence",
       "equipped": true,
-      "threadRank": 0
+      "threadRank": 4
     },
     {
       "name": "Dark Archer Armour",
-      "equipped": true
+      "equipped": true,
+      "threadRank": 4
     }
   ],
   "wealth": {
