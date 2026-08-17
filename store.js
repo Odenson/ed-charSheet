@@ -34,6 +34,7 @@ import {
 } from './engine/characteristics.js';
 import { carriedWeight, parseWeight } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
+import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -967,6 +968,54 @@ export function deriveModel(character, rules) {
   );
   const knacks = (character.knacks ?? []).map((k) => resolveKnack(k, knackCatalog, skillNames, talentNames));
 
+  // Rank grants (engine/ability-ranks.js, plans/PLAN-RANK-GRANTS.md): always-on
+  // `grant-ability` effects (measure `rank`, EFFECT-TAXONOMY §5) fold into the
+  // derived talent/skill step AFTER the rows are built (Path A — the build
+  // order is untouched). Two operations: `set` → *possession* (the ability is
+  // available), `add`/`subtract` → *rank bonus* on a possessed ability
+  // (effectiveRank = rank + bonus). All derived: the Legend audit prices the
+  // learned rank from raw input, so the fold can never change Legend costs, and
+  // the stored `rank` is never touched.
+  const grantedRanks = foldAbilityGrants(activeEffects);
+  const foldBonusIntoRow = (row) => {
+    const grant = grantedRanks.bonuses[row.name];
+    if (!grant) return;
+    row.rankBonus = grant.bonus;
+    row.grantSources = grant.sources;
+    const aStep = row.attribute ? attrStepByName[row.attribute] : undefined;
+    if (row.attribute != null && aStep != null) {
+      // The pre-grant derived step, so the Combat tab's step audit can itemise
+      // base + grant instead of folding the grant invisibly into the number.
+      row.stepBase = row.step;
+      row.step = talentStep(aStep, row.rank + grant.bonus);
+      row.dice = diceForStep(row.step);
+    }
+  };
+  for (const d of disciplines) for (const t of d.talents) foldBonusIntoRow(t);
+  for (const s of skills) foldBonusIntoRow(s);
+  // `set`-granted abilities the character hasn't learned materialize as derived
+  // granted-ability rows (possessed, unranked until promoted by `set: N>0` or a
+  // rank bonus). Learned talents/skills keep their own rows, never duplicated.
+  const learnedAbilityNames = new Set([...talentNames, ...skillNames]);
+  const grantedAbilities = [];
+  for (const [name, possession] of Object.entries(grantedRanks.possessed)) {
+    if (learnedAbilityNames.has(name)) continue;
+    const grant = grantedRanks.bonuses[name] ?? null;
+    const cat = talentCatalog[name] ?? {};
+    const attribute = cat.attribute ?? skillRef(name)?.attribute ?? null;
+    const rank = (possession.setValue ?? 0) + (grant?.bonus ?? 0);
+    const aStep = attribute ? attrStepByName[attribute] : undefined;
+    const step = rank > 0 && aStep != null ? talentStep(aStep, rank) : null;
+    grantedAbilities.push({
+      name,
+      rank,
+      attribute,
+      step,
+      dice: step != null ? diceForStep(step) : '',
+      grantSources: [...(possession.sources ?? []), ...(grant?.sources ?? [])],
+    });
+  }
+
   const legendInput = character.resources?.legend ?? {};
   const legendBands = legendFile?.bands ?? [];
   // `spent` is the engine's audit of every priced advancement; `available` derives
@@ -1230,6 +1279,10 @@ export function deriveModel(character, rules) {
     wealth: deriveWealth(character.wealth ?? {}),
     skills,
     knacks,
+    // `set`-granted abilities the character doesn't learn (engine/ability-ranks.js
+    // plans/PLAN-RANK-GRANTS.md D2/D5): derived possession rows for the
+    // Disciplines tab's "Granted abilities" group. Never stored.
+    grantedAbilities,
     traits: character.traits ?? [],
     // Health standing: the stored damage/wounds inputs, run through the pure
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings

@@ -48,8 +48,9 @@ const OPS = {
 
 // Only unconditional, non-judgement modifiers auto-apply. Situational,
 // triggered, or GM-discretion effects are surfaced elsewhere, never folded
-// silently into a static rating.
-function autoApplies(effect) {
+// silently into a static rating. Exported so rank-grant folding
+// (engine/ability-ranks.js) shares this single auto-apply contract.
+export function autoApplies(effect) {
   if ((effect.condition ?? 'always') !== 'always') return false;
   if (effect.gmDiscretion) return false;
   return true;

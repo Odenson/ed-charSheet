@@ -537,11 +537,33 @@ export class EdCombat extends LitElement {
     };
     for (const d of this.model?.disciplines ?? []) {
       for (const t of d.talents ?? []) {
-        push({ id: `talent:${t.name}`, kind: 'talent', name: t.name, step: t.step, karma: t.karma ?? null, action: t.action ?? null });
+        push({
+          id: `talent:${t.name}`,
+          kind: 'talent',
+          name: t.name,
+          step: t.step,
+          karma: t.karma ?? null,
+          action: t.action ?? null,
+          // Rank-grant data (PLAN-RANK-GRANTS.md): the step audit itemises the
+          // pre-grant base and the folded grant source instead of hiding it.
+          stepBase: t.stepBase,
+          rankBonus: t.rankBonus,
+          grantSources: t.grantSources ?? [],
+        });
       }
     }
     for (const s of this.model?.skills ?? []) {
-      push({ id: `skill:${s.name}`, kind: 'skill', name: s.name, step: s.step, karma: null, action: s.action ?? null });
+      push({
+        id: `skill:${s.name}`,
+        kind: 'skill',
+        name: s.name,
+        step: s.step,
+        karma: null,
+        action: s.action ?? null,
+        stepBase: s.stepBase,
+        rankBonus: s.rankBonus,
+        grantSources: s.grantSources ?? [],
+      });
     }
     return [...byId.values()];
   }
@@ -1339,11 +1361,27 @@ export class EdCombat extends LitElement {
   // --- step audit (info modal) ---
   // The itemised breakdown of the Attack / Damage Step, computed by the pure
   // engine (auditPool) from the same bases + effects the pools fold — the view
-  // only renders it, never re-derives.
+  // only renders it, never re-derives. A rank grant (PLAN-RANK-GRANTS.md) is
+  // itemised as its own base line off the model's pre-grant `stepBase`, so any
+  // talent or skill with a grant (not just one name) shows what built its step.
   _attackAudit() {
     const t = this._selTalent();
     const { attackEffects } = this._poolEffects();
-    return auditPool([{ label: `${t?.name ?? 'Talent'} step`, value: t?.step ?? null }], attackEffects, { testKind: 'attack' });
+    const baseParts = [{ label: `${t?.name ?? 'Talent'} step`, value: t?.stepBase ?? t?.step ?? null }];
+    if (t?.rankBonus != null && t.rankBonus !== 0) {
+      baseParts.push({ label: `Rank grant (${this._grantLabel(t.grantSources)})`, value: t.rankBonus });
+    }
+    return auditPool(baseParts, attackEffects, { testKind: 'attack' });
+  }
+  _grantLabel(sources) {
+    return (sources ?? [])
+      .map((s) => {
+        const o = s.origin ?? {};
+        if (o.kind === 'thread') return `${o.name} · Thread Rank ${o.rank ?? '?'}`;
+        if (o.name) return o.name;
+        return s.source ?? s.summary ?? 'grant';
+      })
+      .join(', ');
   }
   _damageAudit() {
     const w = this._selWeapon();

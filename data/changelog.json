@@ -2,7 +2,28 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "changes": []
+    "changes": [
+      {
+        "type": "added",
+        "text": "Rank grants now actually apply instead of being listed. Always-on `grant-ability` rank effects fold into the derived talent/skill step: an `add`/`subtract` grant (e.g. Dark Archer Armour's +1 to Avoid Blow) raises the step the character rolls, and a `set` grant establishes possession of an otherwise un-learned ability (Windling Astral Sight / Versatility, the Astral-Sensitive Eye gift). The fold is pure engine work in the model only — the stored rank and its Legend price never change, so every consumer (Disciplines tab, Combat tab, dice, karma eligibility) sees the same engine-derived number."
+      },
+      {
+        "type": "added",
+        "text": "The Disciplines tab shows the grant: a learned talent or skill with a rank grant carries a small amber +N chip beside its rank (tooltip names the source, e.g. Dark Archer Armour · Thread Rank 2), and the talent/skill details modal adds a line explaining the grant is absorbed into the step. Abilities you possess but haven't learned appear in a new \"Granted abilities (not learned)\" group with their current rank, step, and an info modal saying what granted them."
+      },
+      {
+        "type": "added",
+        "text": "The Combat tab's Attack step-breakdown (ⓘ) now itemises a rank grant as its own line — the pre-grant base step plus \"Rank grant (source) +N\" — so the audit shows exactly what built the attack step, for any talent or skill with a grant, not just a hard-coded name."
+      },
+      {
+        "type": "fixed",
+        "text": "Talents and skills without a rank grant no longer show a fabricated \"+0\" amber pill beside their rank — the grant chip only appears for a real, non-zero grant."
+      },
+      {
+        "type": "changed",
+        "text": "Cleaned up stale character data: removed the obsolete import notes file and the superseded character portrait JPG (the PNG portrait is used instead)."
+      }
+    ]
   },
   "releases": [
     {
