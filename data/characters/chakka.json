@@ -303,8 +303,7 @@
     "health": {
       "damage": 4,
       "wounds": 0,
-      "recoveriesUsed": 0,
-      "knockedDown": false
+      "recoveriesUsed": 0
     },
     "roundTracker": 218
   },
