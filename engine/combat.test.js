@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from './combat.js';
+import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -351,4 +351,52 @@ test('successCount: 1 for meeting the target, +1 per 5 over, 0 on a miss', () =>
   assert.equal(successCount(20, 10), 3);
   assert.equal(successCount(9, 10), 0);
   assert.equal(successCount(null, 10), 0);
+});
+
+// --- auditPool (step-audit modal breakdown) -----------------------------------
+
+test('auditPool: attack breakdown lists the base + step mods; step matches attackPool', () => {
+  const effects = option('Aggressive Attack').effects; // +3 attack step, +3 damage step, -3/-3 def, 1 strain
+  const a = auditPool([{ label: 'Melee Weapon step', value: TALENT }], effects, { testKind: 'attack' });
+  assert.equal(a.step, TALENT + 3); // same as attackPool
+  assert.equal(attackPool({ talentStep: TALENT, effects }).step, a.step);
+  const base = a.parts.find((p) => p.kind === 'base');
+  assert.deepEqual({ label: base.label, value: base.value }, { label: 'Melee Weapon step', value: TALENT });
+  const step = a.parts.filter((p) => p.kind === 'step');
+  assert.equal(step.length, 1);
+  assert.equal(step[0].value, 3);
+  // Defense mods never enter a step/roll audit; strain is not a part.
+  assert.ok(!a.parts.some((p) => /Defence|Strain/i.test(p.label)));
+});
+
+test('auditPool: damage breakdown carries both bases and the success-level bonus', () => {
+  const a = auditPool(
+    [{ label: 'Strength step', value: STR }, { label: 'Battle Axe Damage Step', value: WEAPON }],
+    [],
+    { testKind: 'damage' },
+    2, // two attack success levels
+  );
+  assert.equal(a.step, STR + WEAPON + 2);
+  assert.deepEqual(a.parts.filter((p) => p.kind === 'base').map((p) => p.value), [STR, WEAPON]);
+  const bonus = a.parts.find((p) => p.kind === 'step');
+  assert.equal(bonus.value, 2);
+  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [], bonusSteps: 2 }).step, a.step);
+});
+
+test('auditPool: result-measure mods are kind "result" (roll total, not the Step)', () => {
+  const effects = [
+    { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 1, measure: 'result', condition: 'situational', summary: 'Gahad +1' },
+  ];
+  const a = auditPool([{ label: 'step', value: TALENT }], effects, { testKind: 'attack' });
+  assert.equal(a.step, TALENT); // result mod does not change the Step
+  const r = a.parts.find((p) => p.kind === 'result');
+  assert.equal(r.value, 1);
+});
+
+test('auditPool: a null base keeps step null but still lists the base part', () => {
+  const a = auditPool([{ label: 'Talent step', value: null }], [], { testKind: 'attack' });
+  assert.equal(a.step, null);
+  assert.equal(a.parts.length, 1);
+  assert.equal(a.parts[0].kind, 'base');
+  assert.equal(a.parts[0].value, null);
 });

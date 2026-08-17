@@ -20,7 +20,7 @@
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
-import { attackPool, damagePool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from '../engine/combat.js';
+import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
@@ -77,6 +77,11 @@ export class EdCombat extends LitElement {
     _target: { state: true },
     _collapsed: { state: true },
     _damageModal: { state: true },
+    // The step-audit modal: which pool's breakdown to show ('attack' | 'damage'
+    // | null). And the manually-entered success count used to buff the Damage
+    // step when an attack was rolled with no target number (GM adjudicates).
+    _stepAudit: { state: true },
+    _manualSuccesses: { state: true },
     _confirmClear: { state: true },
     _rolls: { state: true },
     // #7 success-level damage bonus: the last attack this pick rolled ({ total,
@@ -291,6 +296,17 @@ export class EdCombat extends LitElement {
     .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
     .hbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); }
+    /* Step-audit: a small info button on the Attack/Damage rows + its modal. */
+    .info { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); flex: none; padding: 0; line-height: 1; }
+    .info:hover { border-color: var(--accent); color: var(--accent); }
+    .audit { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-body); }
+    .arow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 3px 0; }
+    .arow .al { color: var(--fg); }
+    .arow .av { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .arow .av.neg { color: var(--danger, #a63a2b); }
+    .arow.total { border-top: 1px solid var(--border); margin-top: 3px; padding-top: 6px; }
+    .asec { font-size: var(--fs-fine); color: var(--muted); margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); line-height: 1.5; }
+    .aempty { font-size: var(--fs-small); color: var(--muted); }
   `;
 
   constructor() {
@@ -303,6 +319,8 @@ export class EdCombat extends LitElement {
     this._target = '';
     this._collapsed = defaultCollapsed();
     this._damageModal = false;
+    this._stepAudit = null;
+    this._manualSuccesses = '';
     this._confirmClear = false;
     this._rolls = [];
     this._lastAttack = null;
@@ -317,6 +335,7 @@ export class EdCombat extends LitElement {
     // Every modal/overlay here honors UI-GUIDELINES §7: Escape closes.
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
+      if (this._stepAudit) { this._stepAudit = null; return; }
       if (this._damageModal) { this._damageModal = false; return; }
       if (this._confirmClear) { this._confirmClear = false; return; }
     };
@@ -427,6 +446,8 @@ export class EdCombat extends LitElement {
     this._target = '';
     this._collapsed = defaultCollapsed();
     this._damageModal = false;
+    this._stepAudit = null;
+    this._manualSuccesses = '';
     this._confirmClear = false;
     this._lastAttack = null;
     this._attackArmed = false;
@@ -566,11 +587,19 @@ export class EdCombat extends LitElement {
     return attackPool({ talentStep: t?.step ?? null, effects: attackEffects });
   }
   // #7: extra attack success levels → +steps to damage. Only while the current
-  // pick's attack is armed and a target number was in play (engine clamps a miss
-  // to 0). null total/target → 0.
+  // pick's attack is armed. With a target number in play the levels come from the
+  // rolled total vs the target (engine clamps a miss to 0); with NO target the GM
+  // adjudicates, so the player types the success count (`_manualSuccesses`).
   _damageBonus() {
     if (!this._attackArmed) return 0;
-    return attackSuccessLevels(this._lastAttack?.total, this._lastAttack?.target);
+    if (this._targetNum() != null) return attackSuccessLevels(this._lastAttack?.total, this._lastAttack?.target);
+    const n = Number(this._manualSuccesses);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }
+  // The manual success input is offered after a no-target attack roll (GM
+  // adjudicates the successes that buff the Damage step).
+  _showManualSuccesses() {
+    return this._attackArmed && this._targetNum() == null;
   }
   _damagePool() {
     const w = this._selWeapon();
@@ -674,6 +703,7 @@ export class EdCombat extends LitElement {
     const isNone = w?.category == null;
     this._attackArmed = !isNone;
     this._lastAttack = null;
+    this._manualSuccesses = ''; // a fresh attack starts with no adjudicated successes
     // A set-dice option (True Shot) defers the whole roll to the modal: the player
     // picks the Karma dice there, and the Strain is charged at that commit — not
     // here — so Escaping before commit costs nothing (D-strain). An ordinary
@@ -726,6 +756,12 @@ export class EdCombat extends LitElement {
     this._opts = [];
     this._aimSuccesses = 0;
     this._aimConsumed = false;
+    // A new round: no attack has been rolled yet, so clear the armed attack and
+    // the manually-adjudicated successes (the manual input hides until the next
+    // attack is rolled).
+    this._attackArmed = false;
+    this._lastAttack = null;
+    this._manualSuccesses = '';
     this._roll('Initiative', c.value, this._karmaCtx(c.karma), 'initiative');
   }
 
@@ -1253,12 +1289,17 @@ export class EdCombat extends LitElement {
                 <div class="statline">
                   <span class="k">Attack</span>
                   <span class="v">${this._stepVal(ap.step)}</span>
+                  <button class="info" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>ⓘ</button>
                   <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
                   <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>⚄</button>
                 </div>
                 <div class="statline">
                   <span class="k">Damage</span>
                   <span class="v">${this._stepVal(dp.step)}${range}${this._damageBonusBadge()}</span>
+                  <button class="info" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>ⓘ</button>
+                  ${this._showManualSuccesses()
+                    ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
+                    : ''}
                   <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>⚄</button>
                   <span class="strain-k">Strain</span><span class="strain">${ap.strain}</span>
                 </div>
@@ -1276,6 +1317,7 @@ export class EdCombat extends LitElement {
           ${this._logBlock()}
       </div>
 
+      ${this._stepAudit ? this._stepAuditTpl() : ''}
       ${this._damageModal
         ? this._damageModalTpl()
         : ''}
@@ -1290,6 +1332,57 @@ export class EdCombat extends LitElement {
         : ''}
       ${this._useModal()}
     `;
+  }
+
+  // --- step audit (info modal) ---
+  // The itemised breakdown of the Attack / Damage Step, computed by the pure
+  // engine (auditPool) from the same bases + effects the pools fold — the view
+  // only renders it, never re-derives.
+  _attackAudit() {
+    const t = this._selTalent();
+    const { attackEffects } = this._poolEffects();
+    return auditPool([{ label: `${t?.name ?? 'Talent'} step`, value: t?.step ?? null }], attackEffects, { testKind: 'attack' });
+  }
+  _damageAudit() {
+    const w = this._selWeapon();
+    const { damageEffects } = this._poolEffects();
+    return auditPool(
+      [
+        { label: 'Strength step', value: this.model?.combat?.strengthStep ?? null },
+        { label: `${w?.name && w.name !== 'None' ? w.name : 'Weapon'} Damage Step`, value: w?.damageStep ?? null },
+      ],
+      damageEffects,
+      { testKind: 'damage' },
+      this._damageBonus(),
+    );
+  }
+  _auditRow(p) {
+    const signed = p.kind === 'base' ? `${p.value}` : `${p.value >= 0 ? '+' : ''}${p.value}`;
+    return html`<div class="arow"><span class="al">${p.label}</span><span class="av ${p.value < 0 ? 'neg' : ''}">${signed}</span></div>`;
+  }
+  _stepAuditTpl() {
+    const which = this._stepAudit;
+    const audit = which === 'damage' ? this._damageAudit() : this._attackAudit();
+    const title = which === 'damage' ? 'Damage step' : 'Attack step';
+    const stepParts = audit.parts.filter((p) => p.kind !== 'result');
+    const resultParts = audit.parts.filter((p) => p.kind === 'result');
+    return html`
+      <div class="overlay" @click=${() => (this._stepAudit = null)}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="${title} breakdown" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span>${title} breakdown</span>
+            <button class="mclose" aria-label="Close" @click=${() => (this._stepAudit = null)}>✕</button>
+          </div>
+          <div class="audit">
+            ${stepParts.length ? stepParts.map((p) => this._auditRow(p)) : html`<div class="aempty">No base step yet — pick a ${which === 'damage' ? 'weapon' : 'talent or skill'}.</div>`}
+            <div class="arow total"><span class="al">Step</span><span class="av">${audit.step == null ? this._pend() : audit.step}</span></div>
+            ${resultParts.length
+              ? html`<div class="asec">Applied to the roll total (not the Step):</div>${resultParts.map((p) => this._auditRow(p))}`
+              : ''}
+          </div>
+          <div class="hfoot"><span class="hint">Escape closes</span></div>
+        </div>
+      </div>`;
   }
 
   _damageModalTpl() {

@@ -123,6 +123,7 @@ function appliesToTest(e, ctx) {
 function foldPool(baseStep, effects, ctx) {
   let step = isFiniteNum(baseStep) ? baseStep : null;
   const resultMods = [];
+  const stepMods = [];
   let strain = 0;
   for (const e of effects ?? []) {
     if (!e || typeof e !== 'object') continue;
@@ -135,13 +136,15 @@ function foldPool(baseStep, effects, ctx) {
     }
     if (e.type !== 'test-modifier' || !appliesToTest(e, ctx)) continue;
     const v = opValue(e);
+    const label = e.label ?? e.summary ?? `${e.target.name} ${e.target.domain}`;
     if (e.measure === 'result') {
-      resultMods.push({ label: e.label ?? e.summary ?? `${e.target.name} ${e.target.domain}`, value: v });
+      resultMods.push({ label, value: v });
     } else if (e.measure === 'step' && step != null) {
       step += v;
+      stepMods.push({ label, value: v });
     }
   }
-  return { step, resultMods, strain };
+  return { step, resultMods, strain, stepMods };
 }
 
 /**
@@ -154,7 +157,8 @@ function foldPool(baseStep, effects, ctx) {
  * @returns {{step:number|null, resultMods:Array, strain:number}}
  */
 export function attackPool({ talentStep, effects, opts = {} }) {
-  return foldPool(talentStep, effects, { testKind: 'attack', sightBased: opts.sightBased !== false });
+  const { step, resultMods, strain } = foldPool(talentStep, effects, { testKind: 'attack', sightBased: opts.sightBased !== false });
+  return { step, resultMods, strain };
 }
 
 /**
@@ -173,6 +177,38 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
   // null → placeholder pill).
   const withBonus = step != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? step + bonusSteps : step;
   return { step: withBonus, resultMods };
+}
+
+/**
+ * An itemised breakdown of how a pool's Step is composed, for the Combat tab's
+ * step-audit modal. Pure — the same fold `attackPool`/`damagePool` run, exposed
+ * as parts instead of a single number, so the view never re-derives game values.
+ *
+ * `baseParts` are the structural bases (attack: the talent step; damage: the
+ * Strength step + weapon Damage Step) as `{ label, value }`; their sum is the
+ * fold's base. `effects` is the same flat list the pools fold. `bonusSteps`
+ * (damage only) adds the attack success-level bonus as its own part.
+ *
+ * @param {Array<{label:string, value:number|null}>} baseParts
+ * @param {object[]} effects
+ * @param {{testKind:'attack'|'damage', sightBased?:boolean}} ctx
+ * @param {number} [bonusSteps]
+ * @returns {{step:number|null, parts:Array<{label:string, value:number, kind:'base'|'step'|'result'}>}}
+ *   `parts` in fold order; `base`+`step` parts compose the Step, `result` parts
+ *   are flat modifiers applied to the roll's total (not the Step).
+ */
+export function auditPool(baseParts = [], effects = [], ctx = {}, bonusSteps = 0) {
+  const baseSum = baseParts.reduce((s, p) => s + (isFiniteNum(p.value) ? p.value : 0), 0);
+  const hasBase = baseParts.some((p) => isFiniteNum(p.value));
+  const { step, resultMods, stepMods } = foldPool(hasBase ? baseSum : null, effects, ctx);
+  const withBonus = step != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? step + bonusSteps : step;
+  const parts = [
+    ...baseParts.map((p) => ({ label: p.label, value: p.value, kind: 'base' })),
+    ...stepMods.map((m) => ({ ...m, kind: 'step' })),
+  ];
+  if (isFiniteNum(bonusSteps) && bonusSteps > 0) parts.push({ label: 'Attack success levels', value: bonusSteps, kind: 'step' });
+  for (const m of resultMods) parts.push({ ...m, kind: 'result' });
+  return { step: withBonus, parts };
 }
 
 /**
