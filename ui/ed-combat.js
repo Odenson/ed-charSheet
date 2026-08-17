@@ -169,7 +169,7 @@ export class EdCombat extends LitElement {
     .statline .k { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 54px; flex: none; }
     .statline .v { flex: 1; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .statline .v.ranged { font-size: var(--fs-eyebrow); color: var(--muted); font-weight: 400; margin-left: 4px; }
-    .dmgbonus { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
+    .dmgbonus { flex: none; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
     .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-small); flex: none; padding: 0; line-height: 1; }
     .roll:disabled { opacity: 0.4; cursor: default; }
     /* Take-damage carries the emergency (danger) tone to read apart from the rolls. */
@@ -458,7 +458,8 @@ export class EdCombat extends LitElement {
   _damageBonusBadge() {
     const n = this._damageBonus();
     if (!n) return '';
-    return html`<span class="dmgbonus" title="Attack beat the target by ${n} success level${n > 1 ? 's' : ''} — +${n} to the Damage step">+${n} ✦ ${n} success${n > 1 ? 'es' : ''}</span>`;
+    // Compact: just the +N; the hover explains it is the attack's success levels.
+    return html`<span class="dmgbonus" title="${n} success level${n > 1 ? 's' : ''} on the attack — +${n} to the Damage step">+${n}</span>`;
   }
   _pend() { return html`<span class="pend">—</span>`; }
   _rating(n) { return n == null ? this._pend() : html`${n}`; }
@@ -1287,16 +1288,17 @@ export class EdCombat extends LitElement {
                   </select>
                 </div>
                 <div class="statline">
+                  <button class="info" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>ⓘ</button>
                   <span class="k">Attack</span>
                   <span class="v">${this._stepVal(ap.step)}</span>
-                  <button class="info" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>ⓘ</button>
                   <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
                   <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>⚄</button>
                 </div>
                 <div class="statline">
-                  <span class="k">Damage</span>
-                  <span class="v">${this._stepVal(dp.step)}${range}${this._damageBonusBadge()}</span>
                   <button class="info" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>ⓘ</button>
+                  <span class="k">Damage</span>
+                  <span class="v">${this._stepVal(dp.step)}${range}</span>
+                  ${this._damageBonusBadge()}
                   ${this._showManualSuccesses()
                     ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
                     : ''}
