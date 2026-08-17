@@ -328,10 +328,9 @@
       "tier": "Novice",
       "maximumThreads": 1,
       "mysticDefense": 8,
-      "Cost": 7900,
       "combatOptions": [
         {
-          "name": "Horror Ward",
+          "name": "Horror Defence",
           "summary": "While under attack from a Horror: +1 Physical Defence and +1 Mystic Defence.",
           "effects": [
             { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": 1, "measure": "rating", "condition": "situational", "scope": "vs-horrors", "source": "condition", "summary": "+1 Physical Defence while under attack from a Horror." },
@@ -349,7 +348,11 @@
       "ref": {
         "source": "User custom thread item (GMG-style, not from the rulebook)",
         "description": "The dark archer is a feared aggressor that strikes hard and without warning. This armour enhances the archer that is a heavy hitter with good strength due to the heavy hide construction. Without a thread it is treated as normal hide armor.",
-        "rankLimit": 4
+        "rankLimit": 4,
+        "weight": "20 lb",
+        "cost": 4650,
+        "availability": "Rare",
+        "image": "data/dark-arch-arm.png"
       },
       "threadRanks": [
         {

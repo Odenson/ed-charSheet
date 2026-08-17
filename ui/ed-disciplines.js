@@ -91,6 +91,9 @@ export class EdDisciplines extends LitElement {
     .lchip b { font-weight: 500; color: var(--accent); font-family: var(--mono); }
     .hint { font-size: var(--fs-small); color: var(--karma); }
     .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
+    /* Rank-grant chip (PLAN-RANK-GRANTS.md D5): the folded +N beside the learned
+       rank, source-named via tooltip. Theme-aware; never alters the stored rank. */
+    .gchip { font-size: var(--fs-fine); font-weight: 500; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
 
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
@@ -181,7 +184,7 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${t.name}</span>
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
-        ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}</span>`}
+        ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}</span>`}
         <span class="sd">${t.step != null ? `${t.step} · ${t.dice}` : '—'}</span>
         <span class="action sd">${t.action ?? ''}</span>
         <button
@@ -268,6 +271,9 @@ export class EdDisciplines extends LitElement {
             ? html`<div class="mtext">${dt.summary}</div>`
             : html`<div class="mtext" style="color: var(--muted)">Full details coming.</div>`}
           ${(dt.notes ?? []).map((n) => html`<div class="mnote">${n}</div>`)}
+          ${t.grantSources?.length
+            ? html`<div class="mnote">Rank ${t.rank} ${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus ?? 0)} by ${this._grantTitle(t.grantSources)} — absorbed into the step above.</div>`
+            : ''}
         </div>
       </div>
     `;
@@ -290,7 +296,7 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${s.name}</span>
         </span>
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
-        ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}</span>`}
+        ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}</span>`}
         <span class="sd">${s.step != null ? `${s.step} · ${s.dice}` : '—'}</span>
         <span class="action sd">${s.action ?? ''}</span>
         <button
@@ -410,6 +416,9 @@ export class EdDisciplines extends LitElement {
             ? html`<div class="mtext">${dt.summary}</div>`
             : html`<div class="mtext" style="color: var(--muted)">Skill description not yet recorded.</div>`}
           ${dt.versus ? html`<div class="mnote">Tested against ${dt.versus}.</div>` : ''}
+          ${s.grantSources?.length
+            ? html`<div class="mnote">Rank ${s.rank} ${this._grantSign(s.rankBonus)}${Math.abs(s.rankBonus ?? 0)} by ${this._grantTitle(s.grantSources)} — absorbed into the step above.</div>`
+            : ''}
         </div>
       </div>
     `;
@@ -430,6 +439,81 @@ export class EdDisciplines extends LitElement {
           ${available != null ? html`<b>${available}</b>` : html`<span class="pend">—</span>`}
         </span>
         ${legend == null ? html`<span class="hint">Enter Total Legend earned to price rank changes.</span>` : ''}
+      </div>
+    `;
+  }
+
+  // Rank-grant helpers (PLAN-RANK-GRANTS.md D5). The folded bonus is a real
+  // engine-derived number displayed as a small chip beside the LEARNED rank —
+  // never written back, and absent when there is no grant.
+  _grantSign(b) {
+    return (b ?? 0) >= 0 ? '+' : '−';
+  }
+  _grantTitle(sources) {
+    return (sources ?? [])
+      .map((s) => {
+        const o = s.origin ?? {};
+        if (o.kind === 'thread') return `${o.name} · Thread Rank ${o.rank ?? '?'}`;
+        if (o.name) return o.name;
+        return s.source ?? s.summary ?? 'grant';
+      })
+      .join(', ');
+  }
+  _grantChip(t) {
+    // Only a *real* rank grant wears the amber pill. No grant (rankBonus null)
+    // or a grant that nets to zero ranks renders nothing — never a fabricated +0.
+    if (!t.rankBonus) return '';
+    return html`<span class="gchip" title="+${Math.abs(t.rankBonus)} rank ${this._grantTitle(t.grantSources)}">${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus)}</span>`;
+  }
+
+  // One granted-ability row (possessed via a `set` grant the character hasn't
+  // learned). Read-only: no rank editing — availability, not advancement.
+  _grantedRow(g) {
+    const title = this._grantTitle(g.grantSources);
+    return html`
+      <div class="trow">
+        <span class="tname">
+          <button
+            class="sinfo"
+            aria-label="${g.name} — view details"
+            title="${g.name} — click for details"
+            @click=${() => (this._modal = { type: 'granted', ability: g })}
+          >i</button>
+          <span class="lbl">${g.name}</span>
+        </span>
+        <span class="effcol eff" title=${title}>${title}</span>
+        <span class="num">${g.rank}</span>
+        <span class="sd">${g.step != null ? `${g.step} · ${g.dice}` : '—'}</span>
+        <span class="action sd"></span>
+        <button
+          class="roll"
+          ?disabled=${g.step == null}
+          title=${g.step == null ? 'Granted, not yet ranked — no step to roll' : `Roll ${g.name}`}
+          aria-label="Roll ${g.name}"
+          @click=${() =>
+            this.dispatchEvent(
+              new CustomEvent('ed-roll', { detail: { label: g.name, step: g.step, karma: null }, bubbles: true, composed: true }),
+            )}
+        >⚄</button>
+      </div>
+    `;
+  }
+
+  // Granted-ability detail modal — what granted it and at what standing.
+  _grantedModal(g) {
+    return html`
+      <div class="overlay" @click=${() => (this._modal = null)}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label=${g.name} @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${g.name}</span>
+            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+          </div>
+          <div class="mchips">
+            ${[{ v: `Rank ${g.rank}` }, g.attribute ? { v: g.attribute } : null].filter(Boolean).map((c) => html`<span class="chip">${c.v}</span>`)}
+          </div>
+          <div class="mtext">Available by grant — not a learned rank, so it costs no Legend and stays here until learned. ${g.step != null ? 'Currently rollable.' : 'Rank it up by learning the talent to roll it.'}</div>
+          <div class="mnote">Granted by ${this._grantTitle(g.grantSources)}.</div>
+        </div>
       </div>
     `;
   }
@@ -510,12 +594,22 @@ export class EdDisciplines extends LitElement {
                 `
               : ''}
           `}
+      ${(this.model?.grantedAbilities ?? []).length
+        ? html`
+            <h4 class="section-gap">Granted abilities (not learned)</h4>
+            <div class="card">
+              ${this.model.grantedAbilities.map((g) => this._grantedRow(g))}
+            </div>
+          `
+        : ''}
       ${this._modal
         ? this._modal.type === 'skill'
           ? this._skillModal(this._modal.skill)
           : this._modal.type === 'knack'
             ? this._knackModal(this._modal.knack)
-            : this._talentModal(this._modal)
+            : this._modal.type === 'granted'
+              ? this._grantedModal(this._modal.ability)
+              : this._talentModal(this._modal)
         : ''}
     `;
   }

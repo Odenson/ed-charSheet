@@ -6,6 +6,44 @@
   },
   "releases": [
     {
+      "version": "1.14.0",
+      "date": "2026-08-17",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Rank grants now actually apply instead of being listed. Always-on `grant-ability` rank effects fold into the derived talent/skill step: an `add`/`subtract` grant (e.g. Dark Archer Armour's +1 to Avoid Blow) raises the step the character rolls, and a `set` grant establishes possession of an otherwise un-learned ability (Windling Astral Sight / Versatility, the Astral-Sensitive Eye gift). The fold is pure engine work in the model only — the stored rank and its Legend price never change, so every consumer (Disciplines tab, Combat tab, dice, karma eligibility) sees the same engine-derived number."
+        },
+        {
+          "type": "added",
+          "text": "The Disciplines tab shows the grant: a learned talent or skill with a rank grant carries a small amber +N chip beside its rank (tooltip names the source, e.g. Dark Archer Armour · Thread Rank 2), and the talent/skill details modal adds a line explaining the grant is absorbed into the step. Abilities you possess but haven't learned appear in a new \"Granted abilities (not learned)\" group with their current rank, step, and an info modal saying what granted them."
+        },
+        {
+          "type": "added",
+          "text": "The Combat tab's Attack step-breakdown (ⓘ) now itemises a rank grant as its own line — the pre-grant base step plus \"Rank grant (source) +N\" — so the audit shows exactly what built the attack step, for any talent or skill with a grant, not just a hard-coded name."
+        },
+        {
+          "type": "added",
+          "text": "Talents can now carry combat options of their own (besides rules-wide and item-scoped ones). Two ship: True Shot — on a ranged attack, a set-dice roll commits up to rank Karma dice at 2 Strain, topped up one at a time to the cap; and Mystic Aim — a precursor Perception test vs the target's Mystic Defence, +2 steps to the Attack per success, 1 Strain, consumed by one attack. Both charge Strain/Karma on commit, so Escape before the roll costs nothing."
+        },
+        {
+          "type": "added",
+          "text": "The Combat tab adds an Attack step-breakdown modal (ⓘ) that itemises every effect folded into the Attack and Damage steps, and a manual-successes field for target-less attacks — you enter the GM-adjudicated success count and it buffs the Damage step. Successes reset on a fresh attack, a pick change, and a new round's Initiative roll."
+        },
+        {
+          "type": "changed",
+          "text": "Combat readouts are denser: the success pill is more compact, the info icons moved to the left of the row labels, and the Dark Archer Armour's ward was renamed Horror Defence (its reference metadata, weight, cost, and portrait were filled in)."
+        },
+        {
+          "type": "fixed",
+          "text": "Talents and skills without a rank grant no longer show a fabricated \"+0\" amber pill beside their rank — the grant chip only appears for a real, non-zero grant."
+        },
+        {
+          "type": "changed",
+          "text": "Cleaned up stale character data: removed the obsolete import notes file and the superseded character portrait JPG (the PNG portrait is used instead)."
+        }
+      ]
+    },
+    {
       "version": "1.13.0",
       "date": "2026-08-16",
       "changes": [

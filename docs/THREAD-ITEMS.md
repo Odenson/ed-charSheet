@@ -139,6 +139,18 @@ new logic. Delivery differs:
 | Global option | `rules/combat.json` `options[]` | every combat session |
 | **`combatOptions`** (weapon) | the **item entry itself** (`items.<name>.combatOptions[]`), item has `ref.category` | **only while this item is the selected weapon** |
 | **`combatOptions`** (non-weapon) | the **item entry itself**, item has **no** `ref.category` (armour, trinkets) | **while the item is equipped** (weapon pick irrelevant) |
+| **`combatOptions`** (talent) | a **talent** entry in `rules/talents.json` (`combat.talentOptions`, e.g. *True Shot*) | **while the granting talent is owned** (rank ≥ 1) |
+
+> Talent-granted options use the same bundle shape and add bundle-metadata fields
+> (not taxonomy effects — see plans/PLAN-TALENT-COMBAT-OPTIONS.md):
+> - `karmaDice` (**True Shot**) turns the roll modal's single Karma die into a
+>   set-dice roll (up to the talent's rank in Karma dice, one-at-a-time top-up).
+> - `aimRoll` (**Mystic Aim**) fires a precursor test from the modal (roll the
+>   talent vs an entered target defence); a hit arms the bundle's `on-success`
+>   effect via `collectCombatEffects`'s `armedOptions` set. This is the first use
+>   of `armedOptions` — an `on-success` effect folds only after its option is armed.
+>
+> These are the first non-item sources of combat options.
 
 Delivery splits by whether the item is a weapon (`ref.category` present):
 - **Weapon** thread items ride `equippedWeapons[].combatOptions` — offered only
