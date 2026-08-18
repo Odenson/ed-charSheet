@@ -355,10 +355,14 @@ export class EdSpells extends LitElement {
     }));
   }
 
+  // Weave forges the required threads PLUS up to extraThreadCap extra threads
+  // (§3.1) — Soul Armor (1 required, cap 1) can reach 2/1 before greying.
+  _weaveMax(plan) { return plan.threadsToWeave + plan.extraThreadCap; }
+
   _rollWeave(plan) {
-    if (this._prog.threadsWoven >= plan.threadsToWeave) return; // at max
+    if (this._prog.threadsWoven >= this._weaveMax(plan)) return; // at max (required + extra cap)
     this._pendingStep = 'weave';
-    this._maxThreads = plan.threadsToWeave;
+    this._maxThreads = this._weaveMax(plan);
     const disc = this._casterDisc(plan.discipline);
     const tw = disc?.talents?.find((t) => t.name === `Thread Weaving (${plan.discipline})`);
     this._dispatchRoll(`Weave — ${plan.name}`, plan.weavingStep, this._karmaCtx(tw?.karma), {
@@ -443,7 +447,7 @@ export class EdSpells extends LitElement {
     const target = this._target ?? this._defaultTarget(plan);
     const forge = plan.threadsToWeave > 0;
     const prog = this._prog;
-    const weaveMaxed = prog.threadsWoven >= plan.threadsToWeave;
+    const weaveMaxed = prog.threadsWoven >= this._weaveMax(plan);
     const effectLabel = plan.effect.kind === 'step' ? '⚄ Roll' : plan.effect.kind === 'static' ? `Apply +${plan.effect.value}` : 'Done';
     return html`
       <div class="casthead">
