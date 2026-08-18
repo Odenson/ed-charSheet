@@ -74,6 +74,16 @@ test('applyEdits health overlay preserves the other stored inputs', () => {
   assert.equal(next.resources.legend.totalEarnt, 100); // untouched
 });
 
+test('applyEdits strips a stale knockedDown key from the health overlay (decision I: never persisted)', () => {
+  memory.clear();
+  // An older build could have written the session-only flag into the overlay.
+  const edits = { health: { damage: 3, knockedDown: true } };
+  const character = baseCharacter();
+  const next = applyEdits(character, edits);
+  assert.equal(next.resources.health.damage, 3);
+  assert.ok(!('knockedDown' in next.resources.health), 'knockedDown never leaks back into loaded health');
+});
+
 test('hasPendingEdits: false before, true after a health edit, false after reconcile', () => {
   memory.clear();
   assert.equal(hasPendingEdits('c2'), false);
@@ -146,14 +156,14 @@ test('deriveModel exposes activeEffects: the always-on fold, no condition when n
   assert.ok(!names.includes('condition'), 'no condition effect when standing');
 });
 
-test('deriveModel: knockedDown:true folds the Knocked Down condition into activeEffects', () => {
+test('deriveModel: session knockedDown folds the Knocked Down condition into activeEffects', () => {
   memory.clear();
   const character = {
     ...baseCharacter(),
     attributes: { Toughness: { base: 17 }, Strength: { base: 20 } },
-    resources: { health: { damage: 12, wounds: 1, recoveriesUsed: 0, knockedDown: true } },
+    resources: { health: { damage: 12, wounds: 1, recoveriesUsed: 0 } },
   };
-  const model = deriveModel(character, rules);
+  const model = deriveModel(character, rules, { knockedDown: true });
   const cond = model.activeEffects.filter((e) => e.origin?.kind === 'condition');
   assert.equal(cond.length, 1);
   assert.equal(cond[0].type, 'test-modifier');
@@ -164,19 +174,19 @@ test('deriveModel: knockedDown:true folds the Knocked Down condition into active
   // (measure: result), so the derived step stays at Strength Step 8.
   assert.equal(model.characteristics.knockdown.value, 8);
   // Cleared: the condition folds back out of the readout.
-  const standing = deriveModel({ ...character, resources: { health: { ...character.resources.health, knockedDown: false } } }, rules);
+  const standing = deriveModel(character, rules, { knockedDown: false });
   assert.ok(!standing.activeEffects.some((e) => e.origin?.kind === 'condition'));
 });
 
-test('deriveModel: knockedDown folds −3 into Physical and Mystic Defense (not Social), clears on stand-up', () => {
+test('deriveModel: session knockedDown folds −3 into Physical and Mystic Defense (not Social), clears on stand-up', () => {
   memory.clear();
   const character = {
     ...baseCharacter(),
     attributes: { Dexterity: { base: 14 }, Perception: { base: 13 }, Charisma: { base: 12 } },
-    resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0, knockedDown: true } },
+    resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0 } },
   };
-  const down = deriveModel(character, rules);
-  const up = deriveModel({ ...character, resources: { health: { ...character.resources.health, knockedDown: false } } }, rules);
+  const down = deriveModel(character, rules, { knockedDown: true });
+  const up = deriveModel(character, rules, { knockedDown: false });
   assert.ok(up.characteristics.physicalDefense?.value != null, 'Physical Defense derived');
   assert.ok(up.characteristics.mysticDefense?.value != null, 'Mystic Defense derived');
   assert.ok(up.characteristics.socialDefense?.value != null, 'Social Defense derived');

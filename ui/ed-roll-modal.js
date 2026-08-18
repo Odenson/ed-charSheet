@@ -24,6 +24,7 @@ export class EdRollModal extends LitElement {
     _diceUsed: { state: true }, // set-dice: Karma dice rolled so far (batch + top-ups)
     _aimTarget: { state: true }, // aim: the entered target defence (string input)
     _aimRolled: { state: true }, // aim: has the aim test been rolled/charged?
+    embedded: { type: Boolean }, // render the panel inline (no full-screen overlay) — used inside the day-reset spend modal
   };
 
   static styles = css`
@@ -88,7 +89,10 @@ export class EdRollModal extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     // The modal only exists in the DOM while open, so bind/unbind Escape here.
+    // In embedded mode (the day-reset spend modal) the host owns Escape; the
+    // roll panel just auto-rolls and hands results up via its events.
     this._onKeydown = (e) => {
+      if (this.embedded) return;
       if (e.key === 'Escape') this._close();
       // Enter confirms the deferred choosers (Tier-1 modal contract): commit the
       // chosen Karma dice, or roll the aim once a target defence is entered.
@@ -420,8 +424,7 @@ export class EdRollModal extends LitElement {
     if (this._isAim() && !this._aimRolled) return this._renderAimChooser();
     const r = this._result;
     if (!r) return html``;
-    return html`
-      <div class="overlay" @click=${this._close}>
+    const dm = html`
         <div class="dm" @click=${(e) => e.stopPropagation()}>
           <div class="head">
             <div>
@@ -510,8 +513,8 @@ export class EdRollModal extends LitElement {
               : html`<button class="ok" @click=${this._close}>OK</button>`}
           </div>
         </div>
-      </div>
     `;
+    return this.embedded ? dm : html`<div class="overlay" @click=${this._close}>${dm}</div>`;
   }
 }
 

@@ -37,6 +37,19 @@ import './ed-confirm.js';
 // apply / open modals).
 const SCRATCH = new Map();
 
+export function clearCombatScratch(id, mountedEl = null) {
+  if (!id) return;
+  // Decision D: the cache keeps the day-scoped fields clear while preserving the
+  // picks (weapon / talent / collapsed) so an unmounted Combat tab restores them.
+  const cached = SCRATCH.get(id);
+  if (cached) SCRATCH.set(id, { ...cached, opts: [], sits: [], charmsOn: [], target: '' });
+  // The mounted Combat tab lives under ed-app's shadow root, so callers pass the
+  // current element explicitly when available.
+  if (mountedEl?.characterId === id && typeof mountedEl._clearDayState === 'function') {
+    mountedEl._clearDayState();
+  }
+}
+
 // Collapsible chip sections default to EXPANDED on desktop, and to collapsed on
 // narrow (mobile) screens — the same 720px breakpoint as the .top layout grid.
 // Only the initial default is viewport-driven; the player's taps win afterwards,
@@ -172,6 +185,7 @@ export class EdCombat extends LitElement {
     .dmgbonus { flex: none; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
     .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-small); flex: none; padding: 0; line-height: 1; }
     .roll:disabled { opacity: 0.4; cursor: default; }
+    .roll.reset { border-color: var(--karma); background: light-dark(#e7f0ea, #223029); color: var(--karma); }
     /* Take-damage carries the emergency (danger) tone to read apart from the rolls. */
     .roll.dmg { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
 
@@ -445,6 +459,21 @@ export class EdCombat extends LitElement {
     this._charmsOn = [];
     this._target = '';
     this._collapsed = defaultCollapsed();
+    this._damageModal = false;
+    this._stepAudit = null;
+    this._manualSuccesses = '';
+    this._confirmClear = false;
+    this._lastAttack = null;
+    this._attackArmed = false;
+    this._aimSuccesses = 0;
+    this._aimConsumed = false;
+  }
+
+  _clearDayState() {
+    this._opts = [];
+    this._sits = [];
+    this._charmsOn = [];
+    this._target = '';
     this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
@@ -935,10 +964,10 @@ export class EdCombat extends LitElement {
   }
   // Knocked Down is a live condition already folded into the sheet — the Combat
   // tab can end it just like the Overview's active-effect row (both dispatch the
-  // same ed-edit-health input; the engine re-derives the standing). Mirrors
-  // ui/ed-overview.js "Stand up".
+  // same ed-edit-knockdown session event; the engine re-derives the standing).
+  // Mirrors ui/ed-overview.js "Stand up". Session-only, never persisted.
   _standUp() {
-    this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: { knockedDown: false }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('ed-edit-knockdown', { detail: { knockedDown: false }, bubbles: true, composed: true }));
     // Record the action in the device-local log (the same store the Combat log
     // and the Notes Roll Log read) so the round's events — not just its rolls —
     // show up. `kind: 'action'` marks it as a non-roll entry for the renderers.
@@ -1176,6 +1205,7 @@ export class EdCombat extends LitElement {
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
             title=${recTitle}
             aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>⚄</button>
+          <button class="roll reset" style="margin-left:auto" @click=${() => this.dispatchEvent(new CustomEvent('ed-day-reset', { detail: { source: 'combat' }, bubbles: true, composed: true }))} title="Start a new day — reset recoveries, clear combat state, and spend any remaining recoveries" aria-label="Reset the day"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16h18"/><path d="M8 16a4 4 0 0 1 8 0"/><path d="M12 3.5v2"/><path d="M5.2 6.7l1.4 1.4"/><path d="M18.8 6.7l-1.4 1.4"/><path d="M12 20l-2-2h4z" fill="currentColor" stroke="none"/></svg></button>
         </div>
       </div>`;
   }

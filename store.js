@@ -436,11 +436,16 @@ export function applyEdits(character, edits) {
   if (edits.items) next = { ...next, items: edits.items };
   if (edits.wealth) next = { ...next, wealth: edits.wealth };
   if (edits.health) {
+    // `knockedDown` is session-only state (decision I), never a persisted health
+    // input — strip any stale copy an older build wrote to the overlay so the
+    // fact can't leak back into the character on load.
+    const mergedHealth = { ...(next.resources?.health || {}), ...edits.health };
+    delete mergedHealth.knockedDown;
     next = {
       ...next,
       resources: {
         ...(next.resources || {}),
-        health: { ...(next.resources?.health || {}), ...edits.health },
+        health: mergedHealth,
       },
     };
   }
@@ -530,7 +535,7 @@ export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karm
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
-export function deriveModel(character, rules) {
+export function deriveModel(character, rules, session = {}) {
   const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
@@ -804,15 +809,17 @@ export function deriveModel(character, rules) {
   // account for them, so overridden ratings fold the always-on effects only and
   // nothing is double-counted. Rule `effects` are inside `activeEffects`.
   const effectsForRating = (name) => (homebrewOverrides[name] ? activeEffects : healthEffects);
-  // Knocked Down is a live condition, not a stored/derived static number: it
-  // shows in Active Effects and is applied as a roll-time −3 to every test
-  // (PG p.389), and its −3 to Physical/Mystic Defense folds into the derived
-  // ratings below. It exists purely because the input is set — clear
-  // `knockedDown` and it folds back out of every derived readout.
-  const conditionEffects = character.resources?.health?.knockedDown
+  // Knocked Down is a live condition, not a stored/derived static number and
+  // NOT a persisted character input: it arrives through the session-only
+  // `session.knockedDown` flag (decision I, PLAN-END-OF-DAY-RESET) that ed-app
+  // holds and passes in. It shows in Active Effects, applies a roll-time −3 to
+  // every test (PG p.389), and its −3 to Physical/Mystic Defense folds into the
+  // derived ratings below — purely because the flag is set; clear it and the
+  // condition folds back out of every derived readout.
+  const conditionEffects = session?.knockedDown
     ? [{ ...KNOCKED_DOWN_EFFECT, origin: { kind: 'condition', name: 'Knocked Down' } }]
     : [];
-  const conditionDefenseEffects = character.resources?.health?.knockedDown
+  const conditionDefenseEffects = session?.knockedDown
     ? KNOCKED_DOWN_DEFENSE_EFFECTS.map((e) => ({ ...e, origin: { kind: 'condition', name: 'Knocked Down' } }))
     : [];
   const touVal = attrVal('Toughness');
@@ -1242,7 +1249,9 @@ export function deriveModel(character, rules) {
     })(),
     strengthStep: strStep,
     conditions: {
-      knockedDown: character.resources?.health?.knockedDown === true,
+      // Knocked Down is session-only state (decision I) — never read from the
+      // stored health inputs, which must not carry the fact.
+      knockedDown: session?.knockedDown === true,
       harried: weightStanding.stage === ENCUMBRANCE.BURDENED,
     },
     damageKarma: karmaUse('Damage', activeEffects),

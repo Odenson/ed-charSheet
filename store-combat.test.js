@@ -58,7 +58,7 @@ const charA = {
     { name: 'Hardened Leather' },
     { name: 'Broadsword', equipped: false },
   ],
-  resources: { health: { knockedDown: true, damage: 5, wounds: 0 }, karma: { available: 3 } },
+  resources: { health: { damage: 5, wounds: 0 }, karma: { available: 3 } },
   skills: [],
   knacks: [],
   traits: [],
@@ -67,7 +67,8 @@ const charA = {
   history: [],
 };
 
-const modelA = deriveModel(charA, rules);
+// Knocked Down arrives through the session flag (decision I) — never stored.
+const modelA = deriveModel(charA, rules, { knockedDown: true });
 
 test('attack talents: canonical order, owned ones carry rank/step/dice/karma', () => {
   const names = modelA.combat.attackTalents.map((t) => t.name);
@@ -143,7 +144,7 @@ test('clear load: conditions both false, only light weapons equipped', () => {
   const charB = {
     ...charA,
     items: [{ name: 'Ork Dagger' }],
-    resources: { health: { knockedDown: false, damage: 0, wounds: 0 }, karma: { available: 3 } },
+    resources: { health: { damage: 0, wounds: 0 }, karma: { available: 3 } },
   };
   const modelB = deriveModel(charB, rules);
   assert.deepEqual(modelB.combat.conditions, { knockedDown: false, harried: false });

@@ -4852,6 +4852,26 @@
         "shortEffect": "Binding / climbing rope"
       }
     },
+    "Rope (20 yards)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 20,
+        "weight": "15 lb",
+        "availability": "average",
+        "description": "Strong rope, sold by the yard."
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Binding/climbing rope; a bound character breaks free with a successful Strength (8) test."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Binding / climbing rope"
+      }
+    },
     "Sack": {
       "kind": "gear",
       "ref": {

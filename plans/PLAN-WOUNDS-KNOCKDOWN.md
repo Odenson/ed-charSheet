@@ -13,6 +13,13 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 - **Owner:** repo owner.
 - **Created:** 2026-08-08. **Branch of record:** `dev`.
 - **Baseline:** `dev` @ `d21de2f` (+ bug fix `158a0d9`) — clean working tree, **162/162 tests pass**.
+- **Superseded 2026-08-17 (persistence only):** decision I of
+  [PLAN-END-OF-DAY-RESET.md](PLAN-END-OF-DAY-RESET.md) drops
+  `resources.health.knockedDown` from the app's stored inputs — knockdown is
+  **session-only** state, never persisted. The engine rules, −3 fold and the
+  Stand-up flow below are unchanged; only the *persistence* of the flag changed.
+  See [Issues & learnings](#issues--learnings) and the
+  [Progress log](#progress-log).
 - **Source rules:** Earthdawn 4E Player's Guide (Health section) + errata + fasa.wiki/4E:
   - **Wound:** a single attack whose damage meets or exceeds the **Wound
     Threshold** inflicts one Wound.
@@ -30,7 +37,7 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 
 | Concern | Class | Why |
 |---------|-------|-----|
-| `resources.health.knockedDown` (new boolean input) | ✅ Tier 3 | Adding data *within* the existing `resources.health` input shape is Tier 3 — never a derived value stored. |
+| `resources.health.knockedDown` (new boolean input) | ✅ Tier 3 | Adding data *within* the existing `resources.health` input shape is Tier 3 — never a derived value stored. *(Superseded 2026-08-17: the flag is **not stored** — session-only state, decision I of PLAN-END-OF-DAY-RESET.md.)* |
 | New engine helpers (`woundsFromHit`, `knockdownTriggered`, `knockdownDifficulty`, `knockdownOutcome`, `KNOCKED_DOWN_EFFECT`) | ✅ Tier 3 | Pure, DOM-free additions to `engine/health.js`. |
 | Synth condition effect | ✅ Tier 3 | Uses existing taxonomy v3 vocabulary: `test`/`Action`, `operation: add`, `measure: result`, `source: condition`. **No taxonomy bump.** |
 | `deriveModel` `activeEffects` (always-on fold + condition) | ✅ Tier 3 | Re-exposes the existing fold under a new key; adds the condition effect when the input is set. |
@@ -42,6 +49,8 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 - **Store only inputs** — the wound count is *derived* from a hit + Wound
   Threshold at apply time; `knockedDown` is the only new stored input. Ratings,
   outcomes and the −3 never live in `character.json`.
+  *(Superseded 2026-08-17: `knockedDown` is **not** a stored input — session-only
+  state, decision I of PLAN-END-OF-DAY-RESET.md.)*
 - **Overview fits the desktop viewport without vertical scroll** — the right
   stack gains an **Active Effects** panel; that is the viewport-fit risk this
   slice verifies (§ Phase C risk).
@@ -125,11 +134,14 @@ lands, append to [Issues & learnings](#issues--learnings) and the
       (race / discipline circles / equipped item + thread effects, each tagged
       with its `origin`) plus the condition effect
       (`{ ...KNOCKED_DOWN_EFFECT, origin: { kind: 'condition', name: 'Knocked
-      Down' } }`) when `resources.health.knockedDown` is truthy. Derived, never
-      stored; clearing the input folds it back out.
-- [x] B2. No `SAVED_CATEGORIES` / `applyEdits` change — the health merge already
-      round-trips the extra `knockedDown` key. (Deviation: the app now persists
-      the *full merged* health object, see Issues.)
+      Down' } }`) when **the session knockdown flag** (passed to `deriveModel`,
+      not `resources.health.knockedDown`) is truthy. Derived, never stored;
+      clearing the flag folds it back out. *(2026-08-17: the flag now arrives
+      via the engine's session input — see Progress log.)*
+- [x] B2. No `SAVED_CATEGORIES` / `applyEdits` change needed for the flag — it is
+      **no longer stored**: `applyEdits` strips any stale `knockedDown` an older
+      build left in the overlay so it can never re-enter the character on load.
+      (Applies the full health merge on edit; see Issues.)
 
 ## Phase C — Overview UI
 
@@ -150,8 +162,11 @@ lands, append to [Issues & learnings](#issues--learnings) and the
       `{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }` to **every**
       roll while knocked down (PG p.389 — all tests, Initiative included); only
       the Karma die (a die roll, not a test) is skipped. The `ed-roll-apply`
-      handler re-derives `knockdownOutcome(result, difficulty)` and stores
-      `knockedDown`. Combat / Karma roll buttons still tag their `kind`.
+      handler re-derives `knockdownOutcome(result, difficulty)` and sets the
+      **session knockdown flag** (`_setKnockedDown`, not a health write).
+      Combat / Karma roll buttons still tag their `kind`.
+      *(2026-08-17: the flag is session-only; `ed-app`'s `_knockedDown` field,
+      never persisted — see Progress log.)*
 - [x] C3b. **Defense fold** — while knocked down, the engine's synthesized
       `KNOCKED_DOWN_DEFENSE_EFFECTS` (−3 `defense-modifier`, `rating` measure,
       Physical + Mystic) are folded into the derived defenses (not Social, which
@@ -159,7 +174,8 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 - [x] C4. **Active Effects panel** — a new block under Special Features listing
       every effect in `model.activeEffects` (origin tag + summary); the Knocked
       Down condition row is highlighted and carries **Stand up** (dispatches
-      `ed-edit-health { knockedDown: false }`).
+      `ed-edit-knockdown { knockedDown: false }`). *(2026-08-17: Stand up now
+      dispatches `ed-edit-knockdown`, not `ed-edit-health` — session-only.)*
 - [x] C5. **Recoveries reset** — a ⟳ button beside the Recoveries readout opens
       an `ed-confirm` ("A new day begins — reset Recovery tests used today to
       0?"); confirming dispatches `ed-edit-health { recoveriesUsed: 0 }`.
@@ -195,6 +211,18 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 
 ## Issues & learnings
 
+- **2026-08-17 (owner, decision I of PLAN-END-OF-DAY-RESET.md):** the
+  `resources.health.knockedDown` stored input is **dropped**. Knockdown is
+  session-only state, like the combat chips: it dies with the session/encounter
+  and is never written to the character file. Concretely, `ed-app` keeps a
+  session `_knockedDown` flag passed into `deriveModel(character, rules,
+  { knockedDown })`; the knockdown-test apply calls `_setKnockedDown(...)`
+  instead of `_editHealth`; Stand up dispatches `ed-edit-knockdown`; and
+  `applyEdits` strips stale `knockedDown` from loaded data so an old overlay
+  can't resurrect it. All derived behavior (the −3 fold, Active Effects row,
+  roll-time −3) is unchanged. The engine stays pure: it reads the flag as a
+  session input, never as a stored value.
+
 - **C1 deviation (data-safety fix):** the plan said `saveHealthEdits` "needs no
   change". While wiring `knockedDown` it became clear that a **partial** health
   save (`{ knockedDown: true }`, and the existing edit-mode `_setHealth`
@@ -229,3 +257,4 @@ lands, append to [Issues & learnings](#issues--learnings) and the
 | 2026-08-08 | Phases A–D + E1–E4: engine wounds/knockdown helpers + `KNOCKED_DOWN_EFFECT`; `deriveModel.activeEffects` + condition; damage modal auto-wound + knockdown routing; roll modal `difficulty`/`mods` + outcome; roll-time −3 + `knockdown-result` apply; Active Effects panel + Stand up; Recoveries reset; `_editHealth` full-merge fix; 11 new engine tests + 2 new store tests | 174/174 tests pass; pushed to `dev` |
 | 2026-08-08 | Owner revisions: Active Effects lists conditions only (no Special Features / items); recoveries-reset ⟳ moves beside the label; **Knockdown test auto-applies its outcome at roll time** (no verify button — `ed-roll-modal._roll()` dispatches `ed-roll-apply`, `ed-app` stops closing the modal on `knockdown-result`) | 174/174 tests pass; uncommitted on `dev` |
 | 2026-08-08 | Option B (local-rulebook check): Knocked Down is a **modifier** — the roll-time −3 now hits **every** test while prone (no Action-only / Initiative / Knockdown / Recovery exemptions; Karma die only excluded), and the **−3 Physical + Mystic Defense** fold was added (`KNOCKED_DOWN_DEFENSE_EFFECTS`, `rating` measure; Social left to GM discretion). Result-measure kept as the book's sanctioned alternative | 176/176 tests pass; uncommitted on `dev` |
+| 2026-08-17 | **Knockdown is no longer persisted** (owner, decision I of PLAN-END-OF-DAY-RESET.md): `ed-app` now holds the flag in session state (`_knockedDown`) and passes it to `deriveModel(character, rules, { knockedDown })`; the knockdown-test apply and Stand up route through `_setKnockedDown` / `ed-edit-knockdown` instead of `_editHealth`; `applyEdits` strips stale `knockedDown` from loaded overlays. All derived behavior (−3 fold, Active Effects row, roll-time −3) unchanged; engine still pure | 569/569 tests pass; uncommitted on `dev` |
