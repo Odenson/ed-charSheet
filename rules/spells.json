@@ -1,0 +1,4187 @@
+{
+  "schema": "ed-spells/1",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "source": "Earthdawn 4E Player's Guide + Deeper Secrets — Nethermancer spells. Mechanics + terse original-wording effect lines distilled from the rulebook; no verbatim prose. taxonomy effects[] are hand-enriched per docs/EFFECT-TAXONOMY.md (§3.4 sustained vs instantaneous).",
+  "notes": [
+    "123 Nethermancer spells, Circles 1-15. Mechanics (threads/weaving/casting/range/duration/area/effect) + Success Levels/Extra Threads for all; taxonomy effects[] enriched incrementally (combat/numeric spells first), rituals/summons carry a note effect.",
+    "threadCap: extra-thread cap by Circle band (rules data, not engine logic) — PLAN-SPELLS.md §3.1.",
+    "weavingDifficulty.reattune: on-the-fly matrix-swap difficulty, a POST-v1 mechanic carried in the shape now.",
+    "castingTarget is a HINT for the cast prompt; the test is always vs a NUMBER entered at cast time."
+  ],
+  "threadCap": [
+    {
+      "minCircle": 1,
+      "maxCircle": 4,
+      "extraThreads": 1
+    },
+    {
+      "minCircle": 5,
+      "maxCircle": 8,
+      "extraThreads": 2
+    },
+    {
+      "minCircle": 9,
+      "maxCircle": 12,
+      "extraThreads": 3
+    },
+    {
+      "minCircle": 13,
+      "maxCircle": 15,
+      "extraThreads": 4
+    }
+  ],
+  "spells": {
+    "Astral Spear": {
+      "name": "Astral Spear",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "40 yards",
+      "duration": "1 round",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+1)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+4 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL + 4/Mystic"
+    },
+    "Bone Circle": {
+      "name": "Bone Circle",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank months",
+      "area": "2-yard radius circle",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 months)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 months)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "2-yard radius circle"
+        }
+      ],
+      "summary": "2-yard radius circle"
+    },
+    "Dark Messenger": {
+      "name": "Dark Messenger",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank hours",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 hours)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 hours)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+Rank words)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 movement rate),",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Sends nightflyer to deliver a message"
+        }
+      ],
+      "summary": "Sends nightflyer to deliver a message"
+    },
+    "Ethereal Darkness": {
+      "name": "Ethereal Darkness",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Touch",
+      "duration": "Rank + 5 rounds",
+      "area": "4-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Experience Death": {
+      "name": "Experience Death",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "Rank + 5 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+5 Effect step (Willpower-based)."
+        }
+      ],
+      "summary": "WIL + 5"
+    },
+    "Life Circle of One": {
+      "name": "Life Circle of One",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "6 or Target's Mystic Defense (see text)",
+      "range": "Touch",
+      "duration": "Rank minutes",
+      "area": "4-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Shadow Meld": {
+      "name": "Shadow Meld",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Stealthy Stride"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+4 to Stealthy Stride tests while active."
+        }
+      ],
+      "summary": "+ 4 to Stealthy Stride tests"
+    },
+    "Soul Armor": {
+      "name": "Soul Armor",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Mystic Armor)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+1)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+3 Mystic Armor while the spell is active."
+        }
+      ],
+      "summary": "+3 to Mystic Armor"
+    },
+    "Soulless Eyes": {
+      "name": "Soulless Eyes",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank + 5 minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (-2 Mystic Armor)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+1)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Intimidation"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+3 to Intimidation tests while active."
+        }
+      ],
+      "summary": "+3 to Intimidation tests"
+    },
+    "Spirit Dart": {
+      "name": "Spirit Dart",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "2 rounds",
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+2 Effect step (Willpower-based mystic damage)."
+        },
+        {
+          "type": "armor-modifier",
+          "target": {
+            "domain": "armor",
+            "name": "Mystic"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "duration": "rounds",
+          "rounds": 2,
+          "source": "spell",
+          "summary": "Reduces the target's Mystic Armor by 2 (on the target, not the caster).",
+          "gmDiscretion": true
+        }
+      ],
+      "summary": "WIL + 2/Mystic and reduce Mystic Armor by 2"
+    },
+    "Spirit Grip": {
+      "name": "Spirit Grip",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "2 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (-1 Defenses) Second Circle",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+2 Effect step (Willpower-based mystic damage)."
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "subtract",
+          "value": 2,
+          "measure": "rating",
+          "duration": "rounds",
+          "rounds": 2,
+          "source": "spell",
+          "summary": "Reduces the target's Defenses by 2 (on the target, not the caster).",
+          "gmDiscretion": true
+        }
+      ],
+      "summary": "WIL + 2/Mystic and reduce Defenses by 2."
+    },
+    "Detect Undead": {
+      "name": "Detect Undead",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Fixed 6",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "20-yard radius from target"
+        }
+      ],
+      "summary": "20-yard radius from target"
+    },
+    "Preserve": {
+      "name": "Preserve",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "2-yard radius"
+        }
+      ],
+      "summary": "2-yard radius"
+    },
+    "Putrefy": {
+      "name": "Putrefy",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Decomposes non-living organic matter"
+        }
+      ],
+      "summary": "Decomposes non-living organic matter"
+    },
+    "Spirit Labor": {
+      "name": "Spirit Labor",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Fixed 6",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Perform menial labor"
+        }
+      ],
+      "summary": "Perform menial labor"
+    },
+    "Undead Struggle": {
+      "name": "Undead Struggle",
+      "discipline": "Nethermancer",
+      "circle": 1,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 5,
+        "reattune": 10
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+3 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL+3/Mystic"
+    },
+    "Aspect of the Fog Ghost": {
+      "name": "Aspect of the Fog Ghost",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+1 bonus)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+3 close-combat Attack while active."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+3 close-combat Damage while active."
+        },
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Physical"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+3 Physical Defense while active."
+        }
+      ],
+      "summary": "+3 to close combat Attack and Damage tests, +3 to Physical Defense"
+    },
+    "Chilling Circle": {
+      "name": "Chilling Circle",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank minutes",
+      "area": "2-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards), Remove Targets (-Rank)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "2-yard radius"
+        }
+      ],
+      "summary": "2-yard radius"
+    },
+    "Death’s Head": {
+      "name": "Death’s Head",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": "Rank+5 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Damage Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+Rank)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Use Frighten as Simple Action"
+        }
+      ],
+      "summary": "Use Frighten as Simple Action"
+    },
+    "Night’s Edge": {
+      "name": "Night’s Edge",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank+5 rounds",
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Adds Step 3/D4 cold damage to weapon/Physical and reduces target’s"
+        }
+      ],
+      "summary": "Adds Step 3/D4 cold damage to weapon/Physical and reduces target’s"
+    },
+    "Shadow’s Whisper": {
+      "name": "Shadow’s Whisper",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "100 yards",
+      "duration": "Rank + 5 minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+2 yards from shadow)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+50 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Eavesdrop through a shadow"
+        }
+      ],
+      "summary": "Eavesdrop through a shadow"
+    },
+    "Shield Mist": {
+      "name": "Shield Mist",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": "Rank +5 rounds",
+      "area": null,
+      "successes": [],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Avoid Blow"
+          },
+          "operation": "add",
+          "value": 4,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+4 to Avoid Blow tests while active."
+        }
+      ],
+      "summary": "+ 4 bonus to Avoid Blow tests"
+    },
+    "Summon Fog Ghost": {
+      "name": "Summon Fog Ghost",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards) Third Circle",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+10/Mystic"
+        }
+      ],
+      "summary": "Nethermancer Circle+10/Mystic"
+    },
+    "Animate Skeleton": {
+      "name": "Animate Skeleton",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Fixed 10",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "20 yards"
+        }
+      ],
+      "summary": "20 yards"
+    },
+    "Death Trance": {
+      "name": "Death Trance",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Puts the target into suspended animation"
+        }
+      ],
+      "summary": "Puts the target into suspended animation"
+    },
+    "Netherlight": {
+      "name": "Netherlight",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "10-yard radius sphere"
+        }
+      ],
+      "summary": "10-yard radius sphere"
+    },
+    "Sculpt Darkness": {
+      "name": "Sculpt Darkness",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Fixed 10",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Molds shadows"
+        }
+      ],
+      "summary": "Molds shadows"
+    },
+    "Translator Spirit": {
+      "name": "Translator Spirit",
+      "discipline": "Nethermancer",
+      "circle": 2,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 6,
+        "reattune": 11
+      },
+      "castingTarget": "Fixed 6",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "+3 to Speak Language and Read and Write Language tests"
+        }
+      ],
+      "summary": "+3 to Speak Language and Read and Write Language tests"
+    },
+    "Arrow of Night": {
+      "name": "Arrow of Night",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Fixed 6",
+      "range": "Touch",
+      "duration": "2 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Damage)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (-2 Mystic Armor penalty)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+Rank)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "rating",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+6 to the enchanted missile Damage test."
+        }
+      ],
+      "summary": "+6 bonus to a missile Damage test and a -2 penalty to Mystic Armor"
+    },
+    "Aspect of the Bone Spirit": {
+      "name": "Aspect of the Bone Spirit",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Range (+10 miles)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Binds a bone spirit"
+        }
+      ],
+      "summary": "Binds a bone spirit"
+    },
+    "Aspect of the Cowardly Skulk": {
+      "name": "Aspect of the Cowardly Skulk",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Grants a target superior scouting abilities at a cost"
+        }
+      ],
+      "summary": "Grants a target superior scouting abilities at a cost"
+    },
+    "Fog of Fear": {
+      "name": "Fog of Fear",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Fixed 6",
+      "range": "20 yards",
+      "duration": "Rank rounds",
+      "area": "4-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 bonus to talent)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Grave Message": {
+      "name": "Grave Message",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Fixed 6",
+      "range": "20 miles",
+      "duration": "Rank days",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Range (+20 miles)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 days)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+20 miles)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Sends message to a Namegiver"
+        }
+      ],
+      "summary": "Sends message to a Namegiver"
+    },
+    "Pain": {
+      "name": "Pain",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+1 Wound)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Cause the target 3 temporary Wounds and reduce movement"
+        }
+      ],
+      "summary": "Cause the target 3 temporary Wounds and reduce movement"
+    },
+    "Summon Bone Spirit": {
+      "name": "Summon Bone Spirit",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "10 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 miles) Fourth Circle",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Summons a bone spirit"
+        }
+      ],
+      "summary": "Summons a bone spirit"
+    },
+    "Animate Spirit Object": {
+      "name": "Animate Spirit Object",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Fixed 10",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Animates an object"
+        }
+      ],
+      "summary": "Animates an object"
+    },
+    "Astral Whisper": {
+      "name": "Astral Whisper",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "20-yard radius"
+        }
+      ],
+      "summary": "20-yard radius"
+    },
+    "Bone Dance": {
+      "name": "Bone Dance",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+3"
+        }
+      ],
+      "summary": "Nethermancer Circle+3"
+    },
+    "Pattern Spike": {
+      "name": "Pattern Spike",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 3,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+3 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL+3/Mystic and -2 to an Action test (see text)"
+    },
+    "Spirit Double": {
+      "name": "Spirit Double",
+      "discipline": "Nethermancer",
+      "circle": 3,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 7,
+        "reattune": 12
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Creates a spirit double of the spellcaster"
+        }
+      ],
+      "summary": "Creates a spirit double of the spellcaster"
+    },
+    "Aspect of the Menacing Tyrant": {
+      "name": "Aspect of the Menacing Tyrant",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 to Interaction (Intimidate) tests)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Grant target bonuses to social interaction at a cost"
+        }
+      ],
+      "summary": "Grant target bonuses to social interaction at a cost"
+    },
+    "Dark Spy": {
+      "name": "Dark Spy",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "10 yards",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Perception tests)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+1 mile)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "See and hear through a nightflyer’s senses"
+        }
+      ],
+      "summary": "See and hear through a nightflyer’s senses"
+    },
+    "Evil Eye": {
+      "name": "Evil Eye",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+1 additional Success to Frighten tests)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Improves the effect of Frighten"
+        }
+      ],
+      "summary": "Improves the effect of Frighten"
+    },
+    "Last Chance": {
+      "name": "Last Chance",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "1 round",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Grants +4 bonus Recovery test to a dead character"
+        }
+      ],
+      "summary": "Grants +4 bonus Recovery test to a dead character"
+    },
+    "Nightflyer’s Cloak": {
+      "name": "Nightflyer’s Cloak",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": "Rank + 10 minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increased Effect (+2 to Perception tests while in creature form)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Transforms caster into a nightflyer"
+        }
+      ],
+      "summary": "Transforms caster into a nightflyer"
+    },
+    "Viewpoint": {
+      "name": "Viewpoint",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Fixed 6",
+      "range": "Touch",
+      "duration": "Rank + 5 minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes) Fifth Circle",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "See through a physical barrier"
+        }
+      ],
+      "summary": "See through a physical barrier"
+    },
+    "Aspect of the Shadow Hunter": {
+      "name": "Aspect of the Shadow Hunter",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Fixed 6",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Summons a hunter spirit."
+        }
+      ],
+      "summary": "Summons a hunter spirit."
+    },
+    "Blood Servitor": {
+      "name": "Blood Servitor",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Creates a flying servant"
+        }
+      ],
+      "summary": "Creates a flying servant"
+    },
+    "Fatal Food": {
+      "name": "Fatal Food",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Fixed 10",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+8"
+        }
+      ],
+      "summary": "Nethermancer Circle+8"
+    },
+    "Forget Hunger": {
+      "name": "Forget Hunger",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Diminishes hunger"
+        }
+      ],
+      "summary": "Diminishes hunger"
+    },
+    "Spirit Servant": {
+      "name": "Spirit Servant",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Summon a spirit servant"
+        }
+      ],
+      "summary": "Summon a spirit servant"
+    },
+    "Summon Shadow Hunter": {
+      "name": "Summon Shadow Hunter",
+      "discipline": "Nethermancer",
+      "circle": 4,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 8,
+        "reattune": 13
+      },
+      "castingTarget": "Fixed 8",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Summons a hunter spirit."
+        }
+      ],
+      "summary": "Summons a hunter spirit."
+    },
+    "Aspect of the Cruel Physician": {
+      "name": "Aspect of the Cruel Physician",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Grants Recovery tests for a price"
+        }
+      ],
+      "summary": "Grants Recovery tests for a price"
+    },
+    "Blind": {
+      "name": "Blind",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 to effective Willpower Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Additional Targets (+1)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Target is rendered blind"
+        }
+      ],
+      "summary": "Target is rendered blind"
+    },
+    "Circle of Astral Protection": {
+      "name": "Circle of Astral Protection",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank+5 minutes",
+      "area": "8-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "8-yard radius"
+        }
+      ],
+      "summary": "8-yard radius"
+    },
+    "Dust to Dust": {
+      "name": "Dust to Dust",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "1 round",
+      "area": null,
+      "successes": [],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+1 Target; additional target threads do not count toward the normal extra thread maximum)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+8 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL + 8/Mystic"
+    },
+    "Reverse Withering": {
+      "name": "Reverse Withering",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "1 round",
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Restores withered limb"
+        }
+      ],
+      "summary": "Restores withered limb"
+    },
+    "Wither Limb": {
+      "name": "Wither Limb",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "1 round",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+6 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL + 6/Mystic"
+    },
+    "Astral Seeking": {
+      "name": "Astral Seeking",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Summons a spirit guide to answer a question"
+        }
+      ],
+      "summary": "Summons a spirit guide to answer a question"
+    },
+    "Blood Lost": {
+      "name": "Blood Lost",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+5 and -2 to Damage"
+        }
+      ],
+      "summary": "Nethermancer Circle+5 and -2 to Damage"
+    },
+    "Cold Storage": {
+      "name": "Cold Storage",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Fixed 8",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Preserves organic matter"
+        }
+      ],
+      "summary": "Preserves organic matter"
+    },
+    "Creeping Dread": {
+      "name": "Creeping Dread",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "10-yard radius"
+        }
+      ],
+      "summary": "10-yard radius"
+    },
+    "Scythe Ward": {
+      "name": "Scythe Ward",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Fixed 15",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Whisper Through the Night": {
+      "name": "Whisper Through the Night",
+      "discipline": "Nethermancer",
+      "circle": 5,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 9,
+        "reattune": 14
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Interrogate spirit"
+        }
+      ],
+      "summary": "Interrogate spirit"
+    },
+    "Astral Maw": {
+      "name": "Astral Maw",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "10 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle + 10/Physical"
+        }
+      ],
+      "summary": "Nethermancer Circle + 10/Physical"
+    },
+    "Bone Shatter": {
+      "name": "Bone Shatter",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "1 round",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 6,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+6 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL + 6/Mystic"
+    },
+    "Debilitating Gloom": {
+      "name": "Debilitating Gloom",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "Rank rounds",
+      "area": "6-yard radius",
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "6-yard radius"
+        }
+      ],
+      "summary": "6-yard radius"
+    },
+    "Friendly Darkness": {
+      "name": "Friendly Darkness",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Touch",
+      "duration": "Rank rounds",
+      "area": "6-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "6-yard radius"
+        }
+      ],
+      "summary": "6-yard radius"
+    },
+    "Recovery": {
+      "name": "Recovery",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "1 round",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Recovery test with a +5 bonus"
+        }
+      ],
+      "summary": "Recovery test with a +5 bonus"
+    },
+    "Step Through Shadow": {
+      "name": "Step Through Shadow",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self; 100 yards",
+      "duration": "Rank + 5 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 to Movement Rate) Increase Range (+10 yards) Seventh Circle",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Creates astral passageway"
+        }
+      ],
+      "summary": "Creates astral passageway"
+    },
+    "Bone Walker": {
+      "name": "Bone Walker",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "20-yards"
+        }
+      ],
+      "summary": "20-yards"
+    },
+    "Grave Silence": {
+      "name": "Grave Silence",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Fixed 6",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Netherwave": {
+      "name": "Netherwave",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "6-yard radius"
+        }
+      ],
+      "summary": "6-yard radius"
+    },
+    "Nightmare of Foreboding": {
+      "name": "Nightmare of Foreboding",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Deprives the victim of sleep"
+        }
+      ],
+      "summary": "Deprives the victim of sleep"
+    },
+    "Tears of the Scourge": {
+      "name": "Tears of the Scourge",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "6-yard radius"
+        }
+      ],
+      "summary": "6-yard radius"
+    },
+    "Wall of Darkness": {
+      "name": "Wall of Darkness",
+      "discipline": "Nethermancer",
+      "circle": 6,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 10,
+        "reattune": 15
+      },
+      "castingTarget": "Fixed 6",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "10-yards wide, 10-yards high, and 2-yards deep"
+        }
+      ],
+      "summary": "10-yards wide, 10-yards high, and 2-yards deep"
+    },
+    "Aspect of the Casual Murderer": {
+      "name": "Aspect of the Casual Murderer",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank+5 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+1 bonus)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+5 Attack while active."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "rating",
+          "duration": "sustained",
+          "source": "spell",
+          "summary": "+5 Damage while active."
+        }
+      ],
+      "summary": "+5 to Attack and Damage tests"
+    },
+    "Astral Beacon": {
+      "name": "Astral Beacon",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "1 round",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Effect (+1 Circle)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+1 Circle)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Creates a beacon in astral space"
+        }
+      ],
+      "summary": "Creates a beacon in astral space"
+    },
+    "Bone Pudding": {
+      "name": "Bone Pudding",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "Rank+5 rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Turns bones to sludge"
+        }
+      ],
+      "summary": "Turns bones to sludge"
+    },
+    "Constrict Heart": {
+      "name": "Constrict Heart",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "WIL/NA"
+        }
+      ],
+      "summary": "WIL/NA"
+    },
+    "Foul Vapors": {
+      "name": "Foul Vapors",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": "Rank rounds",
+      "area": "10-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Area (+2 yards), Remove Targets (-Rank)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "10-yard radius"
+        }
+      ],
+      "summary": "10-yard radius"
+    },
+    "Restrain Entity": {
+      "name": "Restrain Entity",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        },
+        {
+          "label": "Increase Range (+10 yards) Eighth Circle",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "WIL + Nethermancer Circle"
+        }
+      ],
+      "summary": "WIL + Nethermancer Circle"
+    },
+    "Banquet of Dis": {
+      "name": "Banquet of Dis",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Eliminates hunger, thirst, or fatigue"
+        }
+      ],
+      "summary": "Eliminates hunger, thirst, or fatigue"
+    },
+    "Death’s Visitation": {
+      "name": "Death’s Visitation",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "40 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Immobilizes target with fear"
+        }
+      ],
+      "summary": "Immobilizes target with fear"
+    },
+    "Desiccate": {
+      "name": "Desiccate",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+5 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL+5/Mystic and -2 to next Action test"
+    },
+    "Pattern Ligature": {
+      "name": "Pattern Ligature",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "40 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Extends the range of spells to a specific target"
+        }
+      ],
+      "summary": "Extends the range of spells to a specific target"
+    },
+    "Spirit Bolt": {
+      "name": "Spirit Bolt",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "60 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+8 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL+8/Mystic"
+    },
+    "Wit Friend": {
+      "name": "Wit Friend",
+      "discipline": "Nethermancer",
+      "circle": 7,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 11,
+        "reattune": 16
+      },
+      "castingTarget": "Fixed 6",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Allows a second chance on some Perception-based tests."
+        }
+      ],
+      "summary": "Allows a second chance on some Perception-based tests."
+    },
+    "Aspect of the Astral Savant": {
+      "name": "Aspect of the Astral Savant",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 to Astral Sight tests)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Grants unfettered perception into astral space"
+        }
+      ],
+      "summary": "Grants unfettered perception into astral space"
+    },
+    "Horror Call": {
+      "name": "Horror Call",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 6,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Touch",
+      "duration": "Rank hours",
+      "area": "4-yard radius",
+      "successes": [
+        {
+          "label": "Increase Duration (+2 hours)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 hours)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Dispel Diffi - culty)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Netherblade": {
+      "name": "Netherblade",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 0,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Damage)",
+          "effects": []
+        },
+        {
+          "label": "Additional Target (+Rank)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Allows a weapon to affect targets in astral space."
+        }
+      ],
+      "summary": "Allows a weapon to affect targets in astral space."
+    },
+    "Shadow Tether": {
+      "name": "Shadow Tether",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "10 yards",
+      "duration": "Rank rounds",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 rounds)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Prevents targets from moving and are Harried"
+        }
+      ],
+      "summary": "Prevents targets from moving and are Harried"
+    },
+    "Spirit Portal": {
+      "name": "Spirit Portal",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Fixed 6",
+      "range": "Touch",
+      "duration": "10 × Rank minutes",
+      "area": null,
+      "successes": [
+        {
+          "label": "Increase Duration (+2 months)",
+          "effects": []
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 months)",
+          "effects": []
+        },
+        {
+          "label": "Increase Effect (+2 Effect Step)",
+          "effects": []
+        }
+      ],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "WIL + 10 (see text)"
+        }
+      ],
+      "summary": "WIL + 10 (see text)"
+    },
+    "Wither Away": {
+      "name": "Wither Away",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 5,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": "Rank months",
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "WIL/Mystic"
+        }
+      ],
+      "summary": "WIL/Mystic"
+    },
+    "Armor of Bone": {
+      "name": "Armor of Bone",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "+2 Physical Armor, +2 to fear-related"
+        }
+      ],
+      "summary": "+2 Physical Armor, +2 to fear-related"
+    },
+    "Blood Boil": {
+      "name": "Blood Boil",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "set",
+          "value": {
+            "ref": "attribute|Willpower|Step"
+          },
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "Effect = Willpower step."
+        },
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 5,
+          "measure": "step",
+          "duration": "test",
+          "source": "spell",
+          "summary": "+5 Effect step (Willpower-based mystic damage)."
+        }
+      ],
+      "summary": "WIL+5/Mystic"
+    },
+    "Damage Shift": {
+      "name": "Damage Shift",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+8"
+        }
+      ],
+      "summary": "Nethermancer Circle+8"
+    },
+    "Gravelight": {
+      "name": "Gravelight",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "30-yard radius"
+        }
+      ],
+      "summary": "30-yard radius"
+    },
+    "Lock the Astral Gates": {
+      "name": "Lock the Astral Gates",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "10-yard radius"
+        }
+      ],
+      "summary": "10-yard radius"
+    },
+    "Visions of Death": {
+      "name": "Visions of Death",
+      "discipline": "Nethermancer",
+      "circle": 8,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 12,
+        "reattune": 17
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+5"
+        }
+      ],
+      "summary": "Nethermancer Circle+5"
+    },
+    "Astral Materialization": {
+      "name": "Astral Materialization",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "30 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+10"
+        }
+      ],
+      "summary": "Nethermancer Circle+10"
+    },
+    "Dark Sword": {
+      "name": "Dark Sword",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "4-yard radius"
+        }
+      ],
+      "summary": "4-yard radius"
+    },
+    "Draining Eye": {
+      "name": "Draining Eye",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "15 or Target's Mystic Defense",
+      "range": "Self; 20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Drains life from a target"
+        }
+      ],
+      "summary": "Drains life from a target"
+    },
+    "Mystic Vessel": {
+      "name": "Mystic Vessel",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+10"
+        }
+      ],
+      "summary": "Nethermancer Circle+10"
+    },
+    "Silent Darkness": {
+      "name": "Silent Darkness",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "10-yard radius"
+        }
+      ],
+      "summary": "10-yard radius"
+    },
+    "Skin Shift": {
+      "name": "Skin Shift",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+10 and a Wound"
+        }
+      ],
+      "summary": "Nethermancer Circle+10 and a Wound"
+    },
+    "Twist Emotion": {
+      "name": "Twist Emotion",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Twists the victim’s emotions"
+        }
+      ],
+      "summary": "Twists the victim’s emotions"
+    },
+    "Void Wave": {
+      "name": "Void Wave",
+      "discipline": "Nethermancer",
+      "circle": 9,
+      "threadsToWeave": 2,
+      "weavingDifficulty": {
+        "value": 13,
+        "reattune": 18
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "6-yards wide"
+        }
+      ],
+      "summary": "6-yards wide"
+    },
+    "Breach the Astral Gates": {
+      "name": "Breach the Astral Gates",
+      "discipline": "Nethermancer",
+      "circle": 10,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 14,
+        "reattune": 19
+      },
+      "castingTarget": "Fixed 20",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "20-yard radius"
+        }
+      ],
+      "summary": "20-yard radius"
+    },
+    "Onion Blood": {
+      "name": "Onion Blood",
+      "discipline": "Nethermancer",
+      "circle": 10,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 14,
+        "reattune": 19
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "WIL+3/Mystic and a Wound"
+        }
+      ],
+      "summary": "WIL+3/Mystic and a Wound"
+    },
+    "Restless Death": {
+      "name": "Restless Death",
+      "discipline": "Nethermancer",
+      "circle": 10,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 14,
+        "reattune": 19
+      },
+      "castingTarget": "Fixed 10",
+      "range": "10 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+10"
+        }
+      ],
+      "summary": "Nethermancer Circle+10"
+    },
+    "Soul Trap": {
+      "name": "Soul Trap",
+      "discipline": "Nethermancer",
+      "circle": 10,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 14,
+        "reattune": 19
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Traps the deceased’s essence"
+        }
+      ],
+      "summary": "Traps the deceased’s essence"
+    },
+    "Spirit Tempest": {
+      "name": "Spirit Tempest",
+      "discipline": "Nethermancer",
+      "circle": 10,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 14,
+        "reattune": 19
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "30 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "6-yard radius"
+        }
+      ],
+      "summary": "6-yard radius"
+    },
+    "Tap Horror Karma": {
+      "name": "Tap Horror Karma",
+      "discipline": "Nethermancer",
+      "circle": 10,
+      "threadsToWeave": 1,
+      "weavingDifficulty": {
+        "value": 14,
+        "reattune": 19
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "20 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Like taking Karma from a Horror"
+        }
+      ],
+      "summary": "Like taking Karma from a Horror"
+    },
+    "Journey to Life": {
+      "name": "Journey to Life",
+      "discipline": "Nethermancer",
+      "circle": 11,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 15,
+        "reattune": 20
+      },
+      "castingTarget": "Fixed 20",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Guides a dead character’s essence back to"
+        }
+      ],
+      "summary": "Guides a dead character’s essence back to"
+    },
+    "Walking Dead": {
+      "name": "Walking Dead",
+      "discipline": "Nethermancer",
+      "circle": 11,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 15,
+        "reattune": 20
+      },
+      "castingTarget": "Fixed 10",
+      "range": "40 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Creates a zombie servant."
+        }
+      ],
+      "summary": "Creates a zombie servant."
+    },
+    "Crop Blight": {
+      "name": "Crop Blight",
+      "discipline": "Nethermancer",
+      "circle": 12,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 16,
+        "reattune": 21
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "1-mile radius"
+        }
+      ],
+      "summary": "1-mile radius"
+    },
+    "Eclipse": {
+      "name": "Eclipse",
+      "discipline": "Nethermancer",
+      "circle": 12,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 16,
+        "reattune": 21
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Self",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "1-mile radius"
+        }
+      ],
+      "summary": "1-mile radius"
+    },
+    "Gateway": {
+      "name": "Gateway",
+      "discipline": "Nethermancer",
+      "circle": 13,
+      "threadsToWeave": 3,
+      "weavingDifficulty": {
+        "value": 17,
+        "reattune": 22
+      },
+      "castingTarget": "Fixed 20",
+      "range": "100 miles",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Creates a path through astral space"
+        }
+      ],
+      "summary": "Creates a path through astral space"
+    },
+    "Moon Shadow": {
+      "name": "Moon Shadow",
+      "discipline": "Nethermancer",
+      "circle": 13,
+      "threadsToWeave": 5,
+      "weavingDifficulty": {
+        "value": 17,
+        "reattune": 22
+      },
+      "castingTarget": "Target's Mystic Defense",
+      "range": "40 yards",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "Nethermancer Circle+15/Mystic"
+        }
+      ],
+      "summary": "Nethermancer Circle+15/Mystic"
+    },
+    "Call Forth the Army of Decay": {
+      "name": "Call Forth the Army of Decay",
+      "discipline": "Nethermancer",
+      "circle": 14,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 18,
+        "reattune": 23
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "100-yard radius"
+        }
+      ],
+      "summary": "100-yard radius"
+    },
+    "Shadow Palace": {
+      "name": "Shadow Palace",
+      "discipline": "Nethermancer",
+      "circle": 14,
+      "threadsToWeave": 4,
+      "weavingDifficulty": {
+        "value": 18,
+        "reattune": 23
+      },
+      "castingTarget": "Fixed 10",
+      "range": "Touch",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "60-yard cube"
+        }
+      ],
+      "summary": "60-yard cube"
+    },
+    "Annihilate Pattern": {
+      "name": "Annihilate Pattern",
+      "discipline": "Nethermancer",
+      "circle": 15,
+      "threadsToWeave": 6,
+      "weavingDifficulty": {
+        "value": 19,
+        "reattune": 24
+      },
+      "castingTarget": "Target's Mystic Defense (see text)",
+      "range": "200 miles",
+      "duration": null,
+      "area": null,
+      "successes": [],
+      "extraThreads": [],
+      "effects": [
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": true,
+          "summary": "WIL+Nethermancer Circle/NA (see text)"
+        }
+      ],
+      "summary": "WIL+Nethermancer Circle/NA (see text)"
+    }
+  }
+}
