@@ -19,10 +19,10 @@ export class EdSpells extends LitElement {
     _modal: { state: true },
     _castType: { state: true },
     _selSpell: { state: true },
-    _castMode: { state: true },
     _target: { state: true },
     _subject: { state: true },
     _castErr: { state: true },
+    _prog: { state: true },
   };
 
   static styles = css`
@@ -118,6 +118,13 @@ export class EdSpells extends LitElement {
     .stepnum { font-size: var(--fs-fine); color: var(--spell); }
     .readout { font-size: var(--fs-value); font-weight: 500; color: var(--fg); }
     .stepnote { font-size: var(--fs-fine); color: var(--muted); }
+    .threads { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 0 7px; font-variant-numeric: tabular-nums; }
+    .rollres { align-self: flex-end; text-align: right; font-size: var(--fs-fine); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .rollres b { font-size: var(--fs-value); font-weight: 500; color: var(--fg); }
+    .rollres .win { color: var(--karma); }
+    .rollres .lose { color: var(--danger); }
+    .modeseg button.soon { opacity: 0.5; cursor: not-allowed; }
+    .modeseg .soontag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--muted); border-radius: 999px; padding: 0 4px; margin-left: 4px; }
     .fold { font-size: var(--fs-fine); color: var(--spell); margin-top: 8px; display: flex; gap: 6px; align-items: baseline; }
   `;
 
@@ -127,11 +134,21 @@ export class EdSpells extends LitElement {
     this._modal = null;
     this._castType = 'matrix';
     this._selSpell = null;
-    this._castMode = 'guided';
     this._target = null;
     this._subject = 'self';
     this._castErr = '';
+    this._prog = this._blankProg();
+    this._pendingStep = null; // which cast step a pending roll belongs to
+    this._maxThreads = 0;     // weave cap for the in-flight cast
+    this._lastRollId = null;  // dedupe Karma re-rolls of the same roll
   }
+
+  // Per-cast progress: threads woven so far, the greying flags, and each step's
+  // last roll result. Reset when the spell/cast-type changes or the Effect lands.
+  _blankProg() {
+    return { threadsWoven: 0, castDone: false, weave: null, cast: null, effect: null };
+  }
+  _resetProg() { this._prog = this._blankProg(); }
 
   connectedCallback() {
     super.connectedCallback();
@@ -140,10 +157,40 @@ export class EdSpells extends LitElement {
       else if (e.key === 'Enter' && this._modal) { e.stopPropagation(); this._modal = null; }
     };
     document.addEventListener('keydown', this._onKey);
+    // The shared roll modal reports each completed roll via ed-roll-logged
+    // (composed → reaches document). We tag the step we just dispatched
+    // (`_pendingStep`) so the result lands on the right cast step.
+    this._onRollLogged = (e) => this._onRoll(e.detail);
+    document.addEventListener('ed-roll-logged', this._onRollLogged);
   }
   disconnectedCallback() {
     document.removeEventListener('keydown', this._onKey);
+    document.removeEventListener('ed-roll-logged', this._onRollLogged);
     super.disconnectedCallback();
+  }
+
+  // Fold a completed roll into the cast progress for the step that dispatched it.
+  // The modal re-fires ed-roll-logged for the SAME roll on a Karma re-roll
+  // (same rollId, upserted) — so a thread is only counted on the first event of
+  // a rollId; later events for that id just refresh the shown result.
+  _onRoll(detail) {
+    const step = this._pendingStep;
+    if (!step || !detail?.result) return;
+    const total = (detail.result.total ?? 0) + (detail.karmaResult?.total ?? 0);
+    const res = { total, outcome: detail.outcome ?? null };
+    const firstOfRoll = detail.rollId !== this._lastRollId;
+    this._lastRollId = detail.rollId;
+    if (step === 'weave') {
+      const woven = firstOfRoll
+        ? Math.min(this._prog.threadsWoven + 1, this._maxThreads)
+        : this._prog.threadsWoven;
+      this._prog = { ...this._prog, threadsWoven: woven, weave: res };
+    } else if (step === 'cast') {
+      this._prog = { ...this._prog, castDone: true, cast: res };
+    } else if (step === 'effect') {
+      // Effect landing un-greys Weave + Cast for the next cast (owner rule).
+      this._prog = { threadsWoven: 0, castDone: false, weave: null, cast: null, effect: res };
+    }
   }
 
   get ctx() { return this.model?.spells ?? null; }
@@ -279,8 +326,8 @@ export class EdSpells extends LitElement {
     return found ?? list[0];
   }
 
-  _pickType(t) { this._castType = t; this._selSpell = null; this._target = null; this._castErr = ''; }
-  _pickSpell(name) { this._selSpell = name; this._target = null; this._castErr = ''; }
+  _pickType(t) { this._castType = t; this._selSpell = null; this._target = null; this._castErr = ''; this._resetProg(); }
+  _pickSpell(name) { this._selSpell = name; this._target = null; this._castErr = ''; this._resetProg(); }
 
   // Default target number from a fixed castingTarget ("Fixed 6" / "6 or …"); a
   // TMD spell is entered at cast time (A7).
@@ -309,6 +356,9 @@ export class EdSpells extends LitElement {
   }
 
   _rollWeave(plan) {
+    if (this._prog.threadsWoven >= plan.threadsToWeave) return; // at max
+    this._pendingStep = 'weave';
+    this._maxThreads = plan.threadsToWeave;
     const disc = this._casterDisc(plan.discipline);
     const tw = disc?.talents?.find((t) => t.name === `Thread Weaving (${plan.discipline})`);
     this._dispatchRoll(`Weave — ${plan.name}`, plan.weavingStep, this._karmaCtx(tw?.karma), {
@@ -317,12 +367,14 @@ export class EdSpells extends LitElement {
   }
 
   _rollCast(plan) {
+    if (this._prog.castDone) return; // already cast
     const target = this._target ?? this._defaultTarget(plan);
     if (target == null || Number.isNaN(Number(target))) {
       this._castErr = 'Enter a target number first';
       return;
     }
     this._castErr = '';
+    this._pendingStep = 'cast';
     const disc = this._casterDisc(plan.discipline);
     const sc = disc?.talents?.find((t) => t.name === 'Spellcasting');
     const who = this._subject === 'self' ? ' (on self)' : '';
@@ -331,9 +383,17 @@ export class EdSpells extends LitElement {
     });
   }
 
-  _rollEffect(plan) {
-    if (plan.effect.kind !== 'step' || plan.effect.step == null) return;
-    this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step, null, {});
+  // The Effect step resolves the cast and un-greys Weave + Cast for the next one
+  // (owner rule). A step effect rolls the dice; a static/none effect just resets.
+  _doEffect(plan) {
+    if (plan.effect.kind === 'step' && plan.effect.step != null) {
+      this._pendingStep = 'effect';
+      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step, null, {});
+    } else {
+      const total = plan.effect.kind === 'static' ? plan.effect.value : null;
+      this._prog = { threadsWoven: 0, castDone: false, weave: null, cast: null,
+        effect: { total, outcome: { word: plan.effect.kind === 'static' ? 'Applied' : 'Done', ok: true } } };
+    }
   }
 
   _castView(ctx) {
@@ -370,18 +430,29 @@ export class EdSpells extends LitElement {
     `;
   }
 
+  // A step's last-roll readout (bottom-right): the total, and the win/lose word
+  // coloured by outcome.ok. `outcome` is the modal's { word, ok } | null.
+  _rollRes(res) {
+    if (!res) return '';
+    const o = res.outcome;
+    const cls = o ? (o.ok ? 'win' : 'lose') : '';
+    return html`<span class="rollres">${res.total != null ? html`<b>${res.total}</b> ` : ''}<span class=${cls}>${o?.word ?? ''}</span></span>`;
+  }
+
   _castPanel(plan) {
     const target = this._target ?? this._defaultTarget(plan);
     const forge = plan.threadsToWeave > 0;
-    const guided = this._castMode === 'guided';
+    const prog = this._prog;
+    const weaveMaxed = prog.threadsWoven >= plan.threadsToWeave;
+    const effectLabel = plan.effect.kind === 'step' ? '⚄ Roll' : plan.effect.kind === 'static' ? `Apply +${plan.effect.value}` : 'Done';
     return html`
       <div class="casthead">
         <span class="nm">${plan.name}</span>
         <span class="cr" style="font-size:var(--fs-small);background:var(--spell-bg);color:var(--spell);border-radius:999px;padding:1px 9px;">Circle ${plan.circle} · ${this._castType}</span>
       </div>
       <div class="modeseg">
-        <button class=${guided ? 'on' : ''} @click=${() => (this._castMode = 'guided')}>Guided</button>
-        <button class=${!guided ? 'on' : ''} @click=${() => (this._castMode = 'steps')}>Step-by-step</button>
+        <button class="soon" disabled title="Guided auto-chaining — coming soon">Guided <span class="soontag">soon</span></button>
+        <button class="on">Step-by-step</button>
       </div>
 
       <div class="subrow">
@@ -399,25 +470,24 @@ export class EdSpells extends LitElement {
 
       <div class="pipe">
         <div class="step ${forge ? '' : 'skip'}">
-          <span class="lab">${guided ? html`<span class="stepnum">1</span> ` : ''}Weave ${forge ? html`<span class="req">${plan.threadsToWeave}</span>` : ''}</span>
+          <span class="lab">Weave ${forge ? html`<span class="threads" title="Threads woven / required">${prog.threadsWoven}/${plan.threadsToWeave}</span>` : ''}</span>
           ${forge
-            ? html`<button class="rollbtn" @click=${() => this._rollWeave(plan)}>⚄ Roll</button>
-                   <span class="stepnote">Step ${plan.weavingStep ?? '—'} vs ${plan.weavingDifficulty ?? '—'}</span>`
+            ? html`<button class="rollbtn" ?disabled=${weaveMaxed} @click=${() => this._rollWeave(plan)}>⚄ Roll</button>
+                   <span class="stepnote">Step ${plan.weavingStep ?? '—'} vs ${plan.weavingDifficulty ?? '—'}</span>
+                   ${this._rollRes(prog.weave)}`
             : html`<span class="readout">—</span><span class="stepnote">No threads to forge</span>`}
         </div>
         <div class="step">
-          <span class="lab">${guided ? html`<span class="stepnum">2</span> ` : ''}Cast</span>
-          <button class="rollbtn" @click=${() => this._rollCast(plan)}>⚄ Roll</button>
+          <span class="lab">Cast</span>
+          <button class="rollbtn" ?disabled=${prog.castDone} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
           <span class="stepnote">Step ${plan.castingStep ?? '—'} vs ${target ?? 'TMD'}</span>
+          ${this._rollRes(prog.cast)}
         </div>
-        <div class="step ${plan.effect.kind === 'step' ? '' : 'skip'}">
-          <span class="lab">${guided ? html`<span class="stepnum">3</span> ` : ''}Effect</span>
-          ${plan.effect.kind === 'step'
-            ? html`<button class="rollbtn" @click=${() => this._rollEffect(plan)}>⚄ Roll</button>
-                   <span class="stepnote">Step ${plan.effect.step ?? '—'}</span>`
-            : plan.effect.kind === 'static'
-              ? html`<span class="readout">+${plan.effect.value}</span><span class="stepnote">${plan.effect.label}</span>`
-              : html`<span class="readout">—</span><span class="stepnote">See description</span>`}
+        <div class="step">
+          <span class="lab">Effect</span>
+          <button class="rollbtn" @click=${() => this._doEffect(plan)}>${effectLabel}</button>
+          <span class="stepnote">${plan.effect.kind === 'step' ? `Step ${plan.effect.step ?? '—'}` : plan.effect.kind === 'static' ? plan.effect.label : 'See description'}</span>
+          ${this._rollRes(prog.effect)}
         </div>
       </div>
 
