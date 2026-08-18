@@ -35,6 +35,7 @@ import {
 import { carriedWeight, parseWeight } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
+import { buildSpellsContext } from './engine/spells.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -512,6 +513,9 @@ async function loadRules() {
   // PLAN-COMBAT-TAB Phase A). The Combat tab renders its chips from these and
   // feeds the selected bundles to engine/combat.js; they are never auto-folded.
   const combatFile = await loadJSONOptional('./rules/combat.json', { options: [], situations: [] });
+  // Spell catalog (rules/spells.json, ed-spells/1 — PLAN-SPELLS §3). Optional:
+  // non-casters and older bundles simply have no spells slice.
+  const spellsFile = await loadJSONOptional('./rules/spells.json', { spells: {}, threadCap: [] });
   // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
@@ -523,7 +527,7 @@ async function loadRules() {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
+  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile };
 }
 
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
@@ -536,7 +540,7 @@ export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karm
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules, session = {}) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -1266,6 +1270,9 @@ export function deriveModel(character, rules, session = {}) {
     attributes,
     resources: character.resources ?? {},
     disciplines,
+    // Spells slice (PLAN-SPELLS §5): the SpellsContext the Spells tab renders
+    // from and drives the cast flow with. null for non-casters (no spells block).
+    spells: buildSpellsContext(character, spellsFile, { disciplines, attrStepByName }),
     racialAbilities,
     characteristics,
     stepByNumber,

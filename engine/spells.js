@@ -1,0 +1,253 @@
+// engine/spells.js — pure, DOM-free spell derivations for the Spells tab
+// (PLAN-SPELLS.md §5). Data flows down: the store builds a `SpellsContext` from
+// the derived model + rules/spells.json, and the UI calls these helpers to
+// render the Grimoire and drive the cast flow. Nothing here rolls dice, spends
+// Karma, or mutates state — the UI dispatches `roll` / `spend-karma` up, exactly
+// as the recovery/attack flows do.
+//
+// The context (built by `buildSpellsContext`) is the only input, so every
+// function stays trivially testable:
+//   {
+//     catalog:   { [name]: spellEntry },          // rules/spells.json `spells`
+//     threadCap: [{ minCircle, maxCircle, extraThreads }],
+//     known:     [{ name, learntSuccess }],        // character.spells.known
+//     matrices:  [{ type, spell }],                // character.spells.matrices
+//     disciplines: [{ name, circle }],             // the caster's spellcasting Disciplines
+//     weavingStep: { [discipline]: number|null },  // derived Thread Weaving (X) step
+//     castingStep: number|null,                    // derived Spellcasting step
+//     attrStep:    { [Attribute]: number },        // derived attribute steps (for effect refs)
+//     karma:       { weaving: { [discipline]: bool }, casting: bool },
+//   }
+
+// Standard matrices hold no threads; Enhanced/Armoured hold one (§3.1).
+const MATRIX_THREADS = { Standard: 0, Enhanced: 1, Armoured: 1, Armored: 1 };
+
+// --- catalog joins -----------------------------------------------------------
+
+/** Join a known-spell input to its catalog entry (null if the name is unknown). */
+export function joinSpell(ctx, name) {
+  const entry = ctx.catalog?.[name];
+  if (!entry) return null;
+  const known = ctx.known?.find((k) => k.name === name) || null;
+  return { ...entry, learntSuccess: known?.learntSuccess ?? null };
+}
+
+/** The caster's known spells, joined to the catalog, ordered by Circle then name. */
+export function knownSpells(ctx) {
+  return (ctx.known ?? [])
+    .map((k) => joinSpell(ctx, k.name))
+    .filter(Boolean)
+    .sort((a, b) => a.circle - b.circle || a.name.localeCompare(b.name));
+}
+
+/** Known spells grouped by Discipline then Circle (for the Grimoire view). */
+export function knownByDisciplineCircle(ctx) {
+  const out = {};
+  for (const s of knownSpells(ctx)) {
+    (out[s.discipline] ??= {});
+    (out[s.discipline][s.circle] ??= []).push(s);
+  }
+  return out;
+}
+
+/** Is a spell currently placed in a matrix (combat-ready)? */
+export function matrixFor(ctx, name) {
+  return (ctx.matrices ?? []).find((m) => m.spell === name) || null;
+}
+
+/**
+ * The spell list for a cast type (S2-resolved definitions, PLAN §5):
+ *   matrix   → spells currently placed in a matrix
+ *   grimoire → the caster's learnt spells (`known`)
+ *   raw      → any spell in the caster's Disciplines' lists (learnt or not)
+ *   item     → deferred (§7) — always empty
+ */
+export function castTypeList(ctx, castType) {
+  switch (castType) {
+    case 'matrix':
+      return (ctx.matrices ?? [])
+        .filter((m) => m.spell)
+        .map((m) => joinSpell(ctx, m.spell))
+        .filter(Boolean)
+        .sort((a, b) => a.circle - b.circle || a.name.localeCompare(b.name));
+    case 'grimoire':
+      return knownSpells(ctx);
+    case 'raw': {
+      const discs = new Set((ctx.disciplines ?? []).map((d) => d.name));
+      return Object.values(ctx.catalog ?? {})
+        .filter((s) => discs.has(s.discipline))
+        .sort((a, b) => a.circle - b.circle || a.name.localeCompare(b.name));
+    }
+    case 'item':
+    default:
+      return [];
+  }
+}
+
+// --- cast derivations --------------------------------------------------------
+
+/** The caster's Circle in a given Discipline (drives the extra-thread cap). */
+export function disciplineCircle(ctx, discipline) {
+  return (ctx.disciplines ?? []).find((d) => d.name === discipline)?.circle ?? null;
+}
+
+/** Extra-thread cap from the threadCap table by the caster's Circle in the
+ *  spell's Discipline (§3.1 — rules data, read here, never hard-coded). */
+export function extraThreadCap(ctx, spell) {
+  const circle = disciplineCircle(ctx, spell.discipline);
+  if (circle == null) return 0;
+  const band = (ctx.threadCap ?? []).find((b) => circle >= b.minCircle && circle <= b.maxCircle);
+  return band?.extraThreads ?? 0;
+}
+
+/** Threads the matrix already holds for this cast (0 unless an Enhanced/Armoured
+ *  matrix holds the spell), capped at the spell's requirement. */
+export function matrixHeldThreads(ctx, spell, castType) {
+  if (castType !== 'matrix') return 0;
+  const m = matrixFor(ctx, spell.name);
+  if (!m) return 0;
+  return Math.min(MATRIX_THREADS[m.type] ?? 0, spell.threadsToWeave || 0);
+}
+
+/** Effective threads to forge = required − matrix-held, floored at 0 (§3.1). */
+export function effectiveThreads(ctx, spell, castType) {
+  return Math.max(0, (spell.threadsToWeave || 0) - matrixHeldThreads(ctx, spell, castType));
+}
+
+export function weavingStep(ctx, discipline) {
+  return ctx.weavingStep?.[discipline] ?? null;
+}
+export function castingStep(ctx) {
+  return ctx.castingStep ?? null;
+}
+
+// Parse a taxonomy ref like "attribute|Willpower|Step" → { domain, name, prop }.
+function parseRef(ref) {
+  const [domain, name, prop] = String(ref).split('|');
+  return { domain, name, prop };
+}
+
+/**
+ * The spell's Effect readout for the cast panel (§3.4 archetypes):
+ *   { kind: 'step',   base, add, step, label }   — instantaneous roll (set+add)
+ *   { kind: 'static', value, label }             — sustained readout (no roll)
+ *   { kind: 'none' }                             — ritual/summon/utility (note only)
+ */
+export function effectReadout(ctx, spell) {
+  const fx = spell.effects ?? [];
+  const setEff = fx.find((e) => e.operation === 'set' && e.value?.ref);
+  if (setEff) {
+    const { name } = parseRef(setEff.value.ref);
+    const base = ctx.attrStep?.[name] ?? null;
+    const add = fx
+      .filter((e) => e.operation === 'add' && e.measure === 'step' && e.duration === 'test')
+      .reduce((s, e) => s + (Number(e.value) || 0), 0);
+    return { kind: 'step', base, add, step: base == null ? null : base + add, label: 'Effect' };
+  }
+  const sustained = fx.find((e) => e.duration === 'sustained' && typeof e.value === 'number');
+  if (sustained) {
+    const label = sustained.target ? `${sustained.target.name} ${sustained.target.domain}` : 'Effect';
+    return { kind: 'static', value: sustained.value, label };
+  }
+  return { kind: 'none' };
+}
+
+/** Does this spell fold onto the CASTER when self-cast? (§3.4 — a sustained
+ *  effect whose subject can be this character.) Used to flag the fold (phase 6b). */
+export function isSustainedSelfEffect(spell) {
+  return (spell.effects ?? []).some((e) => e.duration === 'sustained' && !e.gmDiscretion);
+}
+
+/**
+ * The pure cast decision-support object the cast UI renders (mirrors
+ * endOfDayResetPlan — reports what a cast *could* need; the UI owns the loop).
+ */
+export function castPlan(ctx, spellName, castType) {
+  const spell = joinSpell(ctx, spellName);
+  if (!spell) return null;
+  const discipline = spell.discipline;
+  return {
+    name: spell.name,
+    circle: spell.circle,
+    discipline,
+    castType,
+    threadsToWeave: effectiveThreads(ctx, spell, castType),
+    threadsRequired: spell.threadsToWeave || 0,
+    matrixHeld: matrixHeldThreads(ctx, spell, castType),
+    weavingDifficulty: spell.weavingDifficulty?.value ?? null,
+    weavingStep: weavingStep(ctx, discipline),
+    castingStep: castingStep(ctx),
+    castingTarget: spell.castingTarget ?? null,
+    effect: effectReadout(ctx, spell),
+    extraThreadCap: extraThreadCap(ctx, spell),
+    successes: spell.successes ?? [],
+    extraThreads: spell.extraThreads ?? [],
+    canKarma: {
+      weaving: !!ctx.karma?.weaving?.[discipline] && effectiveThreads(ctx, spell, castType) > 0,
+      casting: !!ctx.karma?.casting,
+    },
+    range: spell.range ?? null,
+    duration: spell.duration ?? null,
+    area: spell.area ?? null,
+    foldsOnSelf: isSustainedSelfEffect(spell),
+  };
+}
+
+// --- context builder (called by the store's deriveModel) ---------------------
+
+/**
+ * Build the SpellsContext from the raw character `spells` block, the spell
+ * catalog, and the already-derived model pieces (talent steps, attribute steps).
+ * Returns null when the character has no spells block (non-casters), so the
+ * store can omit the slice.
+ *
+ * @param {object} character         raw ed-character/1 (reads `spells`, `disciplines`)
+ * @param {object} spellsFile        rules/spells.json ({ spells, threadCap })
+ * @param {object} derived           { disciplines, attrStepByName }
+ *   - disciplines: the model's derived disciplines[] (name, circle, talents[] with step/karma)
+ *   - attrStepByName: { [Attribute]: step }
+ */
+export function buildSpellsContext(character, spellsFile, derived) {
+  const block = character?.spells;
+  if (!block || !(block.known?.length || block.matrices?.length)) return null;
+
+  const catalog = spellsFile?.spells ?? {};
+  const modelDiscs = derived?.disciplines ?? [];
+  const attrStep = derived?.attrStepByName ?? {};
+
+  // A Discipline is a spellcasting one iff it owns a Spellcasting talent.
+  const casterDiscs = modelDiscs.filter((d) =>
+    (d.talents ?? []).some((t) => t.name === 'Spellcasting'),
+  );
+
+  const weaving = {};
+  const weavingKarma = {};
+  for (const d of casterDiscs) {
+    const tw = (d.talents ?? []).find((t) => t.name === `Thread Weaving (${d.name})`);
+    weaving[d.name] = tw?.step ?? null;
+    weavingKarma[d.name] = !!tw?.karma;
+  }
+  // Spellcasting talent is shared; take the first caster Discipline that has it.
+  let castStep = null;
+  let castKarma = false;
+  for (const d of casterDiscs) {
+    const sc = (d.talents ?? []).find((t) => t.name === 'Spellcasting');
+    if (sc) {
+      castStep = sc.step ?? null;
+      castKarma = !!sc.karma;
+      break;
+    }
+  }
+
+  return {
+    catalog,
+    threadCap: spellsFile?.threadCap ?? [],
+    known: block.known ?? [],
+    matrices: block.matrices ?? [],
+    disciplines: casterDiscs.map((d) => ({ name: d.name, circle: d.circle })),
+    weavingStep: weaving,
+    castingStep: castStep,
+    attrStep,
+    karma: { weaving: weavingKarma, casting: castKarma },
+  };
+}
