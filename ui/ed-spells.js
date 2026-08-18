@@ -130,7 +130,7 @@ export class EdSpells extends LitElement {
 
   constructor() {
     super();
-    this._view = 'grimoire';
+    this._view = 'cast';
     this._modal = null;
     this._castType = 'matrix';
     this._selSpell = null;
@@ -455,8 +455,8 @@ export class EdSpells extends LitElement {
         <span class="cr" style="font-size:var(--fs-small);background:var(--spell-bg);color:var(--spell);border-radius:999px;padding:1px 9px;">Circle ${plan.circle} · ${this._castType}</span>
       </div>
       <div class="modeseg">
-        <button class="soon" disabled title="Guided auto-chaining — coming soon">Guided <span class="soontag">soon</span></button>
         <button class="on">Step-by-step</button>
+        <button class="soon" disabled title="Guided auto-chaining — coming soon">Guided <span class="soontag">soon</span></button>
       </div>
 
       <div class="subrow">
