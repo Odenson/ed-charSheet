@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
@@ -22,6 +22,7 @@ import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
 import './ed-day-reset.js';
+import './ed-spells.js';
 import './ed-character-picker.js';
 import './ed-conflict.js';
 import './ed-settings.js';
@@ -346,6 +347,9 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-use-potion', (e) => this._usePotion(e.detail?.name));
     this.addEventListener('ed-clear-pending-use', () => { this._pendingUse = null; });
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
+    // Spells tab (PLAN-SPELLS §4): the whole spells block (known[] + matrices[])
+    // — pure inputs — replaces the stored one; the engine re-derives the slice.
+    this.addEventListener('ed-edit-spells', (e) => this._editSpells(e.detail?.spells));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     this.addEventListener('ed-day-reset', (e) => this._openDayReset(e.detail));
     // A view ended (or restarted) the Knocked Down condition — "Stand up" in
@@ -565,6 +569,14 @@ export class EdApp extends LitElement {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+  }
+
+  _editSpells(spells) {
+    if (!this._character || !spells) return;
+    this._character = { ...this._character, spells };
+    saveSpellEdits(spells, this._characterId);
     this._markDirty();
     this._model = this._derive();
   }
@@ -1281,7 +1293,7 @@ export class EdApp extends LitElement {
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
-        return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
+        return html`<ed-spells .model=${m} .editMode=${this._editMode} .arming=${this._arming()}></ed-spells>`;
       case 'equipment':
         return html`<ed-equipment
           .model=${m}

@@ -299,6 +299,19 @@ export function saveWealthEdits(wealth, id) {
 }
 
 /**
+ * Persist the character's spells block to the edits overlay (PLAN-SPELLS §4).
+ * Pure inputs: `known` (learnt spells + learntSuccess) and `matrices` (which
+ * spell each matrix holds). Stored whole like items/wealth — steps, difficulties
+ * and effect numbers are all derived in engine/spells.js, never stored.
+ */
+export function saveSpellEdits(spells, id) {
+  const edits = loadEdits(id);
+  edits.spells = spells;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
  * Persist a single trade to the edits overlay (plans/PLAN-TRADE-ITEMS.md): one
  * write for BOTH the item list and the resulting wealth purse, so a buy/sell is
  * stored atomically and the app can run one re-derive. Both categories are the
@@ -436,6 +449,9 @@ export function applyEdits(character, edits) {
   if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
   if (edits.items) next = { ...next, items: edits.items };
   if (edits.wealth) next = { ...next, wealth: edits.wealth };
+  // Spells block (known[] + matrices[]) — pure inputs (PLAN-SPELLS §4), stored
+  // whole like items/wealth; all derivation happens in engine/spells.js.
+  if (edits.spells) next = { ...next, spells: edits.spells };
   if (edits.health) {
     // `knockedDown` is session-only state (decision I), never a persisted health
     // input — strip any stale copy an older build wrote to the overlay so the
