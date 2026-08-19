@@ -88,14 +88,18 @@ export class EdSpells extends LitElement {
     .cthint { font-size: var(--fs-fine); color: var(--muted); margin: 0 0 8px; min-height: 1.3em; }
     .layout { display: grid; grid-template-columns: 0.82fr 1fr; gap: 14px; align-items: start; }
     @media (max-width: 640px) { .layout { grid-template-columns: 1fr; } .pipe { grid-template-columns: 1fr; } }
-    .slist2 { background: var(--bg-card); border-radius: 8px; overflow: hidden; }
+    /* Fixed-height, internally-scrolling list — the Raw list is ~123 spells, so
+       it must not grow the page (UI-GUIDELINES: no runaway vertical scroll). */
+    .slist2 { background: var(--bg-card); border-radius: 8px; overflow-y: auto; max-height: 340px; }
     .sitem { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; width: 100%; padding: 8px 11px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--fg); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; }
     .sitem:last-child { border-bottom: none; }
     .sitem:hover { background: var(--bg-chip); }
     .sitem.on { background: var(--spell-bg); }
     .sitem .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spell); opacity: 0; }
-    .sitem.att .dot { opacity: 1; }
+    .sitem.learnt .dot { opacity: 1; }
     .sitem .cr { font-size: var(--fs-eyebrow); color: var(--muted); }
+    .listlegend { font-size: var(--fs-eyebrow); color: var(--muted); display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+    .listlegend .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spell); display: inline-block; }
     .desc { margin-top: 12px; }
     .desc .body { background: var(--bg-card); border-radius: 8px; padding: 10px 12px; font-size: var(--fs-small); line-height: 1.5; min-height: 72px; }
     .casthead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
@@ -384,6 +388,9 @@ export class EdSpells extends LitElement {
 
   get _list() { return castTypeList(this.ctx, this._castType); }
 
+  // Learnt-spell names, for the Raw list's "learnt" marker.
+  get _known() { return new Set((this.ctx?.known ?? []).map((k) => k.name)); }
+
   _selected() {
     const list = this._list;
     if (!list.length) return null;
@@ -487,12 +494,12 @@ export class EdSpells extends LitElement {
       <p class="cthint">${hint}</p>
       <div class="layout">
         <div>
-          <h4 class="circlelbl">${this._castType === 'matrix' ? 'Attuned spells' : 'Spells'}</h4>
+          <h4 class="circlelbl">${this._castType === 'matrix' ? 'Attuned spells' : 'Spells'}${this._castType === 'raw' ? html`<span class="listlegend"><span class="dot"></span>learnt</span>` : ''}</h4>
           ${list.length
             ? html`<div class="slist2">
                 ${list.map((s) => html`
-                  <button class="sitem ${s.name === (sel?.name) ? 'on' : ''} ${matrixFor(ctx, s.name) ? 'att' : ''}" @click=${() => this._pickSpell(s.name)}>
-                    <span class="dot"></span><span class="sname">${s.name}</span><span class="cr">C${s.circle}</span>
+                  <button class="sitem ${s.name === (sel?.name) ? 'on' : ''} ${this._known.has(s.name) ? 'learnt' : ''}" @click=${() => this._pickSpell(s.name)}>
+                    <span class="dot" title=${this._known.has(s.name) ? 'Learnt' : ''}></span><span class="sname">${s.name}</span><span class="cr">C${s.circle}</span>
                   </button>`)}
               </div>`
             : html`<div class="empty">${this._castType === 'matrix' ? 'No spells placed in a matrix — use the ✦ toggle in the Grimoire.' : 'No spells available for this cast type.'}</div>`}
