@@ -35,7 +35,7 @@ import {
 import { carriedWeight, parseWeight } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
-import { buildSpellsContext } from './engine/spells.js';
+import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -803,6 +803,10 @@ export function deriveModel(character, rules, session = {}) {
         })),
       ),
     ...homebrewEffects,
+    // Active self-cast spells (PLAN-SPELLS 6b): their sustained effects fold into
+    // derived values while active, exactly like an equipped item's — session
+    // state (session.activeSpells), never persisted, tagged origin `spell`.
+    ...activeSpellEffects(session?.activeSpells),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -1277,6 +1281,11 @@ export function deriveModel(character, rules, session = {}) {
     damageKarma: karmaUse('Damage', activeEffects),
   };
 
+  // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
+  // for the Active-effects card. buildSpellsContext stays session-free (pure).
+  const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
+  if (spellsCtx) spellsCtx.active = session?.activeSpells ?? [];
+
   return {
     meta: character.meta ?? {},
     legend,
@@ -1288,7 +1297,7 @@ export function deriveModel(character, rules, session = {}) {
     disciplines,
     // Spells slice (PLAN-SPELLS §5): the SpellsContext the Spells tab renders
     // from and drives the cast flow with. null for non-casters (no spells block).
-    spells: buildSpellsContext(character, spellsFile, { disciplines, attrStepByName }),
+    spells: spellsCtx,
     racialAbilities,
     characteristics,
     stepByNumber,

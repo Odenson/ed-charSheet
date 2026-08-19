@@ -249,6 +249,13 @@ export class EdSpells extends LitElement {
       // successes (levels − 1) activate the spell's Success Levels effect (§3.2 #3).
       const levels = successCount(total, this._castTarget);
       this._prog = { ...this._prog, castDone: true, cast: { ...res, levels } };
+      // A successful self-cast of a sustained spell activates it (6b): ed-app
+      // adds it to the session active-effect set (fold + round countdown).
+      if (levels >= 1 && this._castFoldsSelf) {
+        this.dispatchEvent(new CustomEvent('ed-spell-activate', {
+          detail: { name: this._castName }, bubbles: true, composed: true,
+        }));
+      }
     } else if (step === 'effect') {
       // Effect landing un-greys Weave + Cast for the next cast (owner rule).
       this._prog = { ...this._blankProg(), effect: res };
@@ -276,9 +283,10 @@ export class EdSpells extends LitElement {
   }
 
   _activeRow(e) {
+    const counted = e.roundsLeft != null;
     const total = e.roundsTotal || e.roundsLeft || 1;
-    const pct = Math.max(0, Math.min(100, Math.round((e.roundsLeft / total) * 100)));
-    const low = e.roundsLeft <= 3;
+    const pct = counted ? Math.max(0, Math.min(100, Math.round((e.roundsLeft / total) * 100))) : 100;
+    const low = counted && e.roundsLeft <= 3;
     return html`
       <div class="aerow">
         <span class="aemark">✦</span>
@@ -286,7 +294,7 @@ export class EdSpells extends LitElement {
           <span class="aename">${e.name}${e.effectLabel ? html` <span class="aefx">· ${e.effectLabel}</span>` : ''}</span>
           <div class="aebar"><i style="width:${pct}%; background:${low ? 'var(--amber)' : 'var(--karma)'}"></i></div>
         </div>
-        <span class="aerounds ${low ? 'low' : 'ok'}">${e.roundsLeft} rds</span>
+        <span class="aerounds ${low ? 'low' : 'ok'}">${counted ? `${e.roundsLeft} rds` : 'active'}</span>
       </div>`;
   }
 
@@ -523,6 +531,8 @@ export class EdSpells extends LitElement {
     this._castErr = '';
     this._pendingStep = 'cast';
     this._castTarget = Number(target); // for the success-level count in _onRoll
+    this._castName = plan.name;        // for the self-cast activation in _onRoll
+    this._castFoldsSelf = plan.foldsOnSelf && this._subject === 'self';
     const disc = this._casterDisc(plan.discipline);
     const sc = disc?.talents?.find((t) => t.name === 'Spellcasting');
     const who = this._subject === 'self' ? ' (on self)' : '';

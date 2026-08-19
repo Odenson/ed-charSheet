@@ -2,6 +2,7 @@
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
+import { buildActiveSpell, tickActiveSpells } from '../engine/spells.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
@@ -354,6 +355,10 @@ export class EdApp extends LitElement {
     // Spells tab (PLAN-SPELLS §4): the whole spells block (known[] + matrices[])
     // — pure inputs — replaces the stored one; the engine re-derives the slice.
     this.addEventListener('ed-edit-spells', (e) => this._editSpells(e.detail?.spells));
+    // A successful self-cast of a sustained spell (PLAN-SPELLS 6b): add it to the
+    // session active-effect set so its effects fold into derived values and count
+    // down per Initiative roll. Session-only, never persisted (like knockdown).
+    this.addEventListener('ed-spell-activate', (e) => this._activateSpell(e.detail?.name));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     this.addEventListener('ed-day-reset', (e) => this._openDayReset(e.detail));
     // A view ended (or restarted) the Knocked Down condition — "Stand up" in
@@ -452,6 +457,8 @@ export class EdApp extends LitElement {
       // condition, and no pending day reset (all session state, never persisted).
       this._pendingUse = null;
       this._knockedDown = false;
+      this._activeSpells = []; // active self-cast spells (session-only, 6b)
+      this._round = 0;
       this._dayReset = null;
       this._baseSha = base;
       this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
@@ -570,10 +577,35 @@ export class EdApp extends LitElement {
   // flow: replace the wealth input, persist the overlay, mark the file dirty, and
   // re-derive so the totals recompute (data flows down).
   // The round start/end signal (PLAN-SPELLS §6.1 / 6b). Session-only, never
-  // persisted — like knockdown. Phase 6b will decrement each active self-cast's
-  // remaining duration here and drop the ones that expire.
+  // persisted — like knockdown. Each Initiative roll ticks the active self-cast
+  // set: decrement remaining rounds and drop the ones that expire, then re-derive
+  // so the fold and the Active-effects card update.
   _advanceRound() {
     this._round = (this._round ?? 0) + 1;
+    if (this._activeSpells?.length) {
+      this._activeSpells = tickActiveSpells(this._activeSpells);
+      this._model = this._derive();
+    }
+  }
+
+  // A self-cast sustained spell landed: build its active record (sustained
+  // effects + round countdown) from the catalog and the caster's Spellcasting
+  // rank, and add it to the session set — a re-cast of the same spell refreshes
+  // it. The engine folds it into derived values; nothing is persisted.
+  _activateSpell(name) {
+    const spell = this._rules?.spellsFile?.spells?.[name];
+    if (!spell) return;
+    const entry = buildActiveSpell(spell, this._spellcastingRank());
+    this._activeSpells = [...(this._activeSpells ?? []).filter((s) => s.name !== name), entry];
+    this._model = this._derive();
+  }
+
+  _spellcastingRank() {
+    for (const d of this._character?.disciplines ?? []) {
+      const t = (d.talents ?? []).find((x) => x.name === 'Spellcasting');
+      if (t) return t.rank ?? 0;
+    }
+    return 0;
   }
 
   _editWealth(wealth) {
@@ -610,7 +642,10 @@ export class EdApp extends LitElement {
   // knocked-down flag into the pure model derivation (it is never stored; the
   // engine stays pure and DOM-free — the flag is just another input).
   _derive() {
-    return deriveModel(this._character, this._rules, { knockedDown: this._knockedDown });
+    return deriveModel(this._character, this._rules, {
+      knockedDown: this._knockedDown,
+      activeSpells: this._activeSpells ?? [],
+    });
   }
 
   // Session-only Knocked Down state (decision I, PLAN-END-OF-DAY-RESET): the

@@ -158,6 +158,74 @@ export function isSustainedSelfEffect(spell) {
   return (spell.effects ?? []).some((e) => e.duration === 'sustained' && !e.gmDiscretion);
 }
 
+/** The sustained, foldable effects of a spell (the ones a self-cast applies to
+ *  the caster). gmDiscretion effects (target debuffs) never fold onto the caster. */
+export function sustainedEffectsOf(spell) {
+  return (spell.effects ?? []).filter((e) => e.duration === 'sustained' && !e.gmDiscretion);
+}
+
+/**
+ * Convert a spell duration string to a number of combat rounds (owner rule:
+ * 1 round = 1 Initiative roll, 1 minute = 10 rounds, 1 hour = 600 rounds).
+ * `rank` is the caster's Spellcasting rank (the "Rank" in "Rank minutes").
+ * Returns null for durations not measured in rounds/minutes/hours (e.g. months) —
+ * those are active but not round-counted in combat.
+ */
+export function durationRounds(duration, rank) {
+  if (!duration) return null;
+  const d = String(duration).toLowerCase();
+  const unit = /minute/.test(d) ? 10 : /hour/.test(d) ? 600 : /round/.test(d) ? 1 : null;
+  if (unit == null) return null;
+  let count = 0;
+  if (/rank/.test(d)) {
+    count += rank ?? 0;
+    const plus = d.match(/\+\s*(\d+)/);
+    if (plus) count += Number(plus[1]);
+  } else {
+    const n = d.match(/(\d+)\s*(round|minute|hour)/);
+    count = n ? Number(n[1]) : 0;
+  }
+  return count > 0 ? count * unit : null;
+}
+
+/**
+ * Build a session active-spell record for a successful self-cast (phase 6b):
+ * the sustained effects to fold, a terse readout label, and the round countdown.
+ * `rank` is the caster's Spellcasting rank.
+ */
+export function buildActiveSpell(spell, rank) {
+  const effects = sustainedEffectsOf(spell);
+  const rounds = durationRounds(spell.duration, rank);
+  const stat = effects.find((e) => typeof e.value === 'number');
+  const effectLabel = stat
+    ? `+${stat.value}${stat.target ? ` ${stat.target.name} ${stat.target.domain}` : ''}`
+    : (spell.summary ?? '');
+  return {
+    name: spell.name,
+    discipline: spell.discipline,
+    effects,
+    effectLabel,
+    roundsLeft: rounds,
+    roundsTotal: rounds,
+  };
+}
+
+/** Advance the active-spell set by one round: decrement round-counted spells and
+ *  drop the ones that hit 0. Non-counted (null roundsLeft) spells persist. */
+export function tickActiveSpells(active) {
+  return (active ?? [])
+    .map((s) => (s.roundsLeft == null ? s : { ...s, roundsLeft: s.roundsLeft - 1 }))
+    .filter((s) => s.roundsLeft == null || s.roundsLeft > 0);
+}
+
+/** Flatten the active spells' sustained effects for the derived-value fold,
+ *  tagged with their origin (mirrors the knockdown condition tag). */
+export function activeSpellEffects(active) {
+  return (active ?? []).flatMap((s) =>
+    (s.effects ?? []).map((e) => ({ ...e, origin: { kind: 'spell', name: s.name } })),
+  );
+}
+
 /**
  * The pure cast decision-support object the cast UI renders (mirrors
  * endOfDayResetPlan — reports what a cast *could* need; the UI owns the loop).

@@ -20,6 +20,11 @@ import {
   isSustainedSelfEffect,
   castPlan,
   buildSpellsContext,
+  sustainedEffectsOf,
+  durationRounds,
+  buildActiveSpell,
+  tickActiveSpells,
+  activeSpellEffects,
 } from './spells.js';
 
 const spellsFile = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url)));
@@ -193,6 +198,56 @@ test('buildSpellsContext derives steps from the model; null for non-casters', ()
   assert.deepEqual(c.disciplines, [{ name: 'Nethermancer', circle: 3 }]); // only caster discs
   assert.equal(c.karma.casting, true);
   assert.equal(buildSpellsContext({}, spellsFile, derived), null); // no spells block
+});
+
+// --- phase 6b: sustained self-cast fold + countdown ---
+
+test('durationRounds: 1 min = 10 rounds; +N and pure numbers; non-round → null', () => {
+  assert.equal(durationRounds('Rank minutes', 3), 30);
+  assert.equal(durationRounds('Rank rounds', 3), 3);
+  assert.equal(durationRounds('Rank + 5 rounds', 3), 8);
+  assert.equal(durationRounds('Rank+5 rounds', 3), 8);
+  assert.equal(durationRounds('Rank + 10 minutes', 2), 120);
+  assert.equal(durationRounds('2 rounds', 3), 2);
+  assert.equal(durationRounds('1 round', 3), 1);
+  assert.equal(durationRounds('Rank months', 3), null);
+  assert.equal(durationRounds(null, 3), null);
+});
+
+test('sustainedEffectsOf: buff yes, instantaneous/gmDiscretion no', () => {
+  const c = ctx();
+  assert.equal(sustainedEffectsOf(c.catalog['Soul Armor']).length, 1);
+  assert.equal(sustainedEffectsOf(c.catalog['Astral Spear']).length, 0); // duration:test
+  assert.equal(sustainedEffectsOf(c.catalog['Pain']).length, 0);         // note only
+});
+
+test('buildActiveSpell: sustained effects, label, round countdown', () => {
+  const s = buildActiveSpell(ctx().catalog['Soul Armor'], 3);
+  assert.equal(s.name, 'Soul Armor');
+  assert.equal(s.roundsLeft, 30);        // Rank(3) minutes → 30 rounds
+  assert.equal(s.roundsTotal, 30);
+  assert.equal(s.effects.length, 1);
+  assert.equal(s.effectLabel, '+3 Mystic armor');
+});
+
+test('tickActiveSpells: decrements, drops at 0, keeps null', () => {
+  const active = [
+    { name: 'A', roundsLeft: 2 },
+    { name: 'B', roundsLeft: 1 },
+    { name: 'C', roundsLeft: null },
+  ];
+  const next = tickActiveSpells(active);
+  assert.deepEqual(next.map((s) => s.name), ['A', 'C']); // B expired
+  assert.equal(next.find((s) => s.name === 'A').roundsLeft, 1);
+  assert.equal(next.find((s) => s.name === 'C').roundsLeft, null);
+});
+
+test('activeSpellEffects: flattens + tags origin', () => {
+  const active = [buildActiveSpell(ctx().catalog['Soul Armor'], 3)];
+  const fx = activeSpellEffects(active);
+  assert.equal(fx.length, 1);
+  assert.equal(fx[0].type, 'armor-modifier');
+  assert.deepEqual(fx[0].origin, { kind: 'spell', name: 'Soul Armor' });
 });
 
 test('real catalog: 123 Nethermancer spells, threadCap present, effects non-empty', () => {
