@@ -32,35 +32,17 @@ const int = (v) => Math.max(0, Number.isFinite(Number(v)) ? Math.floor(Number(v)
 
 /**
  * Resolve a catalogue `ref.cost` to a silver amount (plan/PLAN-TRADE-ITEMS.md).
- * Numbers pass through; a string may carry a cp/sp suffix ("8 cp" → 0.8 sp),
- * thousands separators ("5,000" → 5000), or a range ("100-175" → midpoint 137.5).
- * Anything unparseable — custom items, strings we don't read — resolves to 0 so
- * the UI never fabricates a price. Copper quantization (whole coins only) is the
- * dialog's job; this stays the single canonical silver value so buy and sell
- * suggestions can never drift apart.
- * @param {number|string|null} cost
+ * The catalogue now stores cost as a single silver number (schema ed-items/3);
+ * numbers pass through, anything else — custom items, stale strings we don't
+ * read — resolves to 0 so the UI never fabricates a price. Copper quantization
+ * (whole coins only) is the dialog's job; this stays the single canonical silver
+ * value so buy and sell suggestions can never drift apart.
+ * @param {number|null|undefined} cost
  * @returns {number} silver, >= 0
  */
-export function parseCostSilver(cost) {
+export function costSilver(cost) {
   if (typeof cost === 'number') return Number.isFinite(cost) && cost > 0 ? cost : 0;
-  if (typeof cost !== 'string') return 0;
-  const s = cost.replace(/,/g, '').trim().toLowerCase();
-  if (!s) return 0;
-  const range = s.match(/^([\d.]+)\s*-\s*([\d.]+)$/);
-  if (range) {
-    const a = Number(range[1]);
-    const b = Number(range[2]);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
-    return Math.max(0, (a + b) / 2);
-  }
-  const suffixed = s.match(/^([\d.]+)\s*(sp|cp)$/);
-  if (suffixed) {
-    const n = Number(suffixed[1]);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, suffixed[2] === 'cp' ? n / 10 : n);
-  }
-  const plain = Number(s);
-  return Number.isFinite(plain) && plain > 0 ? plain : 0;
+  return 0;
 }
 
 /**

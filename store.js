@@ -32,7 +32,7 @@ import {
   talentKarmaUse,
   collapseByTarget,
 } from './engine/characteristics.js';
-import { carriedWeight, parseWeight } from './engine/weight.js';
+import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
@@ -214,7 +214,7 @@ const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${
 const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/custom-items.json`;
 
 /**
- * Load the player-created custom-item catalog (ed-items/2, PLAN-CUSTOM-ITEMS).
+ * Load the player-created custom-item catalog (ed-items/3, PLAN-CUSTOM-ITEMS).
  * Mirrors loadCharacters: on Pages read `data/custom-items.json` LIVE from the
  * character-data branch — contents API first (git-consistent, reflects the
  * latest /save-items commit), raw CDN cache-busted fallback — and the bundled
@@ -224,7 +224,7 @@ const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNE
  * throws: a missing/unreadable catalog is an empty one.
  */
 export async function loadCustomItems() {
-  const bundled = () => loadJSONOptional('./rules/custom-items.json', { schema: 'ed-items/2', items: {} });
+  const bundled = () => loadJSONOptional('./rules/custom-items.json', { schema: "ed-items/3", items: {} });
   if (!onPages()) return (await loadJSONOptional('./data/custom-items.json', null)) ?? bundled();
   try {
     const res = await fetch(CUSTOM_ITEMS_API_URL, {
@@ -532,7 +532,7 @@ async function loadRules() {
   // Spell catalog (rules/spells.json, ed-spells/1 — PLAN-SPELLS §3). Optional:
   // non-casters and older bundles simply have no spells slice.
   const spellsFile = await loadJSONOptional('./rules/spells.json', { spells: {}, threadCap: [] });
-  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
+  // Custom items (ed-items/3, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
   // while the `ed-custom-items` overlay (pending, unsaved edits) is applied on
@@ -656,7 +656,7 @@ export function deriveModel(character, rules, session = {}) {
   // racial and discipline effects. Unknown names degrade gracefully (kept, but
   // contribute nothing) so a typo or a future custom item never breaks the sheet.
   const canonItems = itemsFile?.items ?? {};
-  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS) merge LAST so a player-created
+  // Custom items (ed-items/3, PLAN-CUSTOM-ITEMS) merge LAST so a player-created
   // item wins over a canon entry of the same name. The merged map is what owned
   // items and the add-picker resolve against; the raw custom map is exposed
   // separately as `customCatalog` for the manager modal to edit (and already
@@ -702,7 +702,7 @@ export function deriveModel(character, rules, session = {}) {
       presentation: {},
       // The parsed carried weight in pounds (engine/weight.js), for the per-section
       // totals. Derived, never stored.
-      weight: parseWeight(ref?.ref?.weight),
+      weight: weightPounds(ref?.ref?.weight),
       thread: ref
         ? {
             tier: ref.tier ?? null,
@@ -738,7 +738,7 @@ export function deriveModel(character, rules, session = {}) {
       // notes.presentation — carries the tile's curated `shortEffect` for note items.
       presentation: ref?.presentation ?? {},
       // The parsed carried weight in pounds (engine/weight.js) — derived, never stored.
-      weight: parseWeight(ref?.ref?.weight),
+      weight: weightPounds(ref?.ref?.weight),
       thread: null,
     };
   });
@@ -1303,7 +1303,7 @@ export function deriveModel(character, rules, session = {}) {
     stepByNumber,
     items,
     itemCatalog,
-    // Player-created items only (ed-items/2) — the manager modal's edit set.
+    // Player-created items only (ed-items/3) — the manager modal's edit set.
     // The add-picker still sees them: `itemCatalog` merges canon + custom, custom
     // winning on a name collision.
     customCatalog: customItems,

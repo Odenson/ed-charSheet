@@ -20,8 +20,8 @@ const rules = {
   skillsFile: JSON.parse(readFileSync(new URL('./rules/skills.json', import.meta.url))),
   knacksFile: JSON.parse(readFileSync(new URL('./rules/knacks.json', import.meta.url))),
   threadItemsFile: JSON.parse(readFileSync(new URL('./rules/thread-items.json', import.meta.url))),
-  customItemsFile: { schema: 'ed-items/2', items: {} },
-  customItemsCommittedFile: { schema: 'ed-items/2', items: {} },
+  customItemsFile: { schema: 'ed-items/3', items: {} },
+  customItemsCommittedFile: { schema: 'ed-items/3', items: {} },
   homebrewFile: { rules: [] },
   combatFile: JSON.parse(readFileSync(new URL('./rules/combat.json', import.meta.url))),
 };

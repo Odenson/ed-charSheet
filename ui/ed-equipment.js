@@ -44,6 +44,19 @@ const costText = (ref) => {
   if (c == null) return null;
   return typeof c === 'number' ? `${grp(c)} sp` : String(c);
 };
+// Display formatter for a structured `ref.weight` (schema ed-items/3): null →
+// omitted (unrecorded), { negligible: true } → "Negligible", { amount, unit } →
+// "N lb" / "N oz". A stale pre-migration string degrades to null (chip omitted,
+// the placeholder path) — never a fabricated number.
+const weightText = (ref) => {
+  const w = ref?.weight;
+  if (w == null) return null;
+  if (w.negligible === true) return 'Negligible';
+  if (typeof w === 'object' && typeof w.amount === 'number' && (w.unit === 'lb' || w.unit === 'oz')) {
+    return `${grp(w.amount)} ${w.unit}`;
+  }
+  return null;
+};
 const subLine = (it) => {
   if (!it) return 'unknown item';
   const base = KLABEL[it.kind] || it.kind;
@@ -876,7 +889,7 @@ export class EdEquipment extends LitElement {
       it.living ? { v: 'Living' } : null,
       ref.category && it.kind !== 'weapon' ? { v: cap(ref.category) } : null,
       costText(ref) ? { v: `Cost ${costText(ref)}` } : null,
-      ref.weight ? { v: `Weight ${ref.weight}` } : null,
+      weightText(ref) ? { v: `Weight ${weightText(ref)}` } : null,
       ref.availability ? { v: `Availability ${ref.availability}` } : null,
       ref.strMin != null ? { v: `STR min ${ref.strMin}` } : null,
       ref.size != null ? { v: `Size ${ref.size}` } : null,

@@ -76,22 +76,22 @@ const badName = validateItem('../evil', SMOKE_CLOAK);
 assert.equal(badName.ok, false, 'a name with a path separator is rejected');
 
 const goodFile = {
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   items: { 'Smoke Cloak': SMOKE_CLOAK, 'Plate of Home': CUSTOM_ARMOR },
 };
-assert.equal(validateItemsFile(goodFile).ok, true, 'a valid ed-items/2 file passes');
+assert.equal(validateItemsFile(goodFile).ok, true, 'a valid ed-items/3 file passes');
 
 const wrongSchema = validateItemsFile({ schema: 'ed-items/1', items: {} });
-assert.match(wrongSchema.errors.join(' '), /ed-items\/2/, 'wrong schema tag is rejected');
+assert.match(wrongSchema.errors.join(' '), /ed-items\/3/, 'wrong schema tag is rejected');
 
 const overCap = {
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   items: Object.fromEntries(Array.from({ length: MAX_ITEMS + 1 }, (_, i) => [`Item ${i}`, SMOKE_CLOAK])),
 };
 assert.match(validateItemsFile(overCap).errors.join(' '), /too many/, 'item-count cap is enforced');
 
 const tooBig = {
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   items: { pad: { ...SMOKE_CLOAK, ref: { cost: 0, description: 'x'.repeat(MAX_FILE_BYTES) } } },
 };
 const bigCheck = validateItemsFile(tooBig);
@@ -130,7 +130,7 @@ assert.equal(mysticArmor(12, effects, lookup).value, 3, 'custom Mystic Armour fo
 // --- 4. the manager modal working-set (ed-custom-items overlay) ----------------
 
 const delta = { items: { 'Smoke Cloak': SMOKE_CLOAK, 'Both': { kind: 'gear' } }, delete: ['Both'] };
-const baseFile = { schema: 'ed-items/2', items: { 'Both': { kind: 'weapon' }, 'Old': { kind: 'gear' } } };
+const baseFile = { schema: 'ed-items/3', items: { 'Both': { kind: 'weapon' }, 'Old': { kind: 'gear' } } };
 const merged = applyCustomEdits(baseFile, delta);
 assert.equal(merged.items['Smoke Cloak'], SMOKE_CLOAK, 'a pending custom item appears in the overlay-applied catalog');
 assert.equal(merged.items['Both'], undefined, 'a name in both items and delete is removed (delete applied last)');
@@ -138,7 +138,7 @@ assert.equal(merged.items['Old'].kind, 'gear', 'unrelated catalog entries surviv
 assert.equal(baseFile.items['Both'].kind, 'weapon', 'applyCustomEdits never mutates its input');
 assert.notEqual(merged, baseFile, 'applyCustomEdits returns a new object');
 
-const base = { schema: 'ed-items/2', items: {} };
+const base = { schema: 'ed-items/3', items: {} };
 assert.equal(applyCustomEdits(base, null), base, 'a null delta is a no-op (same reference)');
 
 globalThis.localStorage = (() => {

@@ -1,7 +1,7 @@
 // engine/wealth.test.js — the coin→silver rates and derived wealth totals.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coinsSilver, gemsSilver, deriveWealth, GEM_RESALE, COIN_DENOMINATIONS, parseCostSilver, spendAllocation, creditAllocation } from './wealth.js';
+import { coinsSilver, gemsSilver, deriveWealth, GEM_RESALE, COIN_DENOMINATIONS, costSilver, spendAllocation, creditAllocation } from './wealth.js';
 
 test('coin denominations use the decimal + elemental silver values', () => {
   const rate = Object.fromEntries(COIN_DENOMINATIONS.map((c) => [c.key, c.rate]));
@@ -52,32 +52,27 @@ test('deriveWealth is safe on an absent/empty wealth input', () => {
 
 // --- trade engine (plans/PLAN-TRADE-ITEMS.md) ---
 
-test('parseCostSilver: numbers pass through, non-positive resolves to 0', () => {
-  assert.equal(parseCostSilver(42), 42);
-  assert.equal(parseCostSilver(0), 0);
-  assert.equal(parseCostSilver(-5), 0);
-  assert.equal(parseCostSilver(1.5), 1.5);
+test('costSilver: numbers pass through, non-positive resolves to 0', () => {
+  assert.equal(costSilver(42), 42);
+  assert.equal(costSilver(0), 0);
+  assert.equal(costSilver(-5), 0);
+  assert.equal(costSilver(1.5), 1.5);
 });
 
-test('parseCostSilver: cp/sp suffixes resolve to silver', () => {
-  assert.equal(parseCostSilver('8 cp'), 0.8); // exactly 8 copper
-  assert.equal(parseCostSilver('3 cp'), 0.3);
-  assert.equal(parseCostSilver('15 sp'), 15);
-  assert.equal(parseCostSilver(' 8 cp '), 0.8);
+test('costSilver: the migrated catalogue values resolve to their silver totals', () => {
+  assert.equal(costSilver(0.8), 0.8); // migrated "8 cp" → 0.8
+  assert.equal(costSilver(15), 15); // migrated "15 sp" → 15
+  assert.equal(costSilver(5000), 5000); // migrated "5,000" → 5000
+  assert.equal(costSilver(137.5), 137.5); // migrated "100-175" → midpoint 137.5
+  assert.equal(costSilver(1500), 1500); // migrated "1,000-2,000" → 1500
 });
 
-test('parseCostSilver handles thousands separators and ranges', () => {
-  assert.equal(parseCostSilver('5,000'), 5000);
-  assert.equal(parseCostSilver('100-175'), 137.5); // midpoint
-  assert.equal(parseCostSilver('1,000-2,000'), 1500);
-});
-
-test('parseCostSilver: unparseable strings resolve to 0 (never a fabricated price)', () => {
-  assert.equal(parseCostSilver('custom bones'), 0);
-  assert.equal(parseCostSilver(''), 0);
-  assert.equal(parseCostSilver(null), 0);
-  assert.equal(parseCostSilver(undefined), 0);
-  assert.equal(parseCostSilver('1.5 dkp'), 0);
+test('costSilver: non-numbers resolve to 0 (never a fabricated price)', () => {
+  assert.equal(costSilver('8 cp'), 0); // stale legacy string — no longer parsed
+  assert.equal(costSilver('custom bones'), 0);
+  assert.equal(costSilver(''), 0);
+  assert.equal(costSilver(null), 0);
+  assert.equal(costSilver(undefined), 0);
 });
 
 test('spendAllocation deducts whole coins within the owned purse', () => {

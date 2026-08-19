@@ -145,7 +145,7 @@ test('/save re-validates: missing id, bad id, wrong schema, malformed JSON, bad 
     assert.equal(badId.status, 400);
     assert.equal(badId.body.error.code, 'invalid_id');
 
-    const wrongSchema = await srv.request('POST', '/save', { id: 'chakka', character: { schema: 'ed-items/2', items: {} } });
+    const wrongSchema = await srv.request('POST', '/save', { id: 'chakka', character: { schema: 'ed-items/3', items: {} } });
     assert.equal(wrongSchema.status, 400);
     assert.equal(wrongSchema.body.error.code, 'invalid_character');
 
@@ -175,7 +175,7 @@ test('/save-items creates the catalog (header + item) and applies deletes', asyn
     assert.equal(res.status, 200);
     const read = await srv.request('GET', '/data/custom-items.json');
     assert.equal(read.status, 200);
-    assert.equal(read.body.schema, 'ed-items/2');
+    assert.equal(read.body.schema, 'ed-items/3');
     assert.equal(read.body.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v3)');
     assert.deepEqual(read.body.items.Lantern, LANTERN);
 

@@ -281,8 +281,6 @@ to structured fields, not copied:
 - `engine/spells.js` — `durationRounds` / `increaseEffectAmount` /
   `increaseDurationRounds` / `increaseEffectSteps` regex-parse the printed
   `duration` strings and `successes` labels from `spells.json`.
-- `engine/wealth.js`, `engine/weight.js` — parse `price` / `weight` string
-  formats from `items.json`.
 
 ---
 
@@ -619,7 +617,6 @@ and its runbook.
   reads rule data as typed, schema-tagged fields and never regex-parses
   display strings (`summary`/`description`/`label`, printed `duration`/`price`/
   `weight`) to recover structure. Regex-based rule parsing is a Tier-1 change
-  needing owner sign-off; the parsers in `engine/spells.js`,
-  `engine/wealth.js`, and `engine/weight.js` are grandfathered deviations being
-  migrated to structured fields. See §3, §5.5.
+  needing owner sign-off; the remaining grandfathered parser is
+  `engine/spells.js`, being migrated to structured fields. See §3, §5.5.
 ```

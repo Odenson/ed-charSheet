@@ -1,54 +1,50 @@
 // engine/weight.js — carried weight, pure and DOM-free (ARCHITECTURE §3/§5).
 //
-// The rules catalog records weight as free text with inconsistent units: "N lb",
-// "N oz", bare numbers, ranges ("8-10 lb"), "Neg."/"—" for negligible, and "NA"
-// for unknown. The character sheet only ever *stores* those strings (an input);
-// the pound total is recomputed here and never stored ("store only inputs").
+// The rules catalog records weight as structured data (`ref.weight`, schema
+// ed-items/3): `null` (unrecorded/unknown), `{ "negligible": true }`, or
+// `{ "amount": n, "unit": "lb" | "oz" }`. The character sheet only ever *stores*
+// those values (an input); the pound total is recomputed here and never stored
+// ("store only inputs").
 //
 // Coins/gems are deliberately excluded: they live in `character.wealth`, not the
 // owned-items list, so they never reach carriedWeight at all.
 
-// Split on the unit — `N lb` / `N lbs` / `N pounds` / `N oz` / `N ounces` / bare
-// number (treated as pounds, the only unit-less weights in the catalog).
-const UNIT = /^([\d.]+)\s*(lbs?|pounds?|ounces?|oz)?$/;
+// Structured unit table — a data table the reader looks up (mirrors
+// COIN_DENOMINATIONS in engine/wealth.js), not a hard-coded branch.
+const WEIGHT_UNITS = [
+  { key: 'lb', pounds: 1 },
+  { key: 'oz', pounds: 1 / 16 },
+];
 
 /**
- * Parse one catalog weight string into pounds, or `null` when the weight is
+ * Resolve a catalog `ref.weight` into pounds, or `null` when the weight is
  * unknown (so it contributes nothing rather than a fabricated number).
  *
- *   "5 lb"   → 5     "8 oz"   → 0.5   "8-10 lb" → 9   "Neg." → 0   "NA" → null
+ *   { amount: 5, unit: 'lb' } → 5     { amount: 8, unit: 'oz' } → 0.5
+ *   { negligible: true }      → 0     null → null
+ *   a bare number             → as pounds (tolerated unit-less form)
  *
- * @param {*} weight  the stored `ref.weight` (string, number, or undefined)
+ * @param {*} w  the stored `ref.weight` (structured object, number, or null)
  * @returns {number|null} pounds (2-dp-safe), or null when unknowable
  */
-export function parseWeight(weight) {
-  if (weight == null) return null;
-  const s = String(weight).trim().toLowerCase();
-  if (!s || s === 'na' || s === 'n/a' || s === 'unknown') return null;
-  if (s === 'neg.' || s === 'negligible' || s === '—' || s === '–' || s === '-') return 0;
-  // Ranges ("8-10 lb") — a single item whose weight varies by material. Use the
-  // midpoint as the sheet's expected value.
-  const range = s.match(/^([\d.]+)\s*[-–]\s*([\d.]+)\s*(lbs?|pounds?)?$/);
-  if (range) {
-    const lo = Number(range[1]);
-    const hi = Number(range[2]);
-    if (Number.isFinite(lo) && Number.isFinite(hi)) return round2((lo + hi) / 2);
-    return null;
+export function weightPounds(w) {
+  if (w == null) return null;
+  if (typeof w === 'number') return Number.isFinite(w) && w >= 0 ? round2(w) : null;
+  if (typeof w === 'object') {
+    if (w.negligible === true) return 0;
+    const unit = WEIGHT_UNITS.find((u) => u.key === w.unit);
+    if (unit && typeof w.amount === 'number' && Number.isFinite(w.amount) && w.amount >= 0) {
+      return round2(w.amount * unit.pounds);
+    }
   }
-  const m = s.match(UNIT);
-  if (!m) return null;
-  const n = Number(m[1]);
-  if (!Number.isFinite(n)) return null;
-  const unit = m[2];
-  if (unit === 'oz' || unit === 'ounce' || unit === 'ounces') return round2(n / 16);
-  return round2(n); // pounds, or a bare number read as pounds
+  return null; // legacy string / unknown shape — never fabricated
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
 /**
  * Total carried weight of an owned-items list ({ ref: { weight } } each), plus
- * a count of the items whose weight is unknowable (NA / unrecorded) so the UI
+ * a count of the items whose weight is unknowable (null / unrecorded) so the UI
  * can say so rather than silently under-report.
  *
  * @param {Array<{ref?: {weight?: *}}>} items  resolved owned items (all owned,
@@ -62,7 +58,7 @@ export function carriedWeight(items = []) {
     // Quantity scales both the weight and the unknown-weight count: a stack of 3
     // unweighed items is 3 unknowns, not 1, so the UI never under-reports.
     const qty = Number.isFinite(it?.qty) ? Math.max(0, it.qty) : 1;
-    const w = parseWeight(it?.ref?.weight);
+    const w = weightPounds(it?.ref?.weight);
     if (w == null) {
       unweighed += qty;
       continue;

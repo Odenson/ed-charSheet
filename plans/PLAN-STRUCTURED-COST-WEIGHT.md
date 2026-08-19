@@ -185,9 +185,8 @@ preserved in the item's `ref.description` if keeper fidelity matters.
   `validateItemsFile`, so no runtime schema constant — comment only).
 - `ui/custom-item-builder.js` (97–98): custom items already emit number cost and
   no weight — both already conform; no code change beyond comments.
-- `tools/add-items.py`: update `norm_cost`/`norm_weight` to emit the structured
-  forms for any future extraction; or, if the catalog is now the source of truth,
-  note the tool as archive-only. (Decide at implementation.)
+- `tools/add-items.py`: as the catalog is now the source of truth,
+  note the tool as archive-only.
 
 ### D. UI display
 
@@ -234,8 +233,11 @@ preserved in the item's `ref.description` if keeper fidelity matters.
   update `validate-item.test.js` (`badCost` case and add weight-shape cases),
   update `tools/fold-custom-items.test.js` + `tools/worker/worker.test.js` +
   `tools/dev-server.test.js` schema fixtures (`ed-items/2` → `ed-items/3`),
-  and `store-weight.test.js`/`store-thread-item.test.js` where they read the
-  catalog's cost/weight.
+  and `store-thread-item.test.js` (schema assert at line 40,
+  `'ed-thread-items/1'` → `'ed-thread-items/2'` — the *only* change there; its
+  cost/weight assertions are thread-rank figures, untouched). `store-weight.test.js`
+  needs **no edit**: it asserts derived pounds only (identity-guaranteed by Phase A),
+  no raw `ref.cost`/`ref.weight`/`parseWeight` strings surface in the file.
 - Confirm the carried-weight banner totals and trade modal prices are byte-identical
   after the change (the verify script's outputs are the gate).
 

@@ -12,7 +12,7 @@ const ok = (r) => ({ pass: r.ok, errors: r.errors });
 const armorItem = {
   kind: 'armor',
   living: false,
-  ref: { cost: 40, weight: '20 lb', availability: 'average', description: 'Test armour.' },
+  ref: { cost: 40, weight: { amount: 20, unit: 'lb' }, availability: 'average', description: 'Test armour.' },
   effects: [
     { type: 'armor-modifier', target: { domain: 'armor', name: 'Physical' }, operation: 'add', value: 5, measure: 'rating', condition: 'always', summary: 'Adds Physical Armour of 5.' },
   ],
@@ -25,7 +25,7 @@ test('valid armor item passes', () => {
 test('valid weapon item passes', () => {
   const r = validateItem('Battle Axe', {
     kind: 'weapon',
-    ref: { cost: 35, weight: '6 lb', category: 'melee', strMin: 13, size: 5 },
+    ref: { cost: 35, weight: { amount: 6, unit: 'lb' }, category: 'melee', strMin: 13, size: 5 },
     effects: [
       { type: 'attack-modifier', target: { domain: 'attack', name: 'Damage' }, operation: 'add', value: 7, measure: 'step', condition: 'always', summary: 'Melee damage: Strength step + 7.' },
     ],
@@ -36,7 +36,7 @@ test('valid weapon item passes', () => {
 test('note-only gear item passes (empty mechanics)', () => {
   const r = validateItem('Backpack', {
     kind: 'gear',
-    ref: { cost: 5, weight: '3 lb' },
+    ref: { cost: 5, weight: { amount: 3, unit: 'lb' } },
     effects: [{ type: 'note', condition: 'always', summary: 'Standard backpack.' }],
   });
   assert.equal(r.ok, true, r.errors.join('; '));
@@ -80,6 +80,32 @@ test('ref is display-only but shape-checked', () => {
   assert.ok(badCost.errors.some((e) => e.includes('ref.cost')));
   const badType = validateItem('Bad', { kind: 'gear', ref: [1, 2], effects: [] });
   assert.equal(badType.ok, false);
+});
+
+test('ref.weight accepts the three structured forms (null, negligible, amount+unit)', () => {
+  const base = { kind: 'gear', effects: [] };
+  assert.equal(validateItem('A', { ...base, ref: { weight: null } }).ok, true);
+  assert.equal(validateItem('B', { ...base, ref: { weight: { negligible: true } } }).ok, true);
+  assert.equal(validateItem('C', { ...base, ref: { weight: { amount: 0, unit: 'lb' } } }).ok, true);
+  assert.equal(validateItem('D', { ...base, ref: { weight: { amount: 8, unit: 'oz' } } }).ok, true);
+});
+
+test('ref.weight rejects the legacy and malformed forms', () => {
+  const base = { kind: 'gear', effects: [] };
+  const cases = [
+    { weight: '20 lb' }, // legacy string
+    { weight: { amount: '6', unit: 'lb' } }, // string amount
+    { weight: { amount: 6, unit: 'stone' } }, // unknown unit
+    { weight: { amount: -1, unit: 'lb' } }, // negative
+    { weight: { amount: 6 } }, // missing unit
+    { weight: { unit: 'lb' } }, // missing amount
+    { weight: [1] }, // array
+  ];
+  for (const ref of cases) {
+    const r = validateItem('X', { ...base, ref });
+    assert.equal(r.ok, false, JSON.stringify(ref));
+    assert.ok(r.errors.some((e) => e.includes('ref.weight')), JSON.stringify(ref));
+  }
 });
 
 test('presentation.shortEffect is an optional string capped at MAX_SHORT_EFFECT', () => {
@@ -168,7 +194,7 @@ test('an oversized item is rejected', () => {
 // --- whole-file validation ---------------------------------------------------
 
 const goodFile = () => ({
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
   source: 'custom',
   notes: 'Player-created items.',

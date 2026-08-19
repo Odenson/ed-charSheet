@@ -29,8 +29,7 @@ quote the specific rule and say why the task appears to need it.
   *up* through `dispatch`. The UI never mutates state or computes game values.
   The engine stays **pure and DOM-free** and **reads rule data as structured
   taxonomy, never by regex-parsing display strings** (see ARCHITECTURE.md §3,
-  §5.5; the `spells.js`/`wealth.js`/`weight.js` parsers are grandfathered
-  deviations, not a precedent).
+  §5.5; the `spells.js` parser is grandfathered, a deviation not a precedent).
 - **Data-model invariant** — store only *inputs*; never store what a rule can
   recompute. `Attribute Value`/`Step` and other derived values do not live in
   `character.json` (ARCHITECTURE.md §4.1).
