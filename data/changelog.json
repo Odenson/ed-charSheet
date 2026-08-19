@@ -6,6 +6,36 @@
   },
   "releases": [
     {
+      "version": "1.16.0",
+      "date": "2026-08-19",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Learn a new spell from the Grimoire. In edit mode a \"＋ Learn spell\" button opens a picker of every spell your discipline hasn't learnt yet, grouped by Circle — each entry shows its Circle and stands ready for review. Pick one and the panel shows its Learning Difficulty, the Legend it will cost against your Available Legend, your Patterncraft and Thread Weaving steps, and whether you're rested enough to attempt it. You can optionally have a teacher assist by rolling Spellcasting as a precursor while you learn."
+        },
+        {
+          "type": "added",
+          "text": "Roll to learn a spell (Players' Guide pp. 251–252): a Patterncraft test against the spell's Learning Difficulty. Every success level past the first is an extra success that stays on the spell. On success you buy the spell for its silver price (the default — the spell's Circle times the campaign rate — is editable, so the GM can apply the book's ×2 / ×3 situational surcharge at the table); the silver leaves your purse as the spell joins your Grimoire, and its Legend cost now shows in the Legend-spent breakdown. Teacher assist rolls Spellcasting first — if it beats the same Difficulty, the teacher's Thread Weaving rank arms as bonus steps on your Patterncraft test (the same \"outcome arms the next roll\" pattern as the Combat tab's aim)."
+        },
+        {
+          "type": "added",
+          "text": "New homebrew rule — Learning a spell costs no Legend (ships enabled). A magician spends no Legend Points to learn a spell: the spell's Circle-based Legend cost is waived, while the silver copy price is unchanged. Turn it off in rules/homebrew.json and the standard cost comes back — the Legend-spent breakdown and the Learn modal's shown price both follow the rule."
+        },
+        {
+          "type": "changed",
+          "text": "The Legend-spent breakdown (the ⓘ beside your Available Legend) now closes over learnt spells too — every spell in your Grimoire is priced as a Novice talent step at Rank equal to its Circle — and the breakdown now opens from the Notes tab's Legend view as well, so both tabs show the same audit."
+        },
+        {
+          "type": "changed",
+          "text": "Active test bonuses on talent and skill rolls are now shown consistently no matter how the effect measures them. A spell that folds +4 steps into Stealthy Stride (Shadow Meld) gets the same accent pill beside the rank as a flat +2 result bonus (Soulless Eyes' Intimidation, say) — the chip is measure-agnostic, the tooltip names each source, and the Combat tab's Attack step-breakdown itemises a spell-fed bonus off the pre-modifier base."
+        },
+        {
+          "type": "fixed",
+          "text": "Spells that boost a test by steps — Shadow Meld's +4 Stealthy Stride, Soulless Eyes' +3 Intimidation, the +2 extra-thread Effect boost — are recorded as step bonuses (they were folded as flat result bonuses), so the step they raise and the chip that names them read the same."
+        }
+      ]
+    },
+    {
       "version": "1.15.1",
       "date": "2026-08-19",
       "changes": [
