@@ -7,7 +7,7 @@
 // ed-character/1 entry, base-check → `stale_base` conflict or PUT, create-only
 // index maintenance, no-base bounded 409 retry), cross-character isolation, and
 // upstream-failure mapping. Plus the /save-items route (PLAN-CUSTOM-ITEMS P3):
-// the custom-items catalog upsert (merge + delete + PUT whole ed-items/2 file),
+// the custom-items catalog upsert (merge + delete + PUT whole ed-items/3 file),
 // validation via the shared engine/validate-item.js gate, size/count caps, and
 // the same retry/failure map.
 
@@ -116,7 +116,7 @@ const ITEM2 = {
   ],
 };
 const ITEMS = {
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
   source: 'custom',
   notes: 'Player-created items.',
@@ -641,7 +641,7 @@ test('save-items delete removes the named item', async () => {
   }
 });
 
-test('missing catalog (404) → creates a fresh ed-items/2 file', async () => {
+test('missing catalog (404) → creates a fresh ed-items/3 file', async () => {
   const mock = mockGitHub({
     ...branchExists,
     'GET /contents/data/custom-items.json': () => ({ status: 404, body: {} }),
@@ -653,7 +653,7 @@ test('missing catalog (404) → creates a fresh ed-items/2 file', async () => {
     const sent = JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body);
     assert.equal(sent.sha, undefined, 'no sha on a create');
     const written = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
-    assert.equal(written.schema, 'ed-items/2');
+    assert.equal(written.schema, 'ed-items/3');
     assert.deepEqual(written.items, { Lantern: ITEM });
   } finally {
     mock.restore();
@@ -706,7 +706,7 @@ test('oversized single item (over 4096 bytes) → 400 invalid_items', async () =
 test('merged catalog over the caps (200 items) → 400 invalid_items, no PUT', async () => {
   const many = {};
   for (let i = 0; i < 200; i++) many[`item-${i}`] = ITEM;
-  const bigFile = { schema: 'ed-items/2', effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)', source: 'custom', notes: '', items: many };
+  const bigFile = { schema: 'ed-items/3', effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)', source: 'custom', notes: '', items: many };
   let puts = 0;
   const mock = mockGitHub({
     ...branchExists,

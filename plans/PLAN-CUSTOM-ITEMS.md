@@ -34,7 +34,7 @@ landing as new data file + new UI + new store module + worker endpoint + CI job.
 
 | Decision | Choice |
 |---|---|
-| Persistence | `data/custom-items.json` on the `character-data` branch, `ed-items/2` shape, written by the worker (`POST /save-items`) |
+| Persistence | `data/custom-items.json` on the `character-data` branch, `ed-items/3` shape, written by the worker (`POST /save-items`) |
 | App read | Live from the branch (contents API → raw CDN → bundled `./rules/custom-items.json` → local gitignored `./data/custom-items.json` working copy); re-read on every character switch (`_loadCharacter` re-fetches rules) |
 | Fold target | **`dev` only** — durability-only; `main`'s bundled copy arrives with the next dev→main release PR (which also ships the feature code to main) |
 | Fold credential | Ephemeral `GITHUB_TOKEN` (`contents: write`) — **no new secrets** (`main`/`dev` unprotected, verified via `gh api`) |
@@ -82,7 +82,7 @@ tracking; tick them as the work lands.
 
 ### Phase 2 — Shared validator
 - [x] **2.1 [CLAUDE]** `engine/validate-item.js` — pure ESM, zero deps.
-      Validates one item against the `ed-items/2` shape + taxonomy:
+      Validates one item against the `ed-items/3` shape + taxonomy:
   - name: 1–64 chars, allows Title Case / spaces / commas / apostrophes,
     forbids `/`, control chars, leading/trailing whitespace;
   - `kind` ∈ the 8 standard kinds (weapon, armor, shield, ammunition, gear,
@@ -103,7 +103,7 @@ tracking; tick them as the work lands.
       `{ items: { <name>: <item> }, delete?: string[] }`; validate via the shared
       validator (fail-closed → `400 invalid_items`); write
       `data/custom-items.json` on `character-data` — GET (404 → fresh
-      `ed-items/2` file), merge `items`, apply `delete`, PUT whole file (base64,
+      `ed-items/3` file), merge `items`, apply `delete`, PUT whole file (base64,
       sha, bounded 409-retry); path pinned from `env.GITHUB_ITEMS_PATH ??
       'data/custom-items.json'`. Imports `../../engine/validate-item.js`
       (wrangler bundles relative ESM).
@@ -567,7 +567,7 @@ then derives its label from the first numeric effect). The shared validator
 over-long `shortEffect` at the same gate the UI/worker/fold all use, so the cap
 holds even against a direct `/save-items` POST. `cleanItemForm` persists
 `presentation.shortEffect` trimmed and only when non-empty. Guardrail: Tier 3 —
-new form field within the existing `ed-items/2` shape (`presentation` with an
+new form field within the existing `ed-items/3` shape (`presentation` with an
 optional string was already validated), a bug fix restoring documented
 behavior, no taxonomy/UI-GUIDELINES change.
 
@@ -603,7 +603,7 @@ cases → `store-custom-items.test.js` 17/17; root 257/257.
 
 All **Tier 3**:
 
-- `rules/custom-items.json` fits the existing `ed-items/2` schema (data within
+- `rules/custom-items.json` fits the existing `ed-items/3` schema (data within
   the shape — Tier 3).
 - **No `ed-character/1` shape change** — custom items live in the shared branch
   store, not per-character (the earlier per-character Tier-1 question is moot).

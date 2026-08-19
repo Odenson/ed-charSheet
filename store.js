@@ -32,9 +32,10 @@ import {
   talentKarmaUse,
   collapseByTarget,
 } from './engine/characteristics.js';
-import { carriedWeight, parseWeight } from './engine/weight.js';
+import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
+import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // Talents every adept receives automatically at First Circle, regardless of
@@ -213,7 +214,7 @@ const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${
 const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/custom-items.json`;
 
 /**
- * Load the player-created custom-item catalog (ed-items/2, PLAN-CUSTOM-ITEMS).
+ * Load the player-created custom-item catalog (ed-items/3, PLAN-CUSTOM-ITEMS).
  * Mirrors loadCharacters: on Pages read `data/custom-items.json` LIVE from the
  * character-data branch — contents API first (git-consistent, reflects the
  * latest /save-items commit), raw CDN cache-busted fallback — and the bundled
@@ -223,7 +224,7 @@ const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNE
  * throws: a missing/unreadable catalog is an empty one.
  */
 export async function loadCustomItems() {
-  const bundled = () => loadJSONOptional('./rules/custom-items.json', { schema: 'ed-items/2', items: {} });
+  const bundled = () => loadJSONOptional('./rules/custom-items.json', { schema: "ed-items/3", items: {} });
   if (!onPages()) return (await loadJSONOptional('./data/custom-items.json', null)) ?? bundled();
   try {
     const res = await fetch(CUSTOM_ITEMS_API_URL, {
@@ -293,6 +294,19 @@ export function saveItemEdits(items, id) {
 export function saveWealthEdits(wealth, id) {
   const edits = loadEdits(id);
   edits.wealth = wealth;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
+ * Persist the character's spells block to the edits overlay (PLAN-SPELLS §4).
+ * Pure inputs: `known` (learnt spells + learntSuccess) and `matrices` (which
+ * spell each matrix holds). Stored whole like items/wealth — steps, difficulties
+ * and effect numbers are all derived in engine/spells.js, never stored.
+ */
+export function saveSpellEdits(spells, id) {
+  const edits = loadEdits(id);
+  edits.spells = spells;
   localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
@@ -435,12 +449,20 @@ export function applyEdits(character, edits) {
   if (edits.meta) next = { ...next, meta: { ...(next.meta || {}), ...edits.meta } };
   if (edits.items) next = { ...next, items: edits.items };
   if (edits.wealth) next = { ...next, wealth: edits.wealth };
+  // Spells block (known[] + matrices[]) — pure inputs (PLAN-SPELLS §4), stored
+  // whole like items/wealth; all derivation happens in engine/spells.js.
+  if (edits.spells) next = { ...next, spells: edits.spells };
   if (edits.health) {
+    // `knockedDown` is session-only state (decision I), never a persisted health
+    // input — strip any stale copy an older build wrote to the overlay so the
+    // fact can't leak back into the character on load.
+    const mergedHealth = { ...(next.resources?.health || {}), ...edits.health };
+    delete mergedHealth.knockedDown;
     next = {
       ...next,
       resources: {
         ...(next.resources || {}),
-        health: { ...(next.resources?.health || {}), ...edits.health },
+        health: mergedHealth,
       },
     };
   }
@@ -507,7 +529,10 @@ async function loadRules() {
   // PLAN-COMBAT-TAB Phase A). The Combat tab renders its chips from these and
   // feeds the selected bundles to engine/combat.js; they are never auto-folded.
   const combatFile = await loadJSONOptional('./rules/combat.json', { options: [], situations: [] });
-  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS): read live from character-data
+  // Spell catalog (rules/spells.json, ed-spells/1 — PLAN-SPELLS §3). Optional:
+  // non-casters and older bundles simply have no spells slice.
+  const spellsFile = await loadJSONOptional('./rules/spells.json', { spells: {}, threadCap: [] });
+  // Custom items (ed-items/3, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
   // while the `ed-custom-items` overlay (pending, unsaved edits) is applied on
@@ -518,7 +543,7 @@ async function loadRules() {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile };
+  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile };
 }
 
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
@@ -530,8 +555,8 @@ export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karm
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
-export function deriveModel(character, rules) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile } = rules;
+export function deriveModel(character, rules, session = {}) {
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -631,7 +656,7 @@ export function deriveModel(character, rules) {
   // racial and discipline effects. Unknown names degrade gracefully (kept, but
   // contribute nothing) so a typo or a future custom item never breaks the sheet.
   const canonItems = itemsFile?.items ?? {};
-  // Custom items (ed-items/2, PLAN-CUSTOM-ITEMS) merge LAST so a player-created
+  // Custom items (ed-items/3, PLAN-CUSTOM-ITEMS) merge LAST so a player-created
   // item wins over a canon entry of the same name. The merged map is what owned
   // items and the add-picker resolve against; the raw custom map is exposed
   // separately as `customCatalog` for the manager modal to edit (and already
@@ -677,7 +702,7 @@ export function deriveModel(character, rules) {
       presentation: {},
       // The parsed carried weight in pounds (engine/weight.js), for the per-section
       // totals. Derived, never stored.
-      weight: parseWeight(ref?.ref?.weight),
+      weight: weightPounds(ref?.ref?.weight),
       thread: ref
         ? {
             tier: ref.tier ?? null,
@@ -713,7 +738,7 @@ export function deriveModel(character, rules) {
       // notes.presentation — carries the tile's curated `shortEffect` for note items.
       presentation: ref?.presentation ?? {},
       // The parsed carried weight in pounds (engine/weight.js) — derived, never stored.
-      weight: parseWeight(ref?.ref?.weight),
+      weight: weightPounds(ref?.ref?.weight),
       thread: null,
     };
   });
@@ -778,6 +803,10 @@ export function deriveModel(character, rules) {
         })),
       ),
     ...homebrewEffects,
+    // Active self-cast spells (PLAN-SPELLS 6b): their sustained effects fold into
+    // derived values while active, exactly like an equipped item's — session
+    // state (session.activeSpells), never persisted, tagged origin `spell`.
+    ...activeSpellEffects(session?.activeSpells),
   ];
   const attrVal = (name) => attributeValue(character.attributes?.[name]);
   // Combat steps come from the governing attribute's Step (already derived above).
@@ -804,15 +833,17 @@ export function deriveModel(character, rules) {
   // account for them, so overridden ratings fold the always-on effects only and
   // nothing is double-counted. Rule `effects` are inside `activeEffects`.
   const effectsForRating = (name) => (homebrewOverrides[name] ? activeEffects : healthEffects);
-  // Knocked Down is a live condition, not a stored/derived static number: it
-  // shows in Active Effects and is applied as a roll-time −3 to every test
-  // (PG p.389), and its −3 to Physical/Mystic Defense folds into the derived
-  // ratings below. It exists purely because the input is set — clear
-  // `knockedDown` and it folds back out of every derived readout.
-  const conditionEffects = character.resources?.health?.knockedDown
+  // Knocked Down is a live condition, not a stored/derived static number and
+  // NOT a persisted character input: it arrives through the session-only
+  // `session.knockedDown` flag (decision I, PLAN-END-OF-DAY-RESET) that ed-app
+  // holds and passes in. It shows in Active Effects, applies a roll-time −3 to
+  // every test (PG p.389), and its −3 to Physical/Mystic Defense folds into the
+  // derived ratings below — purely because the flag is set; clear it and the
+  // condition folds back out of every derived readout.
+  const conditionEffects = session?.knockedDown
     ? [{ ...KNOCKED_DOWN_EFFECT, origin: { kind: 'condition', name: 'Knocked Down' } }]
     : [];
-  const conditionDefenseEffects = character.resources?.health?.knockedDown
+  const conditionDefenseEffects = session?.knockedDown
     ? KNOCKED_DOWN_DEFENSE_EFFECTS.map((e) => ({ ...e, origin: { kind: 'condition', name: 'Knocked Down' } }))
     : [];
   const touVal = attrVal('Toughness');
@@ -1242,11 +1273,18 @@ export function deriveModel(character, rules) {
     })(),
     strengthStep: strStep,
     conditions: {
-      knockedDown: character.resources?.health?.knockedDown === true,
+      // Knocked Down is session-only state (decision I) — never read from the
+      // stored health inputs, which must not carry the fact.
+      knockedDown: session?.knockedDown === true,
       harried: weightStanding.stage === ENCUMBRANCE.BURDENED,
     },
     damageKarma: karmaUse('Damage', activeEffects),
   };
+
+  // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
+  // for the Active-effects card. buildSpellsContext stays session-free (pure).
+  const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
+  if (spellsCtx) spellsCtx.active = session?.activeSpells ?? [];
 
   return {
     meta: character.meta ?? {},
@@ -1257,12 +1295,15 @@ export function deriveModel(character, rules) {
     attributes,
     resources: character.resources ?? {},
     disciplines,
+    // Spells slice (PLAN-SPELLS §5): the SpellsContext the Spells tab renders
+    // from and drives the cast flow with. null for non-casters (no spells block).
+    spells: spellsCtx,
     racialAbilities,
     characteristics,
     stepByNumber,
     items,
     itemCatalog,
-    // Player-created items only (ed-items/2) — the manager modal's edit set.
+    // Player-created items only (ed-items/3) — the manager modal's edit set.
     // The add-picker still sees them: `itemCatalog` merges canon + custom, custom
     // winning on a name collision.
     customCatalog: customItems,

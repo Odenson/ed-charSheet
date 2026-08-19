@@ -1,7 +1,7 @@
 {
   "schema": "ed-skills/1",
   "source": "Earthdawn 4E — skills. Mechanics + original-wording summaries (no verbatim rulebook prose). Enriched from the Players' Guide skill/talent text, the Companion guide, and the app's talent catalog.",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "notes": [
     "154 skills catalogued (23 general skills, 105 talent-named skills, 22 language variants, 4 artisan variants). Mechanics (attribute/action/strain) and summaries authored for all; effects follow the effect taxonomy as note entries.",
     "Skill version of a talent never causes Strain (strain is 0 for every skill).",

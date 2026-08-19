@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 # ============================================================================
-# tools/add-items.py — extend rules/items.json with the equipment chapter's
+# tools/add-items.py — ARCHIVE-ONLY (plans/PLAN-STRUCTURED-COST-WEIGHT.md Phase C):
+# the catalog is now the source of truth, and rules/items.json has migrated to
+# the ed-items/3 schema (structured `ref.weight`, numeric `ref.cost`). This
+# extractor's `norm_cost` / `norm_weight` emit the old string forms and would
+# REINTRODUCE schema-invalid data if re-run against the live catalog. It is kept
+# for reference only — do not run it on the current rules/items.json.
+#
+# (Originally: extend rules/items.json with the equipment chapter's
 # remaining item tables from the rulebook extracts, preserving the existing
-# ed-items/2 schema and the EFFECT-TAXONOMY v3 vocabulary.
+# ed-items/2 schema and the EFFECT-TAXONOMY v3 vocabulary.)
 #
 # Source: "rulebook extracts/text-RB-players-guide.txt" (Earthdawn 4E Player's
 # Guide). The following tables are parsed live from the file:

@@ -6,7 +6,6 @@ import { LitElement, html, css, nothing } from 'lit';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
-import './ed-confirm.js';
 import './ed-add-legend.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
@@ -22,7 +21,6 @@ export class EdOverview extends LitElement {
     _edit: { state: true },
     _portraitBroken: { state: true },
     _healthModal: { state: true },
-    _resetRecoveries: { state: true },
     _addLegend: { state: true },
     _karmaRitual: { state: true }, // paid Karma-Ritual modal open?
     _karmaBuy: { state: true },    // draft: points to buy
@@ -77,8 +75,9 @@ export class EdOverview extends LitElement {
     /* Karma Ritual "+": reuses the .info affordance (amber glyph, hover-reveal),
        matching the "Add Legend earned" plus. Disabled → muted when Karma is full. */
     .info:disabled { color: var(--muted); cursor: default; opacity: 0.5; }
-    .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: none; background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 0; }
-    .hreset:hover { color: var(--accent); }
+    .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--muted); background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .hreset:hover { color: var(--accent); border-color: var(--accent); }
+    .hreset.reset { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     /* Top row: attributes (compacted) beside the Legend panel, sharing one height. */
     .toprow { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 8px; align-items: stretch; }
     .legend { display: flex; flex-direction: column; }
@@ -820,7 +819,7 @@ export class EdOverview extends LitElement {
                       class="stand"
                       title="End the Knocked Down condition"
                       @click=${() =>
-                        this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: { knockedDown: false }, bubbles: true, composed: true }))}
+                        this.dispatchEvent(new CustomEvent('ed-edit-knockdown', { detail: { knockedDown: false }, bubbles: true, composed: true }))}
                     >Stand up</button>`
                   : ''}
               </div>
@@ -1041,6 +1040,18 @@ export class EdOverview extends LitElement {
                   <span>Health</span>
                   ${this._healthChip()}
                   <button class="info" title="Take damage or heal" aria-label="Take damage or heal" @click=${() => this._openHealth()}>✚</button>
+                  ${this.editMode
+                    ? ''
+                    : html`<button
+                        class="hreset reset"
+                        style="margin-left:auto"
+                        title="Start a new day — reset recoveries, clear combat state, and spend remaining recoveries"
+                        aria-label="Reset the day"
+                        @click=${(e) => {
+                          e.stopPropagation();
+                          this.dispatchEvent(new CustomEvent('ed-day-reset', { detail: { source: 'overview' }, bubbles: true, composed: true }));
+                        }}
+                      ><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16h18"/><path d="M8 16a4 4 0 0 1 8 0"/><path d="M12 3.5v2"/><path d="M5.2 6.7l1.4 1.4"/><path d="M18.8 6.7l-1.4 1.4"/><path d="M12 20l-2-2h4z" fill="currentColor" stroke="none"/></svg></button>`}
                 </h4>
                 <div class="line"><span>Damage</span>${this._healthField('damage', h.damage, 'Current damage')}</div>
                 <div class="line"><span>Unconscious</span>${this._char('unconsciousness')}</div>
@@ -1048,14 +1059,7 @@ export class EdOverview extends LitElement {
                 <div class="line"><span>Wound Threshold</span>${this._char('woundThreshold')}</div>
                 <div class="line"><span>Wounds</span>${this._healthField('wounds', h.wounds, 'Current wounds')}</div>
                 <div class="line">
-                  <span>Recoveries${this.editMode
-                    ? ''
-                    : html`<button
-                        class="hreset"
-                        title="A new day begins — reset Recovery tests used to 0"
-                        aria-label="Reset Recovery tests used today"
-                        @click=${() => (this._resetRecoveries = true)}
-                      >⟳</button>`}</span>
+                  <span>Recoveries</span>
                   ${this._recoveries(h)}
                 </div>
               </div>
@@ -1095,20 +1099,6 @@ export class EdOverview extends LitElement {
               </div>
             </div>
           `
-        : ''}
-      ${this._resetRecoveries
-        ? html`<ed-confirm
-            heading="A new day begins"
-            message="Reset Recovery tests used today to 0?"
-            confirmLabel="Reset"
-            @confirm=${() => {
-              this._resetRecoveries = false;
-              this.dispatchEvent(
-                new CustomEvent('ed-edit-health', { detail: { recoveriesUsed: 0 }, bubbles: true, composed: true }),
-              );
-            }}
-            @close=${() => (this._resetRecoveries = false)}
-          ></ed-confirm>`
         : ''}
       ${this._modal
         ? html`

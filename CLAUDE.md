@@ -27,7 +27,9 @@ quote the specific rule and say why the task appears to need it.
   everything is theme-aware (light + dark).
 - **Architecture golden rule** — data flows *down* through render; events flow
   *up* through `dispatch`. The UI never mutates state or computes game values.
-  The engine stays **pure and DOM-free** (see ARCHITECTURE.md §3, §5).
+  The engine stays **pure and DOM-free** and **reads rule data as structured
+  taxonomy, never by regex-parsing display strings** (see ARCHITECTURE.md §3,
+  §5.5; the `spells.js` parser is grandfathered, a deviation not a precedent).
 - **Data-model invariant** — store only *inputs*; never store what a rule can
   recompute. `Attribute Value`/`Step` and other derived values do not live in
   `character.json` (ARCHITECTURE.md §4.1).

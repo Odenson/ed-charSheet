@@ -1,7 +1,8 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
-import { applyHealth, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
+import { buildActiveSpell, tickActiveSpells } from '../engine/spells.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
@@ -12,7 +13,7 @@ import { exportCharacter } from '../store-export.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
-import './ed-combat.js';
+import { clearCombatScratch } from './ed-combat.js';
 import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
@@ -21,6 +22,8 @@ import './ed-notes.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
+import './ed-day-reset.js';
+import './ed-spells.js';
 import './ed-character-picker.js';
 import './ed-conflict.js';
 import './ed-settings.js';
@@ -65,6 +68,16 @@ export class EdApp extends LitElement {
     // ephemeral contract as the Combat scratchpad. Cleared on character switch,
     // manual clear, a successful roll, and the new-day recovery reset.
     _pendingUse: { state: true },
+    // Session-only Knocked Down state (decision I, PLAN-END-OF-DAY-RESET): the
+    // condition's penalties fold into derived Defense / Active Effects / combat
+    // conditions while set, but the fact is never persisted to the character.
+    // Cleared on character switch, like the armed potion.
+    _knockedDown: { state: true },
+    // Session-only new-day reset (PLAN-END-OF-DAY-RESET): { source } while a day
+    // reset is pending; the ed-day-reset modal renders from it. Cleared on
+    // finalize, cancel, or a character switch. MUST be reactive state — setting
+    // it is what opens the modal.
+    _dayReset: { state: true },
   };
 
   // Raw editable inputs (character.json + overlay) and the loaded rules. Edits
@@ -222,51 +235,13 @@ export class EdApp extends LitElement {
     window.addEventListener('pagehide', this._onPageHide);
     // Any roll button in a child view bubbles an 'ed-roll' event up to here.
     this.addEventListener('ed-roll', (e) => {
-      const { label, karma, apply, kind, difficulty } = e.detail;
-      // A recovery roll made while a step-boost is armed rolls at the bumped step
-      // (Booster/Healing +8) — the dice and the log then show the boosted step.
-      // The +N comes from the armed potion's catalog data, never a view literal.
-      let step = e.detail.step;
-      const recBonus = armedRecoveryBonus(this._pendingUse);
-      if (apply?.action === 'recovery-heal' && recBonus.stepBonus) step += recBonus.stepBonus;
-      const stepRow = this._model?.stepByNumber?.[step];
-      if (!stepRow) return;
-      // Resolve the Karma die's step row (D6) so the modal can offer +D6. A
-      // set-dice roll (True Shot) carries `maxDice`/`rank` for the extra-Karma
-      // stepper and top-up; they default so ordinary rolls stay single-die.
-      const karmaCtx =
-        karma?.step != null && this._model?.stepByNumber?.[karma.step]
-          ? {
-              grants: karma.grants,
-              available: karma.available,
-              stepRow: this._model.stepByNumber[karma.step],
-              maxDice: karma.maxDice ?? 1,
-              rank: karma.rank ?? null,
-            }
-          : null;
-      // Rolling the Karma die IS spending a point of Karma: the Overview's Karma
-      // roll has no +D6 toggle (it is the die), so charge the spend here. Charge,
-      // no refund (owner decision) — each button click opens a fresh roll
-      // interaction.
-      if (kind === 'karma') this._editKarma({ spend: 1 });
-      this._roll = {
-        rollId: uid(),
-        label,
-        stepRow,
-        karma: karmaCtx,
-        apply: apply ?? null,
-        difficulty: difficulty ?? null,
-        // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
-        // the universal Knocked Down −3 (every test, Karma die only excluded)
-        // is added after — it applies to every roll, combat or not.
-        mods: [...(e.detail.mods ?? []), ...this._rollTimeMods({ kind, apply })],
-        // Deferred Strain for a set-dice roll — charged at the modal's commit
-        // (see the `ed-strain` handler), 0 for ordinary rolls (already paid).
-        strain: e.detail.strain ?? 0,
-        // An aim roll (Mystic Aim): the modal takes the target's defence as input,
-        // rolls the talent vs it, and resolves Hit/Miss. `aim` carries { vs, strain }.
-        aim: e.detail.aim ?? null,
-      };
+      const config = this._rollConfig(e.detail);
+      if (!config) return;
+      this._roll = config;
+      // An Initiative roll (from the Combat OR Spells tab) is the round
+      // start/end signal: advance the round counter. Phase 6b (PLAN-SPELLS)
+      // ticks the sustained self-cast active-effect set here.
+      if (e.detail?.kind === 'initiative') this._advanceRound();
     });
     // A set-dice roll's Strain is charged when the modal commits the roll (not at
     // Attack-click), so Escaping the set-dice modal costs nothing. The modal fires
@@ -336,6 +311,15 @@ export class EdApp extends LitElement {
         // the heal), matching "stays until rolled AND recorded".
         if (this._pendingUse?.kind === 'step-boost') this._pendingUse = null;
         this._roll = null; // button-driven: apply and close
+        // A recovery spent inside the day-reset spend loop: clear the embedded
+        // roll and, once nothing more can be spent, finalize immediately — no
+        // extra "Reset the day" click (plan: "after the spend loop, the reset
+        // finalizes"). Otherwise the modal re-renders its stats for the next
+        // recovery (or none left).
+        if (this._dayReset) {
+          this._dayReset = { ...this._dayReset, roll: null };
+          this._dayResetAfterSpend();
+        }
       } else if (action === 'emergency-recovery-heal') {
         // The Healing Potion emergency: an immediate, budget-free Recovery test —
         // heal by the result with NO recoveriesUsed increment. Fail closed if no
@@ -351,11 +335,12 @@ export class EdApp extends LitElement {
       } else if (action === 'knockdown-result') {
         // A Knockdown test resolves itself at roll time — no verify button: a
         // failed test knocks the character down. The big hit's damage and any
-        // Wound were already applied by the damage modal; this stores the
-        // knocked-down input that the engine's condition effect reads. The roll
-        // modal stays open so the player sees the roll and its outcome line,
-        // then dismisses it.
-        this._editHealth({ knockedDown: knockdownOutcome(result, difficulty) === 'down' });
+        // Wound were already applied by the damage modal; this sets the
+        // session-only knocked-down state whose condition effect the engine
+        // folds (defense −3, roll-time −3). Never persisted (decision I). The
+        // roll modal stays open so the player sees the roll and its outcome
+        // line, then dismisses it.
+        this._setKnockedDown(knockdownOutcome(result, difficulty) === 'down');
       }
     });
     // A view edited character inputs. Apply the patch, persist the overlay, and
@@ -367,7 +352,19 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-use-potion', (e) => this._usePotion(e.detail?.name));
     this.addEventListener('ed-clear-pending-use', () => { this._pendingUse = null; });
     this.addEventListener('ed-edit-wealth', (e) => this._editWealth(e.detail));
+    // Spells tab (PLAN-SPELLS §4): the whole spells block (known[] + matrices[])
+    // — pure inputs — replaces the stored one; the engine re-derives the slice.
+    this.addEventListener('ed-edit-spells', (e) => this._editSpells(e.detail?.spells));
+    // A successful self-cast of a sustained spell (PLAN-SPELLS 6b): add it to the
+    // session active-effect set so its effects fold into derived values and count
+    // down per Initiative roll. Session-only, never persisted (like knockdown).
+    this.addEventListener('ed-spell-activate', (e) => this._activateSpell(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
+    this.addEventListener('ed-day-reset', (e) => this._openDayReset(e.detail));
+    // A view ended (or restarted) the Knocked Down condition — "Stand up" in
+    // the Overview active-effects row and the Combat tab. Session-only state,
+    // never persisted (decision I); the engine re-derives the fold.
+    this.addEventListener('ed-edit-knockdown', (e) => this._setKnockedDown(!!e.detail?.knockedDown));
     // A trade (plans/PLAN-TRADE-ITEMS.md): one dispatch carrying BOTH the next
     // item list and the resulting purse, persisted atomically + one re-derive.
     this.addEventListener('ed-trade', (e) => this._editTrade(e.detail));
@@ -455,10 +452,14 @@ export class EdApp extends LitElement {
       if (characters) this._characters = characters;
       this._character = character;
       this._rules = rules;
-      this._model = deriveModel(character, rules);
-      // A character switch starts with no armed potion (session state is per
-      // character and never persisted).
+      this._model = this._derive();
+      // A character switch starts with no armed potion, no Knocked Down
+      // condition, and no pending day reset (all session state, never persisted).
       this._pendingUse = null;
+      this._knockedDown = false;
+      this._activeSpells = []; // active self-cast spells (session-only, 6b)
+      this._round = 0;
+      this._dayReset = null;
       this._baseSha = base;
       this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
       this._picker = false;
@@ -485,7 +486,7 @@ export class EdApp extends LitElement {
     saveMetaEdits(patch, this._characterId); // overlay: always-on autosave, instant, no permissions
     // Local edits are now ahead of the last GitHub commit until the next Save.
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // A view changed the character's item list. Same flow as meta: replace the
@@ -496,7 +497,7 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, items };
     saveItemEdits(items, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // Drink/Use a consumable potion (plans/PLAN-POTIONS.md). The engine decides what
@@ -575,12 +576,56 @@ export class EdApp extends LitElement {
   // A view changed the character's wealth (coin counts / gems). Same inputs-only
   // flow: replace the wealth input, persist the overlay, mark the file dirty, and
   // re-derive so the totals recompute (data flows down).
+  // The round start/end signal (PLAN-SPELLS §6.1 / 6b). Session-only, never
+  // persisted — like knockdown. Each Initiative roll ticks the active self-cast
+  // set: decrement remaining rounds and drop the ones that expire, then re-derive
+  // so the fold and the Active-effects card update.
+  _advanceRound() {
+    this._round = (this._round ?? 0) + 1;
+    if (this._activeSpells?.length) {
+      this._activeSpells = tickActiveSpells(this._activeSpells);
+      this._model = this._derive();
+    }
+  }
+
+  // A self-cast sustained spell landed: build its active record (sustained
+  // effects + round countdown) from the catalog and the caster's Spellcasting
+  // rank, and add it to the session set — a re-cast of the same spell refreshes
+  // it. The engine folds it into derived values; nothing is persisted.
+  _activateSpell(detail) {
+    const name = detail?.name;
+    const spell = this._rules?.spellsFile?.spells?.[name];
+    if (!spell) return;
+    const entry = buildActiveSpell(spell, this._spellcastingRank(), {
+      extraPicks: detail?.extraPicks ?? [],
+      successLevels: detail?.successLevels ?? 0,
+    });
+    this._activeSpells = [...(this._activeSpells ?? []).filter((s) => s.name !== name), entry];
+    this._model = this._derive();
+  }
+
+  _spellcastingRank() {
+    for (const d of this._character?.disciplines ?? []) {
+      const t = (d.talents ?? []).find((x) => x.name === 'Spellcasting');
+      if (t) return t.rank ?? 0;
+    }
+    return 0;
+  }
+
   _editWealth(wealth) {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
+  }
+
+  _editSpells(spells) {
+    if (!this._character || !spells) return;
+    this._character = { ...this._character, spells };
+    saveSpellEdits(spells, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
   }
 
   // A trade (plans/PLAN-TRADE-ITEMS.md): the Equipment view computes the next
@@ -594,20 +639,138 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, items, wealth };
     saveTradeEdits({ items, wealth }, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
-  // A view changed the character's current health (damage / wounds / recovery
-  // tests used / knocked-down state). Same inputs-only flow: merge the patch
-  // into the health inputs, persist the overlay, mark the file dirty, and
-  // re-derive so the standing (conscious / unconscious / dead) and headroom
-  // recompute from the new damage. The overlay always stores the FULL merged
-  // health object — a partial patch (e.g. `knockedDown: true`) must never
-  // replace the recorded damage/wounds on the next replay.
+  // The single derive call site for the app layer: fold the session-only
+  // knocked-down flag into the pure model derivation (it is never stored; the
+  // engine stays pure and DOM-free — the flag is just another input).
+  _derive() {
+    return deriveModel(this._character, this._rules, {
+      knockedDown: this._knockedDown,
+      activeSpells: this._activeSpells ?? [],
+    });
+  }
+
+  // Session-only Knocked Down state (decision I, PLAN-END-OF-DAY-RESET): the
+  // knockdown test resolves to a down/up boolean here, and the "Stand up"
+  // buttons clear it — the fact is never written to the character, only the
+  // derived effects (defense fold / Active Effects / combat conditions) update.
+  _setKnockedDown(down) {
+    if (!this._character) return;
+    this._knockedDown = !!down;
+    this._model = this._derive();
+  }
+
+  // New-day reset (PLAN-END-OF-DAY-RESET.md) — the SINGLE flow for both hitpoints.
+  // Opening only records the pending reset; the ed-day-reset modal owns the
+  // sequential spend loop (decision F) and its finalize clears combat scratch +
+  // unarms the healing aid (decision H). The engine never decides the spend — the
+  // pure endOfDayResetPlan helper only reports what a reset *could* spend; the
+  // spend applier reuses the existing rolled Recovery-test path (decisions A/B/K).
+  _openDayReset({ source } = {}) {
+    if (!this._character) return;
+    this._dayReset = { source: source ?? null, roll: null };
+  }
+
+  _dayResetCancel() {
+    this._dayReset = null;
+  }
+
+  // The embedded roll's Escape / ✕ / OK-without-applying: drop back to the
+  // modal's stats state (the same recovery is one click away again).
+  _dayResetDismissRoll() {
+    if (!this._dayReset) return;
+    this._dayReset = { ...this._dayReset, roll: null };
+  }
+
+  // Decision F: a damage-heal spend is a ROLLED Recovery test through the SAME
+  // path a normal Recovery test uses (armed healing-aid bonus included, decision
+  // K). The roll stays EMBEDDED in the day-reset modal (`.roll` pushed down with
+  // the modal) so the remaining-recoveries / Damage / Wounds readout stays on
+  // screen while the roll lands; the spend loop never swaps modals.
+  _dayResetSpendDamage() {
+    const plan = this._dayResetPlan();
+    if (!plan.damageSpendable || this._toughnessStep == null) return;
+    const config = this._rollConfig({
+      label: 'Recovery test',
+      step: this._toughnessStep,
+      apply: { action: 'recovery-heal', label: 'Heal this amount' },
+    });
+    if (!config) return;
+    this._dayReset = { ...this._dayReset, roll: config };
+  }
+
+  // Decision C/F: at 0 Damage a spent recovery removes exactly one Wound, flat —
+  // no roll. Applies through the normal inputs-only health path; the modal stays
+  // open and re-renders the updated plan while the loop can continue, then the
+  // reset finalizes once nothing more is spendable.
+  _dayResetSpendWound() {
+    const plan = this._dayResetPlan();
+    if (!plan.woundSpendable) return;
+    const cur = this._character.resources?.health ?? {};
+    this._editHealth(applyHealth(cur, { wounds: -1, recoveriesUsed: 1 }));
+    this._dayResetAfterSpend();
+  }
+
+  // Auto-finalize the day reset once the spend loop has nothing left to spend:
+  // recoveries exhausted, or Damage/Wounds already cleared, or the only remaining
+  // spend needs a roll the character has no Toughness step for. Mirrors the
+  // modal's offer (data down): while a spend is still on offer, the loop keeps
+  // running; otherwise the reset completes on its own (plan: "after the spend
+  // loop, the reset finalizes with recoveriesUsed = 0").
+  _dayResetAfterSpend() {
+    if (!this._dayReset) return;
+    const plan = this._dayResetPlan();
+    const canKeepSpending =
+      (plan.damageSpendable && this._toughnessStep != null) || plan.woundSpendable;
+    if (canKeepSpending) return;
+    this._dayResetFinalize();
+  }
+
+  // Decision H: finalize clears the armed healing aid directly (never via
+  // `_editHealth`'s used→0 transition), ends the session knockdown, clears the
+  // character's combat scratch (armed options, situations, charms, aim/target —
+  // weapon/talent picks preserved, decisions D/G), then resets recoveries to 0.
+  _dayResetFinalize() {
+    if (!this._character) return;
+    this._pendingUse = null;
+    this._knockedDown = false;
+    const combatEl = this.renderRoot?.querySelector('ed-combat');
+    clearCombatScratch(this._characterId, combatEl);
+    const cur = this._character.resources?.health ?? {};
+    if ((Number(cur.recoveriesUsed) || 0) !== 0) this._editHealth({ recoveriesUsed: 0 });
+    this._dayReset = null;
+    this._showNotice("New day — Recovery tests reset and the day's combat options cleared.");
+  }
+
+  // Pure engine decision-support for the reset modal (data flows down; the UI
+  // never computes spendability).
+  _dayResetPlan() {
+    const cur = this._character?.resources?.health ?? {};
+    const maxRec = this._model?.characteristics?.recoveries?.value ?? null;
+    return endOfDayResetPlan(cur, maxRec);
+  }
+
+  // The rolled damage-heal spend needs a Toughness step (the Recovery test step);
+  // without one the offer stays unavailable even when a spend would be spendable.
+  get _toughnessStep() {
+    return (this._model?.attributes ?? []).find((a) => a.name === 'Toughness')?.step ?? null;
+  }
+
+  // A view changed the character's current health inputs (damage / wounds /
+  // recovery tests used). Same inputs-only flow: merge the patch into the health
+  // inputs, persist the overlay, mark the file dirty, and re-derive so the
+  // standing (conscious / unconscious / dead) and headroom recompute from the
+  // new damage. The overlay always stores the FULL merged health object — a
+  // partial patch must never replace the recorded damage/wounds on the next
+  // replay. `knockedDown` is NOT a health input: it is session-only state
+  // (decision I) and is stripped here so no caller can accidentally persist it.
   _editHealth(health) {
     if (!this._character || !health) return;
     const prevUsed = Number(this._character.resources?.health?.recoveriesUsed) || 0;
     const merged = { ...(this._character.resources?.health || {}), ...health };
+    delete merged.knockedDown; // session-only; never a persisted health input
     // New-day reset: recoveries drop from used back to 0 — the armed potion boost
     // expires with the day (an incidental 0→0 wound-heal must not clear it).
     if (prevUsed > 0 && (Number(merged.recoveriesUsed) || 0) === 0) this._pendingUse = null;
@@ -620,7 +783,7 @@ export class EdApp extends LitElement {
     };
     saveHealthEdits(merged, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // The Karma ledger (plans/PLAN-LEGEND-KARMA-RITUAL-LOG.md): the stored inputs are
@@ -687,7 +850,7 @@ export class EdApp extends LitElement {
     };
     saveKarmaEdits(nextKarma, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
     if (this._roll?.karma) {
       const derived = this._model?.characteristics?.karma?.available ?? null;
       this._roll = { ...this._roll, karma: { ...this._roll.karma, available: derived } };
@@ -710,7 +873,7 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, notes };
     saveNotesEdits(notes, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // A view replaced the character's dated history timeline. Same flow as notes.
@@ -719,7 +882,7 @@ export class EdApp extends LitElement {
     this._character = { ...this._character, history };
     saveHistoryEdits(history, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // A view replaced the character's Legend-earned entries (PLAN-NOTES-TAB,
@@ -738,7 +901,7 @@ export class EdApp extends LitElement {
     };
     saveLegendEdits(earned, this._characterId);
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // Rank editing guard (PLAN-RANK-EDITING §3.3): re-audit a *clone* carrying the
@@ -797,7 +960,7 @@ export class EdApp extends LitElement {
       this._characterId,
     );
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // A view bumped a skill's rank (edit mode). Same inputs-only flow as talents:
@@ -819,7 +982,7 @@ export class EdApp extends LitElement {
       this._characterId,
     );
     this._markDirty();
-    this._model = deriveModel(this._character, this._rules);
+    this._model = this._derive();
   }
 
   // A custom-item delta from the manager modal (PLAN-CUSTOM-ITEMS §5.3). The
@@ -844,7 +1007,7 @@ export class EdApp extends LitElement {
         ...this._rules,
         customItemsFile: applyCustomEdits(this._rules.customItemsCommittedFile, loadCustomEdits()),
       };
-      this._model = deriveModel(this._character, this._rules);
+      this._model = this._derive();
       return;
     }
     if (action !== 'save') return;
@@ -898,7 +1061,7 @@ export class EdApp extends LitElement {
         customItemsCommittedFile: committed,
         customItemsFile: applyCustomEdits(committed, loadCustomEdits()),
       };
-      this._model = deriveModel(this._character, this._rules);
+      this._model = this._derive();
     } catch (e) {
       this._saveError = `Couldn't refresh custom items: ${e?.message ? String(e.message) : String(e)}`;
     }
@@ -922,9 +1085,57 @@ export class EdApp extends LitElement {
   // (KNOCKED_DOWN_EFFECT) — a static number is never typed here, and the
   // penalty is applied at roll time, never folded into a stored/derived stat.
   _rollTimeMods({ kind } = {}) {
-    if (!this._character?.resources?.health?.knockedDown) return [];
+    if (!this._knockedDown) return [];
     if (kind === 'karma') return [];
     return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
+  }
+
+  // Builds the roll modal's config ('ed-roll' dispatch replaces its imperative
+  // body). A recovery roll made while a step-boost is armed rolls at the bumped
+  // step (Booster/Healing +8) — the dice and the log then show the boosted step.
+  // The +N comes from the armed potion's catalog data, never a view literal.
+  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim }) {
+    let rollStep = step;
+    const recBonus = armedRecoveryBonus(this._pendingUse);
+    if (apply?.action === 'recovery-heal' && recBonus.stepBonus) rollStep += recBonus.stepBonus;
+    const stepRow = this._model?.stepByNumber?.[rollStep];
+    if (!stepRow) return null;
+    // Resolve the Karma die's step row (D6) so the modal can offer +D6. A
+    // set-dice roll (True Shot) carries `maxDice`/`rank` for the extra-Karma
+    // stepper and top-up; they default so ordinary rolls stay single-die.
+    const karmaCtx =
+      karma?.step != null && this._model?.stepByNumber?.[karma.step]
+        ? {
+            grants: karma.grants,
+            available: karma.available,
+            stepRow: this._model.stepByNumber[karma.step],
+            maxDice: karma.maxDice ?? 1,
+            rank: karma.rank ?? null,
+          }
+        : null;
+    // Rolling the Karma die IS spending a point of Karma: the Overview's Karma
+    // roll has no +D6 toggle (it is the die), so charge the spend here. Charge,
+    // no refund (owner decision) — each button click opens a fresh roll
+    // interaction.
+    if (kind === 'karma') this._editKarma({ spend: 1 });
+    return {
+      rollId: uid(),
+      label,
+      stepRow,
+      karma: karmaCtx,
+      apply: apply ?? null,
+      difficulty: difficulty ?? null,
+      // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
+      // the universal Knocked Down −3 (every test, Karma die only excluded)
+      // is added after — it applies to every roll, combat or not.
+      mods: [...(mods ?? []), ...this._rollTimeMods({ kind, apply })],
+      // Deferred Strain for a set-dice roll — charged at the modal's commit
+      // (see the `ed-strain` handler), 0 for ordinary rolls (already paid).
+      strain: strain ?? 0,
+      // An aim roll (Mystic Aim): the modal takes the target's defence as input,
+      // rolls the talent vs it, and resolves Hit/Miss. `aim` carries { vs, strain }.
+      aim: aim ?? null,
+    };
   }
 
   disconnectedCallback() {
@@ -1104,7 +1315,7 @@ export class EdApp extends LitElement {
       const { character, rules, base } = await loadCharacter(this._characterId);
       this._character = character;
       this._rules = rules;
-      this._model = deriveModel(character, rules);
+      this._model = this._derive();
       this._baseSha = base;
       this._dirty = hasCustomPendingEdits();
       this._saveError = null;
@@ -1132,7 +1343,7 @@ export class EdApp extends LitElement {
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
-        return html`<div class="stub"><span class="big">✦</span>Spellbook — matrices and spells by circle. Coming soon.</div>`;
+        return html`<ed-spells .model=${m} .editMode=${this._editMode} .arming=${this._arming()} .characterId=${this._characterId}></ed-spells>`;
       case 'equipment':
         return html`<ed-equipment
           .model=${m}
@@ -1268,7 +1479,7 @@ export class EdApp extends LitElement {
             }}
           ></ed-character-picker>`
         : ''}
-      ${this._roll
+      ${this._roll && !this._dayReset
         ? html`<ed-roll-modal
             .rollId=${this._roll.rollId}
             .label=${this._roll.label}
@@ -1314,6 +1525,18 @@ export class EdApp extends LitElement {
             }}
             @close=${() => (this._confirmSwitch = false)}
           ></ed-confirm>`
+        : ''}
+      ${this._dayReset
+        ? html`<ed-day-reset
+            .plan=${this._dayResetPlan()}
+            .canRoll=${this._toughnessStep != null}
+            .roll=${this._dayReset.roll ?? null}
+            @roll=${() => this._dayResetSpendDamage()}
+            @roll-dismiss=${() => this._dayResetDismissRoll()}
+            @spend-wound=${() => this._dayResetSpendWound()}
+            @reset=${() => this._dayResetFinalize()}
+            @close=${() => this._dayResetCancel()}
+          ></ed-day-reset>`
         : ''}
       <footer>Earthdawn Character Sheet : Created by Odenson : Inspired by ED4<ed-changelog></ed-changelog><ed-homebrew .rules=${this._model?.homebrewRules ?? []}></ed-homebrew></footer>
       ${this._saveError

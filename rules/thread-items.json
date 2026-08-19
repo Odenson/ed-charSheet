@@ -1,6 +1,6 @@
 {
-  "schema": "ed-thread-items/1",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "schema": "ed-thread-items/2",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "source": "Earthdawn 4E Gamemaster's Guide — the Thread Items chapter (design + examples, pp. 197-236) and Player's Guide (weaving threads to magic items, pp. 220-225). The reference CATALOG: each thread item is a multi-rank magic item — a character weaves Legend-charged threads to it, and each Thread Rank unlocks the effects listed for that rank and below. Per-rank mechanics live in `effects` arrays in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does item effects; a rank's effect replaces the previous rank's effect on the same target (never added together). Summaries are original wording, no verbatim rulebook prose; Key Knowledge text is reference data (what the owner must learn).",
   "notes": {
     "ownership": "A character owns a thread item by name in data/character.json `items` (e.g. `{ name, equipped, threadRank }`); `threadRank` is the INPUT (how many ranks woven). All derived values — active effects, Legend spent — come from it and the tier's cost progression.",
@@ -349,7 +349,7 @@
         "source": "User custom thread item (GMG-style, not from the rulebook)",
         "description": "The dark archer is a feared aggressor that strikes hard and without warning. This armour enhances the archer that is a heavy hitter with good strength due to the heavy hide construction. Without a thread it is treated as normal hide armor.",
         "rankLimit": 4,
-        "weight": "20 lb",
+        "weight": { "amount": 20, "unit": "lb" },
         "cost": 4650,
         "availability": "Rare",
         "image": "data/dark-arch-arm.png"
@@ -744,7 +744,7 @@
         "damageStep": 5,
         "shortRange": "2-30",
         "longRange": "31-60",
-        "weight": "15 lb",
+        "weight": { "amount": 15, "unit": "lb" },
         "cost": 4650,
         "availability": "Rare",
         "image": "data/Orc-Stinger.png"

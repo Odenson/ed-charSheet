@@ -35,9 +35,9 @@ const baseCharacter = () => ({
   items: [{ name: 'Bracers of Aras', equipped: true, threadRank: 3 }],
 });
 
-test('real thread-items catalog: schema ed-thread-items/1 with Bracers of Aras', () => {
+test('real thread-items catalog: schema ed-thread-items/2 with Bracers of Aras', () => {
   const catalog = read('thread-items.json');
-  assert.equal(catalog.schema, 'ed-thread-items/1');
+  assert.equal(catalog.schema, 'ed-thread-items/2');
   assert.ok(catalog.tiers);
   const item = catalog.items['Bracers of Aras'];
   assert.ok(item);

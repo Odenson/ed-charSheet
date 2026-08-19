@@ -4,7 +4,7 @@
 // the full save → read-after-write loop runs offline:
 //
 //   POST /save        { character, id } → write data/characters/<id>.json (ed-character/1)
-//   POST /save-items  { items, delete } → merge  data/custom-items.json (ed-items/2)
+//   POST /save-items  { items, delete } → merge  data/custom-items.json (ed-items/3)
 //
 // No Cloudflare, no GitHub, no secrets: writes land in the gitignored local
 // working copies that store.js already reads off-Pages, and any/missing
@@ -66,7 +66,7 @@ const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/; // mirrors worker.js isValidId
 const CHARACTERS_DIR = 'data/characters';
 const ITEMS_STORE = 'data/custom-items.json';
 const FRESH_CATALOG = {
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
   source: 'custom',
   notes: 'Player-created items, folded into rules/custom-items.json on dev by CI.',

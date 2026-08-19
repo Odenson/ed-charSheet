@@ -3,7 +3,7 @@
 // §6, Phase 6).
 //
 // Mirrors the player-created custom-item catalog (`data/custom-items.json`,
-// ed-items/2) from the `character-data` branch into `rules/custom-items.json` on
+// ed-items/3) from the `character-data` branch into `rules/custom-items.json` on
 // the app's `dev` branch — durability/versioning only. The app never depends on
 // the fold for availability: the live read is the branch (store.js); the bundled
 // `rules/custom-items.json` is only the offline fallback. Runs from GitHub

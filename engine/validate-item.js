@@ -1,4 +1,4 @@
-// engine/validate-item.js — pure, DOM-free validation for the ed-items/2 custom
+// engine/validate-item.js — pure, DOM-free validation for the ed-items/3 custom
 // item catalog (plans/PLAN-CUSTOM-ITEMS.md). The single gate that anything landing
 // in rules/custom-items.json must pass, used in three runtimes: the UI (blocks
 // Save with inline errors), the serverless worker (POST /save-items, fail-closed),
@@ -32,11 +32,12 @@ export const EFFECT_TYPES = [
   'attack-modifier',
   'test-modifier',
   'characteristic-modifier',
+  'duration-modifier',
   'note',
 ];
 
 const OPERATIONS = new Set(['add', 'subtract', 'set']);
-const MEASURES = new Set(['value', 'step', 'result', 'rating', 'rank', 'dice', 'points', 'yards', 'count']);
+const MEASURES = new Set(['value', 'step', 'result', 'rating', 'rank', 'dice', 'points', 'yards', 'count', 'rounds', 'minutes', 'hours']);
 const CONDITIONS = new Set(['always', 'situational', 'on-success']);
 const STACKING = new Set(['cumulative', 'highest', 'replace', 'unique']);
 const DURATIONS = new Set(['permanent', 'sustained', 'rounds', 'test', 'encounter', 'special']);
@@ -77,6 +78,19 @@ const byteLen = (s) => new TextEncoder().encode(s).length;
 
 const isPlainObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 const isNonEmptyString = (x) => typeof x === 'string' && x.length > 0;
+
+const WEIGHT_UNITS = new Set(['lb', 'oz']);
+const validWeight = (w) => {
+  if (w === null) return true;
+  if (!isPlainObject(w)) return false;
+  if (w.negligible === true) return true;
+  return (
+    WEIGHT_UNITS.has(w.unit) &&
+    typeof w.amount === 'number' &&
+    Number.isFinite(w.amount) &&
+    w.amount >= 0
+  );
+};
 
 // A catalog key may be any human item name, but never a path separator, control
 // character, or leading/trailing whitespace — it is a map key, never a path.
@@ -136,7 +150,7 @@ function checkOptionalEffectFields(e, at, errors) {
 const push = (errors, message) => errors.push(message);
 
 /**
- * Validate one item against the ed-items/2 shape + taxonomy.
+ * Validate one item against the ed-items/3 shape + taxonomy.
  *
  * @param {string} name   the item's catalog key
  * @param {object} item   the item: `{ kind, living?, ref?, effects?, presentation? }`
@@ -154,7 +168,9 @@ export function validateItem(name, item) {
     else {
       if (item.ref.cost !== undefined && !(typeof item.ref.cost === 'number' && item.ref.cost >= 0))
         push(errors, `ref.cost: must be a non-negative number (sp)`);
-      for (const k of ['weight', 'availability', 'description', 'category', 'range', 'shortRange', 'longRange']) {
+      if (item.ref.weight !== undefined && !validWeight(item.ref.weight))
+        push(errors, `ref.weight: must be null, { negligible: true }, or { amount >= 0, unit: 'lb' | 'oz' }`);
+      for (const k of ['availability', 'description', 'category', 'range', 'shortRange', 'longRange']) {
         if (item.ref[k] !== undefined && typeof item.ref[k] !== 'string')
           push(errors, `ref.${k}: must be a string`);
       }
@@ -183,7 +199,7 @@ export function validateItem(name, item) {
 }
 
 /**
- * Validate a whole custom-items file (ed-items/2) — the shape the worker writes
+ * Validate a whole custom-items file (ed-items/3) — the shape the worker writes
  * to `character-data` and the fold job mirrors into `rules/custom-items.json`.
  *
  * @param {object} file `{ schema, effectTaxonomy?, source?, notes?, items }`
@@ -193,7 +209,7 @@ export function validateItem(name, item) {
 export function validateItemsFile(file, { maxItems = MAX_ITEMS, maxTotalBytes = MAX_FILE_BYTES } = {}) {
   const errors = [];
   if (!isPlainObject(file)) return { ok: false, errors: ['file: must be an object'] };
-  if (file.schema !== 'ed-items/2') push(errors, `schema: must be "ed-items/2"`);
+  if (file.schema !== 'ed-items/3') push(errors, `schema: must be "ed-items/3"`);
   if (!isPlainObject(file.items)) return { ok: false, errors: [...errors, 'items: must be an object'] };
 
   const entries = Object.entries(file.items);

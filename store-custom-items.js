@@ -39,7 +39,7 @@ function messageForCode(code) {
  * is required (the worker fails closed) — a missing key throws `no_key` before
  * any request. `deleteNames` lists catalog entries to remove; the worker merges
  * `items` onto `data/custom-items.json` (custom wins on a canon-name collision),
- * applies the deletes, and commits the whole ed-items/2 file to character-data.
+ * applies the deletes, and commits the whole ed-items/3 file to character-data.
  */
 export async function saveCustomItems(items, { endpoint = DEFAULT_ITEMS_ENDPOINT, saveKey, deleteNames = [] } = {}) {
   if (!saveKey) throw new SaveError('no_key', 'Enter your save key to save to GitHub.');

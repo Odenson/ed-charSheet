@@ -1,7 +1,7 @@
 {
   "schema": "ed-disciplines/1",
   "source": "Earthdawn 4E Player's Guide — Disciplines. Mechanics distilled into structured data; no verbatim rulebook prose. Talent names normalized to match rules/talents.json and data/character.json (e.g. rulebook 'Missile Weapons' -> 'Missile Weapon', 'Thread Weaving (Arrow Weaving)' -> 'Thread Weaving (Archer)').",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "notes": [
     "Each circle lists only what it ADDS. The engine applies effects from every circle up to the character's current circle.",
     "Progressive bonuses (e.g. Physical Defense +1/+2/+3 at circles 2/6/8) use stacking:highest so only the largest applies rather than summing.",

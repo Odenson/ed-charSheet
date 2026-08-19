@@ -161,7 +161,7 @@ test('overlay: corrupt or wrong-shape storage reads as null (never blocks loadin
 });
 
 test('applyCustomEdits merges edits, custom wins, delete applies last', () => {
-  const file = { schema: 'ed-items/2', items: { Keep: ITEM, Both: ITEM, Old: ITEM } };
+  const file = { schema: 'ed-items/3', items: { Keep: ITEM, Both: ITEM, Old: ITEM } };
   const edited = { ...ITEM, kind: 'magic-item' };
   const next = applyCustomEdits(file, { items: { New: ITEM, Both: edited }, delete: ['Old', 'Both'] });
   assert.deepEqual(Object.keys(next.items).sort(), ['Keep', 'New']);
@@ -171,7 +171,7 @@ test('applyCustomEdits merges edits, custom wins, delete applies last', () => {
 });
 
 test('applyCustomEdits with no delta returns the file unchanged', () => {
-  const file = { schema: 'ed-items/2', items: {} };
+  const file = { schema: 'ed-items/3', items: {} };
   assert.equal(applyCustomEdits(file, null), file);
 });
 
@@ -250,7 +250,7 @@ const CUSTOM_ARMOR = {
 test('a custom armor item resolves from the merged catalog and its armor-modifier lands on the character', () => {
   const rules = {
     ...baseRules(),
-    customItemsFile: { schema: 'ed-items/2', effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)', source: 'custom', notes: '', items: { 'Boar Hide': CUSTOM_ARMOR } },
+    customItemsFile: { schema: 'ed-items/3', effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)', source: 'custom', notes: '', items: { 'Boar Hide': CUSTOM_ARMOR } },
   };
   const character = {
     meta: { name: 'Test' },
@@ -275,8 +275,8 @@ test('a custom armor item resolves from the merged catalog and its armor-modifie
 test('customCommittedCatalog stays the branch truth while customCatalog carries the overlay', () => {
   const rules = {
     ...baseRules(),
-    customItemsCommittedFile: { schema: 'ed-items/2', items: { 'Branch Only': CUSTOM_ARMOR } },
-    customItemsFile: { schema: 'ed-items/2', items: { 'Branch Only': CUSTOM_ARMOR, 'Pending Draft': CUSTOM_ARMOR } },
+    customItemsCommittedFile: { schema: 'ed-items/3', items: { 'Branch Only': CUSTOM_ARMOR } },
+    customItemsFile: { schema: 'ed-items/3', items: { 'Branch Only': CUSTOM_ARMOR, 'Pending Draft': CUSTOM_ARMOR } },
   };
   const character = {
     meta: { name: 'Test' },
@@ -296,7 +296,7 @@ test('customCommittedCatalog stays the branch truth while customCatalog carries 
 test('custom wins over a canon-name collision in the item catalog', () => {
   const rules = {
     ...baseRules(),
-    customItemsFile: { schema: 'ed-items/2', items: { 'Padded Cloth': { ...CUSTOM_ARMOR } } },
+    customItemsFile: { schema: 'ed-items/3', items: { 'Padded Cloth': { ...CUSTOM_ARMOR } } },
   };
   const character = {
     meta: { name: 'Test' },
@@ -316,7 +316,7 @@ test('custom wins over a canon-name collision in the item catalog', () => {
 test('unequipped custom items drop out of the active-effects fold', () => {
   const rules = {
     ...baseRules(),
-    customItemsFile: { schema: 'ed-items/2', items: { 'Boar Hide': CUSTOM_ARMOR } },
+    customItemsFile: { schema: 'ed-items/3', items: { 'Boar Hide': CUSTOM_ARMOR } },
   };
   const character = {
     meta: { name: 'Test' },

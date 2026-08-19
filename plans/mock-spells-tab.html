@@ -1,0 +1,363 @@
+<title>Spells Cast Workspace</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --page:#e9eaee; --bg-card:#f1f2f5; --bg-chip:#ffffff; --border:#e2e5ea;
+    --muted:#5a6472; --fg:#111418; --accent:#7a3e12; --accent-bg:#f6e9dc;
+    --karma:#3d6b4a; --karma-bg:#e7f0ea; --spell:#5b3fa6; --spell-bg:#efeafc;
+    --danger:#a63a2b;
+    --fs-eyebrow:0.62rem; --fs-fine:0.68rem; --fs-small:0.74rem; --fs-body:0.82rem;
+    --fs-value:0.95rem; --fs-title:1.1rem; --fs-hero:1.6rem;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#12151b; --bg-card:#1b1f27; --bg-chip:#232833; --border:#2c313b;
+      --muted:#93a0b3; --fg:#f0f3f7; --accent:#d9944e; --accent-bg:#3a2a17;
+      --karma:#82c39a; --karma-bg:#223029; --spell:#a99cf0; --spell-bg:#2b2547;
+      --danger:#e0846f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page:#12151b; --bg-card:#1b1f27; --bg-chip:#232833; --border:#2c313b;
+    --muted:#93a0b3; --fg:#f0f3f7; --accent:#d9944e; --accent-bg:#3a2a17;
+    --karma:#82c39a; --karma-bg:#223029; --spell:#a99cf0; --spell-bg:#2b2547;
+    --danger:#e0846f;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--page); color:var(--fg); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-size:var(--fs-body); line-height:1.5; margin:0; padding:26px 18px 56px;}
+  .wrap{max-width:900px; margin:0 auto;}
+  .lede{max-width:62ch; margin:0 0 20px;}
+  .lede h1{font-size:var(--fs-hero); font-weight:500; margin:0 0 8px; letter-spacing:-0.01em;}
+  .lede p{color:var(--muted); margin:0; font-size:var(--fs-body);}
+  .lede code{font-size:.9em;}
+
+  .frame{background:var(--page); border:1px solid var(--border); border-radius:14px; padding:14px;}
+  .tabbar{display:flex; gap:2px; margin:0 0 14px; border-bottom:1px solid var(--border); padding-bottom:2px;}
+  .tab{display:inline-flex; align-items:center; gap:6px; padding:7px 12px; font-size:var(--fs-small);
+    color:var(--muted); border:none; background:none; border-bottom:2px solid transparent; cursor:default;}
+  .tab.on{color:var(--fg); border-bottom-color:var(--spell);}
+  .tab .ico{opacity:.8;}
+
+  .top{display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px;}
+  .seg{display:inline-flex; background:var(--bg-card); border-radius:999px; padding:3px; gap:2px;}
+  .seg button{border:none; background:none; padding:6px 14px; border-radius:999px; font:inherit;
+    font-size:var(--fs-body); color:var(--muted); cursor:pointer;}
+  .seg button.on{background:var(--bg-chip); color:var(--fg); border:1px solid var(--border);}
+  .kchip{display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-fine); color:var(--muted);
+    background:var(--bg-chip); border:1px solid var(--border); border-radius:999px; padding:3px 10px;}
+  .kchip b{color:var(--karma); font-weight:500;}
+
+  h4{margin:0 0 6px; font-size:var(--fs-eyebrow); font-weight:500; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.05em;}
+  .mut{color:var(--muted);}
+  .card{background:var(--bg-card); border-radius:8px; padding:9px 11px;}
+
+  .layout{display:grid; grid-template-columns:0.82fr 1fr; gap:14px; align-items:start;}
+  @media(max-width:660px){ .layout{grid-template-columns:1fr;} }
+
+  /* LEFT: cast-type seg + spell list + description */
+  .ctseg{display:flex; gap:4px; flex-wrap:wrap; margin:0 0 10px;}
+  .ctseg button{border:1px solid var(--border); background:var(--bg-chip); color:var(--muted); border-radius:999px;
+    padding:4px 12px; font:inherit; font-size:var(--fs-small); cursor:pointer; display:inline-flex; gap:6px; align-items:center;}
+  .ctseg button.on{border-color:var(--spell); background:var(--spell-bg); color:var(--spell); font-weight:500;}
+  .ctseg button.soon{opacity:.5; cursor:not-allowed;}
+  .ctseg .soontag{font-size:8px; text-transform:uppercase; letter-spacing:.05em; border:1px solid var(--muted);
+    border-radius:999px; padding:0 4px; color:var(--muted);}
+  .attn{margin-left:auto; width:20px; height:20px; border-radius:50%; border:1px solid var(--border); background:none;
+    color:var(--muted); font-size:11px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .attn.on{border-color:var(--spell); background:var(--spell-bg); color:var(--spell);}
+  .cthint{font-size:var(--fs-fine); color:var(--muted); margin:0 0 8px; min-height:1.4em;}
+
+  .slist{background:var(--bg-card); border-radius:8px; overflow:hidden;}
+  .sitem{display:grid; grid-template-columns:16px 1fr auto 20px; gap:8px; align-items:center; width:100%;
+    padding:8px 11px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--fg);
+    font:inherit; font-size:var(--fs-small); cursor:pointer; text-align:left;}
+  .sitem:last-child{border-bottom:none;}
+  .sitem:hover{background:var(--bg-chip);}
+  .sitem.on{background:var(--spell-bg);}
+  .sitem .dot{width:9px; height:9px; border-radius:50%; background:var(--spell); opacity:0; }
+  .sitem.on .dot, .sitem.att .dot{opacity:1;}
+  .sitem.att:not(.on) .dot{background:var(--muted); opacity:.5;}
+  .sitem .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sitem .cr{font-size:var(--fs-eyebrow); color:var(--muted); font-variant-numeric:tabular-nums;}
+
+  .desc{margin-top:12px;}
+  .desc .body{background:var(--bg-card); border-radius:8px; padding:10px 12px; font-size:var(--fs-small);
+    line-height:1.55; color:var(--fg); min-height:96px;}
+
+  /* RIGHT: fast cast + detail */
+  .casthead{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; margin:0 0 8px;}
+  .casthead .nm{font-size:var(--fs-title); font-weight:500;}
+  .chip{font-size:var(--fs-small); padding:2px 10px; border-radius:999px; background:var(--spell-bg); color:var(--spell);}
+
+  .modeseg{display:inline-flex; background:var(--bg-card); border-radius:999px; padding:3px; gap:2px; margin:0 0 10px;}
+  .modeseg button{border:none; background:none; padding:5px 13px; border-radius:999px; font:inherit;
+    font-size:var(--fs-small); color:var(--muted); cursor:pointer;}
+  .modeseg button.on{background:var(--bg-chip); color:var(--fg); border:1px solid var(--border);}
+  .castcard{background:var(--bg-card); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px;}
+  .stepchips{display:flex; gap:6px; flex-wrap:wrap;}
+  .schip{font-size:var(--fs-eyebrow); color:var(--muted); background:var(--bg-chip); border:1px solid var(--border);
+    border-radius:999px; padding:2px 9px; display:inline-flex; gap:5px;}
+  .schip b{color:var(--fg); font-weight:500;}
+  .tgtrow{display:flex; align-items:center; gap:8px; font-size:var(--fs-small); color:var(--muted);}
+  .tgtrow input{width:52px; font:inherit; font-size:var(--fs-value); font-weight:500; text-align:center; color:var(--fg);
+    background:var(--bg-chip); border:1px solid var(--border); border-radius:6px; padding:3px 4px;}
+  .castbtn{font:inherit; font-size:var(--fs-body); font-weight:500; padding:9px 20px; border-radius:9px;
+    border:1px solid var(--karma); background:var(--karma-bg); color:var(--karma); cursor:pointer; display:inline-flex; gap:8px; align-items:center; align-self:flex-start;}
+  .castbtn:hover{filter:brightness(1.05);}
+  .castbtn .d{font-size:var(--fs-value);}
+
+  /* guided stepper log */
+  .glog{display:flex; flex-direction:column; gap:2px; margin-top:2px;}
+  .gstep{display:grid; grid-template-columns:20px 1fr auto; gap:8px; align-items:center; padding:7px 2px;
+    border-top:1px solid var(--border); font-size:var(--fs-small);}
+  .gstep:first-child{border-top:none;}
+  .gnum{width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+    font-size:var(--fs-fine); background:var(--bg-chip); border:1px solid var(--border); color:var(--muted);}
+  .gstep.ok .gnum{background:var(--karma-bg); border-color:var(--karma); color:var(--karma);}
+  .gstep.fail .gnum{background:light-dark(#f6e4e0,#3a2320); border-color:var(--danger); color:var(--danger);}
+  .gstep.pending{opacity:.55;}
+  .gmain .t{color:var(--fg);} .gmain .s{color:var(--muted); font-size:var(--fs-fine);}
+  .gres{font-variant-numeric:tabular-nums; font-weight:500;}
+  .gres.g{color:var(--karma);} .gres.b{color:var(--danger);}
+  .kprompt{grid-column:1/-1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--spell-bg);
+    border-radius:7px; padding:7px 9px; font-size:var(--fs-small); color:var(--spell); margin-top:4px;}
+  .kbtn{font:inherit; font-size:var(--fs-fine); font-weight:500; border:1px solid var(--spell); background:var(--bg-chip);
+    color:var(--spell); border-radius:6px; padding:3px 10px; cursor:pointer;}
+  .kbtn.ghost{border-color:var(--border); color:var(--muted); background:none;}
+  .stepthru{font-size:var(--fs-fine); color:var(--spell); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline dotted; align-self:flex-start;}
+
+  /* step-by-step (Option A) fallback */
+  .pipe{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .step{background:var(--bg-chip); border:1px solid var(--border); border-radius:8px; padding:9px 10px; display:flex; flex-direction:column; gap:6px;}
+  .step .lab{font-size:var(--fs-eyebrow); text-transform:uppercase; letter-spacing:.04em; color:var(--muted); display:flex; justify-content:space-between; gap:6px;}
+  .step .req{color:var(--spell);}
+  .roll{width:26px; height:26px; border-radius:50%; border:1px solid var(--karma); background:var(--karma-bg);
+    color:var(--karma); display:inline-flex; align-items:center; justify-content:center; font-size:var(--fs-fine); flex:none;}
+  .rollrow{display:flex; align-items:center; gap:8px;}
+  .ph2{color:var(--muted); border:1px dashed var(--muted); border-radius:6px; padding:0 8px; font-size:var(--fs-value);}
+
+  .detail{display:grid; grid-template-columns:auto 1fr auto 1fr; gap:6px 12px; font-size:var(--fs-small); margin-top:12px;
+    background:var(--bg-card); border-radius:8px; padding:11px 12px;}
+  .detail .k{color:var(--muted); font-size:var(--fs-eyebrow); text-transform:uppercase; letter-spacing:.03em; align-self:center;}
+  .detail .v{color:var(--fg);}
+  .full{grid-column:1/-1;}
+  .detail .sub{grid-column:1/-1; height:1px; background:var(--border); margin:2px 0;}
+
+  footer{color:var(--muted); font-size:var(--fs-small); max-width:64ch; margin-top:28px;}
+  footer b{color:var(--fg); font-weight:500;}
+  .qs{margin:14px 0 0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:7px;}
+  .qs li{font-size:var(--fs-small); color:var(--muted); padding-left:18px; position:relative;}
+  .qs li::before{content:"?"; position:absolute; left:0; color:var(--spell); font-weight:500;}
+</style>
+
+<div class="wrap">
+  <div class="lede">
+    <h1>Spells — cast workspace (A + C)</h1>
+    <p>Left picks the <b>cast type</b> then lists its spells, with the selected spell's full description beneath. Right is the fast single-click <b>Cast</b> from Option C, keeping Option A's detail grid. Click the cast-type pills and the spells to move around — it's live so we can refine it.</p>
+  </div>
+
+  <div class="frame">
+    <div class="tabbar">
+      <button class="tab"><span class="ico">▤</span>Overview</button>
+      <button class="tab"><span class="ico">◈</span>Disciplines</button>
+      <button class="tab"><span class="ico">◎</span>Combat</button>
+      <button class="tab on"><span class="ico">✦</span>Spells</button>
+      <button class="tab"><span class="ico">⚔</span>Equipment</button>
+    </div>
+    <div class="top">
+      <div class="seg"><button class="on">Cast</button><button>Grimoire</button></div>
+      <div class="kchip">Available Karma <b>18</b></div>
+    </div>
+
+    <div class="layout">
+      <!-- LEFT -->
+      <div>
+        <h4>Cast type</h4>
+        <div class="ctseg" id="ctseg">
+          <button class="on" data-ct="matrix">Matrix</button>
+          <button data-ct="grimoire">Grimoire</button>
+          <button data-ct="raw">Raw</button>
+          <button class="soon" data-ct="item">Item <span class="soontag">soon</span></button>
+        </div>
+        <p class="cthint" id="cthint"></p>
+        <div class="slist" id="slist"></div>
+        <div class="desc">
+          <h4>Description</h4>
+          <div class="body" id="desc"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+        <div class="casthead">
+          <span class="nm" id="rnm">Soul Armor</span>
+          <span class="chip" id="rmeta">Circle 1 · Matrix</span>
+        </div>
+        <div class="modeseg" id="modeseg">
+          <button class="on" data-mode="guided">Guided cast</button>
+          <button data-mode="steps">Step-by-step</button>
+        </div>
+
+        <div class="castcard">
+          <div class="stepchips" id="rchips"></div>
+
+          <div id="guided">
+            <div class="tgtrow">Casting vs Mystic Defence <input id="tgt" type="number" value="11" min="1"><span>(ask once per target)</span></div>
+            <button class="castbtn" id="castbtn" style="margin-top:10px"><span class="d">⚄</span><span id="castlbl">Cast Soul Armor</span></button>
+            <div class="glog" id="glog"></div>
+          </div>
+
+          <div id="steps" hidden>
+            <div class="pipe">
+              <div class="step"><span class="lab">Weave <span class="req" id="s1req">1</span></span><div class="rollrow"><span class="roll">⚄</span><span class="ph2">—</span></div><span class="s">DB+D6</span></div>
+              <div class="step"><span class="lab">Cast <span class="req">TMD</span></span><div class="rollrow"><span class="roll">⚄</span><span class="ph2">—</span></div><span class="s">Spellcasting</span></div>
+              <div class="step"><span class="lab">Effect</span><div class="rollrow"><span class="roll">⚄</span><span class="ph2" id="s3">—</span></div><span class="s" id="s3lbl">Mystic Armor</span></div>
+            </div>
+            <p class="s" style="margin:9px 0 0; color:var(--muted); font-size:var(--fs-fine)">Each step rolled and armed by hand — the original Option A flow, for full control and mid-cast karma.</p>
+          </div>
+        </div>
+
+        <div class="detail" id="detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <b>Guided cast</b> chains the steps but stops for the decisions you flagged: it asks the target number once, then rolls Weave → Cast → Effect, and on any roll that falls short it pauses to offer Karma (click <b>Cast</b> above to see the miss-and-Karma prompt). <b>Step-by-step</b> reverts to the Option A pipeline — three pills you roll and arm by hand. <b>Item</b> is parked as a future enhancement (pre-threaded item matrices). Placing a spell in a matrix (the ✦ toggle in the list) works anytime; learn/remove is edit-mode only. (Per §3.1 the matrix holds <b>no threads</b> — a matrix cast still forges the spell's required threads via Thread Weaving.)
+  </footer>
+</div>
+
+<script>
+  const SP = {
+    'Soul Armor':{cr:1,known:true,mx:'Standard',att:true,weave:'1',wdiff:'5/10',cast:'TMD',eff:'+3',efflbl:'Mystic Armor',
+      dur:'Rank minutes',rng:'10 yards',area:'N/A',thr:'1',succ:'Increase Duration (+2 minutes)',
+      extra:'+Duration (+2 min), +Effect (+2 Mystic Armor), +Range (+10 yards), +Target (+1)',
+      desc:'Enhances a target’s Mystic Armor. The magician draws jagged blue sigils of protection in the air and makes a Spellcasting test against the target’s Mystic Defence. On success a glimmering suit of blue chain mail appears and sinks into the body, adding +3 Mystic Armor.'},
+    'Shadow Meld':{cr:1,known:true,mx:'Standard',att:true,weave:'1',wdiff:'5/10',cast:'TMD',eff:'+4',efflbl:'Stealthy Stride',
+      dur:'Rank minutes',rng:'Touch',area:'—',thr:'1',succ:'Increase Duration (+2 minutes)',
+      extra:'+Duration (+2 min), +Effect (+2), +Target (+1)',
+      desc:'Wraps the target in clinging shadow, adding +4 to Stealthy Stride tests as they slip from patch of darkness to patch of darkness.'},
+    'Spirit Grip':{cr:1,known:true,mx:'—',att:false,weave:'0',wdiff:'5/10',cast:'TMD',eff:'WIL+2',efflbl:'Mystic / −2 Def',
+      dur:'2 rounds',rng:'Touch',area:'—',thr:'0',succ:'Increase Effect (+2 rounds)',
+      extra:'+Effect (+2 rounds), +Target (+1)',
+      desc:'Draws on the malevolent grip of restless spirits, reducing the target’s Defenses by 2 while spectral hands claw at them.'},
+    'Astral Spear':{cr:1,known:true,mx:'—',att:false,weave:'1',wdiff:'5/10',cast:'TMD',eff:'WIL+4',efflbl:'Mystic Defence',
+      dur:'1 round',rng:'40 yards',area:'—',thr:'1',succ:'Increase Effect (+2 Effect Step)',
+      extra:'+Effect (+2 Step), +Range (+10 yards)',
+      desc:'Weaves raw astral energy into a hurled spear of force that strikes against the target’s Mystic Defence.'},
+    'Arrow of Night':{cr:3,known:false,mx:'Standard',att:true,weave:'0',wdiff:'7/12',cast:'TMD',eff:'+6',efflbl:'missile dmg / −2',
+      dur:'2 rounds',rng:'Touch',area:'—',thr:'0',succ:'Increase Effect (+2 rounds)',
+      extra:'+Effect (+2 rounds), +Target (+1)',
+      desc:'Cloaks an arrow in strangling darkness: +6 to its missile Damage test and a −2 penalty to the victim’s next action as the shadow clings.'},
+    'Pain':{cr:3,known:false,mx:'—',att:false,weave:'0',wdiff:'7/12',cast:'TMD',eff:'3',efflbl:'temp Wounds',
+      dur:'Rank rounds',rng:'10 yards',area:'—',thr:'0',succ:'Increase Effect (+2)',
+      extra:'+Effect (+2), +Duration (+2 rounds)',
+      desc:'Floods the target’s nerves with excruciating agony, inflicting temporary Wounds and reducing their movement while the spell lasts.'},
+    'Desperate Spell (charm)':{cr:1,known:true,mx:'Charm',att:true,weave:'—',wdiff:'—',cast:'+6',efflbl:'Spellcasting',eff:'+6',
+      dur:'Instant',rng:'Self',area:'—',thr:'—',succ:'—',
+      extra:'One charge — recharges over time',
+      desc:'A silver-and-pearl charm that grants a burst of magic on activation: +6 to a Spellcasting test or +6 to a spell Effect test, once per charge.'}
+  };
+  const LISTS = {
+    matrix:{filter:n=>SP[n].att, hint:'Placed in a Standard Matrix — still forges its threads on cast (a matrix holds no threads); no matrix = full Thread Weaving on cast.'},
+    grimoire:{filter:()=>true, hint:'Any spell in the Disciplines\' lists — full thread weaving, no matrix needed.'},
+    raw:{filter:n=>SP[n].known, hint:'Any spell you\'ve learnt (in your grimoire) — raw, no matrix buffer; risks drawing Horror attention.'},
+    item:{filter:()=>false, hint:'', soon:true}
+  };
+  const ALL=['Soul Armor','Shadow Meld','Spirit Grip','Astral Spear','Arrow of Night','Pain'];
+  const $=s=>document.querySelector(s);
+  let ct='matrix', cur='Soul Armor', mode='guided';
+
+  function listFor(){ return ALL.filter(LISTS[ct].filter); }
+  function renderList(){
+    const L=LISTS[ct]; $('#cthint').textContent=L.hint;
+    const spells=listFor();
+    if(!spells.includes(cur)) cur=spells[0]||cur;
+    $('#slist').innerHTML=spells.map(n=>{
+      const s=SP[n];
+      return '<button class="sitem'+(n===cur?' on':'')+(s.att?' att':'')+'" data-sp="'+n+'">'
+        +'<span class="dot"></span><span class="nm">'+n+'</span><span class="cr">C'+s.cr+'</span>'
+        +'<span class="attn'+(s.att?' on':'')+'" data-att="'+n+'" title="Place / release from matrix">✦</span></button>';
+    }).join('') || '<div style="padding:14px 11px" class="mut">No spells of this cast type.</div>';
+    $('#slist').querySelectorAll('.sitem').forEach(b=>b.addEventListener('click',()=>{cur=b.dataset.sp; renderAll();}));
+    $('#slist').querySelectorAll('.attn').forEach(a=>a.addEventListener('click',e=>{
+      e.stopPropagation(); SP[a.dataset.att].att=!SP[a.dataset.att].att; renderAll();
+    }));
+  }
+  function renderDetail(){
+    const s=SP[cur];
+    $('#rnm').textContent=cur;
+    $('#rmeta').textContent='Circle '+s.cr+' · '+(ct.charAt(0).toUpperCase()+ct.slice(1));
+    $('#desc').textContent=s.desc;
+    $('#castlbl').textContent='Cast '+cur;
+    $('#s1req').textContent=s.thr;
+    $('#s3').textContent=s.eff; $('#s3lbl').textContent=s.efflbl;
+    $('#rchips').innerHTML=
+      '<span class="schip">Weave <b>'+s.weave+'</b></span>'+
+      '<span class="schip">Cast <b>'+s.cast+'</b></span>'+
+      '<span class="schip">Effect <b>'+s.eff+'</b></span>';
+    $('#detail').innerHTML=
+      '<span class="k">Effect</span><span class="v">'+s.eff+' '+s.efflbl+'</span>'+
+      '<span class="k">Threads</span><span class="v">'+s.thr+'</span>'+
+      '<span class="k">Duration</span><span class="v">'+s.dur+'</span>'+
+      '<span class="k">Range</span><span class="v">'+s.rng+'</span>'+
+      '<span class="k">Area</span><span class="v mut">'+s.area+'</span>'+
+      '<span class="k">Weave</span><span class="v">'+s.wdiff+'</span>'+
+      '<span class="sub"></span>'+
+      '<span class="k">Success</span><span class="v" style="grid-column:2/-1">'+s.succ+'</span>'+
+      '<span class="k">Extra</span><span class="v" style="grid-column:2/-1">'+s.extra+'</span>';
+    $('#glog').innerHTML='';
+  }
+  function renderAll(){ renderList(); renderDetail(); }
+
+  // cast-type pills (Item disabled)
+  $('#ctseg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    if(LISTS[b.dataset.ct].soon) return;
+    $('#ctseg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); ct=b.dataset.ct; renderAll();
+  }));
+  // guided vs step-by-step
+  $('#modeseg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    $('#modeseg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); mode=b.dataset.mode;
+    $('#guided').hidden = mode!=='guided'; $('#steps').hidden = mode!=='steps';
+  }));
+
+  // guided cast: chain rolls, pause for Karma on a miss
+  function step(cls,num,title,sub,res,rescls){
+    return '<div class="gstep '+cls+'"><span class="gnum">'+num+'</span>'
+      +'<span class="gmain"><span class="t">'+title+'</span><br><span class="s">'+sub+'</span></span>'
+      +'<span class="gres '+(rescls||'')+'">'+res+'</span></div>';
+  }
+  $('#castbtn').addEventListener('click',()=>{
+    const s=SP[cur], tgt=Number($('#tgt').value)||11;
+    const weave=6+s.cr+(Math.floor(Math.random()*6)+1);
+    const wdiff=Number((s.wdiff+'').split('/')[0])||5;
+    const cast=5+Math.floor(Math.random()*6)+1; // sometimes short of tgt, to show the prompt
+    let html=step('ok',1,'Weave threads','rolled '+weave+' vs '+wdiff+' — '+s.thr+' thread'+(s.thr==1?'':'s')+' woven','✓','g');
+    if(cast>=tgt){
+      html+=step('ok',2,'Spellcasting','rolled '+cast+' vs Mystic Defence '+tgt,'✓','g');
+      html+=step('ok',3,'Effect — '+s.efflbl,'result '+s.eff,s.eff,'g');
+    }else{
+      html+=step('fail',2,'Spellcasting','rolled '+cast+' vs Mystic Defence '+tgt+' — short by '+(tgt-cast),'✗','b');
+      html+='<div class="kprompt">Casting missed. Spend Karma to add a die? <span class="mut" style="color:var(--muted)">18 available</span>'
+        +'<button class="kbtn" id="ky">Spend 1 (+D6) ⚄</button><button class="kbtn ghost" id="kn">Let it fail</button></div>';
+      html+=step('pending',3,'Effect','waiting on the cast','—');
+    }
+    $('#glog').innerHTML=html;
+    const ky=$('#ky'); if(ky) ky.addEventListener('click',()=>{
+      const bonus=Math.floor(Math.random()*6)+1, tot=cast+bonus;
+      $('#glog').innerHTML=step('ok',1,'Weave threads','rolled '+weave+' vs '+wdiff,'✓','g')
+        +step('ok',2,'Spellcasting',''+cast+' +Karma '+bonus+' = '+tot+' vs '+tgt,tot>=tgt?'✓':'✗',tot>=tgt?'g':'b')
+        +step(tot>=tgt?'ok':'fail',3,'Effect — '+s.efflbl,tot>=tgt?'result '+s.eff:'cast failed',tot>=tgt?s.eff:'—',tot>=tgt?'g':'b');
+    });
+    const kn=$('#kn'); if(kn) kn.addEventListener('click',()=>{
+      $('#glog').innerHTML=step('ok',1,'Weave threads','rolled '+weave,'✓','g')
+        +step('fail',2,'Spellcasting','rolled '+cast+' vs '+tgt,'✗','b')
+        +step('fail',3,'Effect','cast failed','—','b');
+    });
+  });
+  renderAll();
+</script>

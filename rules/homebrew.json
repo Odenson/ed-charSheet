@@ -1,7 +1,7 @@
 {
   "schema": "ed-homebrew/2",
   "source": "Homebrew rules — optional campaign rules that override the standard Earthdawn 4E rulebooks. Authoring guide: docs/HOMEBREW-RULES.md. Each rule is pure data (inputs + plain-English notes); nothing here stores a derived value. A rule applies globally (every character) when `enabled` is true. A rule may `formula` (replace a rating with a term sum), `effects` (adjust values via the standard taxonomy, docs/EFFECT-TAXONOMY.md), and/or `set` (v2: override a registry target — karma.step / karma.maxCap / karma.ritualCost / legend.additionalTierShift — with a scalar or a race-keyed map). Refs resolve against the character (engine/characteristics.js); the set-target registry lives in store.js (HOMEBREW_SET_TARGETS).",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "note": "This file is loaded optionally (knacks/thread-items precedent): if it is absent the app behaves exactly as before. Rules ship `enabled: false` until the owner turns them on.",
   "rules": [
     {

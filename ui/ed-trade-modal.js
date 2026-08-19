@@ -10,9 +10,9 @@
 // primary button is autofocused when the action is allowed, Cancel otherwise);
 // theme-aware light+dark with two font weights; amounts are silver at copper
 // granularity (multiples of 0.1 sp) and never fabricated — an unparseable cost
-// resolves to 0 via engine/wealth.js parseCostSilver.
+// resolves to 0 via engine/wealth.js costSilver.
 import { LitElement, html, css } from 'lit';
-import { coinsSilver, gemsSilver, parseCostSilver } from '../engine/wealth.js';
+import { coinsSilver, gemsSilver, costSilver } from '../engine/wealth.js';
 import { PICKER_LABELS } from './picker.js';
 
 const sp = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
@@ -128,7 +128,7 @@ export class EdTradeModal extends LitElement {
   // Suggested price = the catalogue cost where it parses, else 0 (thread items
   // included — Decision D revised). The amount is silver at copper granularity.
   _suggested() {
-    return parseCostSilver(this.item?.ref?.cost);
+    return costSilver(this.item?.ref?.cost);
   }
   _page() {
     return this.mode === 'buy' ? 'buy' : 'sell';
@@ -260,7 +260,7 @@ export class EdTradeModal extends LitElement {
     const it = this.item ?? {};
     const kind = PICKER_LABELS[it.kind] || it.kind || 'item';
     const cat = it.ref?.category ? ` · ${it.ref.category}` : '';
-    const price = it.ref?.cost != null ? ` · ${sp(parseCostSilver(it.ref.cost))} sp catalogue` : '';
+    const price = it.ref?.cost != null ? ` · ${sp(costSilver(it.ref.cost))} sp catalogue` : '';
     return `${kind}${cat}${price}`;
   }
 

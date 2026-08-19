@@ -12,6 +12,7 @@ import {
   damageState,
   applyHealth,
   recoveriesRemaining,
+  endOfDayResetPlan,
   HEALTH_STATES,
   woundsFromHit,
   knockdownTriggered,
@@ -151,6 +152,46 @@ test('recoveriesRemaining: max minus used, clamped at 0 (a Recovery test with no
 test('recoveriesRemaining: an unknown max -> null, so the roll stays allowed (never a guess)', () => {
   assert.equal(recoveriesRemaining(3, null), null);
   assert.equal(recoveriesRemaining(3, undefined), null);
+});
+
+test('endOfDayResetPlan: 0 recoveries left → nothing spendable, damage/wounds clamped for display', () => {
+  const p = endOfDayResetPlan({ damage: 3, wounds: 1, recoveriesUsed: 3 }, 3);
+  assert.deepEqual(p, { remaining: 0, damage: 3, wounds: 1, damageSpendable: false, woundSpendable: false });
+});
+
+test('endOfDayResetPlan: damage > 0 → a rolled spend is offered; wound spend stays gated at 0 damage', () => {
+  const p = endOfDayResetPlan({ damage: 5, wounds: 2, recoveriesUsed: 1 }, 4);
+  assert.equal(p.remaining, 3);
+  assert.equal(p.damageSpendable, true);
+  assert.equal(p.woundSpendable, false);
+});
+
+test('endOfDayResetPlan: damage already 0, wounds > 0 → a flat wound spend is offered', () => {
+  const p = endOfDayResetPlan({ damage: 0, wounds: 4, recoveriesUsed: 2 }, 4);
+  assert.equal(p.remaining, 2);
+  assert.equal(p.damageSpendable, false);
+  assert.equal(p.woundSpendable, true);
+});
+
+test('endOfDayResetPlan: an unknown max → nothing spendable (never a guess)', () => {
+  const p = endOfDayResetPlan({ damage: 3, wounds: 0, recoveriesUsed: 0 }, null);
+  assert.equal(p.remaining, null);
+  assert.equal(p.damageSpendable, false);
+  assert.equal(p.woundSpendable, false);
+});
+
+// Decision A: a damage-heal recovery is a ROLLED Recovery test applied through
+// applyHealth — the result heals that much, and over-heal beyond remaining
+// damage is wasted by the clamp. Decision C/F: at 0 Damage a spent recovery
+// removes exactly one Wound, flat.
+test('applyHealth: a damage-heal result is clamped to remaining damage (over-heal wasted)', () => {
+  const next = applyHealth({ damage: 2, wounds: 1, recoveriesUsed: 0 }, { damage: -7, recoveriesUsed: 1 });
+  assert.deepEqual(next, { damage: 0, wounds: 1, recoveriesUsed: 1 });
+});
+
+test('applyHealth: at 0 damage a recovery removes exactly one wound (flat, 1-per-recovery)', () => {
+  const next = applyHealth({ damage: 0, wounds: 2, recoveriesUsed: 3 }, { wounds: -1, recoveriesUsed: 1 });
+  assert.deepEqual(next, { damage: 0, wounds: 1, recoveriesUsed: 4 });
 });
 
 // --- Wounds & knockdown (a wounding hit) -------------------------------------

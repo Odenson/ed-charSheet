@@ -17,7 +17,7 @@ const ENV = {
 
 // One valid catalog (source on character-data, mirror target on dev).
 const CATALOG = {
-  schema: 'ed-items/2',
+  schema: 'ed-items/3',
   effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
   source: 'custom',
   notes: 'Player-created items.',
@@ -163,7 +163,7 @@ test('target already identical → no-op, no PUT (diff-guard)', async () => {
 // --- validation abort -----------------------------------------------------------
 
 test('source fails the shared validator → aborted, issue opened, nothing written', async () => {
-  const bad = { schema: 'ed-items/2', items: { Junk: { kind: 'spaceship', effects: [] } } };
+  const bad = { schema: 'ed-items/3', items: { Junk: { kind: 'spaceship', effects: [] } } };
   let puts = 0;
   const mock = mockGitHub({
     ...readsContents('data/custom-items.json', canon(bad)),
@@ -273,7 +273,7 @@ test('upstream failure reading the source (500) → error + issue opened', async
 });
 
 test('issue creation itself failing still returns the fold error', async () => {
-  const bad = { schema: 'ed-items/2', items: { Junk: { kind: 'spaceship', effects: [] } } };
+  const bad = { schema: 'ed-items/3', items: { Junk: { kind: 'spaceship', effects: [] } } };
   const mock = mockGitHub({
     ...readsContents('data/custom-items.json', canon(bad)),
     'POST /issues': () => ({ status: 500, body: {} }),

@@ -17,7 +17,7 @@ for the `rules/thread-items.json` catalog.
 
 | Piece | File | Schema |
 |---|---|---|
-| Catalogue | `rules/thread-items.json` | `ed-thread-items/1` |
+| Catalogue | `rules/thread-items.json` | `ed-thread-items/2` |
 | Character ownership | `data/characters/<id>.json` → character `items[]` | `ed-character/1` |
 | Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v3 |
 | Legend cost tables | `rules/legend.json` → `costs.talentRank` | — |
@@ -26,8 +26,8 @@ The top-level shape of `rules/thread-items.json` is:
 
 ```jsonc
 {
-  "schema": "ed-thread-items/1",                 // Tier-1: don't rename fields
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "schema": "ed-thread-items/2",                 // Tier-1: don't rename fields
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "source": "Earthdawn 4E Gamemaster's Guide …", // provenance note
   "notes": { /* field-by-field commentary */ },
   "tiers": { "Novice": {"rankLimit": 4, "mysticDefenseRange": [8,12]}, /* … */ },

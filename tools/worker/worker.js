@@ -31,7 +31,7 @@
 // POST /save-items  { "items": { "<name>": <item> }, "delete"?: ["<name>", …] }
 //
 // The companion write endpoint for the player-created custom-item catalog
-// (plans/PLAN-CUSTOM-ITEMS.md): GET `data/custom-items.json` (ed-items/2) on the
+// (plans/PLAN-CUSTOM-ITEMS.md): GET `data/custom-items.json` (ed-items/3) on the
 // same branch, merge the posted items (custom wins on a canon-name collision),
 // apply the delete list, PUT it back — same bounded GET-sha → PUT 409-retry
 // contract as /save. Every item is validated by engine/validate-item.js (shared
@@ -94,7 +94,7 @@ export default {
 
     try {
       if (url.pathname === '/save-items') {
-        // Custom items are the shared catalog (ed-items/2). The delta shape and
+        // Custom items are the shared catalog (ed-items/3). The delta shape and
         // every posted item are validated first (fail fast, before any GitHub
         // call), and the merged file is re-checked before the PUT — see
         // upsertItems.
@@ -246,7 +246,7 @@ async function ensureIndexEntry(repo, branch, gh, charsDir, id, character) {
   console.error(JSON.stringify({ message: 'index ensure gave up (sha kept moving)', id }));
 }
 
-// Upsert custom items into the shared catalog at `itemsPath` (ed-items/2): GET
+// Upsert custom items into the shared catalog at `itemsPath` (ed-items/3): GET
 // the file, merge the posted `items` (custom wins on a name collision) and apply
 // the `delete` list, PUT it back — same bounded GET-sha → PUT 409-retry contract
 // as character saves. A missing file (first save) is created as a fresh catalog.
@@ -276,14 +276,14 @@ async function upsertItems(repo, branch, gh, itemsPath, delta, cors) {
 }
 
 // Read the custom-items catalog: `{ sha, file }` decoded from the contents API.
-// A 404 (catalog not created yet) yields a fresh empty ed-items/2 file with no sha.
+// A 404 (catalog not created yet) yields a fresh empty ed-items/3 file with no sha.
 async function readItemsFile(repo, itemsPath, branch, gh) {
   const res = await fetch(`${GITHUB}/repos/${repo}/contents/${itemsPath}?ref=${branch}`, { headers: gh });
   if (res.status === 404)
     return {
       sha: undefined,
       file: {
-        schema: 'ed-items/2',
+        schema: 'ed-items/3',
         effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v3)',
         source: 'custom',
         notes: 'Player-created items, folded into rules/custom-items.json on dev by CI.',

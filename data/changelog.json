@@ -6,6 +6,28 @@
   },
   "releases": [
     {
+      "version": "1.15.0",
+      "date": "2026-08-19",
+      "changes": [
+        {
+          "type": "added",
+          "text": "A new Spells tab for spellcasters. The Grimoire lists every spell you know, grouped by Discipline and Circle, with its full mechanics and a plain-English description; place a spell into one of your spell matrices with the ✦ toggle at any time, and learn or remove spells in edit mode. The complete Nethermancer spell list — all fifteen Circles — ships with its mechanics."
+        },
+        {
+          "type": "added",
+          "text": "Cast your spells step by step from the Spells tab. Choose a cast type — Matrix, Grimoire, or Raw — pick a spell and a target number, then roll Weave, Cast, and Effect through the usual dice modal, with Karma offered before each roll. Weaving forges the threads a spell needs (a failed weave forges none, and Cast stays locked until the required threads are woven); assigning extra threads and scoring extra successes apply the spell's Increase Effect / Increase Duration boosts, which fold into the Effect roll and the spell's duration."
+        },
+        {
+          "type": "added",
+          "text": "Sustained spells you cast on yourself now take effect on your sheet. A successful self-cast — Soul Armor's +3 Mystic Armour, say — folds into your derived values and appears in the Spells tab's Active effects list with the rounds it has left; rolling Initiative counts every active spell down one round and drops the ones that expire, and the Combat tab's Defence & Armour shows each active spell's contribution as its own badge."
+        },
+        {
+          "type": "changed",
+          "text": "Item cost and weight are now read from structured rule data instead of being parsed out of their printed price/weight text, so values stay accurate as the catalogue grows. Custom items move to the ed-items/3 schema, and the effect taxonomy is now v4 (a new duration-modifier for spell durations). Under the hood, the engine no longer recovers rule structure by reading display strings — a rule the engine consumes is a typed field, locked in as an architecture rule."
+        }
+      ]
+    },
+    {
       "version": "1.14.0",
       "date": "2026-08-17",
       "changes": [

@@ -110,6 +110,13 @@ new talents/spells becomes adding **data**, not code.
 The golden rule: **data flows down through render; events flow up through
 `dispatch`.** The UI never mutates state or computes game values directly.
 
+The engine's companion rule: **rules are read as structured data, never parsed
+from display text.** Rule inputs (effects, durations, steps, prices, weights)
+are typed fields in `rules/*.json`; the engine folds them onto values by their
+taxonomy `operation`/`measure`/`target`, and does **not** regex-parse
+human-facing strings (`summary`, `description`, `label`, printed `duration` /
+`price` / `weight` text) to recover structure. See §5.5.
+
 ---
 
 ## 4. Data model
@@ -201,6 +208,16 @@ reads and writes. Views subscribe to the slices they display.
 
 Four pure modules. Each is independently testable and lazy-loaded.
 
+> **LOCKED (Tier 1): the engine reads rule data as structured taxonomy, never
+> by regex.** No new engine logic may parse free-text strings
+> (`summary`/`description`/`label`, printed `duration`/`price`/`weight`) to
+> recover rule structure. A rule the engine must consume that arrives as prose
+> is a **schema gap**: the fix is a structured field in `rules/*.json` (a
+> taxonomy bump if the vocabulary changes — Tier 2), not a parser. Adding
+> regex-based rule parsing to the engine requires explicit owner sign-off
+> (CLAUDE.md, Tier 1). The existing regex parsing (§5.5) is grandfathered, not
+> a precedent.
+
 ### 5.1 Effect application + (later) a small expression evaluator
 The engine's modifier model is the taxonomy `effects` array (§4.2): it gathers
 active effects and folds them onto base values by `operation`/`measure`. Only
@@ -242,6 +259,28 @@ option, and what result properties to write.
 > A talent's action references its linked attribute + rank from `talents.json`;
 > the executor derives the step, rolls, and records the result. Adding a talent
 > needs no new action code — only its data entry.
+
+### 5.5 Reading rules — structured taxonomy, never regex (LOCKED)
+
+The engine's inputs are **data, not text**. Every rule fact the engine consumes
+is a typed field in a `rules/*.json` schema — an effect's
+`operation`/`measure`/`target`/`value`, a price in coins, a weight in pounds, a
+duration's count and unit — so the engine folds, compares, and resolves it
+without parsing prose. Human-facing strings (`summary`, `description`, `label`,
+the printed `duration` / `price` / `weight` spellings) are for **display only**;
+the engine never recovers structure from them with regex.
+
+A rule the engine must consume that currently arrives as free text is a
+**schema gap** — the fix is a structured field in `rules/*.json` (with a
+taxonomy bump if the vocabulary changes, Tier 2), never a parser. Regex-based
+rule parsing is **Tier 1** (CLAUDE.md): it re-decides how the engine reads the
+rules and needs explicit owner sign-off.
+
+Grandfathered deviations — present when this rule was written; to be migrated
+to structured fields, not copied:
+- `engine/spells.js` — `durationRounds` / `increaseEffectAmount` /
+  `increaseDurationRounds` / `increaseEffectSteps` regex-parse the printed
+  `duration` strings and `successes` labels from `spells.json`.
 
 ---
 
@@ -574,4 +613,10 @@ and its runbook.
   applies them. Only always-on, non-`gmDiscretion` effects auto-apply.
 - **Testing — DECIDED: `node --test`, zero deps.** Engine modules ship `*.test.js`
   run by `npm test` (Node's built-in runner), preserving the no-build ethos.
+- **Engine inputs — DECIDED: structured taxonomy, never regex.** The engine
+  reads rule data as typed, schema-tagged fields and never regex-parses
+  display strings (`summary`/`description`/`label`, printed `duration`/`price`/
+  `weight`) to recover structure. Regex-based rule parsing is a Tier-1 change
+  needing owner sign-off; the remaining grandfathered parser is
+  `engine/spells.js`, being migrated to structured fields. See §3, §5.5.
 ```

@@ -89,6 +89,37 @@ export function recoveriesRemaining(used, max) {
   return Math.max(0, max - (Number(used) || 0));
 }
 
+/**
+ * Decision-support for the new-day reset flow (PLAN-END-OF-DAY-RESET.md). PURE
+ * and never mutates: it only tells the UI what a day reset *could* spend. The
+ * spend itself always runs through the existing rolled Recovery-test / inputs
+ * path (decisions A/B/F) — damage-heals are ROLLED (never a flat 1-per-recovery),
+ * over-heal is wasted by the apply clamp, and a Wound is removed flat, one per
+ * recovery, only once Damage is already 0.
+ *
+ * @param {object} health current `resources.health` input object
+ * @param {number|null} maxRecoveries the derived `characteristics.recoveries.value`
+ * @returns {{
+ *   remaining: number|null,   // recoveries left; null when the max is unknown
+ *   damage: number,           // clamped, for display
+ *   wounds: number,           // clamped, for display
+ *   damageSpendable: boolean, // remaining > 0 && damage > 0  → a ROLLED spend is on offer
+ *   woundSpendable: boolean,  // remaining > 0 && damage === 0 && wounds > 0 → a FLAT spend
+ * }}
+ */
+export function endOfDayResetPlan(health, maxRecoveries) {
+  const damage = Math.max(0, Number(health?.damage) || 0);
+  const wounds = Math.max(0, Number(health?.wounds) || 0);
+  const remaining = recoveriesRemaining(health?.recoveriesUsed, maxRecoveries);
+  return {
+    remaining,
+    damage,
+    wounds,
+    damageSpendable: remaining != null && remaining > 0 && damage > 0,
+    woundSpendable: remaining != null && remaining > 0 && damage === 0 && wounds > 0,
+  };
+}
+
 // --- Wounds & knockdown (a wounding hit) --------------------------------------
 //
 // Owner-stated rules (plan plans/PLAN-WOUNDS-KNOCKDOWN.md):

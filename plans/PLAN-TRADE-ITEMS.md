@@ -22,9 +22,10 @@ below lock that down.
 
 ## Source of truth
 
-- Cost of an item: `rules/items.json` → `ref.cost` (a number in **silver**, or a display
-  string such as `"8 cp"`, `"100-175"`, `"5,000"`). Display formatting today lives in
-  `ui/ed-equipment.js:40 costText`.
+- Cost of an item: `rules/items.json` → `ref.cost` (a number in **silver**, always
+  a single value — schema `ed-items/3`; a range or cp string was collapsed to the
+  silver number at migration, per PLAN-STRUCTURED-COST-WEIGHT.md). Display formatting
+  lives in `ui/ed-equipment.js costText`.
 - Wealth model & coin math: `engine/wealth.js` (`COIN_DENOMINATIONS`, `coinsSilver`,
   `gemsSilver`, `GEM_RESALE`, `deriveWealth`).
 - Input plumbing: ed-app `_editWealth` / `_editItems` handlers; the Equipment view already
@@ -54,8 +55,9 @@ Out (explicitly kept out, flag if you want them in):
 
 ### A. Payment strategy for buying — *the* core mechanic
 
-The buy dialog shows the item, a **suggested price = the catalogue cost** (parsed to
-silver via `parseCostSilver`), and an **editable amount**. To cover it, the player
+The buy dialog shows the item, a **suggested price = the catalogue cost** (via
+`costSilver` — the catalogue's `ref.cost` is already a silver number), and an
+**editable amount**. To cover it, the player
 allocates payment from the wealth items they actually own — a payment grid listing
 every coin denomination they hold (copper…orichalcum) and every gem, each with its own
 qty stepper. The grid computes the running total using the engine's exported
@@ -125,9 +127,9 @@ owns (steppers over owned gems), never invents one.
 Only whole coins exist, so any fractional silver surfacing from a trade must be
 denominated in copper — **10 copper = 1 silver** (owner confirmed, WDYT #1). The
 dialog's amount field accepts silver at **copper granularity** (multiples of 0.1 sp);
-`parseCostSilver` results are honored at the same step (`"8 cp"` → 0.8 sp → 8 cp =
-exactly a copper count; `"100-175"` midpoint 137.5 sp → 1,375 cp; `"5,000"` → 5,000).
-A parse that would land under a whole copper rounds **up** to the nearest copper —
+`costSilver` results are honored at the same step (a catalogue `ref.cost` is already
+silver — `0.8` = exactly a copper count, `137.5` → 1,375 cp, `5000` → 5,000).
+A result that would land under a whole copper rounds **up** to the nearest copper —
 never a fabricated cheaper price.
 
 ### D. Thread items
@@ -164,8 +166,10 @@ is what persists.
 - The negotiated price. `character.json` has no `costPaid`, no `soldAt`, no trade
   ledger. On reload the price suggestion is *derived from the catalogue again* — the
   accepted price was a session fact, not a property of the item.
-- `parseCostSilver` is pure engine: numbers pass through, `"8 cp"` → 0.8, `"100-175"`
-  → 137.5, `"5,000"` → 5000, unparseable → 0. Display strings are **never written back**.
+- `costSilver` is pure engine: a number passes through (the catalogue's `ref.cost`
+  is already silver), anything else → 0 (never fabricated). No display strings are
+  ever written back. (The old `parseCostSilver` string parser, and the `"8 cp"` /
+  range / thousand-separator forms, were removed in PLAN-STRUCTURED-COST-WEIGHT.md.)
 
 **Why "shape is unchanged":** the file's top-level keys (`schema`, `items`, `wealth`,
 …) and every item/coin/gem record keep the exact `ed-character/1` shapes. A trade is
@@ -182,24 +186,22 @@ needs your explicit sign-off. Default plan: **no ledger** (see WDYT).
 **Tier 3 — free.** No Tier-1 invariant is touched: data still flows down through one
 `deriveModel`, events up via existing `dispatch`; the trade modal is view-local UI state
 (which item, which allocation) that is **not** a derived game value on the sheet; the
-pure engine gains only a parse helper (`parseCostSilver`) and keeps reusing its exported
-coin/gem totals; `character.json` and `rules/*.json` shapes and their `schema` tags are
+pure engine gains only a `costSilver` helper (schema `ed-items/3`; the catalog
+already stores silver numbers) and keeps reusing its exported coin/gem totals; `character.json` and `rules/*.json` shapes and their `schema` tags are
 untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
 
 ## Phases
 
 ### A. Engine & plumbing (data path first, testable standalone)
-- `engine/wealth.js`: add `parseCostSilver(cost)` (+ unit tests alongside the existing
-  wealth tests): number passthrough · `"N cp"`/`"N sp"` suffix handling · thousands
-  separators (`"5,000"`) · ranges (`"100-175"` → midpoint) · non-parseable → 0. **Pin the
-  fractional-silver path explicitly:** `"8 cp"` → 0.8 sp must resolve to **exactly 8
-  copper** (round *up* to the nearest copper, never a fabricated cheaper price), and a
-  range midpoint like 137.5 sp holds as 1,375 cp (C.5).
+- `engine/wealth.js`: ~~add `parseCostSilver(cost)`…~~ — **superseded.** The string
+  forms that helper parsed (`"8 cp"`, `"5,000"`, `"100-175"` ranges) were removed
+  when `rules/items.json` became `ed-items/3` (PLAN-STRUCTURED-COST-WEIGHT.md);
+  catalogue costs are now stored silver numbers and `parseCostSilver` is the
+  pass-through `costSilver` (number → itself, else 0, never fabricated).
 - `ui/ed-app.js`: add `ed-trade` handler that accepts `{ items }` + `{ coins, gems }`
   together, persists both (existing save paths), then runs **one** `deriveModel` so the
   Overview armour/init and the wealth card refresh through the normal cascade.
-- **Verify:** parse `"8 cp"`/`"100-175"`/`"5,000"`/numeric; trade → single re-derive;
-  nothing persists beyond inputs. Unit tests green.
+- **Verify:** trade → single re-derive; nothing persists beyond inputs. Unit tests green.
 
 ### B. The trade dialog (`ui/ed-trade-modal`, styled to match `ed-confirm`)
 - Modal in the ed-confirm overlay family: Escape-closes, Enter-confirms (confirm
@@ -250,16 +252,21 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
   ledger) — prices the player accepted are GM-gated session inputs, not canonical facts.
   A kept ledger would be a new top-level shape (Tier 1) and is **not** in this plan's
   default (see WDYT #4).
-- Costs that fail to parse (custom items, ranges we misread, e.g. `"100-175"` midpoint
-  being a guess) default to amount **0** and remain editable — no fabricated default.
+- Costs that fail to resolve (custom items, stale strings we no longer read, anything
+  non-numeric) default to amount **0** via `costSilver` and remain editable — no
+  fabricated default. (Ranges such as `"100-175"` were collapsed to a stored silver
+  midpoint at the `ed-items/3` migration — PLAN-STRUCTURED-COST-WEIGHT.md — so they
+  are numbers now, no longer "a guess at parse time".)
 - ✕ sells **one** unit at a time, same dialog as stepper −1; the row is removed only
   when quantity reaches 0 (owner confirmed WDYT #2).
 
 ## Issues
 
-1. **Range costs (`"100-175"`)** — midpoint (137.5 sp) is the default suggestion for
-   both buy and sell (owner answer #1, "represent 0.5 silver as copper"). If you want
-   flooring instead, it's a one-line `parseCostSilver` tweak in Phase A.
+1. **Range costs (`"100-175"`)** — midpoint (137.5 sp) was the default suggestion for
+   both buy and sell (owner answer #1, "represent 0.5 silver as copper"). **Resolved:**
+   the ranges no longer exist at runtime — the `ed-items/3` migration stored the
+   midpoint (137.5) as the catalogue cost itself, so `costSilver` passes it through
+   unchanged; no parse-time guess remains.
 2. **Overpay by even coin** — paying 1 × gold (10 sp) for an 8 sp item overpays (buy:
    allowed; sell: grid must equal the amount). GM discretion, no change-dispensing.
    Only sortie if you want auto-change (grating; keep it out).
@@ -290,9 +297,9 @@ untouched. No taxonomy vocabulary changes ⇒ Tier 2 N/A.
 11. **Custom / unparseable-cost items use the same buy/sell dialogs at amount 0**
     (editable); the plain remove-confirm is retired for owned items. Buy and sell stay
     symmetric. ✓ (2026-08-14)
-12. **Thread-item trade default = parsed `ref.cost` when parseable, else 0** — same rule
-    as all items (Orc Stinger 4650 sp pre-fills 4650, Band of the Elements pre-fills 0).
-    Thread rows buy/sell as whole-row add/remove (qty-unique). ✓ (2026-08-15)
+12. **Thread-item trade default = `costSilver(ref.cost)` (always a number now)** — same
+     rule as all items (Orc Stinger 4650 sp pre-fills 4650, Band of the Elements pre-fills
+     0). Thread rows buy/sell as whole-row add/remove (qty-unique). ✓ (2026-08-15)
 
 ## Progress log
 
