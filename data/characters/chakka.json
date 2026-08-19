@@ -460,6 +460,72 @@
       }
     ]
   },
+  "spells": {
+    "known": [
+      {
+        "name": "Soul Armor",
+        "learntSuccess": 2
+      },
+      {
+        "name": "Shadow Meld",
+        "learntSuccess": 2
+      },
+      {
+        "name": "Spirit Grip",
+        "learntSuccess": 0
+      },
+      {
+        "name": "Astral Spear",
+        "learntSuccess": 1
+      },
+      {
+        "name": "Spirit Dart",
+        "learntSuccess": 0
+      },
+      {
+        "name": "Life Circle of One",
+        "learntSuccess": 3
+      },
+      {
+        "name": "Death's Head",
+        "learntSuccess": 1
+      },
+      {
+        "name": "Night's Edge",
+        "learntSuccess": 0
+      },
+      {
+        "name": "Summon Fog Ghost",
+        "learntSuccess": 2
+      },
+      {
+        "name": "Arrow of Night",
+        "learntSuccess": 0
+      },
+      {
+        "name": "Fog of Fear",
+        "learntSuccess": 1
+      },
+      {
+        "name": "Pain",
+        "learntSuccess": 1
+      }
+    ],
+    "matrices": [
+      {
+        "type": "Standard",
+        "spell": "Soul Armor"
+      },
+      {
+        "type": "Standard",
+        "spell": "Astral Spear"
+      },
+      {
+        "type": "Standard",
+        "spell": "Arrow of Night"
+      }
+    ]
+  },
   "notes": [
     {
       "id": "msn2bnuo-pheag",
