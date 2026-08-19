@@ -6,6 +6,20 @@
   },
   "releases": [
     {
+      "version": "1.15.1",
+      "date": "2026-08-19",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "A sustained spell that boosts a talent or skill test — Shadow Meld's +4 to Stealthy Stride, Soulless Eyes' +3 to Intimidation, Shield Mist's +4 to Avoid Blow — now actually applies to that ability's roll. The bonus folds into the roll on both the Disciplines and Combat tabs and shows as a green +N beside the step; before, the spell appeared in Active Effects but its bonus never reached the roll."
+        },
+        {
+          "type": "fixed",
+          "text": "In the Cast view's Grimoire list, the dot beside each spell now marks which spells are placed in a matrix (with an \"in matrix\" label) instead of an unlabelled indicator, and it no longer misses spells whose names contain an apostrophe."
+        }
+      ]
+    },
+    {
       "version": "1.15.0",
       "date": "2026-08-19",
       "changes": [
