@@ -11,6 +11,7 @@
 // (decision #2), read/written here directly through store-rolllog.js; it never
 // rides the overlay, an export, or a GitHub save.
 import { LitElement, html, css } from 'lit';
+import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { loadRollLog, setRollLogMax, clearRollLog, DEFAULT_MAX, MAX_OPTIONS } from '../store-rolllog.js';
 import './ed-confirm.js';
 import './ed-add-legend.js';
@@ -39,10 +40,13 @@ export class EdNotes extends LitElement {
     _noteModal: { state: true }, // null | { id }  (id null → new)
     _historyModal: { state: true }, // null | { id }  (id null → new)
     _legendModal: { state: true }, // bool — the shared add-Legend form (Phase F)
+    _spentModal: { state: true }, // bool — the Legend-spent breakdown (shared with Overview)
     _confirm: { state: true }, // null | { kind, id }
   };
 
-  static styles = css`
+  static styles = [
+    legendSpentStyles,
+    css`
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -63,6 +67,7 @@ export class EdNotes extends LitElement {
     .seg button .ico { color: var(--accent); }
     .headline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .hbig { font-size: var(--fs-value); font-weight: 500; }
+    .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: var(--fs-body); padding: 0 0 0 4px; line-height: 1; vertical-align: -1px; }
     .htotal { display: inline-flex; align-items: baseline; gap: 6px; }
     .htotal .val { font-size: var(--fs-title); font-weight: 500; font-variant-numeric: tabular-nums; }
     .hsub { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -144,7 +149,8 @@ export class EdNotes extends LitElement {
       .lrow { grid-template-columns: 4.5rem minmax(0, 1fr) auto; }
       .ldate { display: none; }
     }
-  `;
+  `,
+  ];
 
   constructor() {
     super();
@@ -154,6 +160,7 @@ export class EdNotes extends LitElement {
     this._noteModal = null;
     this._historyModal = null;
     this._legendModal = false;
+    this._spentModal = false;
     this._confirm = null;
   }
 
@@ -163,6 +170,7 @@ export class EdNotes extends LitElement {
       if (e.key !== 'Escape') return;
       if (this._noteModal) this._noteModal = null;
       else if (this._historyModal) this._historyModal = null;
+      else if (this._spentModal) this._spentModal = false;
     };
     document.addEventListener('keydown', this._onKeydown);
     this._loadRolls();
@@ -297,6 +305,7 @@ export class EdNotes extends LitElement {
   _closeModal() {
     if (this._noteModal) this._noteModal = null;
     else if (this._historyModal) this._historyModal = null;
+    else if (this._spentModal) this._spentModal = false;
   }
   _modalShell(title, body) {
     return html`
@@ -448,19 +457,23 @@ export class EdNotes extends LitElement {
 
   _legendView() {
     const list = this.model?.legendEarned ?? [];
-    const spends = this.model?.legend?.spends ?? [];
+    const spent = this.model?.legend?.spent ?? null;
     const total = this.model?.legend?.totalEarnt ?? null;
     const fmt = (n) => (n == null ? '' : Number(n).toLocaleString());
     return html`
       <div class="headline">
-        <span class="hbig">Legend earned</span>
+        <span class="hbig"
+          >Legend earned${spent
+            ? html`<button class="info" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => (this._spentModal = true)}>ⓘ</button>`
+            : ''}</span
+        >
         <span class="htotal">
           ${total != null ? html`<span class="val">${total.toLocaleString()}</span>` : this._pend()}
           <span class="hsub">total earned</span>
         </span>
         <button class="addbtn" @click=${() => (this._legendModal = true)}>+ Add Legend earned</button>
       </div>
-      ${list.length || spends.length
+      ${list.length
         ? html`
             <div class="ltable">
               ${list.map((e) => html`
@@ -473,24 +486,7 @@ export class EdNotes extends LitElement {
                     : html`<button class="del" aria-label="Delete this entry" title="Delete" @click=${() => this._requestConfirm('legend', e.id)}>✕</button>`}
                 </div>
               `)}
-              ${spends.map((s) => html`
-                <div class="lrow ${s.virtual ? 'vrow' : ''}">
-                  <span class="lamt">−${fmt(s.legend)}</span>
-                  <span class="ldesc" title=${s.virtual ? 'Karma conversions before the dated ritual log' : `Karma Ritual — ${s.points} Karma`}>
-                    ${s.virtual
-                      ? `Karma conversions (historic) — ${fmt(s.points)} points`
-                      : `Karma Ritual — +${fmt(s.points)} Karma @ ${s.cost}/pt`}
-                  </span>
-                  <span class="ldate">${s.date ? String(s.date).slice(0, 10) : ''}</span>
-                  ${s.virtual
-                    ? html`<span class="vtag" title="Derived from your Karma ledger — read-only">historic</span>`
-                    : html`<span></span>`}
-                </div>
-              `)}
             </div>
-            ${spends.length
-              ? html`<div class="lcaption">Karma Ritual spends — already reflected in Available Legend.</div>`
-              : ''}
           `
         : html`<div class="empty">No Legend earned recorded yet. Add your first award to start the running total.</div>`}
     `;
@@ -538,6 +534,7 @@ export class EdNotes extends LitElement {
       ${this._noteModal ? this._noteModalTmpl() : ''}
       ${this._historyModal ? this._historyModalTmpl() : ''}
       ${this._legendModal ? this._legendModalTmpl() : ''}
+      ${this._spentModal ? this._modalShell('Legend spent', legendSpentBody(this.model?.legend?.spent)) : ''}
       ${this._confirm
         ? html`<ed-confirm
             heading=${this._confirm.kind === 'rolls' ? 'Clear the Roll Log?' : 'Delete this entry?'}

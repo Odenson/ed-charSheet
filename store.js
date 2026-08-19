@@ -549,7 +549,7 @@ async function loadRules() {
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
 // may only override these; any other target name is ignored. Kept here (not in a
 // rule file) so the code that consumes each target and the registry stay together.
-export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift']);
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
@@ -1057,6 +1057,8 @@ export function deriveModel(character, rules, session = {}) {
   const spent = auditLegendSpent(character, legendFile?.costs, {
     knacks,
     threadItemCatalog,
+    spellCatalog: spellsFile?.spells,
+    spellCostMultiplier: homebrewSets['legend.spellLearnCostMultiplier'] ?? 1,
     karmaRitualCost,
     tierShift,
   });
@@ -1078,33 +1080,6 @@ export function deriveModel(character, rules, session = {}) {
   const totalEarnt = legendEarned.length
     ? legendEarned.reduce((s, e) => s + (Number(e.amount) || 0), 0)
     : null;
-  // Karma-on-Legend display rows (PLAN-LEGEND-KARMA-RITUAL-LOG.md): display-only, never
-  // stored or summed into `totalEarnt`. With the rule on (`karmaRitualCost` present),
-  // derived from the ledger — one virtual historic seed row (converted before the dated
-  // ritual log) plus one row per dated ritual event, all at the current cost, so
-  // `Σ legend = converted × cost` (exactly the audit sink above). Rule off ⇒ []. Not on
-  // `legendEarned` (that list stays earned-only for the add/delete flows).
-  const convertedKarma = Number(character.resources?.karma?.converted) || 0;
-  const karmaRituals = Array.isArray(character.resources?.karma?.rituals) ? character.resources.karma.rituals : [];
-  const hasKarmaCost = () => Number.isFinite(Number(karmaRitualCost)) && Number(karmaRitualCost) > 0;
-  const legendSpends = () => {
-    if (!hasKarmaCost() || convertedKarma <= 0) return [];
-    const eventsPoints = karmaRituals.reduce((s, r) => s + (Number(r?.points) || 0), 0);
-    const historic = convertedKarma - eventsPoints;
-    const cost = Number(karmaRitualCost);
-    return [
-      ...(historic > 0
-        ? [{ id: '__karma_historic__', date: null, virtual: true, points: historic, cost, legend: historic * cost }]
-        : []),
-      ...karmaRituals.map((r) => ({
-        id: r.id,
-        date: r.date ?? null,
-        points: Number(r?.points) || 0,
-        cost,
-        legend: (Number(r?.points) || 0) * cost,
-      })),
-    ];
-  };
   const legend =
     totalEarnt != null
       ? {
@@ -1114,7 +1089,6 @@ export function deriveModel(character, rules, session = {}) {
           status: legendaryStatus(totalEarnt, legendBands),
           bands: legendBands,
           spent,
-          spends: legendSpends(),
           tierShift, // homebrew additional-Discipline tier shift (0 = standard), read by the UI's rank guard
         }
       : null;
