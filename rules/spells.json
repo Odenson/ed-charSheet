@@ -525,7 +525,7 @@
     },
     "Shadow Meld": {
       "name": "Shadow Meld",
-      "description": "Renders the target nearly invisible in shadows, granting +4 to all Stealthy Stride tests and letting Stealthy Stride function as a default skill. Cast against the target's Mystic Defense; ordinary light does not dispel it, and stepping back into shadow restores the effect.",
+      "description": "Renders the target nearly invisible in shadows, granting +4 steps to all Stealthy Stride tests and letting Stealthy Stride function as a default skill. Cast against the target's Mystic Defense; ordinary light does not dispel it, and stepping back into shadow restores the effect.",
       "discipline": "Nethermancer",
       "circle": 1,
       "threadsToWeave": 1,
@@ -548,13 +548,13 @@
           },
           "operation": "add",
           "value": 4,
-          "measure": "result",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
-          "summary": "+4 to Stealthy Stride tests while active."
+          "summary": "+4 steps to Stealthy Stride tests while active."
         }
       ],
-      "summary": "+ 4 to Stealthy Stride tests"
+      "summary": "+4 steps to Stealthy Stride tests"
     },
     "Soul Armor": {
       "name": "Soul Armor",
@@ -702,7 +702,7 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "result",
+              "measure": "step",
               "source": "spell",
               "summary": "Increase Effect (+2 Effect Step)",
               "duration": "sustained"
@@ -752,7 +752,7 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "result",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
           "summary": "+3 to Intimidation tests while active."
@@ -1464,7 +1464,7 @@
       "successes": [],
       "extraThreads": [
         {
-          "label": "Increase Effect (+2 bonus)",
+          "label": "Increase Effect (+2 steps)",
           "effects": [
             {
               "type": "test-modifier",
@@ -1474,9 +1474,9 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "result",
+              "measure": "step",
               "source": "spell",
-              "summary": "Increase Effect (+2 bonus)",
+              "summary": "Increase Effect (+2 steps)",
               "duration": "sustained"
             }
           ]
@@ -1491,13 +1491,13 @@
           },
           "operation": "add",
           "value": 4,
-          "measure": "result",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
           "summary": "+4 to Avoid Blow tests while active."
         }
       ],
-      "summary": "+ 4 bonus to Avoid Blow tests"
+      "summary": "+ 4 steps to Avoid Blow tests"
     },
     "Summon Fog Ghost": {
       "name": "Summon Fog Ghost",

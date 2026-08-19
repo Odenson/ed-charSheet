@@ -393,6 +393,27 @@ test('auditPool: result-measure mods are kind "result" (roll total, not the Step
   assert.equal(r.value, 1);
 });
 
+test('auditPool: extraMods itemise a talent\'s active step buff off the base (spell fold)', () => {
+  // Stealthy Stride case: base step 12, a sustained spell's +4 step already folded
+  // onto the ability. The audit shows base 12 + a +4 step part summing to 16.
+  const extraMods = [{ source: 'Stealthy Stride', value: 4, measure: 'step' }];
+  const a = auditPool([{ label: 'Stealthy Stride step', value: 12 }], [], { testKind: 'attack' }, 0, extraMods);
+  assert.equal(a.step, 16);
+  const base = a.parts.find((p) => p.kind === 'base');
+  assert.equal(base.value, 12);
+  const step = a.parts.filter((p) => p.kind === 'step');
+  assert.equal(step.length, 1);
+  assert.deepEqual({ label: step[0].label, value: step[0].value }, { label: 'Stealthy Stride', value: 4 });
+});
+
+test('auditPool: a result-measure extraMod rides the roll, not the Step', () => {
+  const extraMods = [{ source: 'Aim', value: 2, measure: 'result' }];
+  const a = auditPool([{ label: 'step', value: 12 }], [], { testKind: 'attack' }, 0, extraMods);
+  assert.equal(a.step, 12); // result mod does not change the Step
+  const r = a.parts.find((p) => p.kind === 'result');
+  assert.deepEqual({ label: r.label, value: r.value }, { label: 'Aim', value: 2 });
+});
+
 test('auditPool: a null base keeps step null but still lists the base part', () => {
   const a = auditPool([{ label: 'Talent step', value: null }], [], { testKind: 'attack' });
   assert.equal(a.step, null);

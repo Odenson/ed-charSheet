@@ -1730,7 +1730,7 @@
       "tier": 1,
       "strain": 0,
       "attribute": "Charisma",
-      "action": "Sustained",
+      "action": "Standard",
       "versus": "the highest Social Defense among the audience",
       "summary": "Address an audience effectively and hold its attention. The test result is compared to the audience's Social Defense.",
       "effects": [
@@ -2852,7 +2852,7 @@
       "attribute": "Dexterity",
       "action": "Sustained",
       "versus": "a Difficulty Number set by the gamemaster",
-      "summary": "Apply tattoos to the skin. A craft test against a gamemaster-set Difficulty Number.",
+      "summary": "Apply tattoos to the skin. A craft test against a gamemaster-set Difficulty Number. Guidelines for tattooing Standard = 5, Complex = 7, Masterwork = 10.",
       "effects": [
         {
           "type": "note",

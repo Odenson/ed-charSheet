@@ -95,8 +95,11 @@ export class EdDisciplines extends LitElement {
        rank, source-named via tooltip. Theme-aware; never alters the stored rank. */
     .gchip { font-size: var(--fs-fine); font-weight: 500; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
     /* Active test-bonus (e.g. a sustained spell's +N to this talent's tests): a
-       flat result mod folded into the roll, shown as a green chip by the step. */
-    .rmod { font-size: var(--fs-fine); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 0 5px; margin-left: 5px; font-variant-numeric: tabular-nums; }
+       flat mod folded into the roll, shown as a compact accent pill beside the rank
+       — styled identically to the rank-grant chip (.gchip) so a spell-fed test
+       bonus and a thread-fed rank grant read the same. The measure (step/result)
+       lives in the tooltip; the shown step already has the bonus folded in. */
+    .rmod { font-size: var(--fs-fine); font-weight: 500; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 0 5px; margin-left: 5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
@@ -187,8 +190,8 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${t.name}</span>
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
-        ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}</span>`}
-        <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}${this._resultChip(t)}</span>
+        ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
+        <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}</span>
         <span class="action sd">${t.action ?? ''}</span>
         <button
           class="roll"
@@ -299,8 +302,8 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${s.name}</span>
         </span>
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
-        ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}</span>`}
-        <span class="sd">${s.step != null ? html`${s.step} · ${s.dice}` : '—'}${this._resultChip(s)}</span>
+        ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}${this._modChip(s)}</span>`}
+        <span class="sd">${s.step != null ? html`${s.step} · ${s.dice}` : '—'}</span>
         <span class="action sd">${s.action ?? ''}</span>
         <button
           class="roll"
@@ -469,15 +472,26 @@ export class EdDisciplines extends LitElement {
     return html`<span class="gchip" title="+${Math.abs(t.rankBonus)} rank ${this._grantTitle(t.grantSources)}">${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus)}</span>`;
   }
 
-  // A flat result bonus folded into this ability's roll from an active
-  // test-modifier effect (e.g. a sustained spell). Green chip beside the step,
-  // tooltip names each source; nets to zero renders nothing.
-  _resultChip(t) {
-    const mods = t.resultMods ?? [];
-    const net = mods.reduce((s, m) => s + (Number(m.value) || 0), 0);
-    if (!net) return '';
-    const src = mods.map((m) => `${m.source} ${m.value > 0 ? '+' : '−'}${Math.abs(m.value)}`).join('; ');
-    return html`<span class="rmod" title=${`Active: ${src}`}>${net > 0 ? `+${net}` : `−${Math.abs(net)}`}</span>`;
+  // An active test-modifier folded into this ability's roll (a sustained spell's
+  // "+4 steps" or "+2 result", an equipped thread item's bonus, a condition).
+  // Badges EVERY applied modifier regardless of measure so a step-measure bonus
+  // shows as faithfully as a result-measure one; tooltip names each source.
+  // Nets to zero per measure renders nothing.
+  _modChip(t) {
+    const mods = t.rollMods ?? [];
+    if (!mods.length) return '';
+    const netByMeasure = {};
+    for (const m of mods) {
+      const unit = m.measure ?? 'result';
+      netByMeasure[unit] = (netByMeasure[unit] ?? []);
+      netByMeasure[unit].push(m);
+    }
+    return Object.entries(netByMeasure).map(([measure, group]) => {
+      const net = group.reduce((s, m) => s + (Number(m.value) || 0), 0);
+      if (!net) return '';
+      const src = group.map((m) => `${m.source} ${m.value > 0 ? '+' : '−'}${Math.abs(m.value)}`).join('; ');
+      return html`<span class="rmod" title=${`Active (${measure}): ${src}`}>${net > 0 ? `+${net}` : `−${Math.abs(net)}`}</span>`;
+    });
   }
 
   // One granted-ability row (possessed via a `set` grant the character hasn't
