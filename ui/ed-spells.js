@@ -126,6 +126,13 @@ export class EdSpells extends LitElement {
     .modeseg button.soon { opacity: 0.5; cursor: not-allowed; }
     .modeseg .soontag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--muted); border-radius: 999px; padding: 0 4px; margin-left: 4px; }
     .fold { font-size: var(--fs-fine); color: var(--spell); margin-top: 8px; display: flex; gap: 6px; align-items: baseline; }
+    .pickrow { margin-top: 8px; background: var(--spell-bg); border: 1px solid var(--spell); border-radius: 8px; padding: 8px 10px; }
+    .pickrow .plbl { font-size: var(--fs-fine); color: var(--spell); font-weight: 500; margin-bottom: 6px; }
+    .pickopts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pickbtn { font: inherit; font-size: var(--fs-fine); font-weight: 500; border: 1px solid var(--spell); background: var(--bg-chip); color: var(--spell); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+    .pickbtn:hover { background: var(--spell-bg); }
+    .picksum { margin-top: 8px; font-size: var(--fs-fine); color: var(--muted); display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+    .pickchip { font-size: var(--fs-eyebrow); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 8px; }
   `;
 
   constructor() {
@@ -146,7 +153,8 @@ export class EdSpells extends LitElement {
   // Per-cast progress: threads woven so far, the greying flags, and each step's
   // last roll result. Reset when the spell/cast-type changes or the Effect lands.
   _blankProg() {
-    return { threadsWoven: 0, castDone: false, weave: null, cast: null, effect: null };
+    return { threadsWoven: 0, castDone: false, weave: null, cast: null, effect: null,
+      extraPicks: [], pendingPick: false };
   }
   _resetProg() { this._prog = this._blankProg(); }
 
@@ -181,16 +189,47 @@ export class EdSpells extends LitElement {
     const firstOfRoll = detail.rollId !== this._lastRollId;
     this._lastRollId = detail.rollId;
     if (step === 'weave') {
-      const woven = firstOfRoll
-        ? Math.min(this._prog.threadsWoven + 1, this._maxThreads)
-        : this._prog.threadsWoven;
-      this._prog = { ...this._prog, threadsWoven: woven, weave: res };
+      if (!firstOfRoll) { this._prog = { ...this._prog, weave: res }; return; } // Karma re-roll
+      const isExtra = this._prog.threadsWoven >= (this._reqThreads ?? 0);
+      if (isExtra) {
+        // An extra thread only counts on a SUCCESSFUL weave, and then must be
+        // assigned one of the spell's Extra Thread options (§3.2 #2). A single
+        // option auto-assigns; multiple options prompt a pick.
+        if (!res.outcome?.ok) { this._prog = { ...this._prog, weave: res }; return; }
+        const woven = Math.min(this._prog.threadsWoven + 1, this._maxThreads);
+        const opts = this._weaveOptions ?? [];
+        if (opts.length === 1) {
+          this._prog = { ...this._prog, threadsWoven: woven, weave: res,
+            extraPicks: [...this._prog.extraPicks, opts[0].label] };
+        } else if (opts.length > 1) {
+          this._prog = { ...this._prog, threadsWoven: woven, weave: res, pendingPick: true };
+        } else {
+          // No listed options — the thread still counts, nothing to assign.
+          this._prog = { ...this._prog, threadsWoven: woven, weave: res };
+        }
+      } else {
+        // A required thread powers the cast — counts regardless of the roll.
+        const woven = Math.min(this._prog.threadsWoven + 1, this._maxThreads);
+        this._prog = { ...this._prog, threadsWoven: woven, weave: res };
+      }
     } else if (step === 'cast') {
       this._prog = { ...this._prog, castDone: true, cast: res };
     } else if (step === 'effect') {
       // Effect landing un-greys Weave + Cast for the next cast (owner rule).
-      this._prog = { threadsWoven: 0, castDone: false, weave: null, cast: null, effect: res };
+      this._prog = { ...this._blankProg(), effect: res };
     }
+  }
+
+  // Assign the just-woven extra thread to one of the spell's Extra Thread options.
+  _pickExtra(label) {
+    this._prog = { ...this._prog, extraPicks: [...this._prog.extraPicks, label], pendingPick: false };
+  }
+
+  // Collapse the assigned extra-thread picks into { label, count } (stacks 1:1).
+  _pickSummary(picks) {
+    const counts = new Map();
+    for (const l of picks) counts.set(l, (counts.get(l) ?? 0) + 1);
+    return [...counts].map(([label, count]) => ({ label, count }));
   }
 
   get ctx() { return this.model?.spells ?? null; }
@@ -361,8 +400,11 @@ export class EdSpells extends LitElement {
 
   _rollWeave(plan) {
     if (this._prog.threadsWoven >= this._weaveMax(plan)) return; // at max (required + extra cap)
+    if (this._prog.pendingPick) return; // must assign the last extra thread first
     this._pendingStep = 'weave';
     this._maxThreads = this._weaveMax(plan);
+    this._reqThreads = plan.threadsToWeave;         // for the extra-thread test in _onRoll
+    this._weaveOptions = plan.extraThreads ?? [];
     const disc = this._casterDisc(plan.discipline);
     const tw = disc?.talents?.find((t) => t.name === `Thread Weaving (${plan.discipline})`);
     this._dispatchRoll(`Weave — ${plan.name}`, plan.weavingStep, this._karmaCtx(tw?.karma), {
@@ -395,7 +437,7 @@ export class EdSpells extends LitElement {
       this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step, null, {});
     } else {
       const total = plan.effect.kind === 'static' ? plan.effect.value : null;
-      this._prog = { threadsWoven: 0, castDone: false, weave: null, cast: null,
+      this._prog = { ...this._blankProg(),
         effect: { total, outcome: { word: plan.effect.kind === 'static' ? 'Applied' : 'Done', ok: true } } };
     }
   }
@@ -476,7 +518,7 @@ export class EdSpells extends LitElement {
         <div class="step ${forge ? '' : 'skip'}">
           <span class="lab">Weave ${forge ? html`<span class="threads" title="Threads woven / required">${prog.threadsWoven}/${plan.threadsToWeave}</span>` : ''}</span>
           ${forge
-            ? html`<button class="rollbtn" ?disabled=${weaveMaxed} @click=${() => this._rollWeave(plan)}>⚄ Roll</button>
+            ? html`<button class="rollbtn" ?disabled=${weaveMaxed || prog.pendingPick} @click=${() => this._rollWeave(plan)}>⚄ Roll</button>
                    <span class="stepnote">Step ${plan.weavingStep ?? '—'} vs ${plan.weavingDifficulty ?? '—'}</span>
                    ${this._rollRes(prog.weave)}`
             : html`<span class="readout">—</span><span class="stepnote">No threads to forge</span>`}
@@ -494,6 +536,18 @@ export class EdSpells extends LitElement {
           ${this._rollRes(prog.effect)}
         </div>
       </div>
+
+      ${prog.pendingPick
+        ? html`<div class="pickrow">
+            <div class="plbl">Extra thread woven — assign it to an effect:</div>
+            <div class="pickopts">
+              ${(plan.extraThreads ?? []).map((o) => html`<button class="pickbtn" @click=${() => this._pickExtra(o.label)}>${o.label}</button>`)}
+            </div>
+          </div>`
+        : ''}
+      ${prog.extraPicks.length
+        ? html`<div class="picksum"><span>Extra threads:</span>${this._pickSummary(prog.extraPicks).map((p) => html`<span class="pickchip">${p.label}${p.count > 1 ? ` ×${p.count}` : ''}</span>`)}</div>`
+        : ''}
 
       ${plan.foldsOnSelf && this._subject === 'self'
         ? html`<p class="fold"><span>✦</span> On a success this sustained effect applies to this character while active. (Live fold + countdown lands in a follow-up.)</p>`
