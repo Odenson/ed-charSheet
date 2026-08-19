@@ -36,7 +36,10 @@ export class EdSpells extends LitElement {
       --spell: light-dark(#5b3fa6, #a99cf0);
       --spell-bg: light-dark(#efeafc, #2b2547);
       --karma: light-dark(#3d6b4a, #82c39a);
+      --karma-bg: light-dark(#e7f0ea, #223029);
       --danger: light-dark(#a63a2b, #e0846f);
+      --amber: light-dark(#8a5a12, #e0a94e);
+      --amber-bg: light-dark(#f6ecd9, #3a2f17);
       display: block;
     }
     .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -133,6 +136,22 @@ export class EdSpells extends LitElement {
     .modeseg button.soon { opacity: 0.5; cursor: not-allowed; }
     .modeseg .soontag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--muted); border-radius: 999px; padding: 0 4px; margin-left: 4px; }
     .fold { font-size: var(--fs-fine); color: var(--spell); margin-top: 8px; display: flex; gap: 6px; align-items: baseline; }
+    /* Active effects (Option A) — long-running self-cast effects with rounds left.
+       Static now; phase 6b fills the list and the countdown. */
+    .aehead { margin-top: 14px; }
+    .aecard { background: var(--bg-card); border-radius: 8px; padding: 4px 11px; }
+    .aeempty { font-size: var(--fs-fine); color: var(--muted); padding: 8px 2px; }
+    .aerow { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .aerow:last-child { border-bottom: none; }
+    .aemark { color: var(--spell); font-size: var(--fs-small); flex: none; }
+    .aemid { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .aename { font-size: var(--fs-small); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .aename .aefx { font-weight: 400; color: var(--muted); }
+    .aebar { height: 4px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .aebar > i { display: block; height: 100%; border-radius: 999px; }
+    .aerounds { flex: none; font-size: var(--fs-eyebrow); font-weight: 500; font-variant-numeric: tabular-nums; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+    .aerounds.ok { color: var(--karma); background: var(--karma-bg); }
+    .aerounds.low { color: var(--amber); background: var(--amber-bg); }
     .pickrow { margin-top: 8px; background: var(--spell-bg); border: 1px solid var(--spell); border-radius: 8px; padding: 8px 10px; }
     .pickrow .plbl { font-size: var(--fs-fine); color: var(--spell); font-weight: 500; margin-bottom: 6px; }
     .pickopts { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -239,6 +258,36 @@ export class EdSpells extends LitElement {
   // Assign the just-woven extra thread to one of the spell's Extra Thread options.
   _pickExtra(label) {
     this._prog = { ...this._prog, extraPicks: [...this._prog.extraPicks, label], pendingPick: false };
+  }
+
+  // Active effects (Option A): long-running self-cast effects with rounds left.
+  // Reads model.spells.active — an array phase 6b will populate and count down
+  // per Initiative roll: [{ name, effectLabel, roundsLeft, roundsTotal }]. Until
+  // then the list is empty and the card shows its resting state.
+  _activeEffects() {
+    const active = this.ctx?.active ?? [];
+    return html`
+      <h4 class="circlelbl aehead">Active effects${active.length ? ` · ${active.length}` : ''}</h4>
+      <div class="aecard">
+        ${active.length
+          ? active.map((e) => this._activeRow(e))
+          : html`<div class="aeempty">No active effects. A sustained spell cast on this character will appear here with its rounds remaining.</div>`}
+      </div>`;
+  }
+
+  _activeRow(e) {
+    const total = e.roundsTotal || e.roundsLeft || 1;
+    const pct = Math.max(0, Math.min(100, Math.round((e.roundsLeft / total) * 100)));
+    const low = e.roundsLeft <= 3;
+    return html`
+      <div class="aerow">
+        <span class="aemark">✦</span>
+        <div class="aemid">
+          <span class="aename">${e.name}${e.effectLabel ? html` <span class="aefx">· ${e.effectLabel}</span>` : ''}</span>
+          <div class="aebar"><i style="width:${pct}%; background:${low ? 'var(--amber)' : 'var(--karma)'}"></i></div>
+        </div>
+        <span class="aerounds ${low ? 'low' : 'ok'}">${e.roundsLeft} rds</span>
+      </div>`;
   }
 
   // Cast-success visual: the number of success levels, and the Success Levels
@@ -622,6 +671,8 @@ export class EdSpells extends LitElement {
         ${plan.successes?.length ? html`<div class="sub"></div><span class="k">Success</span><span class="full">${plan.successes.map((x) => x.label).join('; ')}</span>` : ''}
         ${plan.extraThreads?.length ? html`<span class="k">Extra</span><span class="full">${plan.extraThreads.map((x) => x.label).join('; ')}</span>` : ''}
       </div>
+
+      ${this._activeEffects()}
     `;
   }
 }
