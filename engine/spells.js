@@ -22,13 +22,28 @@
 // Standard matrices hold no threads; Enhanced/Armoured hold one (§3.1).
 const MATRIX_THREADS = { Standard: 0, Enhanced: 1, Armoured: 1, Armored: 1 };
 
+// Match spell names regardless of apostrophe style: the catalog uses the
+// rulebook's typographic apostrophe (’ U+2019) while a character or a player
+// typically types a straight one ('), so "Death's Head" must find "Death’s
+// Head". Normalise curly quotes to straight and trim before comparing.
+function normName(s) {
+  return String(s ?? '').replace(/[‘’]/g, "'").trim();
+}
+
 // --- catalog joins -----------------------------------------------------------
 
-/** Join a known-spell input to its catalog entry (null if the name is unknown). */
+/** Join a known-spell input to its catalog entry (null if the name is unknown).
+ *  Falls back to an apostrophe-insensitive match and returns the CANONICAL
+ *  catalog entry (so downstream always uses the catalog's spelling). */
 export function joinSpell(ctx, name) {
-  const entry = ctx.catalog?.[name];
+  let entry = ctx.catalog?.[name];
+  if (!entry && name != null) {
+    const target = normName(name);
+    const key = Object.keys(ctx.catalog ?? {}).find((k) => normName(k) === target);
+    entry = key ? ctx.catalog[key] : null;
+  }
   if (!entry) return null;
-  const known = ctx.known?.find((k) => k.name === name) || null;
+  const known = ctx.known?.find((k) => normName(k.name) === normName(name)) || null;
   return { ...entry, learntSuccess: known?.learntSuccess ?? null };
 }
 
@@ -50,9 +65,9 @@ export function knownByDisciplineCircle(ctx) {
   return out;
 }
 
-/** Is a spell currently placed in a matrix (combat-ready)? */
+/** Is a spell currently placed in a matrix (combat-ready)? Apostrophe-insensitive. */
 export function matrixFor(ctx, name) {
-  return (ctx.matrices ?? []).find((m) => m.spell === name) || null;
+  return (ctx.matrices ?? []).find((m) => normName(m.spell) === normName(name)) || null;
 }
 
 /**

@@ -92,6 +92,18 @@ test('joinSpell attaches learntSuccess; unknown → null', () => {
   assert.equal(joinSpell(ctx(), 'Nonexistent Spell'), null);
 });
 
+test('joinSpell matches apostrophe style (straight vs curly) → canonical name', () => {
+  const c = {
+    catalog: { 'Death’s Head': { name: 'Death’s Head', discipline: 'Nethermancer', circle: 2, effects: [] } },
+    known: [{ name: "Death's Head", learntSuccess: 1 }], // straight apostrophe, as a player types
+  };
+  const s = joinSpell(c, "Death's Head");
+  assert.ok(s, 'straight-apostrophe name should find the curly catalog entry');
+  assert.equal(s.name, 'Death’s Head'); // returns the CANONICAL catalog spelling
+  assert.equal(s.learntSuccess, 1);
+  assert.equal(matrixFor({ matrices: [{ type: 'Standard', spell: 'Death’s Head' }] }, "Death's Head").type, 'Standard');
+});
+
 test('knownSpells returns only known, sorted by circle then name', () => {
   const ks = knownSpells(ctx());
   assert.deepEqual(ks.map((s) => s.name), ['Soul Armor', 'Pain']); // C1 then C3
