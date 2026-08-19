@@ -636,7 +636,23 @@ export class EdCombat extends LitElement {
   _attackPool() {
     const t = this._selTalent();
     const { attackEffects } = this._poolEffects();
-    return attackPool({ talentStep: t?.step ?? null, effects: attackEffects });
+    const ap = attackPool({ talentStep: t?.step ?? null, effects: attackEffects });
+    // A selected TALENT may carry active test-modifier result mods (e.g. a
+    // sustained spell's +4 Stealthy Stride) folded onto the model by the engine.
+    // The combat attack builder gathers only combat-scoped effects, so merge the
+    // talent's result mods here — same universal data the Disciplines tab uses.
+    const testMods = this._talentResultMods(t?.name);
+    return testMods.length ? { ...ap, resultMods: [...ap.resultMods, ...testMods] } : ap;
+  }
+
+  // The active test-modifier result mods on a model talent by name (empty for a
+  // weapon attack or a talent with none).
+  _talentResultMods(name) {
+    if (!name) return [];
+    for (const d of this.model?.disciplines ?? [])
+      for (const tl of d.talents ?? [])
+        if (tl.name === name) return tl.resultMods ?? [];
+    return [];
   }
   // #7: extra attack success levels → +steps to damage. Only while the current
   // pick's attack is armed. With a target number in play the levels come from the
