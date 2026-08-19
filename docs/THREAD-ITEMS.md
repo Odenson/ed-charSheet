@@ -27,7 +27,7 @@ The top-level shape of `rules/thread-items.json` is:
 ```jsonc
 {
   "schema": "ed-thread-items/1",                 // Tier-1: don't rename fields
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "source": "Earthdawn 4E Gamemaster's Guide …", // provenance note
   "notes": { /* field-by-field commentary */ },
   "tiers": { "Novice": {"rankLimit": 4, "mysticDefenseRange": [8,12]}, /* … */ },

@@ -1,4 +1,4 @@
-# Effect Taxonomy — v3
+# Effect Taxonomy — v4
 
 A controlled vocabulary for **effects**: the structured, machine-applicable
 modifiers and grants that races, talents, skills, items, spells, and conditions
@@ -11,9 +11,15 @@ the `Target | Characteristic | Property` addressing model, the operation words
 (`ADD, MINUS, MULTIPLY, DIVIDE, DEFAULT, MIN, MAX, REF`), and the trigger
 comparisons (`GE, GR, LS, LE, EQ, NE`). One language, end to end.
 
-> Status: **v3, under review.** Field names and vocabularies may change. When they
+> Status: **v4, under review.** Field names and vocabularies may change. When they
 > do, bump the version and migrate the data files that reference it
 > (`rules/*.json` `schema` fields).
+>
+> **v4 (2026-08-19):** added the `duration-modifier` type (§2) and the time
+> measures `rounds` / `minutes` / `hours` (§5), so a spell's "Increase Duration"
+> Success-Levels / Extra-Thread options carry a machine-applicable effect instead
+> of a free-text `note`. Additive and backward-compatible — existing effects are
+> unchanged; every `rules/*.json` `effectTaxonomy` reference bumped v3 → v4.
 
 ---
 
@@ -74,6 +80,7 @@ Small on purpose. Each maps to one way the engine applies the effect.
 | `armor-modifier` | adjusts armor | `armor` |
 | `attack-modifier` | adjusts an **attack's** step or result (weapon / natural-attack damage step, to-hit step) | `attack` |
 | `test-modifier` | adjusts a specific test (roll) | `test` |
+| `duration-modifier` | extends/reduces an active effect's remaining duration | — |
 | `grant-ability` | gives a talent / skill / knack | `ability` |
 | `grant-attack` | gives a natural attack | `attack` |
 | `sense` | gives a sensory capability | `sense` |
@@ -96,6 +103,15 @@ circle grants the adept the right to spend a Karma Point on a class of test (e.g
 Perception, Initiative, ranged Damage). `target` is a `test`; use `scope` to
 narrow it ("sight-based", "ranged weapons", "vs Horrors/undead"). It carries no
 `value`/`operation` — it is a permission, not a numeric change.
+
+`duration-modifier` (v4) adjusts how long an **active effect** lasts, rather than
+what it does. It carries no `target` — it applies to the effect-bearing thing it
+sits on (a spell's active duration). `operation` is `add`/`subtract`, `value` is
+the amount, and `measure` is a **time unit** (`rounds`/`minutes`/`hours`, §5),
+which the engine normalises to rounds (1 minute = 10 rounds, 1 hour = 600). Its
+home is a spell's "Increase Duration" Success-Levels / Extra-Thread option: on a
+success it extends the cast's remaining rounds (with `perSuccess` for the
+per-extra-success case). It never touches a derived stat — only the countdown.
 
 > `enable-option` **unlocks a global option** — its `target.name` must match an
 > option's `name` in `rules/combat.json` (e.g. `Tail Attack`), and it is always
@@ -243,6 +259,9 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 | `dice` | explicit dice | +1D6 |
 | `points` | karma / legend pool | +5 Legend |
 | `yards` | distance | range |
+| `rounds` | duration in combat rounds (1 round = 1 Initiative roll) | +2 rounds |
+| `minutes` | duration in minutes (1 minute = 10 rounds) | Increase Duration +2 minutes |
+| `hours` | duration in hours (1 hour = 600 rounds) | +2 hours |
 | `count` | discrete count | +1 recovery test/day |
 
 ---

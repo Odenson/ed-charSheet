@@ -1,7 +1,7 @@
 {
   "schema": "ed-knacks/1",
   "source": "Earthdawn 4E \u2014 Companion guide knack chapter. Knack entries (parent talent, rank requirement, step/action/strain where printed, restrictions, and original-wording summaries of the printed knack text).",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "notes": [
     "144 knacks catalogued from the Companion guide.",
     "Parents are name-only binding keys: a knack may be governed by the skill or the talent of the same name, and which kind binds is resolved from the character's owned abilities (never hard-typed here). Multi-parent knacks list parents in the printed order and default to the first; `via` on the character selects another.",

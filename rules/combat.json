@@ -1,7 +1,7 @@
 {
   "schema": "ed-combat/1",
   "source": "Earthdawn 4E Player's Guide — Combat Options (p.382-385) and the Situation Modifiers Table (p.386-390). Mechanics distilled into structured data; no verbatim rulebook prose. Where the local player-tables-narrative.txt disagreed with the Player's Guide (Called Shot strain; the Attacking to Stun / Attacking to Knockdown split; Physical & Mystic — not P/M/S — defence scope), the Player's Guide is authoritative.",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "notes": [
     "Applied on demand by engine/combat.js when the player selects an option/situation on the Combat tab — never auto-folded into the character's static derived stats. Every effect is therefore condition:\"situational\" (the engine's auto-apply rule folds only condition:\"always\" effects into static values), and source:\"condition\" (the closest §9 provenance for a chosen combat maneuver / situation; combat options are not a §9 source, and adding one would be a taxonomy change).",
     "Strain is a resource-modifier on { domain:\"resource\", name:\"Strain\" } (measure:\"points\") — the option declares its cost; combat.js sums the selected options' strain and applies it to the character as damage via ed-edit-health (Strain has no stored pool). See PLAN-COMBAT-TAB.md A9.",

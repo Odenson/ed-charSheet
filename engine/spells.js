@@ -188,56 +188,24 @@ export function durationRounds(duration, rank) {
   return count > 0 ? count * unit : null;
 }
 
-/** Amount an "Increase Effect (+N …)" option adds to a spell's effect value
- *  (unit-agnostic: +2 Effect Step or +2 Mystic Armor both → 2; a −N target
- *  debuff option → 0, it never boosts the caster's own effect). */
-export function increaseEffectAmount(label) {
-  if (!label || !/increase effect/i.test(label)) return 0;
-  const m = label.match(/\+\s*(\d+)/);
-  return m ? Number(m[1]) : 0;
-}
-
-/** Rounds an "Increase Duration (+N minutes/rounds/hours)" option adds (0 if the
- *  option is not a duration boost). 1 minute = 10 rounds, 1 hour = 600. */
-export function increaseDurationRounds(label) {
-  if (!label || !/increase duration/i.test(label)) return 0;
-  const m = label.match(/\+\s*(\d+)\s*(minute|hour|round)/i);
-  if (!m) return 0;
-  const unit = /minute/i.test(m[2]) ? 10 : /hour/i.test(m[2]) ? 600 : 1;
-  return Number(m[1]) * unit;
-}
-
 /**
  * Build a session active-spell record for a successful self-cast (phase 6b):
  * the sustained effects to fold, a terse readout label, and the round countdown.
  * `rank` is the caster's Spellcasting rank; `ctx` carries the cast's boosts —
  * `{ extraPicks: string[], successLevels: number }` — so the assigned extra
- * threads and the EXTRA successes (levels − 1) raise the folded effect value and
- * extend the duration (§3.2 #2/#3). Each extra thread applies once; each extra
- * success applies the spell's Success-Levels option.
+ * threads and the EXTRA successes (levels − 1) raise the folded effect value
+ * (`ratingAdd`) and extend the duration (`durationRounds`), read from the
+ * options' structured `effects[]` (taxonomy v4). No label parsing.
  */
 export function buildActiveSpell(spell, rank, ctx = {}) {
-  const picks = ctx.extraPicks ?? [];
-  const extra = Math.max(0, (ctx.successLevels ?? 0) - 1);
-  const successLabel = spell.successes?.[0]?.label;
-
-  let effectBoost = 0;
-  let durationBoost = 0;
-  for (const l of picks) {
-    effectBoost += increaseEffectAmount(l);
-    durationBoost += increaseDurationRounds(l);
-  }
-  if (extra > 0) {
-    effectBoost += extra * increaseEffectAmount(successLabel);
-    durationBoost += extra * increaseDurationRounds(successLabel);
-  }
+  const { ratingAdd, durationRounds: durationBoost } = castBoosts(spell, ctx.extraPicks, ctx.successLevels);
 
   // Fold the effect boost into the first numeric sustained effect (the buff's rating).
   let boosted = false;
   const effects = sustainedEffectsOf(spell).map((e) => {
-    if (!boosted && effectBoost && typeof e.value === 'number') {
+    if (!boosted && ratingAdd && typeof e.value === 'number') {
       boosted = true;
-      return { ...e, value: e.value + effectBoost };
+      return { ...e, value: e.value + ratingAdd };
     }
     return e;
   });
@@ -267,25 +235,57 @@ export function tickActiveSpells(active) {
     .filter((s) => s.roundsLeft == null || s.roundsLeft > 0);
 }
 
-/** Steps an "Increase Effect (+N … Step)" option/success contributes (0 if the
- *  option is not an effect-step boost — e.g. Increase Duration/Range/Armor). */
-export function increaseEffectSteps(label) {
-  if (!label || !/increase effect/i.test(label)) return 0;
-  const m = label.match(/\+\s*(\d+)\s*(?:effect\s*step|damage\s*step|step)/i);
-  return m ? Number(m[1]) : 0;
+// A duration measure (rounds/minutes/hours, taxonomy v4) normalised to rounds
+// (1 minute = 10 rounds, 1 hour = 600). Used for duration-modifier effects.
+function durationMeasureRounds(value, measure) {
+  const n = Number(value) || 0;
+  return measure === 'minutes' ? n * 10 : measure === 'hours' ? n * 600 : n;
+}
+
+// Sum the machine-applicable boosts an option's structured `effects[]` confer
+// (taxonomy v4). No label parsing — the effects were structured at build time
+// (tools/archive/enrich-spell-options.mjs).
+function sumOptionBoosts(effects) {
+  let stepAdd = 0;
+  let ratingAdd = 0;
+  let durationRounds = 0;
+  for (const e of effects ?? []) {
+    if (e.operation !== 'add') continue;
+    if (e.type === 'duration-modifier') durationRounds += durationMeasureRounds(e.value, e.measure);
+    else if (e.measure === 'step') stepAdd += Number(e.value) || 0;
+    else if (e.measure === 'rating') ratingAdd += Number(e.value) || 0;
+  }
+  return { stepAdd, ratingAdd, durationRounds };
+}
+
+// The structured effects of an assigned option (by label) from a spell's list.
+function optionEffects(list, label) {
+  return (list ?? []).find((o) => o.label === label)?.effects ?? [];
+}
+
+// Fold the cast's option boosts (extra-thread picks + EXTRA successes) into one
+// { stepAdd, ratingAdd, durationRounds }. Each extra thread applies once; each
+// extra success (successLevels − 1) applies the spell's Success-Levels option.
+function castBoosts(spell, extraPicks, successLevels) {
+  const total = { stepAdd: 0, ratingAdd: 0, durationRounds: 0 };
+  const add = (b, mult = 1) => {
+    total.stepAdd += b.stepAdd * mult;
+    total.ratingAdd += b.ratingAdd * mult;
+    total.durationRounds += b.durationRounds * mult;
+  };
+  for (const label of extraPicks ?? []) add(sumOptionBoosts(optionEffects(spell?.extraThreads, label)));
+  const extra = Math.max(0, (successLevels ?? 0) - 1);
+  if (extra > 0) add(sumOptionBoosts(spell?.successes?.[0]?.effects), extra);
+  return total;
 }
 
 /**
- * The Effect-step bonus for a cast: each assigned extra-thread "Increase Effect"
- * option adds its steps once, and each EXTRA cast success (successLevels − 1)
- * adds the spell's Success-Levels effect-step boost (§3.2 #2/#3).
+ * The Effect-step bonus for a cast — the accumulated effect-step boosts from the
+ * assigned extra threads and the EXTRA cast successes (§3.2 #2/#3), read from the
+ * options' structured `effects[]` (taxonomy v4). No label parsing.
  */
 export function effectStepBonus(spell, extraPicks, successLevels) {
-  let bonus = 0;
-  for (const l of extraPicks ?? []) bonus += increaseEffectSteps(l);
-  const extra = Math.max(0, (successLevels ?? 0) - 1);
-  if (extra > 0) bonus += extra * increaseEffectSteps(spell?.successes?.[0]?.label);
-  return bonus;
+  return castBoosts(spell, extraPicks, successLevels).stepAdd;
 }
 
 /** Flatten the active spells' sustained effects for the derived-value fold,

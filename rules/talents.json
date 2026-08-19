@@ -1,7 +1,7 @@
 {
   "schema": "ed-talents/1",
   "source": "Earthdawn 4E \u2014 talents. Mechanics + original-wording summaries (no verbatim rulebook prose). Consolidated single file (replaces the separate talents.descriptions.json).",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "notes": [
     "460 talents catalogued. Mechanics (name/action/attribute) for all; strain/skillUse/tier/summary/effects fully authored for Chakka's 24 talents plus all 22 Thief/Warrior discipline talents \u2014 the rest are enriched incrementally.",
     "Talent step = attribute step + rank (attribute-less talents like Durability/True Shot use rank only).",

@@ -32,11 +32,12 @@ export const EFFECT_TYPES = [
   'attack-modifier',
   'test-modifier',
   'characteristic-modifier',
+  'duration-modifier',
   'note',
 ];
 
 const OPERATIONS = new Set(['add', 'subtract', 'set']);
-const MEASURES = new Set(['value', 'step', 'result', 'rating', 'rank', 'dice', 'points', 'yards', 'count']);
+const MEASURES = new Set(['value', 'step', 'result', 'rating', 'rank', 'dice', 'points', 'yards', 'count', 'rounds', 'minutes', 'hours']);
 const CONDITIONS = new Set(['always', 'situational', 'on-success']);
 const STACKING = new Set(['cumulative', 'highest', 'replace', 'unique']);
 const DURATIONS = new Set(['permanent', 'sustained', 'rounds', 'test', 'encounter', 'special']);

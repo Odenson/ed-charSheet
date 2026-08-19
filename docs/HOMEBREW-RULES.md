@@ -33,7 +33,7 @@ Top-level shape:
 {
   "schema": "ed-homebrew/2",                 // Tier-1: don't rename fields
   "source": "… provenance note …",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "note": "… file-level note (optional, documentation only) …",
   "rules": [ /* §2 */ ]
 }

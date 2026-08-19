@@ -25,10 +25,7 @@ import {
   buildActiveSpell,
   tickActiveSpells,
   activeSpellEffects,
-  increaseEffectSteps,
   effectStepBonus,
-  increaseEffectAmount,
-  increaseDurationRounds,
 } from './spells.js';
 
 const spellsFile = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url)));
@@ -234,20 +231,11 @@ test('buildActiveSpell: sustained effects, label, round countdown', () => {
   assert.equal(s.effectLabel, '+3 Mystic armor');
 });
 
-test('increaseEffectAmount / increaseDurationRounds parse the options', () => {
-  assert.equal(increaseEffectAmount('Increase Effect (+2 Mystic Armor)'), 2);
-  assert.equal(increaseEffectAmount('Increase Effect (+2 Effect Step)'), 2);
-  assert.equal(increaseEffectAmount('Increase Effect (-2 Mystic Armor)'), 0); // target debuff
-  assert.equal(increaseEffectAmount('Increase Duration (+2 minutes)'), 0);
-  assert.equal(increaseDurationRounds('Increase Duration (+2 minutes)'), 20);
-  assert.equal(increaseDurationRounds('Increase Duration (+2 rounds)'), 2);
-  assert.equal(increaseDurationRounds('Increase Effect (+2 Mystic Armor)'), 0);
-});
-
-test('buildActiveSpell folds extra-thread effect boost + success duration boost', () => {
-  // Soul Armor + 1 extra thread "Increase Effect (+2 Mystic Armor)" + 3 successes
-  // (2 extra × "Increase Duration (+2 minutes)" = +40 rounds).
-  const s = buildActiveSpell(ctx().catalog['Soul Armor'], 3, {
+test('buildActiveSpell folds structured extra-thread effect + success duration boosts', () => {
+  // Real Soul Armor (options migrated to structured effects): 1 extra thread
+  // "Increase Effect (+2 Mystic Armor)" (rating +2) + 3 successes → 2 extra ×
+  // "Increase Duration (+2 minutes)" = +40 rounds.
+  const s = buildActiveSpell(spellsFile.spells['Soul Armor'], 3, {
     extraPicks: ['Increase Effect (+2 Mystic Armor)'],
     successLevels: 3,
   });
@@ -276,24 +264,14 @@ test('activeSpellEffects: flattens + tags origin', () => {
   assert.deepEqual(fx[0].origin, { kind: 'spell', name: 'Soul Armor' });
 });
 
-test('increaseEffectSteps: only effect-step boosts count', () => {
-  assert.equal(increaseEffectSteps('Increase Effect (+2 Effect Step)'), 2);
-  assert.equal(increaseEffectSteps('Increase Effect (+2 Damage Step)'), 2);
-  assert.equal(increaseEffectSteps('Increase Effect (+2 Mystic Armor)'), 0); // rating, not step
-  assert.equal(increaseEffectSteps('Increase Duration (+2 minutes)'), 0);
-  assert.equal(increaseEffectSteps('Increase Range (+10 yards)'), 0);
-});
-
-test('effectStepBonus: extra threads add once, successes add per EXTRA success', () => {
-  const spell = { successes: [{ label: 'Increase Effect (+2 Effect Step)' }] };
-  // Astral Spear bug case: 1 extra thread (+2) + 4 successes (3 extra × +2 = +6) = +8
-  assert.equal(effectStepBonus(spell, ['Increase Effect (+2 Effect Step)'], 4), 8);
-  // no extra successes (1 level) and no picks → 0
-  assert.equal(effectStepBonus(spell, [], 1), 0);
-  // 2 extra threads, 1 success → +4 from threads only
-  assert.equal(effectStepBonus(spell, ['Increase Effect (+2 Effect Step)', 'Increase Effect (+2 Effect Step)'], 1), 4);
-  // a duration-boost success contributes nothing even with extra successes
-  assert.equal(effectStepBonus({ successes: [{ label: 'Increase Duration (+2 minutes)' }] }, [], 4), 0);
+test('effectStepBonus: structured extra-thread + success step boosts (real catalog)', () => {
+  const spear = spellsFile.spells['Astral Spear']; // options structured to attack-modifier step
+  // Astral Spear bug case: 1 extra thread (+2 step) + 4 successes (3 extra × +2 = +6) = +8
+  assert.equal(effectStepBonus(spear, ['Increase Effect (+2 Effect Step)'], 4), 8);
+  assert.equal(effectStepBonus(spear, [], 1), 0);           // no extra successes, no picks
+  assert.equal(effectStepBonus(spear, ['Increase Effect (+2 Effect Step)'], 1), 2); // thread only
+  // Soul Armor's success is a DURATION boost → contributes no effect steps
+  assert.equal(effectStepBonus(spellsFile.spells['Soul Armor'], [], 4), 0);
 });
 
 test('real catalog: 123 Nethermancer spells, threadCap present, effects non-empty', () => {

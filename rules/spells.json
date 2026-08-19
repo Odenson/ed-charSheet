@@ -1,6 +1,6 @@
 {
   "schema": "ed-spells/1",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "source": "Earthdawn 4E Player's Guide + Deeper Secrets — Nethermancer spells. Mechanics + terse original-wording effect lines distilled from the rulebook; descriptions are player-facing paraphrases (copyright-safe, never verbatim prose). taxonomy effects[] are hand-enriched per docs/EFFECT-TAXONOMY.md (§3.4 sustained vs instantaneous).",
   "notes": [
     "123 Nethermancer spells, Circles 1-15. Mechanics (threads/weaving/casting/range/duration/area/effect) + Success Levels/Extra Threads for all; taxonomy effects[] enriched incrementally (combat/numeric spells first), rituals/summons carry a note effect.",
@@ -49,21 +49,65 @@
       "successes": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+1)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+1)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -115,13 +159,27 @@
       "successes": [
         {
           "label": "Increase Duration (+2 months)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Duration (+2 months)"
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 months)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Duration (+2 months)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -151,21 +209,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 hours)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "hours",
+              "source": "spell",
+              "summary": "Increase Duration (+2 hours)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 hours)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "hours",
+              "source": "spell",
+              "summary": "Increase Duration (+2 hours)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+Rank words)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+Rank words)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 movement rate),",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 movement rate),"
+            }
+          ]
         }
       ],
       "effects": [
@@ -195,17 +287,42 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -235,21 +352,67 @@
       "successes": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -301,17 +464,44 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -374,25 +564,73 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Mystic Armor)",
-          "effects": []
+          "effects": [
+            {
+              "type": "armor-modifier",
+              "target": {
+                "domain": "armor",
+                "name": "Mystic"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "rating",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Mystic Armor)",
+              "duration": "sustained"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+1)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+1)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -429,25 +667,71 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "test-modifier",
+              "target": {
+                "domain": "test",
+                "name": "Intimidation"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "rating",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "sustained"
+            }
+          ]
         },
         {
           "label": "Increase Effect (-2 Mystic Armor)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": true,
+              "summary": "Increase Effect (-2 Mystic Armor)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+1)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+1)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -547,17 +831,49 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test"
+            }
+          ]
         },
         {
           "label": "Increase Effect (-1 Defenses) Second Circle",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": true,
+              "summary": "Increase Effect (-1 Defenses) Second Circle"
+            }
+          ]
         }
       ],
       "effects": [
@@ -776,17 +1092,49 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+1 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Attack"
+              },
+              "operation": "add",
+              "value": 1,
+              "measure": "rating",
+              "source": "spell",
+              "summary": "Increase Effect (+1 bonus)",
+              "duration": "sustained"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -849,21 +1197,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards), Remove Targets (-Rank)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards), Remove Targets (-Rank)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -893,21 +1275,53 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Damage Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Damage Step)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+Rank)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+Rank)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -963,21 +1377,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+2 yards from shadow)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+2 yards from shadow)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+50 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+50 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1008,7 +1456,21 @@
       "extraThreads": [
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "test-modifier",
+              "target": {
+                "domain": "test",
+                "name": "Avoid Blow"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "rating",
+              "source": "spell",
+              "summary": "Increase Effect (+2 bonus)",
+              "duration": "sustained"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1045,17 +1507,42 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards) Third Circle",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards) Third Circle"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1215,21 +1702,60 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Damage)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "rating",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Damage)",
+              "duration": "test"
+            }
+          ]
         },
         {
           "label": "Increase Effect (-2 Mystic Armor penalty)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": true,
+              "summary": "Increase Effect (-2 Mystic Armor penalty)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+Rank)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+Rank)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1266,13 +1792,31 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Range (+10 miles)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 miles)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1303,11 +1847,27 @@
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1337,21 +1897,53 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 bonus to talent)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus to talent)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1381,17 +1973,38 @@
       "successes": [
         {
           "label": "Increase Range (+20 miles)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+20 miles)"
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 days)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Duration (+2 days)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+20 miles)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+20 miles)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1421,17 +2034,42 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+1 Wound)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+1 Wound)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1461,17 +2099,44 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 miles) Fourth Circle",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 miles) Fourth Circle"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1653,17 +2318,44 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 to Interaction (Intimidate) tests)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 to Interaction (Intimidate) tests)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1693,25 +2385,66 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Perception tests)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Perception tests)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+1 mile)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+1 mile)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1742,7 +2475,14 @@
       "extraThreads": [
         {
           "label": "Increase Effect (+1 additional Success to Frighten tests)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+1 additional Success to Frighten tests)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1772,13 +2512,27 @@
       "successes": [
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1808,17 +2562,44 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increased Effect (+2 to Perception tests while in creature form)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increased Effect (+2 to Perception tests while in creature form)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -1848,13 +2629,33 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes) Fifth Circle",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes) Fifth Circle"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2040,13 +2841,31 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2077,15 +2896,36 @@
       "extraThreads": [
         {
           "label": "Increase Effect (+2 to effective Willpower Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 to effective Willpower Step)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Additional Targets (+1)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Targets (+1)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2115,21 +2955,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2160,15 +3034,43 @@
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+1 Target; additional target threads do not count toward the normal extra thread maximum)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+1 Target; additional target threads do not count toward the normal extra thread maximum)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2246,17 +3148,54 @@
       "successes": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Effect Step)",
+              "duration": "test"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2464,21 +3403,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2508,21 +3481,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2600,21 +3607,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2644,13 +3685,27 @@
       "successes": [
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 bonus)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2680,17 +3735,44 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 to Movement Rate) Increase Range (+10 yards) Seventh Circle",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 to Movement Rate) Increase Range (+10 yards) Seventh Circle"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2876,13 +3958,38 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+1 bonus)",
-          "effects": []
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Attack"
+              },
+              "operation": "add",
+              "value": 1,
+              "measure": "rating",
+              "source": "spell",
+              "summary": "Increase Effect (+1 bonus)",
+              "duration": "sustained"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2932,17 +4039,38 @@
       "successes": [
         {
           "label": "Increase Effect (+1 Circle)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+1 Circle)"
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+1 Circle)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+1 Circle)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -2972,21 +4100,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3042,17 +4204,42 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         },
         {
           "label": "Increase Area (+2 yards), Remove Targets (-Rank)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Area (+2 yards), Remove Targets (-Rank)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3082,21 +4269,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         },
         {
           "label": "Increase Range (+10 yards) Eighth Circle",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards) Eighth Circle"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3326,13 +4547,31 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Effect (+2 to Astral Sight tests)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 to Astral Sight tests)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3362,17 +4601,44 @@
       "successes": [
         {
           "label": "Increase Duration (+2 hours)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "hours",
+              "source": "spell",
+              "summary": "Increase Duration (+2 hours)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 hours)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "hours",
+              "source": "spell",
+              "summary": "Increase Duration (+2 hours)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Dispel Diffi - culty)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Dispel Diffi - culty)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3402,21 +4668,55 @@
       "successes": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 minutes)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Damage)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Damage)"
+            }
+          ]
         },
         {
           "label": "Additional Target (+Rank)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+Rank)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3446,13 +4746,31 @@
       "successes": [
         {
           "label": "Increase Duration (+2 rounds)",
-          "effects": []
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Range (+10 yards)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
         }
       ],
       "effects": [
@@ -3482,17 +4800,38 @@
       "successes": [
         {
           "label": "Increase Duration (+2 months)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Duration (+2 months)"
+            }
+          ]
         }
       ],
       "extraThreads": [
         {
           "label": "Increase Duration (+2 months)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Duration (+2 months)"
+            }
+          ]
         },
         {
           "label": "Increase Effect (+2 Effect Step)",
-          "effects": []
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Effect (+2 Effect Step)"
+            }
+          ]
         }
       ],
       "effects": [

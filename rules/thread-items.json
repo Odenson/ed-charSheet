@@ -1,6 +1,6 @@
 {
   "schema": "ed-thread-items/1",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "source": "Earthdawn 4E Gamemaster's Guide — the Thread Items chapter (design + examples, pp. 197-236) and Player's Guide (weaving threads to magic items, pp. 220-225). The reference CATALOG: each thread item is a multi-rank magic item — a character weaves Legend-charged threads to it, and each Thread Rank unlocks the effects listed for that rank and below. Per-rank mechanics live in `effects` arrays in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does item effects; a rank's effect replaces the previous rank's effect on the same target (never added together). Summaries are original wording, no verbatim rulebook prose; Key Knowledge text is reference data (what the owner must learn).",
   "notes": {
     "ownership": "A character owns a thread item by name in data/character.json `items` (e.g. `{ name, equipped, threadRank }`); `threadRank` is the INPUT (how many ranks woven). All derived values — active effects, Legend spent — come from it and the tier's cost progression.",

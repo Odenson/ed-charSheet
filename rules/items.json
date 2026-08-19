@@ -1,6 +1,6 @@
 {
   "schema": "ed-items/2",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "source": "Earthdawn 4E Player's Guide — the Weapons, Armor & Shields, Magical Equipment, and Adventuring Equipment tables (Weapons p.406-410; Armor and Shields p.411-415; Magical Equipment p.415-423; Adventuring Equipment p.423-426; tables on pp.433-439). The reference CATALOG: each entry's mechanics live in an `effects` array in the controlled taxonomy vocabulary, so the engine gathers them exactly as it does racial/discipline effects. A character owns items by name (data/character.json `items: [{ name, equipped }]`) — the numbers are reference, not per-character input.",
   "notes": {
     "armor": "Worn armor confers Physical/Mystic Armor (damage reducers) via `armor-modifier` effects, and its Initiative penalty via a `characteristic-modifier` on Initiative (measure: step). `living` marks elemental 'living' armor (the only kind an obsidiman may wear atop Natural Armor; PG p.48). `ref` holds display-only stats (cost/weight/availability).",
