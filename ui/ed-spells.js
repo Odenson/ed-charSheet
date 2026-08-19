@@ -45,7 +45,6 @@ export class EdSpells extends LitElement {
     .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
     .kchip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
     .kchip b { color: var(--karma); font-weight: 500; }
-    .rightgrp { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .initpill { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 10px; }
     .initpill b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
     .initbtn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--karma); background: var(--karma-bg); color: var(--karma); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); padding: 0; flex: none; }
@@ -109,7 +108,8 @@ export class EdSpells extends LitElement {
     .desc .body { background: var(--bg-card); border-radius: 8px; padding: 10px 12px; font-size: var(--fs-small); line-height: 1.5; min-height: 72px; }
     .casthead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
     .casthead .nm { font-size: var(--fs-title); font-weight: 500; }
-    .modeseg { display: inline-flex; background: var(--bg-card); border-radius: 999px; padding: 3px; gap: 2px; margin: 0 0 10px; }
+    .modeline { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+    .modeseg { display: inline-flex; background: var(--bg-card); border-radius: 999px; padding: 3px; gap: 2px; }
     .modeseg button { border: none; background: none; padding: 5px 12px; border-radius: 999px; font: inherit; font-size: var(--fs-small); color: var(--muted); cursor: pointer; }
     .modeseg button.on { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
     .subrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--fs-small); color: var(--muted); margin-bottom: 8px; }
@@ -323,14 +323,7 @@ export class EdSpells extends LitElement {
           <button aria-pressed=${this._view === 'cast'} @click=${() => (this._view = 'cast')}>Cast</button>
           <button aria-pressed=${this._view === 'grimoire'} @click=${() => (this._view = 'grimoire')}>Grimoire</button>
         </div>
-        <div class="rightgrp">
-          ${karma != null ? html`<div class="kchip">Available Karma <b>${karma}</b></div>` : ''}
-          ${this._initiative
-            ? html`<div class="initpill">Initiative <b>${this._initiative.value ?? '—'}</b>
-                <button class="initbtn" ?disabled=${!this._initiative.value} title="Roll initiative — starts a new round" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
-              </div>`
-            : ''}
-        </div>
+        ${karma != null ? html`<div class="kchip">Available Karma <b>${karma}</b></div>` : ''}
       </div>
       ${!ctx
         ? html`<div class="empty">This character has no spells — the Spells tab is for spellcasting Disciplines.</div>`
@@ -553,9 +546,16 @@ export class EdSpells extends LitElement {
         <span class="nm">${plan.name}</span>
         <span class="cr" style="font-size:var(--fs-small);background:var(--spell-bg);color:var(--spell);border-radius:999px;padding:1px 9px;">Circle ${plan.circle} · ${this._castType}</span>
       </div>
-      <div class="modeseg">
-        <button class="on">Step-by-step</button>
-        <button class="soon" disabled title="Guided auto-chaining — coming soon">Guided <span class="soontag">soon</span></button>
+      <div class="modeline">
+        <div class="modeseg">
+          <button class="on">Step-by-step</button>
+          <button class="soon" disabled title="Guided auto-chaining — coming soon">Guided <span class="soontag">soon</span></button>
+        </div>
+        ${this._initiative
+          ? html`<div class="initpill">Initiative <b>${this._initiative.value ?? '—'}</b>
+              <button class="initbtn" ?disabled=${!this._initiative.value} title="Roll initiative — starts a new round" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+            </div>`
+          : ''}
       </div>
 
       <div class="subrow">
