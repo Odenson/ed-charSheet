@@ -45,6 +45,11 @@ export class EdSpells extends LitElement {
     .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
     .kchip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
     .kchip b { color: var(--karma); font-weight: 500; }
+    .rightgrp { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .initpill { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 10px; }
+    .initpill b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .initbtn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--karma); background: var(--karma-bg); color: var(--karma); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); padding: 0; flex: none; }
+    .initbtn:disabled { opacity: 0.4; cursor: default; }
 
     .empty { color: var(--muted); font-size: var(--fs-body); background: var(--bg-card); border-radius: 8px; padding: 18px; text-align: center; }
 
@@ -264,6 +269,20 @@ export class EdSpells extends LitElement {
 
   get ctx() { return this.model?.spells ?? null; }
 
+  get _initiative() { return this.model?.characteristics?.initiative ?? null; }
+
+  // Roll Initiative — the round start/end signal (same action as the Combat tab).
+  // ed-app treats an initiative roll as advancing the round (the trigger the
+  // sustained self-cast countdown will consume, phase 6b).
+  _rollInitiative() {
+    const c = this._initiative;
+    if (!c?.value) return;
+    this.dispatchEvent(new CustomEvent('ed-roll', {
+      detail: { label: 'Initiative', step: c.value, karma: this._karmaCtx(c.karma), kind: 'initiative' },
+      bubbles: true, composed: true,
+    }));
+  }
+
   // Build the next spells block (pure inputs) and dispatch it up for saving.
   _emit(known, matrices) {
     this.dispatchEvent(new CustomEvent('ed-edit-spells', {
@@ -304,7 +323,14 @@ export class EdSpells extends LitElement {
           <button aria-pressed=${this._view === 'cast'} @click=${() => (this._view = 'cast')}>Cast</button>
           <button aria-pressed=${this._view === 'grimoire'} @click=${() => (this._view = 'grimoire')}>Grimoire</button>
         </div>
-        ${karma != null ? html`<div class="kchip">Available Karma <b>${karma}</b></div>` : ''}
+        <div class="rightgrp">
+          ${karma != null ? html`<div class="kchip">Available Karma <b>${karma}</b></div>` : ''}
+          ${this._initiative
+            ? html`<div class="initpill">Initiative <b>${this._initiative.value ?? '—'}</b>
+                <button class="initbtn" ?disabled=${!this._initiative.value} title="Roll initiative — starts a new round" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+              </div>`
+            : ''}
+        </div>
       </div>
       ${!ctx
         ? html`<div class="empty">This character has no spells — the Spells tab is for spellcasting Disciplines.</div>`

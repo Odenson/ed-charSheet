@@ -237,6 +237,10 @@ export class EdApp extends LitElement {
       const config = this._rollConfig(e.detail);
       if (!config) return;
       this._roll = config;
+      // An Initiative roll (from the Combat OR Spells tab) is the round
+      // start/end signal: advance the round counter. Phase 6b (PLAN-SPELLS)
+      // ticks the sustained self-cast active-effect set here.
+      if (e.detail?.kind === 'initiative') this._advanceRound();
     });
     // A set-dice roll's Strain is charged when the modal commits the roll (not at
     // Attack-click), so Escaping the set-dice modal costs nothing. The modal fires
@@ -565,6 +569,13 @@ export class EdApp extends LitElement {
   // A view changed the character's wealth (coin counts / gems). Same inputs-only
   // flow: replace the wealth input, persist the overlay, mark the file dirty, and
   // re-derive so the totals recompute (data flows down).
+  // The round start/end signal (PLAN-SPELLS §6.1 / 6b). Session-only, never
+  // persisted — like knockdown. Phase 6b will decrement each active self-cast's
+  // remaining duration here and drop the ones that expire.
+  _advanceRound() {
+    this._round = (this._round ?? 0) + 1;
+  }
+
   _editWealth(wealth) {
     if (!this._character || !wealth) return;
     this._character = { ...this._character, wealth };
