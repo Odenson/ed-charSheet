@@ -8,7 +8,7 @@
 // Discipline + Circle, the detail modal, matrix place/release (any time), and
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
-import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan } from '../engine/spells.js';
+import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus } from '../engine/spells.js';
 import { successCount } from '../engine/combat.js';
 
 export class EdSpells extends LitElement {
@@ -541,12 +541,18 @@ export class EdSpells extends LitElement {
     });
   }
 
+  // Effect-step bonus from assigned extra threads + extra cast successes (the
+  // engine computes it — the view only supplies the picks and success levels).
+  _effectBonus(plan) {
+    return effectStepBonus(plan, this._prog.extraPicks, this._prog.cast?.levels ?? 0);
+  }
+
   // The Effect step resolves the cast and un-greys Weave + Cast for the next one
   // (owner rule). A step effect rolls the dice; a static/none effect just resets.
   _doEffect(plan) {
     if (plan.effect.kind === 'step' && plan.effect.step != null) {
       this._pendingStep = 'effect';
-      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step, null, {});
+      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan), null, {});
     } else {
       const total = plan.effect.kind === 'static' ? plan.effect.value : null;
       this._prog = { ...this._blankProg(),
@@ -599,6 +605,7 @@ export class EdSpells extends LitElement {
     const forge = plan.threadsToWeave > 0;
     const prog = this._prog;
     const weaveMaxed = prog.threadsWoven >= this._weaveMax(plan);
+    const effBonus = this._effectBonus(plan);
     const effectLabel = plan.effect.kind === 'step' ? '⚄ Roll' : plan.effect.kind === 'static' ? `Apply +${plan.effect.value}` : 'Done';
     return html`
       <div class="casthead">
@@ -648,7 +655,9 @@ export class EdSpells extends LitElement {
         <div class="step">
           <span class="lab">Effect</span>
           <button class="rollbtn" @click=${() => this._doEffect(plan)}>${effectLabel}</button>
-          <span class="stepnote">${plan.effect.kind === 'step' ? `Step ${plan.effect.step ?? '—'}` : plan.effect.kind === 'static' ? plan.effect.label : 'See description'}</span>
+          <span class="stepnote">${plan.effect.kind === 'step'
+            ? (effBonus > 0 ? `Step ${plan.effect.step} +${effBonus} = ${plan.effect.step + effBonus}` : `Step ${plan.effect.step ?? '—'}`)
+            : plan.effect.kind === 'static' ? plan.effect.label : 'See description'}</span>
           ${this._rollRes(prog.effect)}
         </div>
       </div>

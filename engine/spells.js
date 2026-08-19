@@ -218,6 +218,27 @@ export function tickActiveSpells(active) {
     .filter((s) => s.roundsLeft == null || s.roundsLeft > 0);
 }
 
+/** Steps an "Increase Effect (+N … Step)" option/success contributes (0 if the
+ *  option is not an effect-step boost — e.g. Increase Duration/Range/Armor). */
+export function increaseEffectSteps(label) {
+  if (!label || !/increase effect/i.test(label)) return 0;
+  const m = label.match(/\+\s*(\d+)\s*(?:effect\s*step|damage\s*step|step)/i);
+  return m ? Number(m[1]) : 0;
+}
+
+/**
+ * The Effect-step bonus for a cast: each assigned extra-thread "Increase Effect"
+ * option adds its steps once, and each EXTRA cast success (successLevels − 1)
+ * adds the spell's Success-Levels effect-step boost (§3.2 #2/#3).
+ */
+export function effectStepBonus(spell, extraPicks, successLevels) {
+  let bonus = 0;
+  for (const l of extraPicks ?? []) bonus += increaseEffectSteps(l);
+  const extra = Math.max(0, (successLevels ?? 0) - 1);
+  if (extra > 0) bonus += extra * increaseEffectSteps(spell?.successes?.[0]?.label);
+  return bonus;
+}
+
 /** Flatten the active spells' sustained effects for the derived-value fold,
  *  tagged with their origin (mirrors the knockdown condition tag). */
 export function activeSpellEffects(active) {

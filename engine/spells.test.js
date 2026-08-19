@@ -25,6 +25,8 @@ import {
   buildActiveSpell,
   tickActiveSpells,
   activeSpellEffects,
+  increaseEffectSteps,
+  effectStepBonus,
 } from './spells.js';
 
 const spellsFile = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url)));
@@ -248,6 +250,26 @@ test('activeSpellEffects: flattens + tags origin', () => {
   assert.equal(fx.length, 1);
   assert.equal(fx[0].type, 'armor-modifier');
   assert.deepEqual(fx[0].origin, { kind: 'spell', name: 'Soul Armor' });
+});
+
+test('increaseEffectSteps: only effect-step boosts count', () => {
+  assert.equal(increaseEffectSteps('Increase Effect (+2 Effect Step)'), 2);
+  assert.equal(increaseEffectSteps('Increase Effect (+2 Damage Step)'), 2);
+  assert.equal(increaseEffectSteps('Increase Effect (+2 Mystic Armor)'), 0); // rating, not step
+  assert.equal(increaseEffectSteps('Increase Duration (+2 minutes)'), 0);
+  assert.equal(increaseEffectSteps('Increase Range (+10 yards)'), 0);
+});
+
+test('effectStepBonus: extra threads add once, successes add per EXTRA success', () => {
+  const spell = { successes: [{ label: 'Increase Effect (+2 Effect Step)' }] };
+  // Astral Spear bug case: 1 extra thread (+2) + 4 successes (3 extra × +2 = +6) = +8
+  assert.equal(effectStepBonus(spell, ['Increase Effect (+2 Effect Step)'], 4), 8);
+  // no extra successes (1 level) and no picks → 0
+  assert.equal(effectStepBonus(spell, [], 1), 0);
+  // 2 extra threads, 1 success → +4 from threads only
+  assert.equal(effectStepBonus(spell, ['Increase Effect (+2 Effect Step)', 'Increase Effect (+2 Effect Step)'], 1), 4);
+  // a duration-boost success contributes nothing even with extra successes
+  assert.equal(effectStepBonus({ successes: [{ label: 'Increase Duration (+2 minutes)' }] }, [], 4), 0);
 });
 
 test('real catalog: 123 Nethermancer spells, threadCap present, effects non-empty', () => {
