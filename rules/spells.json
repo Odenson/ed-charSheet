@@ -539,7 +539,7 @@
           },
           "operation": "add",
           "value": 4,
-          "measure": "rating",
+          "measure": "result",
           "duration": "sustained",
           "source": "spell",
           "summary": "+4 to Stealthy Stride tests while active."
@@ -693,7 +693,7 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "rating",
+              "measure": "result",
               "source": "spell",
               "summary": "Increase Effect (+2 Effect Step)",
               "duration": "sustained"
@@ -743,7 +743,7 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "rating",
+          "measure": "result",
           "duration": "sustained",
           "source": "spell",
           "summary": "+3 to Intimidation tests while active."
@@ -1465,7 +1465,7 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "rating",
+              "measure": "result",
               "source": "spell",
               "summary": "Increase Effect (+2 bonus)",
               "duration": "sustained"
@@ -1482,7 +1482,7 @@
           },
           "operation": "add",
           "value": 4,
-          "measure": "rating",
+          "measure": "result",
           "duration": "sustained",
           "source": "spell",
           "summary": "+4 to Avoid Blow tests while active."

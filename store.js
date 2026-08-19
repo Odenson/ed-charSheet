@@ -1281,6 +1281,37 @@ export function deriveModel(character, rules, session = {}) {
     damageKarma: karmaUse('Damage', activeEffects),
   };
 
+  // Fold test-modifier effects that target a named talent/skill (e.g. a sustained
+  // spell's "+4 Stealthy Stride", Shadow Meld) into that ability's roll: a
+  // step-measure bonus adjusts the step; a result-measure bonus becomes a flat
+  // result mod the roll carries and the Disciplines tab badges. Mirrors how the
+  // Combat tab folds resultMods into attack/damage.
+  const abilityTestMods = (name) => {
+    const hits = activeEffects.filter(
+      (e) =>
+        e.type === 'test-modifier' &&
+        e.target?.name === name &&
+        (e.target?.domain === 'test' || e.target?.domain === 'ability') &&
+        (e.operation === 'add' || e.operation === 'subtract'),
+    );
+    const signed = (e) => (e.operation === 'subtract' ? -1 : 1) * (Number(e.value) || 0);
+    const stepBonus = hits.filter((e) => e.measure === 'step').reduce((s, e) => s + signed(e), 0);
+    const resultMods = hits
+      .filter((e) => e.measure === 'result')
+      .map((e) => ({ value: signed(e), source: e.origin?.name ?? e.source ?? 'effect' }));
+    return { stepBonus, resultMods };
+  };
+  const applyTestMods = (ability) => {
+    const { stepBonus, resultMods } = abilityTestMods(ability.name);
+    if (stepBonus && ability.step != null) {
+      ability.step += stepBonus;
+      ability.dice = diceForStep(ability.step);
+    }
+    if (resultMods.length) ability.resultMods = resultMods;
+  };
+  for (const d of disciplines) for (const t of d.talents ?? []) applyTestMods(t);
+  for (const sk of skills) applyTestMods(sk);
+
   // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
   // for the Active-effects card. buildSpellsContext stays session-free (pure).
   const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });

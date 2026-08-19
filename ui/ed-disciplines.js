@@ -94,6 +94,9 @@ export class EdDisciplines extends LitElement {
     /* Rank-grant chip (PLAN-RANK-GRANTS.md D5): the folded +N beside the learned
        rank, source-named via tooltip. Theme-aware; never alters the stored rank. */
     .gchip { font-size: var(--fs-fine); font-weight: 500; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
+    /* Active test-bonus (e.g. a sustained spell's +N to this talent's tests): a
+       flat result mod folded into the roll, shown as a green chip by the step. */
+    .rmod { font-size: var(--fs-fine); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 0 5px; margin-left: 5px; font-variant-numeric: tabular-nums; }
 
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
@@ -185,7 +188,7 @@ export class EdDisciplines extends LitElement {
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
         ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}</span>`}
-        <span class="sd">${t.step != null ? `${t.step} · ${t.dice}` : '—'}</span>
+        <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}${this._resultChip(t)}</span>
         <span class="action sd">${t.action ?? ''}</span>
         <button
           class="roll"
@@ -194,7 +197,7 @@ export class EdDisciplines extends LitElement {
           aria-label="Roll ${t.name}"
           @click=${() =>
             this.dispatchEvent(
-              new CustomEvent('ed-roll', { detail: { label: t.name, step: t.step, karma: karmaCtx }, bubbles: true, composed: true }),
+              new CustomEvent('ed-roll', { detail: { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [] }, bubbles: true, composed: true }),
             )}
         >⚄</button>
       </div>
@@ -297,7 +300,7 @@ export class EdDisciplines extends LitElement {
         </span>
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
         ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}</span>`}
-        <span class="sd">${s.step != null ? `${s.step} · ${s.dice}` : '—'}</span>
+        <span class="sd">${s.step != null ? html`${s.step} · ${s.dice}` : '—'}${this._resultChip(s)}</span>
         <span class="action sd">${s.action ?? ''}</span>
         <button
           class="roll"
@@ -306,7 +309,7 @@ export class EdDisciplines extends LitElement {
           aria-label="Roll ${s.name}"
           @click=${() =>
             this.dispatchEvent(
-              new CustomEvent('ed-roll', { detail: { label: s.name, step: s.step, karma: null }, bubbles: true, composed: true }),
+              new CustomEvent('ed-roll', { detail: { label: s.name, step: s.step, karma: null, mods: s.resultMods ?? [] }, bubbles: true, composed: true }),
             )}
         >⚄</button>
       </div>
@@ -464,6 +467,17 @@ export class EdDisciplines extends LitElement {
     // or a grant that nets to zero ranks renders nothing — never a fabricated +0.
     if (!t.rankBonus) return '';
     return html`<span class="gchip" title="+${Math.abs(t.rankBonus)} rank ${this._grantTitle(t.grantSources)}">${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus)}</span>`;
+  }
+
+  // A flat result bonus folded into this ability's roll from an active
+  // test-modifier effect (e.g. a sustained spell). Green chip beside the step,
+  // tooltip names each source; nets to zero renders nothing.
+  _resultChip(t) {
+    const mods = t.resultMods ?? [];
+    const net = mods.reduce((s, m) => s + (Number(m.value) || 0), 0);
+    if (!net) return '';
+    const src = mods.map((m) => `${m.source} ${m.value > 0 ? '+' : '−'}${Math.abs(m.value)}`).join('; ');
+    return html`<span class="rmod" title=${`Active: ${src}`}>${net > 0 ? `+${net}` : `−${Math.abs(net)}`}</span>`;
   }
 
   // One granted-ability row (possessed via a `set` grant the character hasn't
