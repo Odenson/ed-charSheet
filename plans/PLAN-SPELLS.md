@@ -74,7 +74,11 @@ shapes are fixed.
 
 Mirrors `ed-talents/1` and `ed-thread-items/1`: a versioned catalog, mechanics +
 original-wording summaries (never verbatim rulebook prose), effects in the
-controlled taxonomy vocabulary.
+controlled taxonomy vocabulary. Each spell also carries a `description` — a
+player-facing **paraphrase** (flavor + resolution + core mechanic) shown in the
+spell's detail modal / Cast-view description panel; `summary` remains the terse
+mechanic readout. `description` is catalog metadata, **not** an effect — no
+taxonomy change, no version bump.
 
 ```jsonc
 {
@@ -88,11 +92,16 @@ controlled taxonomy vocabulary.
     { "minCircle": 13, "maxCircle": 15, "extraThreads": 4 }
   ],
   "spells": {
-    "Soul Armor": {
+"Soul Armor": {
       "name": "Soul Armor",
+      "description": "Draws jagged blue sigils that coalesce into a glimmering suit of chain mail, which sinks into the target and adds +3 to his Mystic Armor. Cast against the target's Mystic Defense.",
+                                             // long prose shown in the spell's detail modal /
+                                             // Cast-view description panel; a player-facing
+                                             // paraphrase of the rulebook (copyright-safe),
+                                             // NEVER a mechanic readout — `summary` stays terse
       "discipline": "Nethermancer",       // which spellcasting Discipline's list — grouping only;
-                                            // spells are unique across lists, so the character
-                                            // block never stores it (§3.2 #5)
+                                             // spells are unique across lists, so the character
+                                             // block never stores it (§3.2 #5)
       "circle": 1,                          // spell Circle (drives Legend cost + grouping)
       "threadsToWeave": 1,                  // threads required to power the cast — forged
                                             // for ANY cast type (a Standard matrix holds
@@ -151,6 +160,7 @@ controlled taxonomy vocabulary.
     },
     "Astral Spear": {
       "name": "Astral Spear",
+      "description": "Weaves raw astral energy into a hurled spear of force; strikes the target's Mystic Defense; a successful cast deals its Effect step in damage.",
       "discipline": "Nethermancer",
       "circle": 1,
       "threadsToWeave": 1,        // same weave rules as Soul Armor (§3.1)
@@ -658,6 +668,7 @@ extension of the thread-item / charm model) — no rework of §3–§6 expected.
 | 2026-08-18 | Plan created; owner review round: confirmed A2 taxonomy-true, A4 matrices, A6 Karma pause-and-offer, A8 karma auto-decrement; resolved §3.1 (matrix holds no threads — weaving always forges required threads), §3.2 all five shapes, §3.3 (self-cast folds into the session active-effect set **in v1** + explicit cast-target UI indicator); re-modeled §3 example (Soul Armor static + Astral Spear step); 1 minute = 10 rounds; perSuccess = extra successes. Mockup copy synced to the confirmed model (place/release matrix, no "pre-woven"). | Draft for review |
 | 2026-08-18 | Owner clarifications: **Armoured Matrix** holds 1 thread alongside Enhanced (bare "matrix" = Standard, holds none); **extra-thread cap is a Circle table** (C1–4 → 1, C5–8 → 2, C9–12 → 3, C13–15 → 4), replacing the "no limit" reading in §3.1/§3.2/§6.1; **Raw** casting = any **learnt** spell, **Grimoire** casting = any spell in the Disciplines' lists (§5 `castTypeList`, §6 cast-type pills, mockup `known` flag + filters). | Draft for review |
 | 2026-08-18 | Shape: `spells.known[]` entries gain `learntSuccess` — the extra successes achieved on the Learn test, an input recorded from the learn roll (§4 example, §6 Learn modal). | Draft for review |
+| 2026-08-18 | Shape: each spell entry in `rules/spells.json` gains `description` — player-facing prose (flavor + resolution + core mechanic), a paraphrase of the local rulebook extracts (copyright-safe); sits after `name`, sibling to the terse `summary`; catalog metadata, no taxonomy impact. All 123 Nethermancer spell descriptions authored. | Draft for review |
 | 2026-08-18 | Review pass (B1–S4 + nits) applied. **B1:** phase 6 split into 6a (core cast, no fold — ships v1) and 6b (net-new sustained self-cast fold + Initiative countdown); §3.3/§6.1 corrected — this is NOT a reuse of knock-down (a condition chip, not a duration-counted fold; engine has no `duration` fold today). **B2:** `weavingStep(character, discipline)` — Thread Weaving is discipline-named, must take the spell's discipline. **S1:** new §3.4 effect-archetype rule (sustained-buff folds vs instantaneous `duration: test` effect roll); Astral Spear retagged `sustained`→`test`; Soul Armor comment names the archetype. **S3:** dangling "§4.1" cites docs/EFFECT-TAXONOMY.md §4.1. **S4:** extra-thread cap is rules data — added `threadCap` block to the `ed-spells/1` shape (§3, §3.1). **Nits:** phase-1 stale "Q1–Q5" removed (all A1–A8 answered); "Decision N = letter" tags normalized to `§3.2 #N`; §6.1 steps renumbered 1–4 (self-target folded into step 1). **Open flags for owner:** S2 (Grimoire/Raw read inverted — confirm) and N4 (name a `learntSuccess` consumer or drop it). | Draft for review |
 | 2026-08-18 | **S2 resolved:** Grimoire/Raw definitions **swapped** to the intuitive sense — `grimoire` = learnt spells (`known`), `raw` = any spell in the Disciplines' lists (§5 `castTypeList`, §6 cast-type pills). This supersedes the earlier "Raw = learnt / Grimoire = discipline lists" reading. N4 (`learntSuccess` consumer) remains the only open flag. | Draft for review |
 | 2026-08-18 | **N4 resolved (owner):** keep `learntSuccess` — consumer is the Learn-a-spell flow; the learn test's success levels are recorded per spell (§4, §6). No open flags remain; §3/§4 Tier-1 shapes ready for sign-off. | **Shapes ready — awaiting sign-off** |

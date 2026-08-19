@@ -444,7 +444,7 @@ export class EdSpells extends LitElement {
             <span class="cr">${s.discipline} · Circle ${s.circle}</span>
             <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
           </div>
-          ${s.summary ? html`<p class="msum">${s.summary}</p>` : ''}
+          ${s.description || s.summary ? html`<p class="msum">${s.description ?? s.summary}</p>` : ''}
           <div class="grid">
             <span class="k">Threads</span><span>${s.threadsToWeave}</span>
             <span class="k">Weaving</span><span>${s.weavingDifficulty?.value ?? '—'}${s.weavingDifficulty?.reattune ? ` / ${s.weavingDifficulty.reattune}` : ''}</span>
@@ -581,7 +581,7 @@ export class EdSpells extends LitElement {
                   </button>`)}
               </div>`
             : html`<div class="empty">${this._castType === 'matrix' ? 'No spells placed in a matrix — use the ✦ toggle in the Grimoire.' : 'No spells available for this cast type.'}</div>`}
-          ${sel ? html`<div class="desc"><h4 class="circlelbl">Description</h4><div class="body">${sel.summary ?? '—'}</div></div>` : ''}
+          ${sel ? html`<div class="desc"><h4 class="circlelbl">Description</h4><div class="body">${sel.description ?? sel.summary ?? '—'}</div></div>` : ''}
         </div>
         <div>${plan ? this._castPanel(plan) : html`<div class="empty">Pick a spell to cast.</div>`}</div>
       </div>
