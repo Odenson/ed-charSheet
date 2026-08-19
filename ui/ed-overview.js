@@ -7,6 +7,7 @@ import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, re
 import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
 import './ed-add-legend.js';
+import { humanize, cap } from './format.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
@@ -649,7 +650,6 @@ export class EdOverview extends LitElement {
   _metaBody() {
     const meta = this.model?.meta ?? {};
     const HIDE = new Set(['id', 'name', 'portrait', 'sourceSheetVersion']);
-    const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
     const entries = Object.entries(meta).filter(([k, v]) => !HIDE.has(k) && v != null && v !== '');
     return html`
       <dl class="meta-dl">
@@ -767,7 +767,6 @@ export class EdOverview extends LitElement {
       const dash = s.indexOf('—');
       return dash > 0 ? s.slice(dash + 1).replace(/^\s*/, '') : s;
     };
-    const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
     // Group condition effects by condition name (Burdened, Overburdened, …);
     // anything else stays as its own row.
     const grouped = [];

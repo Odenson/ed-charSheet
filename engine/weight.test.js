@@ -21,9 +21,9 @@ test('weightPounds: ounces convert to pounds', () => {
   assert.equal(weightPounds({ amount: 2, unit: 'oz' }), 0.13);
 });
 
-test('weightPounds: a bare number reads as pounds (the tolerated unit-less form)', () => {
-  assert.equal(weightPounds(0.1), 0.1);
-  assert.equal(weightPounds(5), 5);
+test('weightPounds: a bare number is not a valid ed-items/3 weight (unknown, never pounds)', () => {
+  assert.equal(weightPounds(0.1), null);
+  assert.equal(weightPounds(5), null);
 });
 
 test('weightPounds: a pre-midpointed amount (ranges were collapsed at migration)', () => {

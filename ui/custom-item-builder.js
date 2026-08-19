@@ -14,6 +14,7 @@
 // way.
 
 import { validateItem, MAX_SHORT_EFFECT } from '../engine/validate-item.js';
+import { prettyName } from './format.js';
 
 export { MAX_SHORT_EFFECT };
 
@@ -33,8 +34,6 @@ export const MEASURES = ['rating', 'step', 'result', 'value', 'points', 'rank'];
 export const CONDITIONS = ['always', 'situational'];
 
 // Presentation-only formatters (no game values computed here).
-export const prettyName = (n) => (n ?? '').replace(/([a-z])([A-Z])/g, '$1 $2');
-export const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const absVal = (v) => Math.abs(Number(v) || 0);
 export const effectLabel = (e) => {
   const meta = TYPE_META[e.type];

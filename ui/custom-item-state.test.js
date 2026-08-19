@@ -10,7 +10,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking } from './custom-item-state.js';
+import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking, weightToForm, weightFromForm } from './custom-item-state.js';
 
 const LANTERN = { kind: 'gear', effects: [{ type: 'note', summary: 'A lantern.' }] };
 const MUG = { kind: 'magic-item', effects: [] };
@@ -118,4 +118,44 @@ test('removeWorking and commitForm never mutate the working set they were given'
   const afterCommit = commitForm(working, 'A', 'A', { ...LANTERN, ref: { cost: 1 } });
   assert.equal(working.get('A').ref, undefined, 'commitForm is copy-on-write');
   assert.ok(afterCommit.get('A').ref.cost === 1);
+});
+
+test('weightToForm maps the structured shapes losslessly', () => {
+  assert.deepEqual(weightToForm(undefined), { mode: 'none', amount: '' });
+  assert.deepEqual(weightToForm(null), { mode: 'none', amount: '' });
+  assert.deepEqual(weightToForm({ negligible: true }), { mode: 'negligible', amount: '' });
+  assert.deepEqual(weightToForm({ amount: 8, unit: 'oz' }), { mode: 'oz', amount: '8' });
+  assert.deepEqual(weightToForm({ amount: 25, unit: 'lb' }), { mode: 'lb', amount: '25' });
+});
+
+test('weightToForm migrates a bare number / numeric-string legacy weight to pounds', () => {
+  assert.deepEqual(weightToForm(5), { mode: 'lb', amount: '5' });
+  assert.deepEqual(weightToForm('0.1'), { mode: 'lb', amount: '0.1' });
+  assert.deepEqual(weightToForm('2'), { mode: 'lb', amount: '2' });
+});
+
+test('weightToForm flags a non-numeric legacy string for re-entry, never drops it', () => {
+  assert.deepEqual(weightToForm('25 lb'), { mode: 'none', amount: '', legacy: '25 lb' });
+  assert.deepEqual(weightToForm('heavy'), { mode: 'none', amount: '', legacy: 'heavy' });
+  assert.deepEqual(weightToForm(true), { mode: 'none', amount: '', legacy: 'true' });
+});
+
+test('weightFromForm round-trips the editor states into ed-items/3 shapes', () => {
+  assert.equal(weightFromForm('none', '5'), undefined);
+  assert.deepEqual(weightFromForm('negligible', ''), { negligible: true });
+  assert.deepEqual(weightFromForm('lb', '25'), { amount: 25, unit: 'lb' });
+  assert.deepEqual(weightFromForm('oz', 8), { amount: 8, unit: 'oz' });
+  assert.equal(weightFromForm('lb', '-3'), undefined, 'negative amount is invalid');
+  assert.equal(weightFromForm('lb', 'abc'), undefined, 'non-numeric amount is invalid');
+  assert.equal(weightFromForm('lb', ''), undefined, 'an empty amount picks no unit yet');
+  assert.equal(weightFromForm('oz', null), undefined, 'a null amount picks no unit yet');
+});
+
+test('weightToForm → weightFromForm round-trips the real catalog shapes', () => {
+  for (const w of [{ amount: 25, unit: 'lb' }, { amount: 8, unit: 'oz' }, { negligible: true }, null]) {
+    const f = weightToForm(w);
+    const back = weightFromForm(f.mode, f.amount);
+    if (w === null) assert.equal(back, undefined);
+    else assert.deepEqual(back, w);
+  }
 });

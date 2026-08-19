@@ -240,7 +240,7 @@ const baseRules = () => ({
 
 const CUSTOM_ARMOR = {
   kind: 'armor',
-  ref: { cost: 40, weight: '25 lb', availability: 'scarce', description: 'Stitched from the hide of a mountain boar.' },
+  ref: { cost: 40, weight: { amount: 25, unit: 'lb' }, availability: 'scarce', description: 'Stitched from the hide of a mountain boar.' },
   effects: [
     { type: 'armor-modifier', target: { domain: 'armor', name: 'Physical' }, operation: 'add', value: 2, measure: 'rating', condition: 'always', summary: 'Physical Armor 2' },
     { type: 'armor-modifier', target: { domain: 'armor', name: 'Mystic' }, operation: 'add', value: 1, measure: 'rating', condition: 'always', summary: 'Mystic Armor 1' },

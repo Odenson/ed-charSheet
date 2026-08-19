@@ -22,14 +22,15 @@ const WEIGHT_UNITS = [
  *
  *   { amount: 5, unit: 'lb' } → 5     { amount: 8, unit: 'oz' } → 0.5
  *   { negligible: true }      → 0     null → null
- *   a bare number             → as pounds (tolerated unit-less form)
  *
- * @param {*} w  the stored `ref.weight` (structured object, number, or null)
+ * A bare number is not a valid ed-items/3 weight (validator and reader agree);
+ * it reads as unknown, never as pounds.
+ *
+ * @param {*} w  the stored `ref.weight` (structured object or null)
  * @returns {number|null} pounds (2-dp-safe), or null when unknowable
  */
 export function weightPounds(w) {
   if (w == null) return null;
-  if (typeof w === 'number') return Number.isFinite(w) && w >= 0 ? round2(w) : null;
   if (typeof w === 'object') {
     if (w.negligible === true) return 0;
     const unit = WEIGHT_UNITS.find((u) => u.key === w.unit);
@@ -37,7 +38,7 @@ export function weightPounds(w) {
       return round2(w.amount * unit.pounds);
     }
   }
-  return null; // legacy string / unknown shape — never fabricated
+  return null; // bare number / legacy string / unknown shape — never fabricated
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
