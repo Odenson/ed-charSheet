@@ -7,7 +7,8 @@
     "description: per-spell player-facing prose (flavor + resolution + core mechanic), paraphrased from the rulebook extracts; SUMMARY remains the terse mechanic readout. No taxonomy impact — a catalog metadata field, not an effect.",
     "threadCap: extra-thread cap by Circle band (rules data, not engine logic) — PLAN-SPELLS.md §3.1.",
     "weavingDifficulty.reattune: on-the-fly matrix-swap difficulty, a POST-v1 mechanic carried in the shape now.",
-    "castingTarget is a HINT for the cast prompt; the test is always vs a NUMBER entered at cast time."
+    "castingTarget is a HINT for the cast prompt; the test is always vs a NUMBER entered at cast time.",
+    "learning: spell-learning tables (PLAN-LEARN-SPELLS.md §4) — difficultyByCircle is an explicit {circle: difficulty} table (the engine reads a value, never computes circle+5), silverPerCircle is the suggested copy price (Circle × 100 sp, or whatever the tuition costs), and legendCostSource points at rules/legend.json costs.talentRank[circle].Novice — the Legend price is that ONE table, no duplicate."
   ],
   "threadCap": [
     {
@@ -31,6 +32,14 @@
       "extraThreads": 4
     }
   ],
+  "learning": {
+    "difficultyByCircle": {
+      "1": 6, "2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13,
+      "9": 14, "10": 15, "11": 16, "12": 17, "13": 18, "14": 19, "15": 20
+    },
+    "silverPerCircle": 100,
+    "legendCostSource": "rules/legend.json costs.talentRank[circle].Novice"
+  },
   "spells": {
     "Astral Spear": {
       "name": "Astral Spear",

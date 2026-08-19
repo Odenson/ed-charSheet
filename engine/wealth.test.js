@@ -1,7 +1,7 @@
 // engine/wealth.test.js — the coin→silver rates and derived wealth totals.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coinsSilver, gemsSilver, deriveWealth, GEM_RESALE, COIN_DENOMINATIONS, costSilver, spendAllocation, creditAllocation } from './wealth.js';
+import { coinsSilver, gemsSilver, deriveWealth, GEM_RESALE, COIN_DENOMINATIONS, costSilver, spendAllocation, creditAllocation, allocForSilver } from './wealth.js';
 
 test('coin denominations use the decimal + elemental silver values', () => {
   const rate = Object.fromEntries(COIN_DENOMINATIONS.map((c) => [c.key, c.rate]));
@@ -30,6 +30,23 @@ test('gemsSilver multiplies value by quantity, defaulting qty to 1', () => {
   assert.equal(gemsSilver([{ valueSilver: 150 }, { valueSilver: 75, qty: 2 }]), 300);
   assert.equal(gemsSilver([]), 0);
   assert.equal(gemsSilver(undefined), 0);
+});
+
+test('allocForSilver splits a whole-copper amount into silver then copper', () => {
+  assert.deepEqual(allocForSilver(0), { coins: {} });
+  assert.deepEqual(allocForSilver(100), { coins: { silver: 100 } });   // Circle × 100 — the learn price
+  assert.deepEqual(allocForSilver(0.7), { coins: { copper: 7 } });     // 0.7 sp = 7 cp
+  assert.deepEqual(allocForSilver(2.3), { coins: { silver: 2, copper: 3 } });
+  assert.deepEqual(allocForSilver(0), { coins: {} });
+});
+
+test('allocForSilver feeds spendAllocation (defensive: returns ok:false when coins are short)', () => {
+  const coins = { silver: 3, copper: 10 };
+  const ok = spendAllocation(coins, [], allocForSilver(2.5));
+  assert.equal(ok.ok, true);
+  assert.deepEqual(ok.coins, { silver: 1, copper: 5 });
+  const short = spendAllocation(coins, [], allocForSilver(50));
+  assert.equal(short.ok, false);
 });
 
 test('deriveWealth reports coin, gem, total and resale figures', () => {

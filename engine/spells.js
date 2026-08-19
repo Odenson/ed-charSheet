@@ -18,6 +18,12 @@
 //     attrStep:    { [Attribute]: number },        // derived attribute steps (for effect refs)
 //     karma:       { weaving: { [discipline]: bool }, casting: bool },
 //   }
+//
+// Learn-flow helpers (PLAN-LEARN-SPELLS.md §5) additionally take the rule
+// tables — `learning` (difficulty/cost by Circle) and `talentRank` (the Legend
+// cost table) — as data; the engine never hard-codes a formula.
+
+import { spellCost } from './legend-spent.js';
 
 // Standard matrices hold no threads; Enhanced/Armoured hold one (§3.1).
 const MATRIX_THREADS = { Standard: 0, Enhanced: 1, Armoured: 1, Armored: 1 };
@@ -343,6 +349,113 @@ export function castPlan(ctx, spellName, castType) {
     duration: spell.duration ?? null,
     area: spell.area ?? null,
     foldsOnSelf: isSustainedSelfEffect(spell),
+  };
+}
+
+// --- learn-flow derivations (PLAN-LEARN-SPELLS.md §5) ------------------------
+
+/** The Learning Difficulty for a Circle, from the explicit rules table.
+ *  Returns null when the table has no entry (never computes circle + 5). */
+export function learningDifficulty(learning, circle) {
+  return learning?.difficultyByCircle?.[String(circle)] ?? null;
+}
+
+/** The suggested silver price to buy the spell copy: Circle × silverPerCircle
+ *  (the GM's ×2/×3 tuition is an at-time, player-overridable modifier). */
+export function spellSilverCost(learning, circle) {
+  const per = Number(learning?.silverPerCircle);
+  const c = Number(circle);
+  return per > 0 && c > 0 ? c * per : null;
+}
+
+/** The spells this character *could* learn right now: catalog spells whose
+ *  Discipline they have a Thread Weaving (X) talent for, minus what's already
+ *  in `known[]` (apostrophe-insensitive). Tagged `castable` — the caster's
+ *  Circle in the Discipline meets the spell's Circle (a higher-Circle spell is
+ *  learnable but not yet castable through their matrices). Bounded by the
+ *  catalog (rules/spells.json currently carries Nethermancer spells only). */
+export function learnableSpells(ctx) {
+  const known = new Set((ctx.known ?? []).map((k) => normName(k.name)));
+  return Object.values(ctx.catalog ?? {})
+    .filter((s) => {
+      if (ctx.weavingStep?.[s.discipline] == null) return false; // no Thread Weaving talent
+      if (known.has(normName(s.name))) return false;             // already learnt
+      return true;
+    })
+    .map((s) => ({
+      ...s,
+      castable: (disciplineCircle(ctx, s.discipline) ?? 0) >= (s.circle || 0),
+    }))
+    .sort((a, b) => a.circle - b.circle || a.name.localeCompare(b.name));
+}
+
+/** The character's Patterncraft talent step (null if they don't own it — they
+ *  cannot learn a spell without it). */
+export function patterncraftStep(model) {
+  for (const d of model?.disciplines ?? []) {
+    const t = (d.talents ?? []).find((tal) => tal.name === 'Patterncraft');
+    if (t && t.step != null) return t.step;
+  }
+  return null;
+}
+
+/**
+ * The prerequisite gate for learning a given spell (PLAN-LEARN-SPELLS §3.2).
+ * Pure: returns { ok, reasons[] }; the UI renders the blockers. `model` is the
+ * derived model (resources.health, spells ctx, legend.available); `legendCost` is
+ * the EFFECTIVE Legend cost (homebrew multiplier already applied — `learnPlan`
+ * passes it) so a waiver makes the affordability check trivially pass.
+ */
+export function canLearn(model, spell, legendCost) {
+  const reasons = [];
+  const health = model?.resources?.health ?? {};
+  if (Number(health.damage) > 0 || Number(health.wounds) > 0) {
+    reasons.push('Rested & healthy — a magician with Damage or Wounds may not learn.');
+  }
+  if (patterncraftStep(model) == null) {
+    reasons.push('No Patterncraft talent — required to interpret the spell.');
+  }
+  const twStep = model?.spells?.weavingStep?.[spell.discipline];
+  if (twStep == null) {
+    reasons.push(`No Thread Weaving (${spell.discipline}) talent — required to learn its spells.`);
+  }
+  const available = model?.legend?.available;
+  if (legendCost != null && legendCost > 0 && (available == null || available < legendCost)) {
+    reasons.push(available == null
+      ? 'Available Legend unknown — cannot confirm the Legend cost is affordable.'
+      : `Not enough Available Legend — need ${legendCost}, have ${available}.`);
+  }
+  return { ok: reasons.length === 0, reasons };
+}
+
+/**
+ * The single decision-support object the Learn modal renders (parallel to
+ * `castPlan`): everything pre-computed, homebrew multipliers folded in. The modal
+ * reads these fields and calls NO pricing/difficulty helper itself.
+ *   { name, discipline, circle, learningDifficulty, legendCost, suggestedSilver,
+ *     patterncraftStep, castable, canLearn: { ok, reasons } }
+ * `legendCost` / `suggestedSilver` are the *effective* costs (base × the
+ * `ctx.learnLegendMultiplier` / `ctx.learnSilverMultiplier` levers, each `?? 1`).
+ */
+export function learnPlan(ctx, model, spellName) {
+  const spell = learnableSpells(ctx).find((s) => normName(s.name) === normName(spellName));
+  if (!spell) return null;
+  const legendMult = ctx.learnLegendMultiplier ?? 1;
+  const silverMult = ctx.learnSilverMultiplier ?? 1;
+  const baseLegend = spellCost(spell.circle, ctx.talentRank); // the ONE pricing fn (legend-spent)
+  const baseSilver = spellSilverCost(ctx.learning, spell.circle);
+  const legendCost = baseLegend == null ? null : Math.round(baseLegend * legendMult);
+  const suggestedSilver = baseSilver == null ? null : Math.round(baseSilver * silverMult);
+  return {
+    name: spell.name,
+    discipline: spell.discipline,
+    circle: spell.circle,
+    learningDifficulty: learningDifficulty(ctx.learning, spell.circle),
+    legendCost,
+    suggestedSilver,
+    patterncraftStep: patterncraftStep(model),
+    castable: spell.castable,
+    canLearn: canLearn(model, spell, legendCost),
   };
 }
 

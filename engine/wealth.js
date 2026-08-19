@@ -116,7 +116,20 @@ export function creditAllocation(coins = {}, gems = [], alloc = {}) {
   return { coins: nextCoins, gems: nextGems };
 }
 
-/** Total silver value of a coins map ({ copper, silver, … }). */
+/** The coin allocation that pays a whole-copper amount as silver then copper
+ *  (the "all-silver default" split the buy dialog uses). Returns an alloc shape
+ *  ready for spendAllocation: `{ coins: { silver?, copper? } }` with only the
+ *  non-zero denominations. */
+export function allocForSilver(amount) {
+  const totalCu = Math.round((Number(amount) || 0) * 10);
+  const wantSil = Math.floor(totalCu / 10);
+  const wantCop = totalCu - wantSil * 10;
+  const coins = {};
+  if (wantSil) coins.silver = wantSil;
+  if (wantCop) coins.copper = wantCop;
+  return { coins };
+}
+
 export function coinsSilver(coins = {}) {
   return COIN_DENOMINATIONS.reduce((t, c) => t + num(coins[c.key]) * c.rate, 0);
 }

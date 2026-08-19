@@ -65,7 +65,9 @@ No Tier-1 shape change and no taxonomy change. The one **Tier-2-adjacent** note:
 the Learning Difficulty (Circle + 5) and silver cost (Circle × 100) are **rules
 data**, not engine hard-coding — they belong in a small `learning` block in
 `rules/spells.json` or `rules/legend.json` (§4), consistent with the "engine reads
-structured data, never a formula baked in code" rule (ARCHITECTURE §5.5).
+structured data, never a formula baked in code" rule (ARCHITECTURE §5.5). Precedent
+backs keeping this Tier 3: `threadCap` was already added as a further top-level
+field of the `ed-spells/1` shape the same way, without a schema bump.
 
 ---
 
@@ -78,15 +80,18 @@ Learn modal:
    Discipline the character has a `Thread Weaving (X)` talent for, of any Circle,
    **not already in `known[]`** — grouped by Discipline then Circle. Higher-Circle
    spells are offered but flagged "can't cast yet" when the matrix rank is short.
-2. **Prerequisite panel** (read-only, from derived state):
-   - **Rested & healthy** — blocks the roll if `resources.health.damage > 0` or
-     `wounds > 0` (rule: no Damage/Wounds).
-   - **Patterncraft** step (the roll) and **Thread Weaving (discipline)** present.
-   - **Learning Difficulty** = Circle + 5.
-   - **Legend cost** (Circle → `talentRank[circle].Novice`) vs **Available Legend**
-     — blocks if unaffordable.
-   - **Silver cost** — a **suggested** price (Circle × 100 sp) the player can
-     **override**, item-buy style (Q3), paid from the purse on confirm.
+2. **Prerequisite panel** (read-only) — renders the **`learnPlan`** fields (§5);
+   the modal reads them, computes nothing:
+   - **Rested & healthy** / **Patterncraft** / **Thread Weaving (discipline)** /
+     **enough Available Legend** — the `learnPlan.canLearn.reasons` that block the
+     roll (no Damage/Wounds; has Patterncraft; has the Discipline's Thread
+     Weaving; affords the Legend cost).
+   - **Learning Difficulty** = `learnPlan.learningDifficulty`.
+   - **Legend cost** = `learnPlan.legendCost` (homebrew multiplier already folded
+     — 0 when waived) vs **Available Legend**.
+   - **Silver cost** — `learnPlan.suggestedSilver` (multiplier already folded) as
+     the **suggested** price the player can **override**, item-buy style (Q3), paid
+     from the purse on confirm.
 3. **Teacher assist (optional).** A toggle + a "teacher's Thread Weaving rank"
    input. When on, the flow first rolls a **Spellcasting test** vs the Learning
    Difficulty (through the shared roll modal); on success it **arms** a bonus
@@ -97,8 +102,11 @@ Learn modal:
    Defence whose success arms +2 steps per success on the following Attack, then
    is consumed by that roll). The teacher-assist precursor is the aim; the
    Patterncraft roll is the attack; the armed teacher-rank bonus is the aim
-   bonus. Reuse that mechanism — an armed-precursor success feeding a `mods`/step
-   bonus into the main roll — rather than inventing a new one.
+   bonus. Mirror that *pattern* — an armed-precursor success feeding a `mods`/step
+   bonus into the main roll — rather than inventing a new one. Note this is a
+   pattern reuse, not code reuse: `_rollConfig`/`ed-roll-modal` take `mods` and
+   the Combat tab owns its armed-aim state (`_aimSuccesses`), so the Learn modal
+   still carries its own small armed-tw-bonus state for the precursor.
 4. **Roll Patterncraft** vs the Learning Difficulty via the shared `ed-roll-modal`
    (Karma offered per the talent's eligibility, difficulty shown as pass/fail).
 5. **On success** — the modal records `learntSuccess` and, on confirm:
@@ -112,12 +120,20 @@ Learn modal:
      the existing `saveSpellEdits`);
    - the Legend sink is now reflected (the audit counts the new spell, §5);
    - deducts the **agreed silver** (the suggested price, or the player's override)
-     from the purse via **`ed-edit-wealth`** (Q3). Learning has **no item side**,
-     so it is a wealth-only edit — **not** `ed-trade` (which writes items *and*
-     wealth atomically). The `known[]` append (`ed-edit-spells`) and the silver
-     deduction (`ed-edit-wealth`) are two independent input writes, each
-     re-derived; there is nothing to make atomic (spells and wealth are unrelated
-     inputs).
+     from the purse via **`ed-edit-wealth`** (Q3) — the *math* is done by the
+     engine's **`spendAllocation`** (`engine/wealth.js:60`, the same helper the
+     Equipment/trade flow uses to compute a next purse from an allocation), and
+     only the resulting coins are dispatched; the view hands over the engine's
+     output, it never does the coin arithmetic (golden rule). Learning has **no
+     item side**, so it is a wealth-only edit — **not** `ed-trade` (which writes
+     items *and* wealth atomically). The `known[]` append (`ed-edit-spells`) and
+     the silver deduction (`ed-edit-wealth`) are two independent input writes in
+     the **same** edits overlay (`saveSpellEdits`/`saveWealthEdits` both key
+     `editsKey(id)`, `store.js:307`/`:294`); each is re-derived separately, so two
+     dispatches mean two overlay writes + two derives. The alternative is a
+     combined `saveSpellAndWealthEdits` (mirroring `saveTradeEdits`, one overlay
+     write, one derive) — spell and wealth are unrelated inputs either way, so the
+     choice is write-count/derive-count, not correctness.
    On a **miss**, nothing is learned. (No daily-attempt limit in this version — Q4.)
 
 ---
@@ -130,7 +146,7 @@ should be authored as data (ARCHITECTURE §5.5):
 ```jsonc
 // rules/spells.json — a top-level "learning" block (ed-spells/1, additive):
 "learning": {
-  "difficultyByCircle": "circle + 5",   // or an explicit 1..15 table if we avoid formulas
+  "difficultyByCircle": { "1": 6, "2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13, "9": 14, "10": 15, "11": 16, "12": 17, "13": 18, "14": 19, "15": 20 },
   "silverPerCircle": 100,               // Circle × 100 sp
   "legendCostSource": "legend.json costs.talentRank[circle].Novice"
 }
@@ -145,8 +161,9 @@ should be authored as data (ARCHITECTURE §5.5):
   as data), the GM's ×2/×3 tuition is an at-time modifier (Q3).
 
 **Resolved (Q1):** the difficulty is an **explicit `{circle: difficulty}` table**
-(C1 → 6 … C15 → 20), not the `circle + 5` formula — the engine reads a value,
-data-first, no arithmetic on rule structure (ARCHITECTURE §5.5).
+(C1 → 6 … C15 → 20 — see the `learning.difficultyByCircle` shape above), not the
+`circle + 5` formula — the engine reads a value, data-first, no arithmetic on
+rule structure (ARCHITECTURE §5.5).
 
 ---
 
@@ -155,7 +172,9 @@ data-first, no arithmetic on rule structure (ARCHITECTURE §5.5).
 - `learnableSpells(ctx, rules)` → spells the character *could* learn: catalog
   spells whose Discipline the character has `Thread Weaving (X)` for, minus
   `known[]` (apostrophe-insensitive, reusing `normName`). Tagged with a
-  `castable` flag (matrix rank ≥ Circle) for the "can't cast yet" note.
+  `castable` flag (matrix rank ≥ Circle) for the "can't cast yet" note. The set is
+  **bounded by the catalog** — `rules/spells.json` currently carries Nethermancer
+  spells only, so "any Discipline" resolves to whatever the catalog covers.
 - `learningDifficulty(rules, circle)` → the table value (Circle + 5).
 - **Legend cost — reuse the existing `spellCost(circle, rankTable)`** already
   exported from `engine/legend-spent.js:89` (its doc: "exported now so tests and
@@ -163,11 +182,37 @@ data-first, no arithmetic on rule structure (ARCHITECTURE §5.5).
   `spells.js`** — import/reuse the one function so the Learn modal, the audit
   sink, and tests all price a spell the same way.
 - `spellSilverCost(rules, circle)` → `circle × silverPerCircle`.
+- **Purse deduction** — paying that silver is `spendAllocation` from
+  `engine/wealth.js:60` (the trade path's helper); the modal uses it to get the
+  next coin set from the agreed amount and dispatches the result, computing no
+  coin math itself.
 - `patterncraftStep(model)` → the character's Patterncraft talent step (from the
   derived talents; null if not owned → cannot learn).
 - `canLearn(character, model, rules, spell)` → `{ ok, reasons[] }` — the prereq
   gate: healthy (no Damage/Wounds), has Patterncraft, has the Discipline's Thread
   Weaving, enough Available Legend. Pure; the UI renders the reasons.
+- **`learnPlan(ctx, spellName)` → the single decision-support object the Learn
+  modal renders** (parallel to `castPlan`; the same "engine composes everything
+  the modal shows" precedent):
+  ```jsonc
+  {
+    name, discipline, circle,
+    learningDifficulty,      // the table value
+    legendCost,              // spellCost(circle, talentRank) × learnLegendMultiplier
+    suggestedSilver,         // spellSilverCost(circle)      × learnSilverMultiplier
+    patterncraftStep, castable,
+    canLearn: { ok, reasons }
+  }
+  ```
+  **The engine pre-computes every field, homebrew multipliers already folded in;
+  the modal renders `learnPlan.*` and never calls `spellCost` / `spellSilverCost`
+  / `learningDifficulty` itself with combined args** (the `castPlan` rule — the UI
+  reassembles nothing). The multipliers reach the plan via `buildSpellsContext`,
+  which surfaces **`learnLegendMultiplier`** and **`learnSilverMultiplier`** on the
+  ctx from the homebrew `set` levers (`?? 1` each — see
+  [PLAN-HOMEBREW-SPELL-LEARN-COST.md](PLAN-HOMEBREW-SPELL-LEARN-COST.md)). So a
+  waived-Legend house rule makes `legendCost: 0` (and the Legend prereq trivially
+  passes) with **no modal-side logic**.
 
 The Patterncraft roll and the (optional) Spellcasting precursor go through the
 existing shared roll flow (`ed-roll`), so Karma / difficulty / success counting
@@ -185,6 +230,13 @@ required. **Owner-confirmed (Q2): count every `known[]` spell** as a sink
 (regardless of how it got onto the sheet), matching how the audit already
 recomputes talents/skills/attributes from the sheet. The reconciliation anchor
 ([[legend-spent-audit]]) absorbs any gap for imported characters.
+
+**Behavior change to ship with this:** because the sink counts *every* `known[]`
+spell, existing characters (whose spells were previously unpriced) see their
+Available Legend **drop retroactively** by the sum of their spells' Legend costs
+the moment the sink lands — the audit folds the spells in from the sheet, no
+character edit needed. The reconciliation anchor absorbs the delta, so this is a
+visible readout change but not an error; call it out in the changelog.
 
 **Catalog wiring (was underspecified — the audit can't price a spell without its
 Circle).** `known[]` stores only `name` + `learntSuccess`; a spell's **Circle**
@@ -220,7 +272,12 @@ ever stored on the character (store-only-inputs holds); it is always looked up.
 - The modal: learnable-spell picker (grouped, searchable if the list is long, with
   the same fixed-height scroll as the Raw cast list); the prerequisite panel with
   clear blockers; the teacher-assist toggle + rank input; the roll button(s); and
-  a confirm that commits the learned spell.
+  a confirm that commits the learned spell. **For the selected spell it renders one
+  `learnPlan` object (§5)** — difficulty, `legendCost`, `suggestedSilver`,
+  `patterncraftStep`, `canLearn.reasons`, all engine-pre-computed with the homebrew
+  multipliers already folded in. The modal calls **no** pricing/difficulty helper
+  itself (the `castPlan` rule), so a change like the free-learning house rule needs
+  zero modal edits.
 - **Tier-1 UI:** Escape-closes / Enter-confirms; derived numbers show placeholder
   pills when unavailable, never fabricated; theme-aware; two weights; mobile
   single column. Unaffordable / unhealthy states **disable** the roll with a
@@ -228,9 +285,14 @@ ever stored on the character (store-only-inputs holds); it is always looked up.
 - Dispatches: `ed-roll` (the Patterncraft test and, when teacher assist is on, the
   Spellcasting precursor); and on success `ed-edit-spells` (the new `known[]`,
   reusing the existing save path) plus **`ed-edit-wealth`** for the **agreed
-  silver** (suggested price or the player's override). It is `ed-edit-wealth`
-  (wealth only) because a spell-learn has **no item side** — `ed-trade` is for
-  atomic item + wealth changes and does not apply here.
+  silver** (suggested price or the player's override). `ed-edit-spells` replaces
+  the **whole** `spells` block (`_editSpells`, `ed-app.js:623`), so the modal
+  reads the current spells, appends the entry, and dispatches the full next
+  block — same contract as Grimoire remove. It is `ed-edit-wealth` (wealth only)
+  because a spell-learn has **no item side** — `ed-trade` is for atomic item +
+  wealth changes and does not apply here. If the two dispatches are combined into
+  one `saveSpellAndWealthEdits` (write-count choice from §3 step 5), that helper
+  is what the app-side handler calls instead of two save calls.
 
 ---
 
@@ -253,7 +315,7 @@ ever stored on the character (store-only-inputs holds); it is always looked up.
 1. **Decisions** — resolve Q1–Q7 (especially Q2 the Legend sink, Q3 silver, Q4 daily limit).
 2. **Data** — author the `learning` block (`rules/spells.json`) — difficulty table + `silverPerCircle`.
 3. **Engine + Legend audit** —
-   - `engine/spells.js`: `learnableSpells`, `learningDifficulty`, `spellSilverCost`, `patterncraftStep`, `canLearn` (+ tests). **Legend cost reuses the existing `spellCost` from `legend-spent.js` — no new pricing function.**
+   - `engine/spells.js`: `learnableSpells`, `learningDifficulty`, `spellSilverCost`, `patterncraftStep`, `canLearn`, and **`learnPlan`** (the decision-support object the modal renders — §5) (+ tests). **Legend cost reuses the existing `spellCost` from `legend-spent.js` — no new pricing function.** `buildSpellsContext` surfaces `learnLegendMultiplier` / `learnSilverMultiplier` so `learnPlan` folds them in.
    - `engine/legend-spent.js`: `auditLegendSpent` gains **`opts.spellCatalog`** and the **spells sink** — sum the **existing `spellCost(circle, rankTable)`** over `character.spells.known`, Circle resolved from the catalog (apostrophe-insensitive), unknown names → 0 (§5.1) (+ tests).
    - `store.js`: the existing `auditLegendSpent(...)` call site (~`store.js:1057`) adds **`spellCatalog: spellsFile?.spells`** to its opts (it already holds `spellsFile`). **This call site is a required change** and was previously omitted.
 4. **UI** — the Learn modal in `ui/ed-spells.js` (edit mode): learnable picker +
@@ -282,8 +344,10 @@ ever stored on the character (store-only-inputs holds); it is always looked up.
 |------|--------|--------|
 | 2026-08-19 | Plan created from ED4 Player's Guide pp. 251–252 (Learning Spells). Mechanics distilled: Patterncraft test vs Learning Difficulty (Circle + 5); rested/healthy prereq; Thread Weaving gates the learnable set (any Circle); Legend cost = Novice-talent-at-Circle (`legend.json`, exists); silver = Circle × 100; teacher assist (Spellcasting precursor → +TW rank); once/day + sacrifice Recovery. Verified data hooks (Legend table, Patterncraft/Thread Weaving/Spellcasting talents) all present. | Draft for review |
 | 2026-08-19 | Owner answers folded in: **Q2** Legend audit counts **every** `known[]` spell (resolves A5); **Q3** silver is an **item-buy-style overridable suggested price** paid from the purse; **Q4** the once/day + sacrifice-Recovery limit is **omitted** this version; **Q5** **teacher assist ships in v1** (in the Learn modal). Q1/Q6/Q7 remain open (leans stand). | Draft for review |
+| 2026-08-19 | Owner review — **`learnPlan` locked (castPlan precedent).** The modal renders one engine-composed `learnPlan` object (`learningDifficulty`, `legendCost`, `suggestedSilver`, `patterncraftStep`, `castable`, `canLearn`) and calls no pricing/difficulty helper with combined args. Homebrew multipliers (`learnLegendMultiplier` / `learnSilverMultiplier`, surfaced on the ctx by `buildSpellsContext`) are folded into `learnPlan.legendCost` / `learnPlan.suggestedSilver` — so the free-learning house rule needs zero modal logic. §5, §3 step 2, §6, §8 phase 3. | Ready for build |
 | 2026-08-19 | Owner review — **reuse `spellCost`, don't duplicate.** `spellCost(circle, rankTable)` is already exported from `engine/legend-spent.js:89` (doc: "later phases share one definition"). The plan's proposed `spellLegendCost` in `spells.js` is dropped; the Learn modal, the audit sink, and tests all call the one `spellCost` (§5, §5.1, §8). | Ready for build |
 | 2026-08-19 | Owner review — **`learntSuccess` indexing made explicit.** PLAN-SPELLS §4 defines it as EXTRA successes (`levels − 1`). The Patterncraft roll returns TOTAL success levels (`successCount`), so the modal stores **`total − 1` (floored at 0)**, not the total — a bare success → `learntSuccess: 0` (§3 step 5). Keeps the dispatch consistent with the schema and the cast-flow `levels − 1` convention. | Ready for build |
 | 2026-08-19 | Owner review — **silver-deduction event named explicitly:** `ed-edit-wealth` (wealth-only), not `ed-trade` (atomic item + wealth) — a spell-learn has no item side. The `known[]` append (`ed-edit-spells`) and silver deduction (`ed-edit-wealth`) are two independent input writes; nothing to make atomic (§3 step 5, §6). | Ready for build |
 | 2026-08-19 | Owner accepted the leans: **Q1** explicit `{circle: difficulty}` table; **Q6** offer higher-Circle spells with a "can't cast yet" flag; **Q7** access is the player's assertion (no source object). **Teacher assist** noted to reuse the Combat tab's **aim → attack two-step** ("outcome arms the next roll"): the Spellcasting precursor is the aim, the Patterncraft roll the attack, the armed teacher-rank bonus the aim bonus. **All decisions now resolved.** | Ready for build |
 | 2026-08-19 | Owner review — **Legend-audit catalog wiring was underspecified.** `known[]` stores only name/learntSuccess, so the audit needs the catalog for each spell's Circle. §5.1 now specifies: `auditLegendSpent` gains **`opts.spellCatalog`** (parallel to the existing `opts.threadItemCatalog`, which exists because thread items don't store their tier), and the **`store.js:~1057` call site** passes `spellCatalog: spellsFile?.spells` (it already holds `spellsFile`). This call site + `engine/legend-spent.js` are now named in the §8 engine phase (were missing). | Draft for review |
+| 2026-08-19 | Review pass (peer). **Data:** §4 sample now shows the resolved Q1 shape — the explicit `learning.difficultyByCircle` `{circle: difficulty}` table (C1→6 … C15→20), replacing the formula/code-form placeholder. **Silver (Q3):** the purse deduction now names the engine helper `spendAllocation` (`engine/wealth.js:60` — the trade path's math), and the §3 step-5 / §6 write-count nuance is explicit: the two input writes hit the **same** edits overlay, so a combined `saveSpellAndWealthEdits` (mirroring `saveTradeEdits`) is offered as the write-count choice — not a correctness/atomicity requirement (spells and wealth are unrelated inputs either way). **Teacher assist (Q5):** §3 step 3 reframed as mirroring the aim → attack **pattern** (armed-precursor state is per-view today — `_aimSuccesses`/`_rollConfig mods`), not reusing a shared API; the Learn modal still owns its small armed-TW state. **Audit (Q2):** §5.1 notes the sink retroactively drops existing characters' Available Legend when it ships (reconciliation absorbs the delta; call out in changelog). **Shape/Tier:** §2 cites `threadCap` as the precedent for the `learning` block staying Tier 3. **Editorial:** `ed-edit-spells` replaces the whole `spells` block (modal reads/appends/dispatches the full next block — same as Grimoire remove); `learnableSpells` is bounded by catalog coverage (Nethermancer-only today). | Ready for build |

@@ -1315,7 +1315,20 @@ export function deriveModel(character, rules, session = {}) {
   // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
   // for the Active-effects card. buildSpellsContext stays session-free (pure).
   const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
-  if (spellsCtx) spellsCtx.active = session?.activeSpells ?? [];
+  if (spellsCtx) {
+    spellsCtx.active = session?.activeSpells ?? [];
+    // Learn-flow tables (PLAN-LEARN-SPELLS §5): the learning block (difficulty/
+    // cost by Circle) and the Legend talentRank table — pushed down as rules data
+    // so the Learn modal reads values, never formulas (ARCHITECTURE §5.5).
+    spellsCtx.learning = spellsFile?.learning ?? {};
+    spellsCtx.talentRank = legendFile?.costs?.talentRank ?? {};
+    // Homebrew learn-cost levers (PLAN-HOMEBREW-SPELL-LEARN-COST): learnPlan folds
+    // these into the shown Legend / silver cost. `?? 1` — the *active* value is a
+    // falsy 0 (waive), so never `|| 1`. The targets reach homebrewSets once the
+    // homebrew rule ships; until then they default to 1 (standard cost).
+    spellsCtx.learnLegendMultiplier = homebrewSets['legend.spellLearnCostMultiplier'] ?? 1;
+    spellsCtx.learnSilverMultiplier = homebrewSets['spells.learnSilverMultiplier'] ?? 1;
+  }
 
   return {
     meta: character.meta ?? {},
