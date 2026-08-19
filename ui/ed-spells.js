@@ -119,10 +119,7 @@ export class EdSpells extends LitElement {
     .readout { font-size: var(--fs-value); font-weight: 500; color: var(--fg); }
     .stepnote { font-size: var(--fs-fine); color: var(--muted); }
     .threads { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 0 7px; font-variant-numeric: tabular-nums; }
-    .rollres { align-self: flex-end; text-align: right; font-size: var(--fs-fine); color: var(--muted); font-variant-numeric: tabular-nums; }
-    .rollres b { font-size: var(--fs-value); font-weight: 500; color: var(--fg); }
-    .rollres .win { color: var(--karma); }
-    .rollres .lose { color: var(--danger); }
+    .rollres { align-self: flex-end; text-align: right; font-size: var(--fs-eyebrow); color: var(--muted); font-variant-numeric: tabular-nums; }
     .modeseg button.soon { opacity: 0.5; cursor: not-allowed; }
     .modeseg .soontag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--muted); border-radius: 999px; padding: 0 4px; margin-left: 4px; }
     .fold { font-size: var(--fs-fine); color: var(--spell); margin-top: 8px; display: flex; gap: 6px; align-items: baseline; }
@@ -476,13 +473,10 @@ export class EdSpells extends LitElement {
     `;
   }
 
-  // A step's last-roll readout (bottom-right): the total, and the win/lose word
-  // coloured by outcome.ok. `outcome` is the modal's { word, ok } | null.
+  // A step's last-roll readout (bottom-right): "rolled N", at label font size.
   _rollRes(res) {
-    if (!res) return '';
-    const o = res.outcome;
-    const cls = o ? (o.ok ? 'win' : 'lose') : '';
-    return html`<span class="rollres">${res.total != null ? html`<b>${res.total}</b> ` : ''}<span class=${cls}>${o?.word ?? ''}</span></span>`;
+    if (!res || res.total == null) return '';
+    return html`<span class="rollres">rolled ${res.total}</span>`;
   }
 
   _castPanel(plan) {
