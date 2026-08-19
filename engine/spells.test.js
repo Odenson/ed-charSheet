@@ -27,6 +27,8 @@ import {
   activeSpellEffects,
   increaseEffectSteps,
   effectStepBonus,
+  increaseEffectAmount,
+  increaseDurationRounds,
 } from './spells.js';
 
 const spellsFile = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url)));
@@ -230,6 +232,28 @@ test('buildActiveSpell: sustained effects, label, round countdown', () => {
   assert.equal(s.roundsTotal, 30);
   assert.equal(s.effects.length, 1);
   assert.equal(s.effectLabel, '+3 Mystic armor');
+});
+
+test('increaseEffectAmount / increaseDurationRounds parse the options', () => {
+  assert.equal(increaseEffectAmount('Increase Effect (+2 Mystic Armor)'), 2);
+  assert.equal(increaseEffectAmount('Increase Effect (+2 Effect Step)'), 2);
+  assert.equal(increaseEffectAmount('Increase Effect (-2 Mystic Armor)'), 0); // target debuff
+  assert.equal(increaseEffectAmount('Increase Duration (+2 minutes)'), 0);
+  assert.equal(increaseDurationRounds('Increase Duration (+2 minutes)'), 20);
+  assert.equal(increaseDurationRounds('Increase Duration (+2 rounds)'), 2);
+  assert.equal(increaseDurationRounds('Increase Effect (+2 Mystic Armor)'), 0);
+});
+
+test('buildActiveSpell folds extra-thread effect boost + success duration boost', () => {
+  // Soul Armor + 1 extra thread "Increase Effect (+2 Mystic Armor)" + 3 successes
+  // (2 extra × "Increase Duration (+2 minutes)" = +40 rounds).
+  const s = buildActiveSpell(ctx().catalog['Soul Armor'], 3, {
+    extraPicks: ['Increase Effect (+2 Mystic Armor)'],
+    successLevels: 3,
+  });
+  assert.equal(s.effects[0].value, 5);        // +3 base + 2 extra thread
+  assert.equal(s.effectLabel, '+5 Mystic armor');
+  assert.equal(s.roundsLeft, 70);             // 30 base + 2 extra successes × 20
 });
 
 test('tickActiveSpells: decrements, drops at 0, keeps null', () => {

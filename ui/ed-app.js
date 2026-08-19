@@ -358,7 +358,7 @@ export class EdApp extends LitElement {
     // A successful self-cast of a sustained spell (PLAN-SPELLS 6b): add it to the
     // session active-effect set so its effects fold into derived values and count
     // down per Initiative roll. Session-only, never persisted (like knockdown).
-    this.addEventListener('ed-spell-activate', (e) => this._activateSpell(e.detail?.name));
+    this.addEventListener('ed-spell-activate', (e) => this._activateSpell(e.detail));
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     this.addEventListener('ed-day-reset', (e) => this._openDayReset(e.detail));
     // A view ended (or restarted) the Knocked Down condition — "Stand up" in
@@ -592,10 +592,14 @@ export class EdApp extends LitElement {
   // effects + round countdown) from the catalog and the caster's Spellcasting
   // rank, and add it to the session set — a re-cast of the same spell refreshes
   // it. The engine folds it into derived values; nothing is persisted.
-  _activateSpell(name) {
+  _activateSpell(detail) {
+    const name = detail?.name;
     const spell = this._rules?.spellsFile?.spells?.[name];
     if (!spell) return;
-    const entry = buildActiveSpell(spell, this._spellcastingRank());
+    const entry = buildActiveSpell(spell, this._spellcastingRank(), {
+      extraPicks: detail?.extraPicks ?? [],
+      successLevels: detail?.successLevels ?? 0,
+    });
     this._activeSpells = [...(this._activeSpells ?? []).filter((s) => s.name !== name), entry];
     this._model = this._derive();
   }

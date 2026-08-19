@@ -188,14 +188,63 @@ export function durationRounds(duration, rank) {
   return count > 0 ? count * unit : null;
 }
 
+/** Amount an "Increase Effect (+N …)" option adds to a spell's effect value
+ *  (unit-agnostic: +2 Effect Step or +2 Mystic Armor both → 2; a −N target
+ *  debuff option → 0, it never boosts the caster's own effect). */
+export function increaseEffectAmount(label) {
+  if (!label || !/increase effect/i.test(label)) return 0;
+  const m = label.match(/\+\s*(\d+)/);
+  return m ? Number(m[1]) : 0;
+}
+
+/** Rounds an "Increase Duration (+N minutes/rounds/hours)" option adds (0 if the
+ *  option is not a duration boost). 1 minute = 10 rounds, 1 hour = 600. */
+export function increaseDurationRounds(label) {
+  if (!label || !/increase duration/i.test(label)) return 0;
+  const m = label.match(/\+\s*(\d+)\s*(minute|hour|round)/i);
+  if (!m) return 0;
+  const unit = /minute/i.test(m[2]) ? 10 : /hour/i.test(m[2]) ? 600 : 1;
+  return Number(m[1]) * unit;
+}
+
 /**
  * Build a session active-spell record for a successful self-cast (phase 6b):
  * the sustained effects to fold, a terse readout label, and the round countdown.
- * `rank` is the caster's Spellcasting rank.
+ * `rank` is the caster's Spellcasting rank; `ctx` carries the cast's boosts —
+ * `{ extraPicks: string[], successLevels: number }` — so the assigned extra
+ * threads and the EXTRA successes (levels − 1) raise the folded effect value and
+ * extend the duration (§3.2 #2/#3). Each extra thread applies once; each extra
+ * success applies the spell's Success-Levels option.
  */
-export function buildActiveSpell(spell, rank) {
-  const effects = sustainedEffectsOf(spell);
-  const rounds = durationRounds(spell.duration, rank);
+export function buildActiveSpell(spell, rank, ctx = {}) {
+  const picks = ctx.extraPicks ?? [];
+  const extra = Math.max(0, (ctx.successLevels ?? 0) - 1);
+  const successLabel = spell.successes?.[0]?.label;
+
+  let effectBoost = 0;
+  let durationBoost = 0;
+  for (const l of picks) {
+    effectBoost += increaseEffectAmount(l);
+    durationBoost += increaseDurationRounds(l);
+  }
+  if (extra > 0) {
+    effectBoost += extra * increaseEffectAmount(successLabel);
+    durationBoost += extra * increaseDurationRounds(successLabel);
+  }
+
+  // Fold the effect boost into the first numeric sustained effect (the buff's rating).
+  let boosted = false;
+  const effects = sustainedEffectsOf(spell).map((e) => {
+    if (!boosted && effectBoost && typeof e.value === 'number') {
+      boosted = true;
+      return { ...e, value: e.value + effectBoost };
+    }
+    return e;
+  });
+
+  const base = durationRounds(spell.duration, rank);
+  const rounds = base == null ? null : base + durationBoost;
+
   const stat = effects.find((e) => typeof e.value === 'number');
   const effectLabel = stat
     ? `+${stat.value}${stat.target ? ` ${stat.target.name} ${stat.target.domain}` : ''}`

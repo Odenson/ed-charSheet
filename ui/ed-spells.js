@@ -253,7 +253,8 @@ export class EdSpells extends LitElement {
       // adds it to the session active-effect set (fold + round countdown).
       if (levels >= 1 && this._castFoldsSelf) {
         this.dispatchEvent(new CustomEvent('ed-spell-activate', {
-          detail: { name: this._castName }, bubbles: true, composed: true,
+          detail: { name: this._castName, extraPicks: [...this._prog.extraPicks], successLevels: levels },
+          bubbles: true, composed: true,
         }));
       }
     } else if (step === 'effect') {
