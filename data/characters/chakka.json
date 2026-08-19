@@ -301,7 +301,7 @@
       ]
     },
     "health": {
-      "damage": 4,
+      "damage": 6,
       "wounds": 0,
       "recoveriesUsed": 0
     },
