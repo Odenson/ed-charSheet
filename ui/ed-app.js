@@ -1343,7 +1343,7 @@ export class EdApp extends LitElement {
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
-        return html`<ed-spells .model=${m} .editMode=${this._editMode} .arming=${this._arming()}></ed-spells>`;
+        return html`<ed-spells .model=${m} .editMode=${this._editMode} .arming=${this._arming()} .characterId=${this._characterId}></ed-spells>`;
       case 'equipment':
         return html`<ed-equipment
           .model=${m}

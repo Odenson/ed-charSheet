@@ -11,11 +11,19 @@ import { LitElement, html, css } from 'lit';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus } from '../engine/spells.js';
 import { successCount } from '../engine/combat.js';
 
+// Per-character cast-workspace scratchpad, kept in module memory so the in-flight
+// cast (selection, target, subject, weave/cast/effect progress) survives a tab
+// switch — ed-app renders only the active tab, so this element is destroyed and
+// rebuilt each time. Keyed by characterId; a character switch starts fresh and a
+// full reload clears it. Session-only UI state, never persisted to the character.
+const SCRATCH = new Map();
+
 export class EdSpells extends LitElement {
   static properties = {
     model: { attribute: false },
     editMode: { type: Boolean },
     arming: { attribute: false },
+    characterId: { type: String },
     _view: { state: true },
     _modal: { state: true },
     _castType: { state: true },
@@ -204,9 +212,71 @@ export class EdSpells extends LitElement {
     document.addEventListener('ed-roll-logged', this._onRollLogged);
   }
   disconnectedCallback() {
+    // Tab switch destroys this element — stash the cast workspace so returning
+    // restores it (ed-app renders only the active tab).
+    this._saveScratch();
     document.removeEventListener('keydown', this._onKey);
     document.removeEventListener('ed-roll-logged', this._onRollLogged);
     super.disconnectedCallback();
+  }
+
+  // Restore the cached workspace on first render (characterId is set by then).
+  firstUpdated() {
+    this._restoreScratch();
+  }
+
+  updated(changed) {
+    // A real character switch (non-null previous id changing) resets the
+    // workspace, then restores the incoming character's own cache if any.
+    if (changed.has('characterId')) {
+      const prev = changed.get('characterId');
+      if (prev != null && prev !== this.characterId) {
+        this._resetWorkspace();
+        this._restoreScratch();
+      }
+    }
+  }
+
+  _cloneProg(p) {
+    return {
+      ...p,
+      extraPicks: [...(p.extraPicks ?? [])],
+      weave: p.weave ? { ...p.weave } : null,
+      cast: p.cast ? { ...p.cast } : null,
+      effect: p.effect ? { ...p.effect } : null,
+    };
+  }
+
+  _saveScratch() {
+    if (!this.characterId) return;
+    SCRATCH.set(this.characterId, {
+      view: this._view,
+      castType: this._castType,
+      selSpell: this._selSpell,
+      target: this._target,
+      subject: this._subject,
+      prog: this._cloneProg(this._prog),
+    });
+  }
+
+  _restoreScratch() {
+    const s = this.characterId ? SCRATCH.get(this.characterId) : null;
+    if (!s) return;
+    this._view = s.view;
+    this._castType = s.castType;
+    this._selSpell = s.selSpell;
+    this._target = s.target;
+    this._subject = s.subject;
+    this._prog = this._cloneProg(s.prog);
+  }
+
+  _resetWorkspace() {
+    this._view = 'cast';
+    this._castType = 'matrix';
+    this._selSpell = null;
+    this._target = null;
+    this._subject = 'self';
+    this._prog = this._blankProg();
   }
 
   // Fold a completed roll into the cast progress for the step that dispatched it.
@@ -240,7 +310,9 @@ export class EdSpells extends LitElement {
           this._prog = { ...this._prog, threadsWoven: woven, weave: res };
         }
       } else {
-        // A required thread powers the cast — counts regardless of the roll.
+        // A required thread powers the cast — a FAILED weave forges no thread,
+        // so it never counts; only a successful weave advances the count.
+        if (!res.outcome?.ok) { this._prog = { ...this._prog, weave: res }; return; }
         const woven = Math.min(this._prog.threadsWoven + 1, this._maxThreads);
         this._prog = { ...this._prog, threadsWoven: woven, weave: res };
       }
@@ -524,6 +596,7 @@ export class EdSpells extends LitElement {
 
   _rollCast(plan) {
     if (this._prog.castDone) return; // already cast
+    if (this._prog.threadsWoven < plan.threadsToWeave) return; // required threads not forged
     const target = this._target ?? this._defaultTarget(plan);
     if (target == null || Number.isNaN(Number(target))) {
       this._castErr = 'Enter a target number first';
@@ -551,6 +624,7 @@ export class EdSpells extends LitElement {
   // The Effect step resolves the cast and un-greys Weave + Cast for the next one
   // (owner rule). A step effect rolls the dice; a static/none effect just resets.
   _doEffect(plan) {
+    if (!this._prog.castDone) return; // Effect waits for a completed cast
     if (plan.effect.kind === 'step' && plan.effect.step != null) {
       this._pendingStep = 'effect';
       this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan), null, {});
@@ -606,6 +680,10 @@ export class EdSpells extends LitElement {
     const forge = plan.threadsToWeave > 0;
     const prog = this._prog;
     const weaveMaxed = prog.threadsWoven >= this._weaveMax(plan);
+    // The cast is gated on the REQUIRED threads being forged (plan.threadsToWeave
+    // is already net of any Enhanced/Armoured matrix hold, so a 0-thread or
+    // matrix-held spell is met immediately). Effect waits for a completed cast.
+    const threadsMet = prog.threadsWoven >= plan.threadsToWeave;
     const effBonus = this._effectBonus(plan);
     const effectLabel = plan.effect.kind === 'step' ? '⚄ Roll' : plan.effect.kind === 'static' ? `Apply +${plan.effect.value}` : 'Done';
     return html`
@@ -647,15 +725,15 @@ export class EdSpells extends LitElement {
                    ${this._rollRes(prog.weave)}`
             : html`<span class="readout">—</span><span class="stepnote">No threads to forge</span>`}
         </div>
-        <div class="step">
+        <div class="step ${!threadsMet ? 'skip' : ''}">
           <span class="lab">Cast</span>
-          <button class="rollbtn" ?disabled=${prog.castDone} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
-          <span class="stepnote">Step ${plan.castingStep ?? '—'} vs ${target ?? 'TMD'}</span>
+          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
+          <span class="stepnote">${!threadsMet ? 'Weave the thread first' : `Step ${plan.castingStep ?? '—'} vs ${target ?? 'TMD'}`}</span>
           ${this._rollRes(prog.cast)}
         </div>
-        <div class="step">
+        <div class="step ${!prog.castDone ? 'skip' : ''}">
           <span class="lab">Effect</span>
-          <button class="rollbtn" @click=${() => this._doEffect(plan)}>${effectLabel}</button>
+          <button class="rollbtn" ?disabled=${!prog.castDone} @click=${() => this._doEffect(plan)}>${effectLabel}</button>
           <span class="stepnote">${plan.effect.kind === 'step'
             ? (effBonus > 0 ? `Step ${plan.effect.step} +${effBonus} = ${plan.effect.step + effBonus}` : `Step ${plan.effect.step ?? '—'}`)
             : plan.effect.kind === 'static' ? plan.effect.label : 'See description'}</span>
