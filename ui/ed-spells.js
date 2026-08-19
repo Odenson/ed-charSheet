@@ -111,7 +111,7 @@ export class EdSpells extends LitElement {
     .sitem:hover { background: var(--bg-chip); }
     .sitem.on { background: var(--spell-bg); }
     .sitem .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spell); opacity: 0; }
-    .sitem.learnt .dot { opacity: 1; }
+    .sitem.marked .dot { opacity: 1; }
     .sitem .cr { font-size: var(--fs-eyebrow); color: var(--muted); }
     .listlegend { font-size: var(--fs-eyebrow); color: var(--muted); display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
     .listlegend .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spell); display: inline-block; }
@@ -538,7 +538,19 @@ export class EdSpells extends LitElement {
   get _list() { return castTypeList(this.ctx, this._castType); }
 
   // Learnt-spell names, for the Raw list's "learnt" marker.
-  get _known() { return new Set((this.ctx?.known ?? []).map((k) => k.name)); }
+  _norm(s) { return String(s ?? '').replace(/[‘’]/g, "'").trim(); }
+  get _known() { return new Set((this.ctx?.known ?? []).map((k) => this._norm(k.name))); }
+
+  // What the list dot means per cast type: Grimoire/Matrix → placed in a matrix;
+  // Raw (which lists un-learnt spells too) → learnt. Returns { marked, title }.
+  _listDot(ctx, name) {
+    if (this._castType === 'raw') {
+      const learnt = this._known.has(this._norm(name));
+      return { marked: learnt, title: learnt ? 'Learnt' : '' };
+    }
+    const placed = !!matrixFor(ctx, name);
+    return { marked: placed, title: placed ? 'In a matrix' : '' };
+  }
 
   _selected() {
     const list = this._list;
@@ -653,12 +665,12 @@ export class EdSpells extends LitElement {
       <p class="cthint">${hint}</p>
       <div class="layout">
         <div>
-          <h4 class="circlelbl">${this._castType === 'matrix' ? 'Attuned spells' : 'Spells'}${this._castType === 'raw' ? html`<span class="listlegend"><span class="dot"></span>learnt</span>` : ''}</h4>
+          <h4 class="circlelbl">${this._castType === 'matrix' ? 'Attuned spells' : 'Spells'}${this._castType === 'grimoire' ? html`<span class="listlegend"><span class="dot"></span>in matrix</span>` : this._castType === 'raw' ? html`<span class="listlegend"><span class="dot"></span>learnt</span>` : ''}</h4>
           ${list.length
             ? html`<div class="slist2">
                 ${list.map((s) => html`
-                  <button class="sitem ${s.name === (sel?.name) ? 'on' : ''} ${this._known.has(s.name) ? 'learnt' : ''}" @click=${() => this._pickSpell(s.name)}>
-                    <span class="dot" title=${this._known.has(s.name) ? 'Learnt' : ''}></span><span class="sname">${s.name}</span><span class="cr">C${s.circle}</span>
+                  <button class="sitem ${s.name === (sel?.name) ? 'on' : ''} ${this._listDot(ctx, s.name).marked ? 'marked' : ''}" @click=${() => this._pickSpell(s.name)}>
+                    <span class="dot" title=${this._listDot(ctx, s.name).title}></span><span class="sname">${s.name}</span><span class="cr">C${s.circle}</span>
                   </button>`)}
               </div>`
             : html`<div class="empty">${this._castType === 'matrix' ? 'No spells placed in a matrix — use the ✦ toggle in the Grimoire.' : 'No spells available for this cast type.'}</div>`}
