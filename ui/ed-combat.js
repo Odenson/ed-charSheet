@@ -998,19 +998,42 @@ export class EdCombat extends LitElement {
   // Toggled session mods fold into the shown figures as Overview-style delta
   // badges (foldCombatRatings) — never dispatched into the derived Defence (B7).
   // Collapsible; defaults collapsed on narrow screens.
+  // Active self-cast spells (PLAN-SPELLS 6b) fold into the DERIVED defence/armour
+  // by the engine, so their contribution is already inside the base value. To
+  // surface it as a signed badge (like a toggled mod) without double-counting, we
+  // pull each spell's defence/armour delta OUT of the base and re-add it as a mod
+  // — the total is unchanged, but the source now shows.
+  _spellRatingMods() {
+    const def = [];
+    const arm = [];
+    for (const sp of this.model?.spells?.active ?? []) {
+      for (const e of sp.effects ?? []) {
+        if (!e?.target?.name) continue;
+        const v = (e.operation === 'subtract' ? -1 : 1) * (Number(e.value) || 0);
+        if (!v) continue;
+        if (e.type === 'armor-modifier' && e.target.domain === 'armor') arm.push({ name: e.target.name, value: v, source: sp.name });
+        else if (e.type === 'defense-modifier' && e.target.domain === 'defense') def.push({ name: e.target.name, value: v, source: sp.name });
+      }
+    }
+    return { def, arm };
+  }
+
   _defArmourSection() {
     const c = this.model?.characteristics ?? {};
     const { defenseMods, armorMods } = this._poolEffects();
+    const { def: spellDef, arm: spellArm } = this._spellRatingMods();
+    const sub = (val, mods, name) =>
+      val == null ? val : val - mods.filter((m) => m.name === name).reduce((s, m) => s + m.value, 0);
     const r = foldCombatRatings(
       {
-        physicalDefense: c.physicalDefense?.value,
-        mysticDefense: c.mysticDefense?.value,
-        socialDefense: c.socialDefense?.value,
-        physicalArmor: c.physicalArmor?.value,
-        mysticArmor: c.mysticArmor?.value,
+        physicalDefense: sub(c.physicalDefense?.value, spellDef, 'Physical'),
+        mysticDefense: sub(c.mysticDefense?.value, spellDef, 'Mystic'),
+        socialDefense: sub(c.socialDefense?.value, spellDef, 'Social'),
+        physicalArmor: sub(c.physicalArmor?.value, spellArm, 'Physical'),
+        mysticArmor: sub(c.mysticArmor?.value, spellArm, 'Mystic'),
       },
-      defenseMods,
-      armorMods,
+      [...defenseMods, ...spellDef],
+      [...armorMods, ...spellArm],
     );
     const collapsed = (this._collapsed ?? []).includes('dab');
     return html`
