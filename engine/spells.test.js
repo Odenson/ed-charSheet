@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { spellCost } from './legend-spent.js';
 import {
   joinSpell,
   knownSpells,
@@ -26,9 +27,16 @@ import {
   tickActiveSpells,
   activeSpellEffects,
   effectStepBonus,
+  learnableSpells,
+  learningDifficulty,
+  spellSilverCost,
+  patterncraftStep,
+  canLearn,
+  learnPlan,
 } from './spells.js';
 
 const spellsFile = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url)));
+const legendFile = JSON.parse(readFileSync(new URL('../rules/legend.json', import.meta.url)));
 
 // A compact hand-built context, independent of the real catalog where possible.
 function ctx(overrides = {}) {
@@ -293,4 +301,117 @@ test('real catalog: 123 Nethermancer spells, threadCap present, effects non-empt
   for (const s of Object.values(spellsFile.spells)) {
     assert.ok(s.effects.length >= 1, `${s.name} has no effects`);
   }
+});
+
+// --- Learn-flow derivations (PLAN-LEARN-SPELLS §5) ---------------------------
+
+test('learningDifficulty reads the explicit table (C1 → 6 … C15 → 20)', () => {
+  assert.equal(learningDifficulty(spellsFile.learning, 1), 6);
+  assert.equal(learningDifficulty(spellsFile.learning, 5), 10);
+  assert.equal(learningDifficulty(spellsFile.learning, 15), 20);
+  assert.equal(learningDifficulty(spellsFile.learning, 16), null); // beyond the table
+  assert.equal(learningDifficulty({}, 1), null);
+});
+
+test('spellSilverCost = Circle × silverPerCircle (rules data)', () => {
+  assert.equal(spellSilverCost(spellsFile.learning, 1), 100);
+  assert.equal(spellSilverCost(spellsFile.learning, 7), 700);
+  assert.equal(spellSilverCost(spellsFile.learning, 15), 1500);
+  assert.equal(spellSilverCost(spellsFile.learning, 0), null);
+  assert.equal(spellSilverCost({}, 3), null);
+});
+
+test('spellCost (legend-spent) prices a learned spell = talentRank[circle].Novice', () => {
+  assert.equal(spellCost(1, legendFile.costs.talentRank), 100);
+  assert.equal(spellCost(5, legendFile.costs.talentRank), 800);
+  assert.equal(spellCost(2, legendFile.costs.talentRank), 200); // same as spellCost
+});
+
+test('learnableSpells: Thread Weaving gates the set; known spells are excluded', () => {
+  const c = ctx(); // Nethermancer TW known; Soul Armor + Pain already known
+  const can = learnableSpells(c);
+  assert.deepEqual(can.map((s) => s.name), ['Astral Spear']); // only the un-learnt Nethermancer spell
+});
+
+test('learnableSpells: a Discipline without Thread Weaving offers nothing', () => {
+  const c = ctx({ weavingStep: {} });
+  assert.deepEqual(learnableSpells(c), []);
+});
+
+test('learnableSpells tags castable = caster Circle ≥ spell Circle', () => {
+  const gated = ctx({
+    disciplines: [{ name: 'Nethermancer', circle: 3 }],
+    catalog: {
+      'Astral Spear': { name: 'Astral Spear', discipline: 'Nethermancer', circle: 1, effects: [] },
+      'High Circle One': { name: 'High Circle One', discipline: 'Nethermancer', circle: 5, effects: [] },
+    },
+    known: [],
+  });
+  const byName = Object.fromEntries(learnableSpells(gated).map((s) => [s.name, s]));
+  assert.equal(byName['Astral Spear'].castable, true);
+  assert.equal(byName['High Circle One'].castable, false);
+});
+
+test('learnableSpells is apostrophe-insensitive against known[]', () => {
+  const gated = ctx({
+    catalog: { 'Death’s Head': { name: 'Death’s Head', discipline: 'Nethermancer', circle: 2, effects: [] } },
+    known: [{ name: "Death's Head", learntSuccess: 0 }], // straight apostrophe
+  });
+  assert.deepEqual(learnableSpells(gated), []);
+});
+
+test('patterncraftStep reads the derived talent; null when not owned', () => {
+  const model = { disciplines: [
+    { name: 'Nethermancer', talents: [{ name: 'Patterncraft', step: 7 }, { name: 'Spellcasting', step: 8 }] },
+  ] };
+  assert.equal(patterncraftStep(model), 7);
+  assert.equal(patterncraftStep({ disciplines: [] }), null);
+});
+
+test('canLearn(model, spell, legendCost): blocks on damage/wounds, talent gaps, unaffordable Legend', () => {
+  const talentRank = legendFile.costs.talentRank;
+  const disc = (health, available, extra) => ({
+    resources: { health: { damage: health.damage ?? 0, wounds: health.wounds ?? 0 } },
+    legend: { available },
+    spells: { weavingStep: { Nethermancer: 9 } },
+    disciplines: [{ name: 'Nethermancer', talents: [{ name: 'Patterncraft', step: 7 }] }],
+    ...extra,
+  });
+  const spell = { discipline: 'Nethermancer', circle: 1 };
+  const c1 = spellCost(1, talentRank);   // 100 LP
+  assert.equal(canLearn(disc({}, 5000), spell, c1).ok, true);
+  assert.equal(canLearn(disc({ damage: 1 }, 5000), spell, c1).ok, false); // damaged
+  assert.equal(canLearn(disc({ wounds: 2 }, 5000), spell, c1).ok, false); // wounded
+  assert.equal(canLearn(disc({}, 5000, { disciplines: [{ name: 'Nethermancer', talents: [] }] }), spell, c1).ok, false); // no Patterncraft
+  assert.equal(canLearn(disc({}, 5000, { spells: { weavingStep: {} } }), spell, c1).ok, false); // no Thread Weaving
+  assert.equal(canLearn(disc({}, 50), spell, c1).ok, false); // 50 < 100 Legend
+  const r = canLearn(disc({}, 50), { discipline: 'Nethermancer', circle: 15 }, spellCost(15, talentRank));
+  assert.equal(r.ok, false);
+  assert.ok(r.reasons.some((x) => /Available Legend/.test(x)));
+  // a waived cost (homebrew multiplier → 0) never blocks on Legend, even at 0 available
+  assert.equal(canLearn(disc({}, 0), spell, 0).ok, true);
+});
+
+test('learnPlan composes difficulty/costs/prereqs; homebrew multipliers fold in', () => {
+  const model = {
+    disciplines: [{ name: 'Nethermancer', circle: 3, talents: [{ name: 'Patterncraft', step: 7 }] }],
+    resources: { health: { damage: 0, wounds: 0 } },
+    spells: { weavingStep: { Nethermancer: 9 } },
+    legend: { available: 5000 },
+  };
+  const base = { learning: spellsFile.learning, talentRank: legendFile.costs.talentRank };
+  const p = learnPlan(ctx(base), model, 'Astral Spear'); // C1, learnable (not in known)
+  assert.equal(p.circle, 1);
+  assert.equal(p.learningDifficulty, 6);
+  assert.equal(p.legendCost, 100);      // C1 base × 1
+  assert.equal(p.suggestedSilver, 100); // C1 × 100 × 1
+  assert.equal(p.patterncraftStep, 7);
+  assert.equal(p.castable, true);       // caster Circle 3 ≥ spell Circle 1
+  assert.equal(p.canLearn.ok, true);
+  // homebrew: waive Legend (×0), double silver (×2)
+  const hb = learnPlan(ctx({ ...base, learnLegendMultiplier: 0, learnSilverMultiplier: 2 }), model, 'Astral Spear');
+  assert.equal(hb.legendCost, 0);
+  assert.equal(hb.suggestedSilver, 200);
+  assert.equal(hb.canLearn.ok, true);   // waived cost never blocks
+  assert.equal(learnPlan(ctx(base), model, 'Not A Spell'), null);
 });

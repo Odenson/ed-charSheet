@@ -7,7 +7,8 @@
     "description: per-spell player-facing prose (flavor + resolution + core mechanic), paraphrased from the rulebook extracts; SUMMARY remains the terse mechanic readout. No taxonomy impact — a catalog metadata field, not an effect.",
     "threadCap: extra-thread cap by Circle band (rules data, not engine logic) — PLAN-SPELLS.md §3.1.",
     "weavingDifficulty.reattune: on-the-fly matrix-swap difficulty, a POST-v1 mechanic carried in the shape now.",
-    "castingTarget is a HINT for the cast prompt; the test is always vs a NUMBER entered at cast time."
+    "castingTarget is a HINT for the cast prompt; the test is always vs a NUMBER entered at cast time.",
+    "learning: spell-learning tables (PLAN-LEARN-SPELLS.md §4) — difficultyByCircle is an explicit {circle: difficulty} table (the engine reads a value, never computes circle+5), silverPerCircle is the suggested copy price (Circle × 100 sp, or whatever the tuition costs), and legendCostSource points at rules/legend.json costs.talentRank[circle].Novice — the Legend price is that ONE table, no duplicate."
   ],
   "threadCap": [
     {
@@ -31,6 +32,14 @@
       "extraThreads": 4
     }
   ],
+  "learning": {
+    "difficultyByCircle": {
+      "1": 6, "2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13,
+      "9": 14, "10": 15, "11": 16, "12": 17, "13": 18, "14": 19, "15": 20
+    },
+    "silverPerCircle": 100,
+    "legendCostSource": "rules/legend.json costs.talentRank[circle].Novice"
+  },
   "spells": {
     "Astral Spear": {
       "name": "Astral Spear",
@@ -516,7 +525,7 @@
     },
     "Shadow Meld": {
       "name": "Shadow Meld",
-      "description": "Renders the target nearly invisible in shadows, granting +4 to all Stealthy Stride tests and letting Stealthy Stride function as a default skill. Cast against the target's Mystic Defense; ordinary light does not dispel it, and stepping back into shadow restores the effect.",
+      "description": "Renders the target nearly invisible in shadows, granting +4 steps to all Stealthy Stride tests and letting Stealthy Stride function as a default skill. Cast against the target's Mystic Defense; ordinary light does not dispel it, and stepping back into shadow restores the effect.",
       "discipline": "Nethermancer",
       "circle": 1,
       "threadsToWeave": 1,
@@ -539,13 +548,13 @@
           },
           "operation": "add",
           "value": 4,
-          "measure": "result",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
-          "summary": "+4 to Stealthy Stride tests while active."
+          "summary": "+4 steps to Stealthy Stride tests while active."
         }
       ],
-      "summary": "+ 4 to Stealthy Stride tests"
+      "summary": "+4 steps to Stealthy Stride tests"
     },
     "Soul Armor": {
       "name": "Soul Armor",
@@ -693,7 +702,7 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "result",
+              "measure": "step",
               "source": "spell",
               "summary": "Increase Effect (+2 Effect Step)",
               "duration": "sustained"
@@ -743,7 +752,7 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "result",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
           "summary": "+3 to Intimidation tests while active."
@@ -1455,7 +1464,7 @@
       "successes": [],
       "extraThreads": [
         {
-          "label": "Increase Effect (+2 bonus)",
+          "label": "Increase Effect (+2 steps)",
           "effects": [
             {
               "type": "test-modifier",
@@ -1465,9 +1474,9 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "result",
+              "measure": "step",
               "source": "spell",
-              "summary": "Increase Effect (+2 bonus)",
+              "summary": "Increase Effect (+2 steps)",
               "duration": "sustained"
             }
           ]
@@ -1482,13 +1491,13 @@
           },
           "operation": "add",
           "value": 4,
-          "measure": "result",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
           "summary": "+4 to Avoid Blow tests while active."
         }
       ],
-      "summary": "+ 4 bonus to Avoid Blow tests"
+      "summary": "+ 4 steps to Avoid Blow tests"
     },
     "Summon Fog Ghost": {
       "name": "Summon Fog Ghost",

@@ -137,7 +137,7 @@ test('set: an unknown target is ignored (registry-gated)', () => {
   assert.equal(model.characteristics.karma.step, 4);
 });
 
-test('set: legend.spends derives karma-on-legend rows from the ledger (historic + events)', () => {
+test('set: karma economy folds converted Karma into the Legend-spent audit sink', () => {
   const char = {
     ...humanChar(4),
     resources: {
@@ -150,30 +150,9 @@ test('set: legend.spends derives karma-on-legend rows from the ledger (historic 
     },
   };
   const model = deriveModel(char, rulesWith(karmaEconomy())); // Human ritualCost 6
-  const spends = model.legend.spends;
-  assert.equal(spends.length, 3); // historic(15) + a + b
-  assert.equal(spends[0].virtual, true);
-  assert.equal(spends[0].points, 15); // 20 − 3 − 2
-  assert.equal(spends[0].legend, 90); // 15 × 6, current cost
-  assert.equal(spends[1].legend, 18); // 3 × 6
-  assert.equal(spends[2].legend, 12); // 2 × 6
-  // Display rows never leak into the earned list or the earned total.
-  assert.equal(model.legend.totalEarnt, 500);
   assert.equal(model.legend.spent.total, 120); // converted 20 × 6 sink
-});
-
-test('set: legend.spends is empty when the Karma economy rule is off (no cost)', () => {
-  const char = {
-    ...humanChar(4),
-    resources: {
-      health: { damage: 0, wounds: 0, recoveriesUsed: 0 },
-      karma: { converted: 20 },
-      legend: { earned: [{ id: 'e1', amount: 500, description: 'Adventure', date: '2026-08-01' }] },
-    },
-  };
-  const model = deriveModel(char, rulesWith(karmaEconomy(false)));
-  assert.deepEqual(model.legend.spends, []);
-  assert.equal(model.legend.totalEarnt, 500); // unaffected by the display rows
+  // The Karma economy never leaks into the earned list or the earned total.
+  assert.equal(model.legend.totalEarnt, 500);
 });
 
 // --- ed-homebrew/2 `set` lever: legend.additionalTierShift (PLAN-HOMEBREW-LEGEND-TIER) ---

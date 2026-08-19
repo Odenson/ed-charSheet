@@ -53,9 +53,11 @@ recorded so a later change knows they were made on purpose, not overlooked.
   clothing ×1.25, windling ×0.2, t'skrang tail ×1.1 are not applied — weights
   fold in as recorded. *Deferred*: per-race modifiers on the carried total.
 - **Weight parsing conventions** (engine/weight.js): "N lb" as written; "N oz" ÷
-  16; bare numbers (custom items) read as lb; ranges ("8-10 lb") use the
-  midpoint; "Neg."/"—" are negligible (0); "NA"/unrecorded are **unknown** —
-  skipped and counted in the banner's "unweighed" note, never fabricated.
+  16; ranges ("8-10 lb") use the midpoint; "Neg."/"—" are negligible (0);
+  "NA"/unrecorded are **unknown** — skipped and counted in the banner's
+  "unweighed" note, never fabricated. Post migration to ed-items/3, `ref.weight`
+  is always a structured `{ amount, unit }` (or `{ negligible: true }` / `null`);
+  a bare number reads as unknown, never as pounds.
 
 ---
 

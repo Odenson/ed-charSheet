@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================================
-# tools/add-items.py — ARCHIVE-ONLY (plans/PLAN-STRUCTURED-COST-WEIGHT.md Phase C):
+# tools/archive/add-items.py — ARCHIVE-ONLY (plans/PLAN-STRUCTURED-COST-WEIGHT.md Phase C):
 # the catalog is now the source of truth, and rules/items.json has migrated to
 # the ed-items/3 schema (structured `ref.weight`, numeric `ref.cost`). This
 # extractor's `norm_cost` / `norm_weight` emit the old string forms and would
@@ -41,9 +41,9 @@
 # reports already-present names and changes nothing. Dry-run by default.
 #
 # Usage:
-#   python3 tools/add-items.py                 # dry-run report
-#   python3 tools/add-items.py --write         # merge into rules/items.json
-#   python3 tools/add-items.py --source <file> # point at a different extract
+#   python3 tools/archive/add-items.py                 # dry-run report
+#   python3 tools/archive/add-items.py --write         # merge into rules/items.json
+#   python3 tools/archive/add-items.py --source <file> # point at a different extract
 # ============================================================================
 
 import argparse

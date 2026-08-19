@@ -69,3 +69,64 @@ export function removeWorking(working, name) {
   next.delete(name);
   return next;
 }
+
+// --- structured weight (ref.weight, schema ed-items/3) ---------------------
+// The editor edits `ref.weight` as a small form state — a unit/kind mode plus
+// a numeric amount — and this module maps to/from the stored structured shape.
+// The stored forms are exactly what engine/weight.js and validate-item.js read:
+//   undefined | null               → unrecorded      → mode "none"
+//   { negligible: true }           → no weight       → mode "negligible"
+//   { amount: n, unit: 'lb'|'oz' } → a measured weight
+// A legacy pre-migration string is *never parsed* (the app principle: rule data
+// is structured, never recovered from display strings by regex). A purely
+// numeric string ("0.1", "2") maps to pounds — a lossless reading of a unit-less
+// legacy value, not a parse — and any other string degrades to mode "none" with
+// `legacy` set so the UI can say "needs re-entry" instead of silently dropping
+// the user's stored weight.
+
+const isWeightNumber = (n) => typeof n === 'number' && Number.isFinite(n) && n >= 0;
+
+/**
+ * Map a stored `ref.weight` into the editor's form state `{ mode, amount }`.
+ * Returns `{ legacy }` (the raw string) when only a human re-entry can save the
+ * value; the pure structural cases round-trip losslessly.
+ * @param {*} w  the stored `ref.weight` (structured object, number, string, null)
+ * @returns {{mode: 'none'|'negligible'|'lb'|'oz', amount: string, legacy?: string}}
+ */
+export function weightToForm(w) {
+  if (w == null) return { mode: 'none', amount: '' };
+  if (typeof w === 'number') return { mode: 'lb', amount: String(w), ...(isWeightNumber(w) ? {} : { legacy: String(w) }) };
+  if (typeof w === 'object') {
+    if (w.negligible === true) return { mode: 'negligible', amount: '' };
+    const { amount, unit } = w;
+    if (typeof amount === 'number' && (unit === 'lb' || unit === 'oz')) {
+      return { mode: unit, amount: String(amount) };
+    }
+    return { mode: 'none', amount: '', legacy: JSON.stringify(w) };
+  }
+  if (typeof w === 'string') {
+    const n = Number(w.trim());
+    return Number.isFinite(n) && n >= 0 && String(n) === w.trim()
+      ? { mode: 'lb', amount: String(n) }
+      : { mode: 'none', amount: '', legacy: w };
+  }
+  return { mode: 'none', amount: '', legacy: String(w) };
+}
+
+/**
+ * Map the editor's weight form state back into a stored `ref.weight`.
+ * @param {'none'|'negligible'|'lb'|'oz'} mode  selected unit/kind
+ * @param {string|number} amount  the entered amount (for lb/oz modes)
+ * @returns {undefined | {negligible: true} | {amount: number, unit: 'lb'|'oz'}}
+ */
+export function weightFromForm(mode, amount) {
+  if (mode === 'none') return undefined;
+  if (mode === 'negligible') return { negligible: true };
+  if (mode === 'lb' || mode === 'oz') {
+    if (amount === '' || amount == null) return undefined;
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n < 0) return undefined;
+    return { amount: Math.round(n * 100) / 100, unit: mode };
+  }
+  return undefined;
+}

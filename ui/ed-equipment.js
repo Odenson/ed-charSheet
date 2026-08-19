@@ -18,6 +18,7 @@ import { equipArmour, applyArmourSwap, bumpQuantity, nextTradeItems } from './it
 import { boostHasNoEffect } from '../engine/potions.js';
 import { recoveriesRemaining } from '../engine/health.js';
 import { spendAllocation, creditAllocation } from '../engine/wealth.js';
+import { numFmt, cap, prettyName } from './format.js';
 import './ed-confirm.js';
 import './ed-trade-modal.js';
 
@@ -35,14 +36,16 @@ const SECTIONS = [
 ];
 
 const isMagic = (it) => !!it && MAGIC_KINDS.has(it.kind);
-const grp = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
 // A section's carried weight = the sum of its rows' engine-parsed pounds (each
 // `it.weight` is a derived value off the model — never computed here).
 const secWeight = (rows) => rows.reduce((t, it) => t + (typeof it.weight === 'number' ? it.weight : 0), 0);
 const costText = (ref) => {
   const c = ref?.cost;
   if (c == null) return null;
-  return typeof c === 'number' ? `${grp(c)} sp` : String(c);
+  // A number is the catalogue's only valid cost (schema ed-items/3). A stale
+  // pre-migration string degrades to null (chip omitted, the placeholder path)
+  // — mirroring weightText — never a fabricated or verbatim price.
+  return typeof c === 'number' ? `${numFmt(c)} sp` : null;
 };
 // Display formatter for a structured `ref.weight` (schema ed-items/3): null →
 // omitted (unrecorded), { negligible: true } → "Negligible", { amount, unit } →
@@ -53,7 +56,7 @@ const weightText = (ref) => {
   if (w == null) return null;
   if (w.negligible === true) return 'Negligible';
   if (typeof w === 'object' && typeof w.amount === 'number' && (w.unit === 'lb' || w.unit === 'oz')) {
-    return `${grp(w.amount)} ${w.unit}`;
+    return `${numFmt(w.amount)} ${w.unit}`;
   }
   return null;
 };
@@ -92,8 +95,6 @@ const tileEffect = (it) => {
 // fixed order for every item — base-ref chips · main-effect chips · white notes ·
 // green situational — so items read consistently. None of this computes a game
 // value; it only formats effect/ref data the engine already resolved.
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-const prettyName = (n) => (n ?? '').replace(/([a-z])([A-Z])/g, '$1 $2');
 const EFFECT_SUFFIX = { 'armor-modifier': 'Armour', 'defense-modifier': 'Defence', 'attack-modifier': '', 'test-modifier': 'Test', 'characteristic-modifier': '' };
 // A short `Label ±N` chip for an always-on numeric modifier (the item's main effect).
 const modifierChip = (e) => {
@@ -770,10 +771,10 @@ export class EdEquipment extends LitElement {
     const shifted = w.stage !== 'clear' && mv && mv.value != null && mv.base != null && mv.value !== mv.base;
     return html`
       <div class="blk">
-        <h4><span class="glyph">⚖</span>Carried Weight<span class="total">${grp(w.carried)} lb</span></h4>
+        <h4><span class="glyph">⚖</span>Carried Weight<span class="total">${numFmt(w.carried)} lb</span></h4>
         <div class="wrow">
           ${known
-            ? html`<span class="wline">Capacity <b>${grp(capacity)} lb</b> · Lift <b>${grp(cc?.lift ?? capacity * 2 - 1)} lb</b></span>`
+            ? html`<span class="wline">Capacity <b>${numFmt(capacity)} lb</b> · Lift <b>${numFmt(cc?.lift ?? capacity * 2 - 1)} lb</b></span>`
             : html`<span class="pend">—</span>`}
           ${known ? html`<span class="statechip wstage ${w.stage}">${w.label}</span>` : ''}
         </div>
@@ -792,7 +793,7 @@ export class EdEquipment extends LitElement {
     const showPending = sec.kinds.includes('healing-aid') && this._pending();
     return html`
       <div class="blk">
-        <h4><span class="glyph">${sec.glyph}</span>${sec.title}<span class="ct">${rows.length}</span>${rows.length ? html`<span class="total">${grp(secWeight(rows))} lb</span>` : ''}</h4>
+        <h4><span class="glyph">${sec.glyph}</span>${sec.title}<span class="ct">${rows.length}</span>${rows.length ? html`<span class="total">${numFmt(secWeight(rows))} lb</span>` : ''}</h4>
         ${ordered.length ? ordered.map((it) => this._itemRow(it)) : html`<div class="empty">— nothing here —</div>`}
         ${showPending ? this._pendingPill() : ''}
       </div>
@@ -801,11 +802,11 @@ export class EdEquipment extends LitElement {
 
   _coinTile(d, count) {
     if (!this.editMode) {
-      return html`<div class="coin ro ${d.elemental ? 'elem' : ''}"><span class="clab">${d.label}</span><span class="cval">${grp(count)}</span></div>`;
+      return html`<div class="coin ro ${d.elemental ? 'elem' : ''}"><span class="clab">${d.label}</span><span class="cval">${numFmt(count)}</span></div>`;
     }
     return html`
       <div class="coin ${d.elemental ? 'elem' : ''}">
-        <span class="clab" title="×${grp(d.rate)} sp each">${d.label}</span>
+        <span class="clab" title="×${numFmt(d.rate)} sp each">${d.label}</span>
         <input type="number" min="0" step="1" .value=${String(count)} aria-label="${d.label} coins"
           @change=${(e) => this._setCoin(d.key, e.target.value)} />
         <button class="crm" aria-label="Remove ${d.label}" title="Remove ${d.label}" @click=${() => this._removeCoin(d.key)}>✕</button>
@@ -827,7 +828,7 @@ export class EdEquipment extends LitElement {
 
     return html`
       <div class="blk">
-        <h4><span class="glyph">💰</span>Wealth<span class="total">≈ ${grp(w.totalSilver ?? 0)} sp</span></h4>
+        <h4><span class="glyph">💰</span>Wealth<span class="total">≈ ${numFmt(w.totalSilver ?? 0)} sp</span></h4>
 
         <div class="subh">Metal coins</div>
         <div class="coingroup">
@@ -838,8 +839,8 @@ export class EdEquipment extends LitElement {
                   <button type="button" @click=${(e) => { e.stopPropagation(); this._coinMenu = !this._coinMenu; }}>＋ Add coin</button>
                   ${this._coinMenu
                     ? html`<div class="coinmenu">
-                        ${hm.length ? html`<div class="mgh">Metal</div>${hm.map((d) => html`<button @click=${() => this._pinCoin(d.key)}>${d.label}<span class="mr">×${grp(d.rate)} sp</span></button>`)}` : ''}
-                        ${he.length ? html`<div class="mgh">Elemental</div>${he.map((d) => html`<button class="arc" @click=${() => this._pinCoin(d.key)}>${d.label}<span class="mr">×${grp(d.rate)} sp</span></button>`)}` : ''}
+                        ${hm.length ? html`<div class="mgh">Metal</div>${hm.map((d) => html`<button @click=${() => this._pinCoin(d.key)}>${d.label}<span class="mr">×${numFmt(d.rate)} sp</span></button>`)}` : ''}
+                        ${he.length ? html`<div class="mgh">Elemental</div>${he.map((d) => html`<button class="arc" @click=${() => this._pinCoin(d.key)}>${d.label}<span class="mr">×${numFmt(d.rate)} sp</span></button>`)}` : ''}
                       </div>`
                     : ''}
                 </div>
@@ -858,7 +859,7 @@ export class EdEquipment extends LitElement {
                 <div class="gem">
                   <span class="gn">${g.name}</span>
                   <span class="gq">×${g.qty ?? 1}</span>
-                  <span class="gv">${grp(g.valueSilver)} sp${(g.qty ?? 1) > 1 ? html` → ${grp((g.valueSilver || 0) * (g.qty || 1))} sp` : ''}</span>
+                  <span class="gv">${numFmt(g.valueSilver)} sp${(g.qty ?? 1) > 1 ? html` → ${numFmt((g.valueSilver || 0) * (g.qty || 1))} sp` : ''}</span>
                   ${this.editMode ? html`<button class="gdel" aria-label="Remove ${g.name}" title="Remove ${g.name}" @click=${() => this._removeGem(i)}>✕</button>` : ''}
                 </div>`)
             : html`<div class="empty">No gems recorded.</div>`}
@@ -872,7 +873,7 @@ export class EdEquipment extends LitElement {
             </div>`
           : ''}
         ${(w.gemTotalSilver ?? 0) > 0
-          ? html`<p class="resale">Gems ≈ ${grp(w.gemTotalSilver)} sp · resale ≈ ${grp(w.gemResaleSilver)} sp (70–80%)</p>`
+          ? html`<p class="resale">Gems ≈ ${numFmt(w.gemTotalSilver)} sp · resale ≈ ${numFmt(w.gemResaleSilver)} sp (70–80%)</p>`
           : ''}
       </div>
     `;

@@ -578,6 +578,9 @@ export class EdCombat extends LitElement {
           stepBase: t.stepBase,
           rankBonus: t.rankBonus,
           grantSources: t.grantSources ?? [],
+          // Active test-modifiers folded onto this talent (a sustained spell's +N
+          // step, etc.) — the step audit itemises them off the pre-modifier base.
+          rollMods: t.rollMods ?? [],
         });
       }
     }
@@ -592,6 +595,7 @@ export class EdCombat extends LitElement {
         stepBase: s.stepBase,
         rankBonus: s.rankBonus,
         grantSources: s.grantSources ?? [],
+        rollMods: s.rollMods ?? [],
       });
     }
     return [...byId.values()];
@@ -1440,7 +1444,9 @@ export class EdCombat extends LitElement {
     if (t?.rankBonus != null && t.rankBonus !== 0) {
       baseParts.push({ label: `Rank grant (${this._grantLabel(t.grantSources)})`, value: t.rankBonus });
     }
-    return auditPool(baseParts, attackEffects, { testKind: 'attack' });
+    // The talent's own active test-modifiers (a sustained spell's +N step, etc.)
+    // are itemised off the pre-modifier base so the audit sums back to its step.
+    return auditPool(baseParts, attackEffects, { testKind: 'attack' }, 0, t?.rollMods ?? []);
   }
   _grantLabel(sources) {
     return (sources ?? [])

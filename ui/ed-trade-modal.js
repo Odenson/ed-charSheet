@@ -14,8 +14,8 @@
 import { LitElement, html, css } from 'lit';
 import { coinsSilver, gemsSilver, costSilver } from '../engine/wealth.js';
 import { PICKER_LABELS } from './picker.js';
+import { numFmt } from './format.js';
 
-const sp = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
 // Aggregated per-identity gem rows: matched by (name, valueSilver), oldest first.
 const gemOptions = (gems = []) => {
   const byId = new Map();
@@ -260,7 +260,7 @@ export class EdTradeModal extends LitElement {
     const it = this.item ?? {};
     const kind = PICKER_LABELS[it.kind] || it.kind || 'item';
     const cat = it.ref?.category ? ` · ${it.ref.category}` : '';
-    const price = it.ref?.cost != null ? ` · ${sp(costSilver(it.ref.cost))} sp catalogue` : '';
+    const price = it.ref?.cost != null ? ` · ${numFmt(costSilver(it.ref.cost))} sp catalogue` : '';
     return `${kind}${cat}${price}`;
   }
 
@@ -269,7 +269,7 @@ export class EdTradeModal extends LitElement {
     if (side === 'buy' && owned === 0) return '';
     const cur = this._allocAt(d.key);
     return html`<div class="grow">
-      <span class="glab"><span class="n">${d.label}</span><span class="r">×${sp(d.rate)} sp</span>
+      <span class="glab"><span class="n">${d.label}</span><span class="r">×${numFmt(d.rate)} sp</span>
         ${side === 'buy' ? html`<span class="r">own ${owned}</span>` : html`<span class="r">have ${owned}</span>`}</span>
       <span class="qty">
         <button aria-label="Decrease ${d.label}" @click=${() => this._bumpCoin(d.key, -1)}>−</button>
@@ -304,7 +304,7 @@ export class EdTradeModal extends LitElement {
             <label for="trade-amt">Amount (sp)</label>
             <input class="amt" id="trade-amt" type="number" min="0" step="0.1" .value=${amount}
               @input=${(e) => this._setAmount(e.target.value)} aria-label="Trade amount in silver" />
-            <span class="tot">${page === 'buy' ? 'Paying' : 'Receiving'} ${sp(alloc)} sp</span>
+            <span class="tot">${page === 'buy' ? 'Paying' : 'Receiving'} ${numFmt(alloc)} sp</span>
           </div>
 
           ${page === 'buy'
@@ -317,7 +317,7 @@ export class EdTradeModal extends LitElement {
                         ${this._buyGems().map((g) => {
                           const cur = this._gemAt(g.name, g.valueSilver)?.qty ?? 0;
                           return html`<div class="grow">
-                            <span class="glab"><span class="n">${g.name}</span><span class="r">×${sp(g.valueSilver)} sp · own ${g.owned}</span></span>
+                            <span class="glab"><span class="n">${g.name}</span><span class="r">×${numFmt(g.valueSilver)} sp · own ${g.owned}</span></span>
                             <span class="qty">
                               <button aria-label="Decrease ${g.name}" @click=${() => this._bumpBuyGem(g.name, g.valueSilver, -1)}>−</button>
                               <span class="cnt">${cur}</span>
@@ -328,7 +328,7 @@ export class EdTradeModal extends LitElement {
                     : ''}
                   ${!shown.length && !gems.length ? html`<div class="sub" style="margin:0">Nothing to spend — no coins or gems recorded.</div>` : ''}
                 </div>
-                ${!can ? html`<div class="warn">You cannot add it yet — allocate ${sp(amount - alloc)} sp more.</div>` : ''}
+                ${!can ? html`<div class="warn">You cannot add it yet — allocate ${numFmt(amount - alloc)} sp more.</div>` : ''}
               `
             : html`
                 <div class="grid">
@@ -336,12 +336,12 @@ export class EdTradeModal extends LitElement {
                   ${shown.length ? shown.map((d) => this._coinRow(d, 'sell')) : 'No coins yet — credit coins below.'}
                   ${hidden.length
                     ? html`<div class="addcoin">
-                        ${hidden.map((d) => html`<button @click=${() => this._reveal(d.key)}>＋ ${d.label} ×${sp(d.rate)} sp</button>`)}
+                        ${hidden.map((d) => html`<button @click=${() => this._reveal(d.key)}>＋ ${d.label} ×${numFmt(d.rate)} sp</button>`)}
                       </div>`
                     : ''}
                   <div class="gh">Gems paid to you</div>
                   ${this._sellGems().map((g, i) => html`<div class="grow">
-                    <span class="glab"><span class="n">${g.name}</span><span class="r">×${sp(g.valueSilver)} sp</span></span>
+                    <span class="glab"><span class="n">${g.name}</span><span class="r">×${numFmt(g.valueSilver)} sp</span></span>
                     <span class="qty">
                       <button aria-label="Decrease ${g.name}" @click=${() => this._bumpSellGem(g.name, g.valueSilver, -1)}>−</button>
                       <span class="cnt">${g.qty}</span>
@@ -359,8 +359,8 @@ export class EdTradeModal extends LitElement {
                   </div>
                 </div>
                 ${!can ? html`<div class="warn">${alloc < amount
-                  ? `Receiving ${sp(alloc)} sp — add ${sp(amount - alloc)} sp more to reach ${sp(amount)} exactly.`
-                  : `Receiving ${sp(alloc)} sp — that is more than ${sp(amount)}; lower it to exactly ${sp(amount)}.`}</div>` : ''}
+                  ? `Receiving ${numFmt(alloc)} sp — add ${numFmt(amount - alloc)} sp more to reach ${numFmt(amount)} exactly.`
+                  : `Receiving ${numFmt(alloc)} sp — that is more than ${numFmt(amount)}; lower it to exactly ${numFmt(amount)}.`}</div>` : ''}
               `}
 
           <div class="actions">

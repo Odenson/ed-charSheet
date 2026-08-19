@@ -117,8 +117,10 @@ preserved in the item's `ref.description` if keeper fidelity matters.
   - Add `WEIGHT_UNITS = [{ key: 'lb', pounds: 1 }, { key: 'oz', pounds: 1/16 }]`
     (a data table, mirroring `COIN_DENOMINATIONS`).
   - Replace `parseWeight(string)` with `weightPounds(w)` reading the object
-    shape above; a bare number remains accepted as pounds. No range branch —
-    `ref.weight` is always a single `{ amount, unit }`.
+    shape above. No range branch — `ref.weight` is always a single
+    `{ amount, unit }`. (A bare number is NOT accepted as pounds — it reads as
+    unknown; validator and reader agree, so a value the engine reads can always
+    be persisted. Revised post-migration.)
   - `carriedWeight` keeps its signature/behaviour, calling `weightPounds`.
 - `engine/wealth.js`:
   - Replace `parseCostSilver(x)` with `costSilver(c)`:

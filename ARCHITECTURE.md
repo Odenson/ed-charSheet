@@ -505,9 +505,9 @@ and its runbook.
   tools/
     worker/              # Cloudflare Worker for serverless save (§7.5):
                          # worker.js + worker.test.js + wrangler.toml
-    add-items.py         # extends rules/items.json from rulebook extracts
   tools/archive/
     import-xlsx.mjs   # ARCHIVED bootstrap importer (provenance only; not run)
+    add-items.py     # ARCHIVED rulebook extractor (pre-ed-items/3; not run)
   docs/
     EFFECT-TAXONOMY.md       # controlled vocabulary for rule effects
     UI-GUIDELINES.md         # locked UI/UX contract

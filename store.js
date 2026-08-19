@@ -549,7 +549,7 @@ async function loadRules() {
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
 // may only override these; any other target name is ignored. Kept here (not in a
 // rule file) so the code that consumes each target and the registry stay together.
-export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift']);
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
@@ -1057,6 +1057,8 @@ export function deriveModel(character, rules, session = {}) {
   const spent = auditLegendSpent(character, legendFile?.costs, {
     knacks,
     threadItemCatalog,
+    spellCatalog: spellsFile?.spells,
+    spellCostMultiplier: homebrewSets['legend.spellLearnCostMultiplier'] ?? 1,
     karmaRitualCost,
     tierShift,
   });
@@ -1078,33 +1080,6 @@ export function deriveModel(character, rules, session = {}) {
   const totalEarnt = legendEarned.length
     ? legendEarned.reduce((s, e) => s + (Number(e.amount) || 0), 0)
     : null;
-  // Karma-on-Legend display rows (PLAN-LEGEND-KARMA-RITUAL-LOG.md): display-only, never
-  // stored or summed into `totalEarnt`. With the rule on (`karmaRitualCost` present),
-  // derived from the ledger — one virtual historic seed row (converted before the dated
-  // ritual log) plus one row per dated ritual event, all at the current cost, so
-  // `Σ legend = converted × cost` (exactly the audit sink above). Rule off ⇒ []. Not on
-  // `legendEarned` (that list stays earned-only for the add/delete flows).
-  const convertedKarma = Number(character.resources?.karma?.converted) || 0;
-  const karmaRituals = Array.isArray(character.resources?.karma?.rituals) ? character.resources.karma.rituals : [];
-  const hasKarmaCost = () => Number.isFinite(Number(karmaRitualCost)) && Number(karmaRitualCost) > 0;
-  const legendSpends = () => {
-    if (!hasKarmaCost() || convertedKarma <= 0) return [];
-    const eventsPoints = karmaRituals.reduce((s, r) => s + (Number(r?.points) || 0), 0);
-    const historic = convertedKarma - eventsPoints;
-    const cost = Number(karmaRitualCost);
-    return [
-      ...(historic > 0
-        ? [{ id: '__karma_historic__', date: null, virtual: true, points: historic, cost, legend: historic * cost }]
-        : []),
-      ...karmaRituals.map((r) => ({
-        id: r.id,
-        date: r.date ?? null,
-        points: Number(r?.points) || 0,
-        cost,
-        legend: (Number(r?.points) || 0) * cost,
-      })),
-    ];
-  };
   const legend =
     totalEarnt != null
       ? {
@@ -1114,7 +1089,6 @@ export function deriveModel(character, rules, session = {}) {
           status: legendaryStatus(totalEarnt, legendBands),
           bands: legendBands,
           spent,
-          spends: legendSpends(),
           tierShift, // homebrew additional-Discipline tier shift (0 = standard), read by the UI's rank guard
         }
       : null;
@@ -1282,10 +1256,11 @@ export function deriveModel(character, rules, session = {}) {
   };
 
   // Fold test-modifier effects that target a named talent/skill (e.g. a sustained
-  // spell's "+4 Stealthy Stride", Shadow Meld) into that ability's roll: a
+  // spell's "+4 steps Stealthy Stride", Shadow Meld) into that ability's roll: a
   // step-measure bonus adjusts the step; a result-measure bonus becomes a flat
-  // result mod the roll carries and the Disciplines tab badges. Mirrors how the
-  // Combat tab folds resultMods into attack/damage.
+  // result mod the roll carries. Mirrors how the Combat tab folds resultMods into
+  // attack/damage. `rollMods` carries EVERY applied test-modifier (step, result,
+  // …), measure-tagged, so the UI badges them uniformly regardless of measure.
   const abilityTestMods = (name) => {
     const hits = activeEffects.filter(
       (e) =>
@@ -1295,19 +1270,29 @@ export function deriveModel(character, rules, session = {}) {
         (e.operation === 'add' || e.operation === 'subtract'),
     );
     const signed = (e) => (e.operation === 'subtract' ? -1 : 1) * (Number(e.value) || 0);
-    const stepBonus = hits.filter((e) => e.measure === 'step').reduce((s, e) => s + signed(e), 0);
+    const rollMods = hits.map((e) => ({
+      value: signed(e),
+      source: e.origin?.name ?? e.source ?? 'effect',
+      measure: e.measure ?? 'result',
+    }));
+    const stepBonus = rollMods.filter((m) => m.measure === 'step').reduce((s, m) => s + m.value, 0);
     const resultMods = hits
       .filter((e) => e.measure === 'result')
       .map((e) => ({ value: signed(e), source: e.origin?.name ?? e.source ?? 'effect' }));
-    return { stepBonus, resultMods };
+    return { stepBonus, resultMods, rollMods };
   };
   const applyTestMods = (ability) => {
-    const { stepBonus, resultMods } = abilityTestMods(ability.name);
+    const { stepBonus, resultMods, rollMods } = abilityTestMods(ability.name);
     if (stepBonus && ability.step != null) {
+      // Preserve the pre-modifier step so the Combat tab's step audit can itemise
+      // base + active bonus, never fold the bonus invisibly into the number. A
+      // rank grant may have already recorded stepBase (pre-grant) — keep that one.
+      if (ability.stepBase == null) ability.stepBase = ability.step;
       ability.step += stepBonus;
       ability.dice = diceForStep(ability.step);
     }
     if (resultMods.length) ability.resultMods = resultMods;
+    if (rollMods.length) ability.rollMods = rollMods;
   };
   for (const d of disciplines) for (const t of d.talents ?? []) applyTestMods(t);
   for (const sk of skills) applyTestMods(sk);
@@ -1315,7 +1300,20 @@ export function deriveModel(character, rules, session = {}) {
   // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
   // for the Active-effects card. buildSpellsContext stays session-free (pure).
   const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
-  if (spellsCtx) spellsCtx.active = session?.activeSpells ?? [];
+  if (spellsCtx) {
+    spellsCtx.active = session?.activeSpells ?? [];
+    // Learn-flow tables (PLAN-LEARN-SPELLS §5): the learning block (difficulty/
+    // cost by Circle) and the Legend talentRank table — pushed down as rules data
+    // so the Learn modal reads values, never formulas (ARCHITECTURE §5.5).
+    spellsCtx.learning = spellsFile?.learning ?? {};
+    spellsCtx.talentRank = legendFile?.costs?.talentRank ?? {};
+    // Homebrew learn-cost levers (PLAN-HOMEBREW-SPELL-LEARN-COST): learnPlan folds
+    // these into the shown Legend / silver cost. `?? 1` — the *active* value is a
+    // falsy 0 (waive), so never `|| 1`. The targets reach homebrewSets once the
+    // homebrew rule ships; until then they default to 1 (standard cost).
+    spellsCtx.learnLegendMultiplier = homebrewSets['legend.spellLearnCostMultiplier'] ?? 1;
+    spellsCtx.learnSilverMultiplier = homebrewSets['spells.learnSilverMultiplier'] ?? 1;
+  }
 
   return {
     meta: character.meta ?? {},

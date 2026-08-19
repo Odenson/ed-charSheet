@@ -8,7 +8,9 @@
 // Discipline + Circle, the detail modal, matrix place/release (any time), and
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
-import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus } from '../engine/spells.js';
+import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
+  learnableSpells, learnPlan } from '../engine/spells.js';
+import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import { successCount } from '../engine/combat.js';
 
 // Per-character cast-workspace scratchpad, kept in module memory so the in-flight
@@ -32,6 +34,7 @@ export class EdSpells extends LitElement {
     _subject: { state: true },
     _castErr: { state: true },
     _prog: { state: true },
+    _learn: { state: true },
   };
 
   static styles = css`
@@ -173,6 +176,38 @@ export class EdSpells extends LitElement {
     .succfx { color: var(--spell); }
     .succfx b { font-weight: 500; }
     .succnone { color: var(--muted); }
+
+    /* Learn modal (PLAN-LEARN-SPELLS.md §6): a two-pane picker → prereq panel.
+       Fixed-height internally-scrolling list (same rule as the Raw cast list);
+       unaffordable/blocked states disable the roll with a reason, never silently. */
+    .learnmodal { width: 48rem; max-width: 100%; }
+    .learn-wrap { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 12px; align-items: start; }
+    @media (max-width: 640px) { .learn-wrap { grid-template-columns: 1fr; } }
+    .learnlist { background: var(--bg-card); border-radius: 8px; overflow-y: auto; max-height: 340px; }
+    .lrow { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: center; width: 100%; padding: 8px 11px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--fg); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; }
+    .lrow:last-child { border-bottom: none; }
+    .lrow:hover { background: var(--bg-chip); }
+    .lrow.on { background: var(--spell-bg); }
+    .lrow .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lrow .cr { font-size: var(--fs-eyebrow); color: var(--muted); white-space: nowrap; }
+    .lflag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--amber); border: 1px solid var(--amber); border-radius: 999px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+    .lhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+    .lhead .nm { font-size: var(--fs-title); font-weight: 500; }
+    .ldiff { font-size: var(--fs-value); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .prereqs { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
+    .prereq { font-size: var(--fs-fine); }
+    .prereq.ok { color: var(--karma); }
+    .prereq.no { color: var(--danger); }
+    .teacher { margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 8px; }
+    .teacher .trow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--fs-small); }
+    .teacher .tlbl { font-size: var(--fs-fine); color: var(--muted); }
+    .trank { width: 52px; font: inherit; font-size: var(--fs-small); text-align: center; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; }
+    .armedchip { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 8px; }
+    .pcrow { margin: 10px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--fs-small); }
+    .silverrow { margin: 10px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--fs-small); }
+    .silverrow input { width: 84px; font: inherit; font-size: var(--fs-small); text-align: center; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; }
+    .totbg { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 9px; font-variant-numeric: tabular-nums; }
+    .totbg.miss { color: var(--danger); background: light-dark(#f6e4e0, #3a2320); }
   `;
 
   constructor() {
@@ -188,6 +223,11 @@ export class EdSpells extends LitElement {
     this._pendingStep = null; // which cast step a pending roll belongs to
     this._maxThreads = 0;     // weave cap for the in-flight cast
     this._lastRollId = null;  // dedupe Karma re-rolls of the same roll
+    // Learn flow (PLAN-LEARN-SPELLS.md): null when closed, else the working
+    // state of the Learn modal — { name, teacherOn, teacherRank, teacher, result, silver }.
+    this._learn = null;
+    this._pendingLearn = null; // 'teacher' | 'patterncraft' | null — which learn roll to fold next
+    this._learnRollDiff = null;    // difficulty for the pending Patterncraft success-count
   }
 
   // Per-cast progress: threads woven so far, the greying flags, and each step's
@@ -201,8 +241,15 @@ export class EdSpells extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._onKey = (e) => {
-      if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._modal = null; }
-      else if (e.key === 'Enter' && this._modal) { e.stopPropagation(); this._modal = null; }
+      // Learn modal (Enter confirms when enabled — the roll must have succeeded
+      // and the spell be affordable; otherwise Enter is a mute no-op like the
+      // disabled Confirm button). Escape/backdrop always close (UI-GUIDELINES).
+      if (e.key === 'Escape' && (this._modal || this._learn)) {
+        e.stopPropagation(); this._modal = null; this._learn = null;
+      } else if (e.key === 'Enter' && this._learn) {
+        e.stopPropagation();
+        if (this._learnCanConfirm()) this._confirmLearn();
+      } else if (e.key === 'Enter' && this._modal) { e.stopPropagation(); this._modal = null; }
     };
     document.addEventListener('keydown', this._onKey);
     // The shared roll modal reports each completed roll via ed-roll-logged
@@ -284,6 +331,27 @@ export class EdSpells extends LitElement {
   // (same rollId, upserted) — so a thread is only counted on the first event of
   // a rollId; later events for that id just refresh the shown result.
   _onRoll(detail) {
+    // A Learn-flow roll (PLAN-LEARN-SPELLS §3 steps 3–4) routes to the learn
+    // state first. The teacher precursor arms the TW bonus; the Patterncraft
+    // roll resolves the learning. These only fire while the Learn modal is open.
+    if (this._pendingLearn && this._learn) {
+      if (this._pendingLearn === 'teacher') {
+        this._pendingLearn = null;
+        this._learn = { ...this._learn, teacher: { ok: !!detail?.outcome?.ok, total: (detail?.result?.total ?? 0) + (detail?.karmaResult?.total ?? 0) } };
+        return;
+      }
+      if (this._pendingLearn === 'patterncraft') {
+        this._pendingLearn = null;
+        const total = (detail.result?.total ?? 0) + (detail.karmaResult?.total ?? 0);
+        const diff = this._learnRollDiff;
+        const levels = diff != null ? successCount(total, diff) : 0;
+        // learntSuccess = EXTRA successes (total levels − 1, floored at 0) — the
+        // same levels−1 convention the cast flow uses for its Success-Level boosts.
+        const learntSuccess = Math.max(0, levels - 1);
+        this._learn = { ...this._learn, result: { total, levels: levels, learntSuccess, ok: levels >= 1 } };
+        return;
+      }
+    }
     const step = this._pendingStep;
     if (!step || !detail?.result) return;
     const total = (detail.result.total ?? 0) + (detail.karmaResult?.total ?? 0);
@@ -442,6 +510,243 @@ export class EdSpells extends LitElement {
     this._emit(known, matrices);
   }
 
+  // --- Learn-flow modal (PLAN-LEARN-SPELLS.md §3/§6) -------------------------
+  // Edit-mode modal: pick a learnable spell, review prereqs, optionally roll a
+  // teacher's Spellcasting precursor to arm a +TW-rank bonus, roll Patterncraft
+  // vs the Learning Difficulty, then on success dispatch the new known[] entry +
+  // the silver payment (two independent input writes, engine-computed coins).
+
+  _openLearn() {
+    this._learn = { name: null, teacherOn: false, teacherRank: 1, teacher: null, result: null, silver: null };
+    this._pendingLearn = null;
+  }
+
+  _learnList() { return learnableSpells(this.ctx); }
+
+  // Learnable spells grouped by Discipline then Circle for the picker.
+  _learnGrouped() {
+    const out = {};
+    for (const s of this._learnList()) {
+      (out[s.discipline] ??= {});
+      (out[s.discipline][s.circle] ??= []).push(s);
+    }
+    return out;
+  }
+
+  _learnSpell() {
+    const name = this._learn?.name;
+    return name ? this._learnList().find((s) => s.name === name) ?? null : null;
+  }
+
+  // The engine's decision-support object for the selected spell — everything the
+  // modal renders (difficulty, legend/silver cost, prereqs), homebrew multipliers
+  // already folded in. The modal reads these fields; it prices nothing itself.
+  get _plan() {
+    const name = this._learn?.name;
+    return name ? learnPlan(this.ctx, this.model, name) : null;
+  }
+
+  _pickLearn(name) {
+    if (!this._learnList().some((s) => s.name === name)) return;
+    this._learn = { name, teacherOn: this._learn?.teacherOn ?? false, teacherRank: this._learn?.teacherRank ?? 1, teacher: null, result: null, silver: null };
+    // Seed the editable silver with the plan's suggested (pre-computed) price.
+    this._learn = { ...this._learn, silver: this._plan?.suggestedSilver ?? null };
+  }
+
+  // The derived Spellcasting talent (shared; the first Discipline owning it).
+  _spellcastingTalent() {
+    for (const d of this.model?.disciplines ?? []) {
+      const t = (d.talents ?? []).find((x) => x.name === 'Spellcasting');
+      if (t) return t;
+    }
+    return null;
+  }
+
+  _patterncraftTalent() {
+    for (const d of this.model?.disciplines ?? []) {
+      const t = (d.talents ?? []).find((x) => x.name === 'Patterncraft');
+      if (t) return t;
+    }
+    return null;
+  }
+
+  // Teacher assist (Q5): a Spellcasting precursor vs the Learning Difficulty.
+  // On success it arms the teacher's TW rank as a bonus to the Patterncraft test
+  // — the same "outcome arms the next roll" pattern as the Combat tab's aim.
+  _rollTeacher(spell) {
+    const diff = this._plan?.learningDifficulty;
+    if (diff == null) return;
+    const t = this._spellcastingTalent();
+    if (t?.step == null) return;
+    this._pendingLearn = 'teacher';
+    this._dispatchRoll(`Spellcasting — teach ${spell.name}`, t.step, this._karmaCtx(t?.karma), {
+      difficulty: { value: diff, win: 'Assists', lose: 'Miss' },
+    });
+  }
+
+  _rollPatterncraft(spell) {
+    const diff = this._plan?.learningDifficulty;
+    if (diff == null) return;
+    const t = this._patterncraftTalent();
+    if (t?.step == null) return;
+    const armed = this._learn?.teacher?.ok ?? false;
+    const bonus = armed ? Number(this._learn?.teacherRank) || 0 : 0;
+    this._learnRollDiff = diff; // for the success-count in _onRoll
+    this._pendingLearn = 'patterncraft';
+    // The armed teacher-TW bonus is added to the STEP (the same way the Combat
+    // tab's aim arms +2 steps into the Attack roll) — the roll then shows the
+    // bumped step and the log records it; it is never also a flat mod.
+    this._dispatchRoll(`Patterncraft — learn ${spell.name}`, t.step + bonus, this._karmaCtx(t?.karma), {
+      difficulty: { value: diff, win: 'Learned', lose: 'Miss' },
+    });
+  }
+
+  // The agreed silver: the suggested price unless the player overrides it.
+  _silver() {
+    const s = Number(this._learn?.silver);
+    return Number.isFinite(s) && s >= 0 ? s : 0;
+  }
+
+  // Can the player confirm? A successful Patterncraft roll AND the purse covers
+  // the agreed silver (engine does the coin math — never a view literal).
+  _learnCanConfirm() {
+    const ok = this._learn?.result?.ok ?? false;
+    if (!ok) return false;
+    const wealth = this.model?.wealth ?? {};
+    const spent = spendAllocation(wealth.coins ?? {}, wealth.gems ?? [], allocForSilver(this._silver()));
+    return spent.ok;
+  }
+
+  _confirmLearn() {
+    const learn = this._learn;
+    if (!learn?.result?.ok) return;
+    const ctx = this.ctx;
+    const known = [...ctx.known, { name: learn.name, learntSuccess: learn.result.learntSuccess }];
+    this._emit(known, ctx.matrices); // ed-edit-spells (whole spells block)
+    const silver = this._silver();
+    if (silver > 0) {
+      const wealth = this.model?.wealth ?? {};
+      const spent = spendAllocation(wealth.coins ?? {}, wealth.gems ?? [], allocForSilver(silver));
+      if (spent.ok) {
+        this.dispatchEvent(new CustomEvent('ed-edit-wealth', { detail: { coins: spent.coins, gems: spent.gems }, bubbles: true, composed: true }));
+      }
+    }
+    this._learn = null;
+  }
+
+  _learnModal() {
+    const grouped = this._learnGrouped();
+    const discs = Object.keys(grouped);
+    const spell = this._learnSpell();
+    const plan = this._plan;
+    const diff = plan?.learningDifficulty ?? null;
+    const gate = plan?.canLearn ?? null;
+    const legendCost = plan?.legendCost ?? null;
+    const available = this.model?.legend?.available ?? null;
+    const suggested = plan?.suggestedSilver ?? null;
+    const silver = this._silver();
+    const wealth = this.model?.wealth ?? {};
+    const afford = spendAllocation(wealth.coins ?? {}, wealth.gems ?? [], allocForSilver(silver));
+    return html`
+      <div class="overlay" @click=${() => (this._learn = null)}>
+        <div class="modal learnmodal" role="dialog" aria-modal="true" aria-label="Learn a spell" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="nm">Learn a spell</span>
+            <button class="mclose" aria-label="Close" @click=${() => (this._learn = null)}>✕</button>
+          </div>
+          <div class="learn-wrap">
+            <div>
+              <h4 class="circlelbl">Learnable spells</h4>
+              ${discs.length
+                ? html`<div class="learnlist">
+                    ${discs.map((disc) => html`
+                      <div class="circlelbl" style="font-size:var(--fs-fine);">${disc}</div>
+                      ${Object.keys(grouped[disc]).sort((a, b) => a - b).map((circle) => html`
+                        ${grouped[disc][circle].map((s) => html`
+                          <button class="lrow ${s.name === spell?.name ? 'on' : ''}" @click=${() => this._pickLearn(s.name)}>
+                            <span></span><span class="nm">${s.name}${!s.castable ? html`<span class="lflag" title="Your Circle in this Discipline is below the spell's — learnable now, castable later.">can't cast yet</span>` : ''}</span>
+                            <span class="cr">C${s.circle}</span>
+                          </button>`)}
+                      `)}
+                    `)}
+                  </div>`
+                : html`<div class="empty">Nothing to learn — every spell already learnt, or no Thread Weaving talent covers the catalog.</div>`}
+            </div>
+            <div>
+              ${spell ? this._learnDetail(spell, { diff, gate, legendCost, available, suggested, silver, afford }) : html`<div class="empty">Pick a spell to see its prerequisites and roll to learn it.</div>`}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  _learnDetail(spell, { diff, gate, legendCost, available, suggested, silver, afford }) {
+    const learn = this._learn ?? {};
+    const armed = !!learn.teacher?.ok;
+    const result = learn.result ?? null;
+    const teacherOk = gate?.ok ?? false;
+    const pcReady = teacherOk && diff != null && this._patterncraftTalent()?.step != null;
+    const showBill = silver > 0 && !afford.ok;
+    return html`
+      <div class="lhead">
+        <span class="nm">${spell.name}</span>
+        <span class="cr">${spell.discipline} · Circle ${spell.circle}</span>
+      </div>
+      <div class="grid">
+        <span class="k">Learning</span><span class="ldiff">Difficulty ${diff ?? '—'}</span>
+        <span class="k">Legend</span><span>${legendCost ?? '—'}${available != null ? html`<span class="gsub" style="color:var(--muted);"> · ${available} available</span>` : ''}</span>
+        <span class="k">Patterncraft</span><span>Step ${this._patterncraftTalent()?.step ?? '—'}</span>
+        <span class="k">Thread Weaving</span><span>Step ${this.ctx.weavingStep?.[spell.discipline] ?? '—'}</span>
+      </div>
+      <div class="prereqs">
+        ${gate
+          ? gate.ok
+            ? html`<span class="prereq ok">Prerequisites met — rested, Patterncraft, Thread Weaving, and the Legend are within reach.</span>`
+            : gate.reasons.map((r) => html`<span class="prereq no">${r}</span>`)
+          : ''}
+      </div>
+
+      <div class="teacher">
+        <div class="trow">
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" style="accent-color:var(--karma);" .checked=${learn.teacherOn ?? false} @change=${(e) => { this._learn = { ...this._learn, teacherOn: e.target.checked, teacher: null }; }}>
+            Teacher assist
+          </label>
+          ${learn.teacherOn ? html`<span class="tlbl">Teacher’s TW rank</span><input class="trank" type="number" min="1" .value=${learn.teacherRank ?? 1} @change=${(e) => { this._learn = { ...this._learn, teacherRank: Math.max(1, Number(e.target.value) || 1), teacher: null }; }}>` : ''}
+        </div>
+        ${learn.teacherOn ? html`
+          <div class="trow">
+            <button class="rollbtn" ?disabled=${!teacherOk} @click=${() => this._rollTeacher(spell)}>⚄ Spellcasting (precursor)</button>
+            ${learn.teacher ? (armed
+              ? html`<span class="armedchip">+${learn.teacherRank} armed</span><span class="gsub" style="color:var(--muted);">rolled ${learn.teacher.total}</span>`
+              : html`<span class="totbg miss">Miss</span><span class="gsub" style="color:var(--muted);">rolled ${learn.teacher.total} — no assist</span>`) : ''}
+          </div>` : ''}
+      </div>
+
+      <div class="pcrow">
+        <button class="rollbtn" ?disabled=${!pcReady} @click=${() => this._rollPatterncraft(spell)}>⚄ Roll Patterncraft</button>
+        ${result
+          ? result.ok
+            ? html`<span class="armedchip">Learned${result.learntSuccess > 0 ? ` — ${result.learntSuccess} extra success${result.learntSuccess > 1 ? 'es' : ''}` : ''} (rolled ${result.total})</span>`
+            : html`<span class="totbg miss">Miss</span><span class="gsub" style="color:var(--muted);">rolled ${result.total}</span>`
+          : html`<span class="gsub" style="color:var(--muted);">vs ${diff ?? '—'}</span>`}
+      </div>
+
+      <div class="silverrow">
+        <span>Buy the copy</span>
+        <input type="number" min="0" step="1" .value=${learn.silver ?? ''} placeholder=${suggested ?? '0'}
+          aria-label="Silver cost for the copy"
+          @input=${(e) => { this._learn = { ...this._learn, silver: e.target.value === '' ? null : Number(e.target.value) }; }}>
+        <span>sp${suggested != null && (learn.silver == null) ? html` (suggested ${suggested})` : ''}</span>
+      </div>
+      ${showBill ? html`<p class="err">The purse can’t cover ${silver} sp — edit the price or add coins in Equipment.</p>` : ''}
+
+      <div class="actions">
+        <button class="btn" @click=${() => (this._learn = null)}>Cancel</button>
+        <button class="btn" style="border-color:var(--karma);background:var(--karma-bg);color:var(--karma);font-weight:500;" ?disabled=${!this._learnCanConfirm()} @click=${this._confirmLearn}>Learn ${spell.name}</button>
+      </div>`;
+  }
+
   _openDetail(spell) { this._modal = spell; }
 
   render() {
@@ -459,24 +764,34 @@ export class EdSpells extends LitElement {
         ? html`<div class="empty">This character has no spells — the Spells tab is for spellcasting Disciplines.</div>`
         : this._view === 'grimoire' ? this._grimoire(ctx) : this._castView(ctx)}
       ${this._modal ? this._detailModal(this._modal) : ''}
+      ${this._learn ? this._learnModal() : ''}
     `;
   }
 
   _grimoire(ctx) {
     const grouped = knownByDisciplineCircle(ctx);
     const discs = Object.keys(grouped);
-    if (!discs.length) return html`<div class="empty">No spells learnt yet.${this.editMode ? '' : ' Enter edit mode to learn spells.'}</div>`;
+    if (!discs.length && !this.editMode) {
+      return html`<div class="empty">No spells learnt yet. Enter edit mode to learn spells.</div>`;
+    }
     return html`
-      ${discs.map((disc) => html`
-        <h4 class="circlelbl" style="color:var(--spell); font-size:var(--fs-small); letter-spacing:0.02em; margin-top:14px;">${disc}</h4>
-        ${Object.keys(grouped[disc]).sort((a, b) => a - b).map((circle) => html`
-          <div class="circlelbl">Circle ${circle}</div>
-          <div class="card">
-            <div class="srow h"><span></span><span>Spell</span><span class="num">Thr</span><span class="num">Weave</span><span>Cast</span><span>Matrix</span><span></span></div>
-            ${grouped[disc][circle].map((s) => this._row(ctx, s))}
-          </div>
-        `)}
-      `)}
+      ${this.editMode
+        ? html`<div class="top" style="margin-bottom:2px;">
+            <button class="btn learnbtn" @click=${() => this._openLearn()}>＋ Learn spell</button>
+          </div>`
+        : ''}
+      ${discs.length
+        ? discs.map((disc) => html`
+            <h4 class="circlelbl" style="color:var(--spell); font-size:var(--fs-small); letter-spacing:0.02em; margin-top:14px;">${disc}</h4>
+            ${Object.keys(grouped[disc]).sort((a, b) => a - b).map((circle) => html`
+              <div class="circlelbl">Circle ${circle}</div>
+              <div class="card">
+                <div class="srow h"><span></span><span>Spell</span><span class="num">Thr</span><span class="num">Weave</span><span>Cast</span><span>Matrix</span><span></span></div>
+                ${grouped[disc][circle].map((s) => this._row(ctx, s))}
+              </div>
+            `)}
+          `)
+        : html`<div class="empty">No spells learnt yet. Use ＋ Learn spell above to add one.</div>`}
     `;
   }
 

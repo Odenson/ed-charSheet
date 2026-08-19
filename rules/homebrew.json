@@ -71,6 +71,18 @@
       "set": {
         "legend.additionalTierShift": 1
       }
+    },
+    {
+      "id": "hb-free-spell-learning",
+      "name": "Learning a spell costs no Legend",
+      "overrides": "Players' Guide p.252 — Spell Legend Point Cost (house rule)",
+      "summary": "A magician spends no Legend Points to learn a spell; the spell's Circle-based Legend cost is waived. The silver copy cost is unchanged.",
+      "enabled": true,
+      "note": "Uses the ed-homebrew/2 `set` lever (docs/HOMEBREW-RULES.md §5.5, plans/PLAN-HOMEBREW-SPELL-LEARN-COST.md). `legend.spellLearnCostMultiplier: 0` multiplies every learned spell's Legend cost by 0 in the Legend-spent audit's spells sink (PLAN-LEARN-SPELLS §5.1) and in the Learn modal's shown price. `spells.learnSilverMultiplier: 1` scales the Learn modal's suggested silver price — 1 leaves it unchanged; the knob exists to tune silver later without a new rule. Each multiplier defaults to 1 when absent. Owner-enabled for the current campaign.",
+      "set": {
+        "legend.spellLearnCostMultiplier": 0,
+        "spells.learnSilverMultiplier": 1
+      }
     }
   ]
 }

@@ -3,10 +3,12 @@
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
+import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
 import './ed-add-legend.js';
+import { humanize, cap } from './format.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
@@ -26,7 +28,9 @@ export class EdOverview extends LitElement {
     _karmaBuy: { state: true },    // draft: points to buy
   };
 
-  static styles = css`
+  static styles = [
+    legendSpentStyles,
+    css`
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -179,26 +183,14 @@ export class EdOverview extends LitElement {
     .meta-item:last-child { border-bottom: none; }
     .meta-item dt { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
     .meta-item dd { margin: 2px 0 0; font-size: var(--fs-body); line-height: 1.45; color: light-dark(#111418, #f0f3f7); }
-    /* Legend-spent modal: collapsible per-section breakdown + reconciliation footer. */
-    .lspent-sec { border-bottom: 1px solid var(--border); }
-    .lspent-sec > summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; color: light-dark(#111418, #f0f3f7); padding: 6px 0; list-style: none; }
-    .lspent-sec > summary::-webkit-details-marker { display: none; }
-    .lspent-sec .sleft { display: flex; align-items: center; gap: 7px; }
-    .lspent-sec .sleft::before { content: '▸'; color: var(--muted); font-size: 0.8em; transition: transform 0.12s ease; }
-    .lspent-sec[open] > summary .sleft::before { transform: rotate(90deg); }
-    .lspent-sec.additional > summary { color: var(--accent); }
-    .sbadge { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; }
-    .sbadge.add { background: var(--accent-bg); color: var(--accent); }
-    .lspent-sec .lines { padding: 0 0 6px 14px; }
-    .lspent-sec .ldetail { color: var(--muted); font-size: 0.9em; }
-    .lspent-recon { border-top: 2px solid var(--border); margin-top: 0.5rem; padding-top: 0.5rem; font-weight: 500; color: light-dark(#111418, #f0f3f7); }
     @media (max-width: 720px) {
       .grid { grid-template-columns: 1fr; }
       .toprow { grid-template-columns: 1fr; }
       .portrait { display: none; }
       .avatar { display: block; }
     }
-  `;
+  `,
+  ];
 
   _pend() { return html`<span class="pend">—</span>`; }
 
@@ -649,7 +641,6 @@ export class EdOverview extends LitElement {
   _metaBody() {
     const meta = this.model?.meta ?? {};
     const HIDE = new Set(['id', 'name', 'portrait', 'sourceSheetVersion']);
-    const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
     const entries = Object.entries(meta).filter(([k, v]) => !HIDE.has(k) && v != null && v !== '');
     return html`
       <dl class="meta-dl">
@@ -767,7 +758,6 @@ export class EdOverview extends LitElement {
       const dash = s.indexOf('—');
       return dash > 0 ? s.slice(dash + 1).replace(/^\s*/, '') : s;
     };
-    const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
     // Group condition effects by condition name (Burdened, Overburdened, …);
     // anything else stays as its own row.
     const grouped = [];
@@ -865,52 +855,11 @@ export class EdOverview extends LitElement {
           </div>
           <div class="line">
             <span>Available${l?.spent
-              ? html`<button class="info" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => this._openModal('Legend spent', this._legendSpentModalBody(l.spent))}>ⓘ</button>`
+              ? html`<button class="info" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => this._openModal('Legend spent', legendSpentBody(l.spent))}>ⓘ</button>`
               : ''}</span>
             ${num(l?.available)}
           </div>
         </div>
-      </div>
-    `;
-  }
-
-  // Modal body: the Legend-spent audit — each advancement priced against the ED4
-  // cost tables, grouped into sections, with a footer summing the sections. Each
-  // section is a collapsible <details> (default closed — the summaries give a compact
-  // overview of a long list), and talents are grouped per Discipline so the
-  // additional-Discipline surcharge stands out (an accent "Nth Discipline" badge on
-  // the 2nd+ Discipline sections).
-  _legendSpentModalBody(spent) {
-    const fmt = (n) => (n == null ? '—' : n.toLocaleString());
-    return html`
-      <p class="mpara">
-        Legend spent, reconstructed from the sheet by pricing each advancement against
-        the cost tables — attributes, talents (2nd+ Discipline talents cost more), skills,
-        knacks, and woven thread items. Spells arrive in a later phase.
-      </p>
-      ${spent.sections.map(
-        (sec) => html`
-          <details class="lspent-sec${sec.additional ? ' additional' : ''}">
-            <summary class="sechead">
-              <span class="sleft"
-                >${sec.label}${sec.kind === 'talents'
-                  ? html`<span class="sbadge ${sec.additional ? 'add' : ''}">${sec.ordinalLabel} Discipline</span>`
-                  : ''}</span
-              >
-              <span class="sval">${fmt(sec.total)}</span>
-            </summary>
-            <div class="lines">
-              ${sec.lines.length
-                ? sec.lines.map(
-                    (li) => html`<div class="line"><span>${li.name} <span class="ldetail">${li.detail}</span></span><span>${fmt(li.cost)}</span></div>`,
-                  )
-                : html`<div class="line"><span class="ldetail">Nothing purchased</span><span>0</span></div>`}
-            </div>
-          </details>
-        `,
-      )}
-      <div class="lspent-recon">
-        <div class="line"><span>Total</span><span>${fmt(spent.total)}</span></div>
       </div>
     `;
   }

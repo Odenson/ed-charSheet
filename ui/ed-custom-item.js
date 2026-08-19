@@ -19,11 +19,12 @@
 
 import { LitElement, html, css } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
-import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking } from './custom-item-state.js';
+import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking, weightToForm, weightFromForm } from './custom-item-state.js';
 import {
   MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, OPERATIONS, MEASURES, CONDITIONS,
-  cap, prettyName, summaryFor, blankEffect, finishEffect, cleanItemForm,
+  summaryFor, blankEffect, finishEffect, cleanItemForm,
 } from './custom-item-builder.js';
+import { cap, prettyName } from './format.js';
 
 const KLABEL = {
   weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
@@ -40,16 +41,16 @@ const REF_FIELDS = {
     { k: 'damageStep', label: 'Damage Step', type: 'number' },
     { k: 'shortRange', label: 'Short range', type: 'text' },
     { k: 'longRange', label: 'Long range', type: 'text' },
-    { k: 'weight', label: 'Weight', type: 'text' },
+    { k: 'weight', label: 'Weight', type: 'weight' },
     { k: 'availability', label: 'Availability', type: 'text' },
   ],
-  armor: [{ k: 'living', label: 'Living armour', type: 'checkbox' }, { k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }],
-  shield: [{ k: 'living', label: 'Living shield', type: 'checkbox' }, { k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }],
-  ammunition: [{ k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }, { k: 'quantity', label: 'Quantity', type: 'number' }],
-  gear: [{ k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }],
-  'magic-item': [{ k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }, { k: 'range', label: 'Range', type: 'text' }],
-  'blood-charm': [{ k: 'craftingDifficultyNumber', label: 'Crafting DN', type: 'number' }, { k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }],
-  'healing-aid': [{ k: 'weight', label: 'Weight', type: 'text' }, { k: 'availability', label: 'Availability', type: 'text' }],
+  armor: [{ k: 'living', label: 'Living armour', type: 'checkbox' }, { k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }],
+  shield: [{ k: 'living', label: 'Living shield', type: 'checkbox' }, { k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }],
+  ammunition: [{ k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }, { k: 'quantity', label: 'Quantity', type: 'number' }],
+  gear: [{ k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }],
+  'magic-item': [{ k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }, { k: 'range', label: 'Range', type: 'text' }],
+  'blood-charm': [{ k: 'craftingDifficultyNumber', label: 'Crafting DN', type: 'number' }, { k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }],
+  'healing-aid': [{ k: 'weight', label: 'Weight', type: 'weight' }, { k: 'availability', label: 'Availability', type: 'text' }],
 };
 
 // §6.2 — per-kind effect quick-templates. Each builds a raw effect; the builder
@@ -93,6 +94,7 @@ export class EdCustomItem extends LitElement {
     // draft can't wipe the pending count.
     this._working = new Map();
     this._seeded = false;
+    this._weightMode = 'none'; // transient UI-only weight unit while typing (see _weightField)
     this._summaryOverride = new Set(); // effects whose summary the user typed
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
@@ -191,10 +193,12 @@ export class EdCustomItem extends LitElement {
     if (!item) return;
     this._form = { name, item: JSON.parse(JSON.stringify(item)), originalName: name };
     this._summaryOverride = new Set();
+    this._weightMode = 'none';
   }
   _newItem() {
     this._form = { name: '', item: blankItem('gear'), originalName: null };
     this._summaryOverride = new Set();
+    this._weightMode = 'none';
   }
 
   // Commit the item form into the working set (commitForm: upsert semantics — a
@@ -240,6 +244,42 @@ export class EdCustomItem extends LitElement {
       ...this._form,
       item: { ...this._form.item, presentation: { ...(this._form.item.presentation ?? {}), shortEffect: value } },
     };
+  }
+
+  // Structured weight input (ref.weight, schema ed-items/3): a unit/kind select
+  // plus a numeric amount, mapped to/from the stored shape via weightToForm /
+  // weightFromForm. A legacy pre-migration string surfaces as "needs re-entry"
+  // (the stored weight is never silently dropped), and a bare number / numeric
+  // string migrates to pounds on first save. `_weightMode` is transient UI-only
+  // state: it remembers a unit the user just picked before an amount is entered,
+  // so the select doesn't snap back to "— none".
+  _weightField(item) {
+    const f = weightToForm(item.ref?.weight);
+    const mode = f.mode !== 'none' ? f.mode : this._weightMode;
+    const amount = f.amount;
+    return html`
+      <span class="fld weight">
+        <label>Weight</label>
+        <span class="wrow">
+          ${mode === 'lb' || mode === 'oz'
+            ? html`<input type="number" min="0" step="0.01" .value=${amount} @change=${(e) => this._setWeight(mode, e.target.value)} placeholder="0" />`
+            : ''}
+          <select .value=${mode} @change=${(e) => this._setWeight(e.target.value, amount)} aria-label="Weight unit">
+            <option value="none">— none —</option>
+            <option value="negligible">Negligible</option>
+            <option value="lb">lb</option>
+            <option value="oz">oz</option>
+          </select>
+        </span>
+        ${f.legacy !== undefined
+          ? html`<span class="hint">Stored "${f.legacy}" — re-enter its weight.</span>`
+          : ''}
+      </span>
+    `;
+  }
+  _setWeight(mode, amount) {
+    this._weightMode = mode;
+    this._setRef('weight', weightFromForm(mode, amount));
   }
   _setEffect(i, patch) {
     const effects = (this._form.item.effects ?? []).map((e, j) => (j === i ? { ...e, ...patch } : e));
@@ -409,7 +449,9 @@ export class EdCustomItem extends LitElement {
                 ? html`<label class="chk"><input type="checkbox" ?checked=${item.ref?.living === true} @change=${(e) => this._setRef('living', e.target.checked)} /> ${rf.label}</label>`
                 : rf.type === 'select'
                   ? html`<span class="fld"><label>${rf.label}</label><select .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => this._setRef(rf.k, e.target.value)}>${['', ...rf.options].map((o) => html`<option value=${o}>${o || '—'}</option>`)}</select></span>`
-                  : html`<span class="fld"><label>${rf.label}</label><input type=${rf.type === 'number' ? 'number' : 'text'} .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => this._setRef(rf.k, rf.type === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} /></span>`,
+                  : rf.type === 'weight'
+                    ? this._weightField(item)
+                    : html`<span class="fld"><label>${rf.label}</label><input type=${rf.type === 'number' ? 'number' : 'text'} .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => this._setRef(rf.k, rf.type === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} /></span>`,
             )}
             <span class="fld desc"><label>Description</label><textarea .value=${item.ref?.description ?? ''} @input=${(e) => this._setRef('description', e.target.value)}></textarea></span>
             <span class="fld desc">
@@ -562,6 +604,9 @@ export class EdCustomItem extends LitElement {
     .fld.desc { flex: 1 1 100%; }
     .fld.desc textarea { resize: vertical; min-height: 44px; }
     .fld.target { flex: 1 1 170px; }
+    .fld.weight .wrow { display: flex; gap: 5px; }
+    .fld.weight .wrow select { flex: 0 0 auto; }
+    .fld.weight .wrow input { flex: 0 0 76px; }
     .fld.target input.other { margin-top: 2px; }
     .fld.summary { flex: 1 1 100%; margin-top: 4px; }
     .fld .hint { font-size: var(--fs-eyebrow); color: var(--muted); }

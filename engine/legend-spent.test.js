@@ -512,6 +512,82 @@ test('auditLegendSpent handles a character with no legend inputs', () => {
   assert.equal(r.delta, null);
 });
 
+// --- Spells sink (PLAN-LEARN-SPELLS §5.1, resolves PLAN-SPELLS A5) -----------
+
+// Learning a spell spends Legend = a Novice talent step at Rank = the spell's
+// Circle. The Circle is read off the catalog passed in via opts.spellCatalog
+// (rules/spells.json `spells`), resolved apostrophe-insensitively.
+const spellCatalog = {
+  'Soul Armor': { discipline: 'Nethermancer', circle: 4 },
+  'Death’s Head': { discipline: 'Nethermancer', circle: 5 },
+};
+
+test('auditLegendSpent prices every known[] spell at spellCost(circle)', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    spells: { known: [
+      { name: 'Soul Armor', learntSuccess: 2 },
+      { name: "Death's Head", learntSuccess: 0 },
+    ] },
+  };
+  const r = auditLegendSpent(char, costs, { spellCatalog });
+  const sp = r.sections.find((s) => s.key === 'spells');
+  // Circle 4 Novice = 500; Circle 5 Novice = 800.
+  assert.equal(sp.lines[0].name, 'Soul Armor');
+  assert.equal(sp.lines[0].detail, 'Circle 4');
+  assert.equal(sp.lines[0].cost, spellCost(4, costs.talentRank));
+  assert.equal(sp.lines[1].detail, 'Circle 5'); // apostrophe-insensitive lookup
+  assert.equal(sp.lines[1].cost, 800);
+  assert.equal(sp.total, 500 + 800);
+  assert.equal(r.total, 500 + 800);
+});
+
+test('auditLegendSpent flags an unknown spell as 0 (never a fabricated cost)', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    spells: { known: [{ name: 'Mystery Vessel', learntSuccess: 0 }] },
+  };
+  const r = auditLegendSpent(char, costs, { spellCatalog });
+  const sp = r.sections.find((s) => s.key === 'spells');
+  assert.equal(sp.lines[0].detail, 'not in the catalog');
+  assert.equal(sp.lines[0].cost, 0);
+  assert.equal(sp.total, 0);
+});
+
+test('auditLegendSpent omits the spells section when the character knows none', () => {
+  const r = auditLegendSpent({ attributes: {}, disciplines: [], spells: { known: [] } }, costs, {
+    spellCatalog,
+  });
+  assert.equal(r.sections.find((s) => s.key === 'spells'), undefined);
+});
+
+test('auditLegendSpent applies spellCostMultiplier to every spell (homebrew free learning = ×0)', () => {
+  const char = {
+    attributes: {},
+    disciplines: [],
+    spells: { known: [
+      { name: 'Soul Armor', learntSuccess: 2 },
+      { name: "Death's Head", learntSuccess: 0 },
+    ] },
+  };
+  // enabled rule ships `?? 1` -> the multiplier arrives as 0 (a falsy number,
+  // which `|| 1` would swallow — the whole point of the nullish-coalesce).
+  const free = auditLegendSpent(char, costs, { spellCatalog, spellCostMultiplier: 0 });
+  const sp = free.sections.find((s) => s.key === 'spells');
+  assert.equal(sp.total, 0);
+  assert.equal(sp.lines[0].cost, 0);
+  assert.equal(sp.lines[1].cost, 0);
+  assert.equal(free.total, 0);
+  // absent opt -> ×1 (standard cost, the LEARN-SPELLS behaviour)
+  const standard = auditLegendSpent(char, costs, { spellCatalog });
+  assert.equal(standard.sections.find((s) => s.key === 'spells').total, 500 + 800);
+  // a partial-cost house rule (×0.5) scales proportionally
+  const half = auditLegendSpent(char, costs, { spellCatalog, spellCostMultiplier: 0.5 });
+  assert.equal(half.sections.find((s) => s.key === 'spells').total, (500 + 800) * 0.5);
+});
+
 // --- Karma Rituals sink (homebrew Karma economy, plans/PLAN-HOMEBREW-KARMA.md) ----------
 
 test('auditLegendSpent sinks `converted × cost` and splits it into historic + event lines', () => {

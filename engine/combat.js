@@ -197,17 +197,35 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
  *   `parts` in fold order; `base`+`step` parts compose the Step, `result` parts
  *   are flat modifiers applied to the roll's total (not the Step).
  */
-export function auditPool(baseParts = [], effects = [], ctx = {}, bonusSteps = 0) {
+export function auditPool(baseParts = [], effects = [], ctx = {}, bonusSteps = 0, extraMods = []) {
   const baseSum = baseParts.reduce((s, p) => s + (isFiniteNum(p.value) ? p.value : 0), 0);
   const hasBase = baseParts.some((p) => isFiniteNum(p.value));
   const { step, resultMods, stepMods } = foldPool(hasBase ? baseSum : null, effects, ctx);
-  const withBonus = step != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? step + bonusSteps : step;
+  // `extraMods` are pre-resolved test-modifiers already folded onto the ability
+  // itself (a sustained spell's +N step, a thread bonus) — measure-tagged rollMods,
+  // NOT part of the combat-option effect list. The base above is the pre-modifier
+  // step (from `stepBase`), so we re-add the step-measure ones here and itemise
+  // both step and result kinds so the audit sums back to the ability's real step.
+  const extraStep = [];
+  const extraResult = [];
+  for (const m of extraMods ?? []) {
+    const val = Number(m.value) || 0;
+    if (!val) continue;
+    const part = { label: m.source ?? m.label ?? 'Active effect', value: val };
+    if ((m.measure ?? 'result') === 'step') extraStep.push(part);
+    else extraResult.push(part);
+  }
+  const extraStepSum = extraStep.reduce((s, p) => s + p.value, 0);
+  const composed = step != null ? step + extraStepSum : step;
+  const withBonus = composed != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? composed + bonusSteps : composed;
   const parts = [
     ...baseParts.map((p) => ({ label: p.label, value: p.value, kind: 'base' })),
     ...stepMods.map((m) => ({ ...m, kind: 'step' })),
+    ...extraStep.map((p) => ({ ...p, kind: 'step' })),
   ];
   if (isFiniteNum(bonusSteps) && bonusSteps > 0) parts.push({ label: 'Attack success levels', value: bonusSteps, kind: 'step' });
   for (const m of resultMods) parts.push({ ...m, kind: 'result' });
+  for (const p of extraResult) parts.push({ ...p, kind: 'result' });
   return { step: withBonus, parts };
 }
 

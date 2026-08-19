@@ -336,3 +336,47 @@ test('Mystic Aim is absent when the talent is unowned', () => {
   const m = deriveModel(charA, rules); // charA has no Mystic Aim
   assert.ok(!m.combat.talentOptions.some((o) => o.name === 'Mystic Aim'));
 });
+
+// --- rollMods: consistent active-test-modifier surfacing across measures -------
+
+test('rollMods badges every applied test-modifier on a skill, regardless of measure', () => {
+  const shadowMeld = {
+    name: 'Shadow Meld',
+    effects: [
+      {
+        type: 'test-modifier',
+        target: { domain: 'test', name: 'Stealthy Stride' },
+        operation: 'add',
+        value: 4,
+        measure: 'step',
+        duration: 'sustained',
+        source: 'spell',
+        summary: '+4 steps to Stealthy Stride tests while active.',
+      },
+      {
+        type: 'test-modifier',
+        target: { domain: 'test', name: 'Stealthy Stride' },
+        operation: 'add',
+        value: 2,
+        measure: 'result',
+        duration: 'sustained',
+        source: 'spell',
+        summary: '+2 to the result of Stealthy Stride tests.',
+      },
+    ],
+  };
+  const charS = {
+    ...charA,
+    skills: [{ name: 'Stealthy Stride', rank: 1 }],
+  };
+  const m = deriveModel(charS, rules, { activeSpells: [shadowMeld] });
+  const skill = m.skills.find((s) => s.name === 'Stealthy Stride');
+  assert.ok(skill, 'Stealthy Stride should be an owned skill');
+  // Both measures fold and are surfaced measure-tagged — the DEX-20 base step 8
+  // + rank 1 + the +4 step bonus = 13, carrying the result mod as rollMods.
+  assert.equal(skill.step, 13);
+  assert.deepEqual(skill.rollMods, [
+    { value: 4, source: 'Shadow Meld', measure: 'step' },
+    { value: 2, source: 'Shadow Meld', measure: 'result' },
+  ]);
+});

@@ -33,9 +33,12 @@
 //     lifetime `converted` is all bought with Legend, so the sink is `converted × cost`
 //     — a single figure broken into a virtual historic line plus one line per dated
 //     ritual event. Rule off (absent/zero cost) ⇒ no sink.
+//   • spells (PLAN-LEARN-SPELLS §5.1, resolves PLAN-SPELLS A5): learning a spell
+//     spends Legend. Every entry in character.spells.known is a sink — a single Novice
+//     talent step at Rank = the spell's Circle (spellCost). The Circle is read off the
+//     spell catalog passed in as opts.spellCatalog (rules/spells.json spells), resolved
+//     apostrophe-insensitively; an unknown name contributes 0, never a fabricated cost.
 // It then reconciles the modeled total against the character's recorded
-// `resources.legend.totalSpent`, surfacing the still-unmodeled delta. Spells arrive
-// later; the section list is shaped so those slot in.
 //
 // Talents are grouped into one section per Discipline so the additional-Discipline
 // surcharge is visible. The additional-Discipline Rank-1 cost depends on the "lowest
@@ -89,6 +92,21 @@ export function talentRanksCost(rank, tier, rankTable) {
 export function spellCost(circle, rankTable) {
   if (!circle || circle <= 0) return 0;
   return rankTable?.[String(circle)]?.Novice ?? null;
+}
+
+// Normalise a spell name for catalog lookup: the catalog uses the rulebook's
+// typographic apostrophe (’ U+2019) while a character may record a straight one
+// (') — "Death’s Head" must find "Death's Head". Mirrors spells.js's normName so
+// the audit resolves the same spell the join does.
+function normSpellName(s) {
+  return String(s ?? '').replace(/[‘’]/g, "'").trim();
+}
+
+/** Look a known-spell name up in the spell catalog (apostrophe-insensitive)
+ *  and return its Circle; null when the name isn't in the catalog. */
+function spellCircleByName(catalog, name) {
+  const key = Object.keys(catalog ?? {}).find((k) => normSpellName(k) === normSpellName(name));
+  return key ? Number(catalog[key]?.circle) || null : null;
 }
 
 /**
@@ -271,7 +289,7 @@ function ordinalLabel(n) {
  */
 export function auditLegendSpent(character, costs, opts = {}) {
   const sections = [];
-  const { knacks: knacksOpt, threadItemCatalog = {} } = opts;
+  const { knacks: knacksOpt, threadItemCatalog = {}, spellCatalog = {} } = opts;
 
   // --- Attributes: only Legend-bought `increases` cost Legend (points are free) ---
   const attrLines = [];
@@ -364,6 +382,31 @@ export function auditLegendSpent(character, costs, opts = {}) {
       };
     });
     sections.push({ key: 'threads', kind: 'threads', label: 'Thread Items', total: sumLines(threadLines), lines: threadLines });
+  }
+
+  // --- Spells (PLAN-LEARN-SPELLS §5.1, resolves PLAN-SPELLS A5): learning a
+  //     spell spends Legend. Every entry in `character.spells.known` is a sink —
+  //     a single Novice talent step at Rank = the spell's Circle (spellCost), so
+  //     Available Legend drops as spells are learned and the audit reconciles.
+  //     `known[]` stores only name + learntSuccess (never the Circle — that
+  //     lives in the catalog). `opts.spellCatalog` is rules/spells.json's
+  //     `spells` map, resolved apostrophe-insensitively (the same normalisation
+  //     joinSpell uses); an unknown name contributes 0, never a fabricated cost.
+  //     `opts.spellCostMultiplier` (nullish-coalesced ?? 1, never `|| 1`) scales
+  //     each spell's cost — the homebrew "learning costs no Legend" rule ships
+  //     value 0, a falsy number, so `|| 1` would silently switch the rule off. ---
+  const spellsKnown = character?.spells?.known ?? [];
+  if (spellsKnown.length) {
+    const spellMultiplier = opts.spellCostMultiplier ?? 1;
+    const spellLines = spellsKnown.map((k) => {
+      const circle = spellCircleByName(spellCatalog, k?.name);
+      return {
+        name: k?.name ?? 'Spell',
+        detail: circle != null ? `Circle ${circle}` : 'not in the catalog',
+        cost: circle != null ? spellCost(circle, costs?.talentRank) * spellMultiplier : 0,
+      };
+    });
+    sections.push({ key: 'spells', kind: 'spells', label: 'Spells', total: sumLines(spellLines), lines: spellLines });
   }
 
   // --- Karma on Legend (homebrew Karma economy, plans/PLAN-HOMEBREW-KARMA.md): with the
