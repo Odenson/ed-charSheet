@@ -9,6 +9,7 @@
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan } from '../engine/spells.js';
+import { successCount } from '../engine/combat.js';
 
 export class EdSpells extends LitElement {
   static properties = {
@@ -130,6 +131,12 @@ export class EdSpells extends LitElement {
     .pickbtn:hover { background: var(--spell-bg); }
     .picksum { margin-top: 8px; font-size: var(--fs-fine); color: var(--muted); display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
     .pickchip { font-size: var(--fs-eyebrow); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 8px; }
+    .succrow { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: var(--fs-fine); }
+    .succn { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 9px; font-variant-numeric: tabular-nums; }
+    .succn.miss { color: var(--danger); background: light-dark(#f6e4e0, #3a2320); }
+    .succfx { color: var(--spell); }
+    .succfx b { font-weight: 500; }
+    .succnone { color: var(--muted); }
   `;
 
   constructor() {
@@ -210,7 +217,10 @@ export class EdSpells extends LitElement {
         this._prog = { ...this._prog, threadsWoven: woven, weave: res };
       }
     } else if (step === 'cast') {
-      this._prog = { ...this._prog, castDone: true, cast: res };
+      // Success levels vs the target: 1 at the number, +1 per 5 over. Extra
+      // successes (levels − 1) activate the spell's Success Levels effect (§3.2 #3).
+      const levels = successCount(total, this._castTarget);
+      this._prog = { ...this._prog, castDone: true, cast: { ...res, levels } };
     } else if (step === 'effect') {
       // Effect landing un-greys Weave + Cast for the next cast (owner rule).
       this._prog = { ...this._blankProg(), effect: res };
@@ -220,6 +230,25 @@ export class EdSpells extends LitElement {
   // Assign the just-woven extra thread to one of the spell's Extra Thread options.
   _pickExtra(label) {
     this._prog = { ...this._prog, extraPicks: [...this._prog.extraPicks, label], pendingPick: false };
+  }
+
+  // Cast-success visual: the number of success levels, and the Success Levels
+  // effect the EXTRA successes activate (levels − 1, applied per §3.2 #3).
+  _successBanner(plan, levels) {
+    if (levels <= 0) {
+      return html`<div class="succrow"><span class="succn miss">Miss</span><span class="succnone">no successes</span></div>`;
+    }
+    const extra = levels - 1;
+    const fx = plan.successes?.[0]?.label ?? null;
+    return html`
+      <div class="succrow">
+        <span class="succn">${levels} success${levels === 1 ? '' : 'es'}</span>
+        ${extra > 0
+          ? fx
+            ? html`<span class="succfx">activates <b>${fx}</b>${extra > 1 ? html` ×${extra}` : ''}</span>`
+            : html`<span class="succnone">+${extra} extra success${extra === 1 ? '' : 'es'} (no listed effect)</span>`
+          : html`<span class="succnone">no extra successes</span>`}
+      </div>`;
   }
 
   // Collapse the assigned extra-thread picks into { label, count } (stacks 1:1).
@@ -418,6 +447,7 @@ export class EdSpells extends LitElement {
     }
     this._castErr = '';
     this._pendingStep = 'cast';
+    this._castTarget = Number(target); // for the success-level count in _onRoll
     const disc = this._casterDisc(plan.discipline);
     const sc = disc?.talents?.find((t) => t.name === 'Spellcasting');
     const who = this._subject === 'self' ? ' (on self)' : '';
@@ -530,6 +560,8 @@ export class EdSpells extends LitElement {
           ${this._rollRes(prog.effect)}
         </div>
       </div>
+
+      ${prog.cast && prog.cast.levels != null ? this._successBanner(plan, prog.cast.levels) : ''}
 
       ${prog.pendingPick
         ? html`<div class="pickrow">
