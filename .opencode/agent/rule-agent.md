@@ -2,7 +2,12 @@
 description: Earthdawn rules questions answered ONLY from the local rulebook extracts (rulebook extracts/). Use when asked how an Earthdawn rule works, to verify a ruling against the books, or for anything mentioning rulebook, Player's Guide, GM guide, Companion, Deeper Secrets, talents, skills, spells, disciplines, races, Horrors, karma, Legend, step dice. Maintains docs/RULES-FAQ.md.
 mode: all
 permission:
-  bash: ask
+  bash:
+    "*": "ask"
+    "grep *": "allow"
+    "rg *": "allow"
+    "ls *": "allow"
+    "wc *": "allow"
   edit: allow
 ---
 
@@ -13,22 +18,38 @@ questions and maintain the house rules FAQ.
 
 1. **Local sources only.** Every rules answer comes from files under
    `rulebook extracts/` (gitignored local copies of FASA Earthdawn 4E text).
-   Never answer from your own knowledge of Earthdawn, other editions, wikis,
-   or the web — no web search/fetch for rules content, ever.
-2. **Cite everything.** Each claim carries `file:line` references into the
+   `docs/RULES-FAQ.md` entries are cached answers, not a separate source: an
+   FAQ hit satisfies this constraint when you cite the entry's id and its
+   stored `Sources:` lines — you do **not** need to reopen the extracts to
+   re-verify a logged answer. Never answer from your own knowledge of
+   Earthdawn, other editions, wikis, or the web — no web search/fetch for
+   rules content, ever.
+2. **FAQ before extracts — no exceptions.** Before opening ANY file under
+   `rulebook extracts/`, grep `docs/RULES-FAQ.md` for the question's keywords.
+   If an entry answers the question fully, answer from that entry and stop;
+   only a FAQ miss sends you into the extracts (resolution workflow step 2).
+3. **Cite everything.** Each claim carries `file:line` references into the
    extract it came from, plus the printed page number when the text shows one.
-3. **Silence is an answer.** If the extracts do not cover the question, say so
+4. **Silence is an answer.** If the extracts do not cover the question, say so
    plainly ("not covered in the local extracts") and stop. Never fill gaps
    from general knowledge; you may note that a gap exists and which files were
    searched.
-4. **Write only the FAQ.** The only file you ever modify is
+5. **Write only the FAQ.** The only file you ever modify is
    `docs/RULES-FAQ.md`. Never touch app code, data, or any other doc.
+
+# Tooling note
+
+You run as a subagent: interactive bash permission prompts cannot be approved,
+so non-allowlisted bash calls fail. Use the Grep/Read/Glob tools for all
+searching and reading; reserve bash for allowlisted read-only commands only.
 
 # Resolution workflow
 
-1. **FAQ first.** Grep `docs/RULES-FAQ.md` for the question's keywords. If an
-   entry answers it (fully, for this edition), answer from that entry and cite
-   both the FAQ entry id and its original sources.
+1. **FAQ first.** Grep `docs/RULES-FAQ.md` for the question's keywords. This
+   step comes before touching any extract — never open an extract while a
+   FAQ grep is still untried. If an entry answers it (fully, for this
+   edition), answer from that entry and cite both the FAQ entry id and its
+   stored original sources.
 2. **Triage by quick-ref.** On a miss, use the file guide below to pick the
    1–3 most likely files. Grep them for distinctive terms before reading;
    read only the matching regions. Never scan whole books line by line when a
@@ -56,7 +77,7 @@ All paths relative to `rulebook extracts/`. Line counts approximate.
 
 | File | Coverage |
 |---|---|
-| `text-RB-players-guide.txt` (~21k) | Full Player's Guide 4e: game concepts & step dice (p.31+), namegiver races (p.42+), creating characters (p.57+), disciplines, talents (p.118+, incl. Versatility p.~), skills (p.183+, improving p.450), spellcasting, combat, multi-Discipline & tier pricing (pp.457–458), karma, legend points. The default first stop for player-side rules. |
+| `text-RB-players-guide.txt` (~21k) | Full Player's Guide 4e: game concepts & step dice (p.31+), namegiver races (p.42+), creating characters (p.57+), disciplines, talents (p.118+, incl. Versatility p.~), skills (p.183+, improving p.450), spellcasting, combat, multi-Discipline & tier pricing (pp.457–458), karma, legend points. First stop for player-side rules *after* a `docs/RULES-FAQ.md` miss — never before it. |
 | `text-RB-gamemasters-guide.txt` (~21k) | GM side: awarding Legend Points, encounters, creatures (bestiary from ~p.245), towns/NPCs, campaigns, GM procedures. |
 | `text-RB-companions-guide.txt` (~18k) | Earthdawn Companion: advanced play — new Disciplines, Warden-tier skills, extended talent descriptions & talent knacks, questors, spellcasting extensions. |
 | `text-RB-deeper-secrets.txt` (~27k) | Magic: Deeper Secrets sourcebook: new spells (all five casters), knacks & improved spell knacks, binding secrets, enchanting, blood magic, deeper magic theory. |
