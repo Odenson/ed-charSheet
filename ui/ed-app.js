@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { buildActiveSpell, tickActiveSpells } from '../engine/spells.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
@@ -1231,7 +1231,7 @@ export class EdApp extends LitElement {
       this._saveOk = null;
     }
     try {
-      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
+      let commit = await saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
       this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
@@ -1286,7 +1286,7 @@ export class EdApp extends LitElement {
   _export() {
     if (!this._character) return;
     try {
-      exportCharacter(this._character);
+      exportCharacter(forSave(this._character));
     } catch (e) {
       this._saveError = `Export failed: ${e?.message ? String(e.message) : String(e)}`;
     }

@@ -49,7 +49,7 @@ const baseCharacter = () => ({
     {
       name: 'Archer',
       circle: 4,
-      talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }],
+      talents: [{ name: 'Missile Weapon', rank: 5, circle: 1 }],
     },
   ],
   skills: [{ name: 'Tracking', rank: 3, tier: 'Novice' }],

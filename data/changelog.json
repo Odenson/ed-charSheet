@@ -2,7 +2,7 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "summary": "Notes tab polish: unsaved-edit confirmation, square read-mode note cards that expand on click, and collapsible changelog releases.",
+    "summary": "Notes tab polish (unsaved-edit confirmation, square read-mode cards, collapsible releases) and talent tiers become derived from the learned Circle.",
     "changes": [
       {
         "type": "added",
@@ -15,6 +15,14 @@
       {
         "type": "changed",
         "text": "The in-app changelog shows a one-line summary per release with an expand/collapse toggle; the latest release starts expanded."
+      },
+      {
+        "type": "changed",
+        "text": "Talent cost tiers are no longer stored on the character — they derive from the Circle the talent was learned at (Novice 1–4, Journeyman 5–8, Warden 9–12, Master 13–15). Saves and exports write schema ed-character/2 with the stale field stripped; older files keep loading and convert on their next save. Characters whose saved tiers disagreed with their circles (hand-imported data) will reprice to the rule-correct amounts."
+      },
+      {
+        "type": "fixed",
+        "text": "Additional-Discipline audit lines now show the honest tier path (e.g. “Novice → Journeyman”) instead of masking it behind a stale stored tier string."
       }
     ]
   },

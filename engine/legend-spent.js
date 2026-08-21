@@ -143,14 +143,26 @@ export function lowestDisciplineCircle(disciplines) {
 }
 
 /**
+ * The cost tier for a talent learned at Circle `circle` — the label of the
+ * first `costs.tiers` band containing that circle (1–4 Novice, 5–8 Journeyman,
+ * 9–12 Warden, 13–15 Master; PG pp. 85, 457–458). Tier is a fact of the
+ * discipline placement, never a stored talent input
+ * (plans/PLAN-TALENT-TIER-DERIVATION.md). Returns null for a missing or
+ * out-of-band circle — flagged, never fabricated.
+ */
+export function tierForCircle(circle, costs) {
+  const band = (costs?.tiers ?? []).find((b) => circle >= b.minCircle && circle <= b.maxCircle);
+  return band?.label ?? null;
+}
+
+/**
  * The effective cost tier for a talent's rank steps beyond Rank 1. For the first
  * Discipline (ordinal 1) that's the talent's own tier band; for an additional
  * Discipline it's shifted up per the Equivalent Talent Circle Table.
  */
 export function equivalentTier(realCircle, ordinal, costs) {
   if (ordinal <= 1) {
-    const band = (costs?.tiers ?? []).find((b) => realCircle >= b.minCircle && realCircle <= b.maxCircle);
-    return band?.label ?? null;
+    return tierForCircle(realCircle, costs);
   }
   const rows = costs?.equivalentTier?.[String(Math.min(ordinal, 4))] ?? [];
   return rows.find((r) => realCircle <= r.maxCircle)?.tier ?? null;
@@ -223,28 +235,30 @@ export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowest
  * Built from the same cumulative functions the audit uses (talentRanksCost for
  * the first Discipline, additionalDisciplineTalentCost otherwise), so a step
  * cost always equals `audit(after) − audit(before)` for that one rank change.
- * Returns null when the step is unpriceable (missing tier, a rank beyond the
- * cost table, an unresolvable additional-Discipline tier) — flagged, never
- * fabricated. `toRank <= 0` (e.g. refunding down to Rank 0) costs nothing.
+ * Returns null when the step is unpriceable (missing/unbanded circle, a rank
+ * beyond the cost table, an unresolvable additional-Discipline tier) — flagged,
+ * never fabricated. `toRank <= 0` (e.g. refunding down to Rank 0) costs nothing.
  *
- * @param {{tier: string, circle?: number}} t  the raw character talent input
+ * @param {{circle?: number}} t  the raw character talent input (the cost tier
+ *   derives from the learned Circle — never stored on the talent)
  * @param {number} ordinal  1-based position of the Discipline in the character
  * @param {number|null} lowestCircle  lowestDisciplineCircle(character.disciplines)
  * @param {object} costs  rules/legend.json `costs` block
  * @param {number} toRank  the rank the step brings the talent to
  * @param {{tierShift?: number, tier?: string}} opts  homebrew additional-tier
  *   shift (rules/homebrew.json): when `tierShift > 0`, an ordinal-2+ talent is
- *   priced from its own `tier` bumped up instead of the New-Discipline/Equivalent
+ *   priced from its own tier bumped up instead of the New-Discipline/Equivalent
  *   tables — the step cost then matches the shifted audit exactly.
  */
 export function talentRankStepCost(t, ordinal, lowestCircle, costs, toRank, opts = {}) {
   if (!toRank || toRank <= 0) return 0;
+  const tier = tierForCircle(t?.circle, costs);
   if (ordinal <= 1) {
-    const hi = talentRanksCost(toRank, t?.tier, costs?.talentRank);
-    const lo = talentRanksCost(toRank - 1, t?.tier, costs?.talentRank);
+    const hi = talentRanksCost(toRank, tier, costs?.talentRank);
+    const lo = talentRanksCost(toRank - 1, tier, costs?.talentRank);
     return hi == null || lo == null ? null : hi - lo;
   }
-  const shiftOpts = { ...opts, tier: opts?.tier ?? t?.tier ?? 'Novice' };
+  const shiftOpts = { ...opts, tier: opts?.tier ?? tier ?? 'Novice' };
   const hi = additionalDisciplineTalentCost(toRank, t?.circle ?? 1, ordinal, lowestCircle, costs, shiftOpts).cost;
   const lo = additionalDisciplineTalentCost(toRank - 1, t?.circle ?? 1, ordinal, lowestCircle, costs, shiftOpts).cost;
   return hi == null || lo == null ? null : hi - lo;
@@ -315,13 +329,16 @@ export function auditLegendSpent(character, costs, opts = {}) {
     const additional = ordinal > 1;
     const lines = (disc?.talents ?? []).map((t) => {
       if (!additional) {
-        return { name: t.name, detail: `${t.tier} · Rank ${t.rank}`, cost: talentRanksCost(t.rank, t.tier, costs?.talentRank) };
+        const tier = tierForCircle(t.circle, costs);
+        return { name: t.name, detail: `${tier ?? '—'} · Rank ${t.rank}`, cost: talentRanksCost(t.rank, tier, costs?.talentRank) };
       }
+      const base = tierForCircle(t.circle, costs);
       const { cost, tier } = additionalDisciplineTalentCost(t.rank, t.circle ?? 1, ordinal, lowestCircle, costs, {
         tierShift,
-        tier: t.tier ?? 'Novice',
+        tier: base ?? 'Novice',
       });
-      const tierNote = tier && tier !== t.tier ? `${t.tier} → ${tier}` : tier ?? t.tier;
+      const from = base ?? '—';
+      const tierNote = tier && tier !== from ? `${from} → ${tier}` : tier ?? from;
       return { name: t.name, detail: `${tierNote} · Rank ${t.rank}`, cost };
     });
     sections.push({

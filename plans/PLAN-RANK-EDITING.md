@@ -52,6 +52,13 @@ dashed placeholder pills, never a fabricated number; relative `./…` fetch path
    shows **—** and disables both steppers. No fallback to the talent catalog's
    tier: the audit prices raw stored inputs, and rank editing must match the
    audit line-for-line. Existing recorded spend totals are untouched.
+
+   > **Superseded 2026-08-21** (plans/PLAN-TALENT-TIER-DERIVATION.md): talent
+   > `tier` is no longer a stored input at all — it derives from the learned
+   > Circle (`rules/legend.json` `costs.tiers`, PG pp. 85, 457–458), so there is
+   > likewise nothing to fall back to from the talent catalog. The never-guess
+   > contract stands unchanged: a missing or out-of-band circle still prices
+   > null, shows **—**, and disables both steppers.
 3. **Rank bounds: floor 1, ceiling = the cost tables.** A decrease stops at
    Rank 1 (nothing below to refund); an increase is disabled once the next step
    has no table entry. No new circle-based caps.

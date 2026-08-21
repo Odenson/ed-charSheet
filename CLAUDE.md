@@ -34,7 +34,8 @@ quote the specific rule and say why the task appears to need it.
   recompute. `Attribute Value`/`Step` and other derived values do not live in
   `character.json` (ARCHITECTURE.md §4.1).
 - **Schema shapes & their version tags** — the top-level shape of
-  `data/character.json` (`schema: "ed-character/1"`) and each `rules/*.json`
+  `data/character.json` (current `schema: "ed-character/2"`; readers accept
+  legacy `/1`) and each `rules/*.json`
   (e.g. `schema: "ed-races/2"`). Adding data within the shape is fine (Tier 3);
   changing the *shape* or renaming its fields is Tier 1.
 

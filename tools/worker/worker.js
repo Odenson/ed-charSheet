@@ -367,10 +367,12 @@ async function safeEqual(a, b) {
 }
 
 function isValidCharacter(c) {
+  // ed-character/2: talent `tier` stripped (derived from the learned Circle,
+  // PLAN-TALENT-TIER-DERIVATION). /1 files keep saving until each is rewritten.
   return (
     !!c &&
     typeof c === 'object' &&
-    c.schema === 'ed-character/1' &&
+    (c.schema === 'ed-character/1' || c.schema === 'ed-character/2') &&
     JSON.stringify(c).length <= MAX_BYTES
   );
 }
