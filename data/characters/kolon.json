@@ -1,5 +1,5 @@
 {
-  "schema": "ed-character/1",
+  "schema": "ed-character/2",
   "meta": {
     "name": "Kolon",
     "race": "Ork",
@@ -52,85 +52,71 @@
         {
           "name": "Awareness",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Durability",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Karma Ritual",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Lock Pick",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Picking Pockets",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Stealthy Stride",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Thread Weaving (Thief)",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Taunt",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Disarm Trap",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "First Impression",
           "rank": 1,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Haggle",
           "rank": 2,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Surprise Strike",
           "rank": 5,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Conceal Object",
           "rank": 1,
-          "tier": "Novice",
           "circle": 4
         },
         {
           "name": "Sprint",
           "rank": 1,
-          "tier": "Novice",
           "circle": 4
         }
       ]
@@ -142,73 +128,61 @@
         {
           "name": "Avoid Blow",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Melee Weapon",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Thread Weaving (Warrior)",
           "rank": 2,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Tiger Spring",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Wood Skin",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Anticipate Blow",
           "rank": 4,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Wound Balance",
           "rank": 2,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Unarmed Combat",
           "rank": 2,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Air Dance",
           "rank": 4,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Missile Weapon",
           "rank": 2,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Waterfall Slam",
           "rank": 1,
-          "tier": "Novice",
           "circle": 4
         },
         {
           "name": "Maneuver",
           "rank": 1,
-          "tier": "Novice",
           "circle": 4
         }
       ]
@@ -488,6 +462,15 @@
     {
       "name": "Potion",
       "equipped": false
+    },
+    {
+      "name": "Great Bloody Clever",
+      "equipped": true,
+      "threadRank": 0
+    },
+    {
+      "name": "Night Sting",
+      "equipped": true
     }
   ],
   "wealth": {
@@ -500,6 +483,7 @@
       "air": 0,
       "fire": 0,
       "orichalcum": 0
-    }
+    },
+    "gems": []
   }
 }
