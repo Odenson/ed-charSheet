@@ -713,6 +713,124 @@
         }
       ]
     },
+    "Great Bloody Clever": {
+      "kind": "thread-item",
+      "tier": "Novice",
+      "maximumThreads": 1,
+      "mysticDefense": 8,
+      "combatOptions": [
+        {
+          "name": "Forced Knockdown",
+          "summary": "Requires Rank 2. For 1 Strain, force a Knockdown test using the damage level only (no +3 bonus to the Knockdown test).",
+          "effects": [
+            { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
+            { "type": "note", "source": "condition", "summary": "Forces a Knockdown test at the damage level only — the attack does not add the usual +3 to the Knockdown test. Requires Thread Rank 2." }
+          ]
+        },
+        {
+          "name": "Bleeding Wound",
+          "summary": "Requires Rank 4. For 1 Strain, cause a bleeding wound: 2 damage per round until a successful Recovery test. Stacks up to rank level (8 damage/round max).",
+          "effects": [
+            { "type": "resource-modifier", "target": { "domain": "resource", "name": "Strain" }, "operation": "add", "value": 1, "measure": "points", "condition": "situational", "source": "condition", "summary": "1 Strain." },
+            { "type": "note", "source": "condition", "summary": "Target takes 2 damage per round until it passes a Recovery test to stop the bleeding. Repeated hits stack, up to the wielder's rank level (8 damage/round maximum). Requires Thread Rank 4." }
+          ]
+        }
+      ],
+      "base": {
+        "effects": [
+          { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 8, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Melee damage: Strength step + 8." }
+        ]
+      },
+      "ref": {
+        "source": "User custom thread item (GMG-style, not from the rulebook)",
+        "description": "A devastating Ork weapon favoured among the strongest fighters. Its impressive size and ability to leave bleeding wounds mark the wielder as a serious threat — built for both wounding and knocking opponents down.",
+        "category": "melee",
+        "strMin": 15,
+        "size": 6,
+        "damageStep": 8,
+        "cost": 6000,
+        "availability": "Rare"
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the smith that built the blade.",
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 9, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Damage step increased by 1: Strength step + 9." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "Unlocks the Forced Knockdown combat option: for 1 Strain, force a Knockdown test at the damage level only (no +3 bonus to the test)." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the name the maker gave the blade.",
+          "effects": [
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 10, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Damage step increased by 2: Strength step + 10." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "note", "source": "thread", "summary": "Unlocks the Bleeding Wound combat option: for 1 Strain, cause 2 damage/round until a Recovery test, stacking up to rank level (8 max)." }
+          ]
+        }
+      ]
+    },
+    "Night Sting": {
+      "kind": "thread-item",
+      "tier": "Novice",
+      "maximumThreads": 1,
+      "mysticDefense": 8,
+      "base": {
+        "effects": [
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 5, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Physical Armor 5 (treated as normal armor)." },
+          { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 1, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Mystic Armor 1 (treated as normal armor)." },
+          { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "Initiative penalty 1 (treated as normal armor)." }
+        ]
+      },
+      "ref": {
+        "source": "User custom thread item (GMG-style, not from the rulebook)",
+        "description": "Favoured by thieves — the joins are all padded, making movement very silent. Made to surprise your target; its ability to absorb magical energy adds to a thief's desire to own this masterpiece.",
+        "rankLimit": 4,
+        "cost": 6000,
+        "availability": "Common",
+        "size": 6
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the name the armourer gave the armour.",
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 6, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Physical Armor 6 (+1)." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 3, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Mystic Armor 3 (+2)." },
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Surprise Strike" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Surprise Strike." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the armourer.",
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Physical" }, "operation": "add", "value": 7, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Physical Armor 7 (+2)." },
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "Initiative" }, "operation": "subtract", "value": 0, "measure": "step", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor no longer has an Initiative penalty." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "armor-modifier", "target": { "domain": "armor", "name": "Mystic" }, "operation": "add", "value": 4, "measure": "rating", "condition": "always", "stacking": "replace", "source": "thread", "summary": "The armor is Mystic Armor 4 (+3)." }
+          ]
+        }
+      ]
+    },
     "Orc Stinger": {
       "kind": "thread-item",
       "tier": "Novice",
