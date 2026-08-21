@@ -100,37 +100,37 @@
         {
           "name": "Disarm Trap",
           "rank": 3,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "First Impression",
           "rank": 1,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Haggle",
           "rank": 2,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Surprise Strike",
           "rank": 5,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Conceal Object",
           "rank": 1,
-          "tier": "Warden",
+          "tier": "Novice",
           "circle": 4
         },
         {
           "name": "Sprint",
           "rank": 1,
-          "tier": "Warden",
+          "tier": "Novice",
           "circle": 4
         }
       ]
