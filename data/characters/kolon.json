@@ -172,43 +172,43 @@
         {
           "name": "Anticipate Blow",
           "rank": 4,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Wound Balance",
           "rank": 2,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Unarmed Combat",
           "rank": 2,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Air Dance",
           "rank": 4,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Missile Weapon",
           "rank": 2,
-          "tier": "Journeyman",
+          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Waterfall Slam",
           "rank": 1,
-          "tier": "Warden",
+          "tier": "Novice",
           "circle": 4
         },
         {
           "name": "Maneuver",
           "rank": 1,
-          "tier": "Warden",
+          "tier": "Novice",
           "circle": 4
         }
       ]
