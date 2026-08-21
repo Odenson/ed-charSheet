@@ -102,6 +102,7 @@ it for AI sessions; humans use the checklist below):
 | Homebrew rules format, term/ref grammar, authoring | [docs/HOMEBREW-RULES.md](docs/HOMEBREW-RULES.md) |
 | Dev → prod deploy, relative-path rule | [WORKFLOW.md](WORKFLOW.md) |
 | Serverless save feature design | [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md) |
+| Earthdawn rules questions | the **rule-agent** (`.opencode/agent/rule-agent.md`) — answers only from the local `rulebook extracts/`, ledger in [docs/RULES-FAQ.md](docs/RULES-FAQ.md). Delegate rules questions there instead of grepping the books ad hoc. |
 
 If code and a doc disagree, that is a bug in one of them — resolve it explicitly,
 don't just follow the code.
