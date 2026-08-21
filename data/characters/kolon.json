@@ -466,11 +466,12 @@
     {
       "name": "Great Bloody Clever",
       "equipped": true,
-      "threadRank": 0
+      "threadRank": 4
     },
     {
       "name": "Night Sting",
-      "equipped": true
+      "equipped": true,
+      "threadRank": 4
     }
   ],
   "wealth": {
