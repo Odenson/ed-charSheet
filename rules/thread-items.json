@@ -749,7 +749,8 @@
         "size": 6,
         "damageStep": 8,
         "cost": 6000,
-        "availability": "Rare"
+        "availability": "Rare",
+        "image": "data/Great-Clever.png"
       },
       "threadRanks": [
         {

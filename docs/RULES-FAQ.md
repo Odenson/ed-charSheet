@@ -89,3 +89,59 @@ Sources:
 - player-tables-narrative.txt:1335–1349 (tier band names on the talent-cost table)
 - text-RB-gamemasters-guide.txt:6016–6051 (p. 141 — NPC Discipline/Occupation and Tier, Step modifiers by tier)
 - text-RB-companions-guide.txt:390–404, 777–782 (pp. 10, 20–21 — Circles 9–15, per-tier talent options)
+
+### Q002 — Talent Option slots, acquiring talents, free/racial talents, and knacks (for the "add talents to Disciplines" feature)
+Keywords: talent option slot, one per circle, gain slot, fill slot, lower pool, higher pool, novice journeyman warden master options, discipline talent always available, five first circle, learn new talent, learn later, specific training, deferred choice, training requirements 40 hours, circle training cost, improving talent ranks, eight hours meditation, one rank per day, talent cost table, versatility, human racial talent, rank 0, karma ritual, free talent, entertainer, air sailing, spell matrix, enhanced matrix, racial ability, astral sight windling, speak language read/write language free skill ranks, companion warden master talent options, knack minimum talent rank, knack cost, knack restrictions · Resolved: 2026-08-22
+
+Full extraction for the app's "add talents to Disciplines" feature. Tier/pricing
+mechanics live in Q001; this entry covers slots and acquisition paths:
+
+- **Slots**: exactly one Talent Option per Circle, including First Circle
+  (option slots total = current Circle). Choice may be deferred at creation;
+  reaching a new Circle entitles purchase of the new Discipline Talent plus one
+  option available at that Circle.
+- **Pools**: keyed to status level; lower pools allowed, higher pools forbidden;
+  cost follows the Circle the talent was *learned* at.
+- **Discipline Talents**: fixed per Circle, "always available at the indicated
+  Circle"; five at First Circle + one each thereafter; they alone set Minimum
+  Rank Requirements (options play no role).
+- **Learning outside advancement**: no general between-Circles talent-buying
+  mechanic exists; only Versatility (tutor required), multi-Discipline
+  initiation, and the *optional* Specific Training rule (later option fill =
+  find adept who knows it; same time/effort as Versatility). Skills, by
+  contrast, are learnable anytime (weeks of training + silver fees).
+- **Free/racial**: Free Talents auto-advance with Circle (rank = Circle),
+  don't count toward advancement, don't occupy option slots; magicians get two
+  free Standard Matrices at First Circle; Karma Ritual is a universal rite
+  described in each Discipline header, not a circle-listed talent nor an
+  option-slot occupant; humans get Versatility Rank 0 and windlings Astral
+  Sight Rank 0 as racial abilities (recorded separately, purchasable as Novice,
+  never occupy option slots); Speak Language ×2 / Read/Write Language ×1 free
+  starting **skill** ranks (not talents).
+- **Companion**: Circles 9–15 descriptions add per-tier Warden/Master Talent
+  Options lists before each Circle's entries. Knacks require the associated
+  talent at a stated minimum *actual* rank (thread bonuses don't count);
+  only Discipline-taught talents qualify (Versatility/racial talents excluded);
+  max knacks per talent = unaugmented talent rank; cost = Novice talent of the
+  required Rank (PG Talent Cost Table p. 450); training days = Rank
+  requirement, ~50 sp/day typical.
+
+Sources:
+- text-RB-players-guide.txt:3941–3949 (p. 85 — Discipline Talents vs Talent Options, pools)
+- text-RB-players-guide.txt:3273–3276 (p. 68 — First Circle option, deferrable)
+- text-RB-players-guide.txt:18268–18280 (p. 454 — new Circle entitlement; Specific Training optional rule)
+- text-RB-players-guide.txt:4027–4040 (p. 87 — one option per Circle sidebar)
+- text-RB-players-guide.txt:18196–18202 (p. 453 — Minimum Rank Requirements exclude options)
+- text-RB-players-guide.txt:18349–18353 (p. 456 — new-Discipline option slots from that Discipline)
+- text-RB-players-guide.txt:18057–18135 (pp. 449–450 — improving ranks, conditions, Talent Cost Table)
+- text-RB-players-guide.txt:18397–18425 (pp. 457–458 — Equivalent-Tier + option handling across Disciplines)
+- text-RB-players-guide.txt:18495–18509 (p. 459 — Versatility relearning on new Discipline)
+- text-talents-players.txt:696–699 (p. 177 — Versatility description: surcharge, limits, no Karma)
+- text-RB-players-guide.txt:3970–3988 (p. 86 — Free Talents, matrices)
+- text-RB-players-guide.txt:3903–3919 (p. 83 — Karma Ritual)
+- text-RB-players-guide.txt:3268–3272 (racial abilities recorded separately)
+- text-race-players.txt:26 (human Versatility Rank 0), :71 (windling Astral Sight Rank 0)
+- text-discipline-players.txt:397–402 (Troubadour First Circle block incl. Entertainer free talent)
+- text-RB-companions-guide.txt:393 (Circles 9–15 scope), :777–782 (per-tier options format), :804–829 (example)
+- text-RB-companions-guide.txt:2753–2823 (pp. 75–77 — knack learning, minimum rank, cost, requirements/restrictions)
+- text-RB-deeper-secrets.txt:22584 (tier band names corroborated)
