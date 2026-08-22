@@ -329,7 +329,8 @@
     },
     {
       "name": "Crystal Spear",
-      "equipped": true
+      "equipped": true,
+      "qty": 1
     },
     {
       "name": "Wrist Flick Blade",
