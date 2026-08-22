@@ -1485,6 +1485,38 @@
         }
       ]
     },
+    "Crystal Spear": {
+      "kind": "weapon",
+      "ref": {
+        "cost": 15,
+        "weight": {
+          "amount": 10,
+          "unit": "lb"
+        },
+        "availability": "average",
+        "category": "melee",
+        "strMin": 13,
+        "size": 5,
+        "damageStep": 8,
+        "description": "A two-handed spear five to eight feet long, with a living crystal point.",
+        "image": "data/crystal-spear.png"
+      },
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": 8,
+          "measure": "step",
+          "condition": "always",
+          "source": "item",
+          "summary": "Melee damage: Strength step + 8."
+        }
+      ]
+    },
     "Long Spear": {
       "kind": "weapon",
       "ref": {
