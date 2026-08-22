@@ -162,6 +162,18 @@ export function portraitUrlFor(portrait) {
   return `./${portrait}`;
 }
 
+// Resolve an item/weapon image path (e.g. `data/spear.png`) to a loadable URL.
+// Unlike a character portrait — runtime data written to the character-data branch
+// at save time and therefore read live from it — an item image is a STATIC rule
+// asset that ships in the app bundle. So it always resolves bundle-relative,
+// on Pages and locally alike, and loads straight from the deploy; it never lives
+// on (or is fetched from) the character-data branch. The UI handles a load
+// failure with its placeholder fallback (docs/UI-GUIDELINES.md §6).
+export function itemImageUrl(image) {
+  if (!image) return null;
+  return `./${image}`;
+}
+
 // Discover the available characters from the discovery index
 // (data/characters/index.json, ed-characters-index/1) → `[{ id, name, portrait }]`
 // — the picker's one-fetch list. On the Pages site, read the index LIVE from the

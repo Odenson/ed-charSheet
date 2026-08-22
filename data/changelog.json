@@ -4,6 +4,17 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.18.1",
+      "date": "2026-08-22",
+      "summary": "Item and weapon images now load straight from the app bundle, so adding a new one is a single commit.",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Under the hood, item and weapon images now load from the app bundle like any other static asset, instead of being fetched from the character-data branch the way character portraits are. No visible change — but a new item's image is now added with one commit and can never fall out of sync, closing a class of missing-image bug."
+        }
+      ]
+    },
+    {
       "version": "1.18.0",
       "date": "2026-08-22",
       "summary": "A new Crystal Spear weapon joins the equipment catalogue.",
