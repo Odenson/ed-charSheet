@@ -666,11 +666,29 @@ export function deriveModel(character, rules, session = {}) {
       .filter((c) => c.circle <= d.circle)
       .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, type: e.type, summary: e.summary })))
       .filter((a) => a.summary);
+    // Half-Magic test (PG p.81, "Making Half-Magic Tests"): the Step is the
+    // chosen Attribute Step + the character's Circle, and the GM picks the
+    // Attribute per situation. Perception is the printed default — every
+    // Discipline's half-magic description is a Perception-based test — so the
+    // roller offers Perception; the step is derived here (never stored), Karma-
+    // eligible like any Discipline test. Null (no button) if the discipline has
+    // no half-magic or Perception/Circle can't be resolved (no fabricated step).
+    const percStep = attrStepByName.Perception;
+    const halfMagicRoll =
+      ref.halfMagic && percStep != null && d.circle != null
+        ? {
+            attribute: 'Perception',
+            step: percStep + d.circle,
+            dice: diceForStep(percStep + d.circle),
+            karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
+          }
+        : null;
     return {
       name: d.name,
       circle: d.circle,
       durability: ref.durability ?? null,
       halfMagic: ref.halfMagic?.summary ?? null,
+      halfMagicRoll,
       artisanSkills: ref.artisanSkills ?? [],
       talents,
       abilities,

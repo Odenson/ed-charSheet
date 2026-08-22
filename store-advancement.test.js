@@ -116,6 +116,18 @@ test('a later advancement save replaces the whole arrays (a partial patch must n
   assert.deepEqual(edits.advancements.skills, [{ name: 'Tracking', rank: 4, tier: 'Novice' }]);
 });
 
+test('deriveModel derives the Half-Magic roll: Perception step + Circle, Karma-eligible', () => {
+  memory.clear();
+  const model = deriveModel({ ...baseCharacter(), attributes: { Perception: { base: 15, points: 0, increases: 0 } } }, rules);
+  const d = model.disciplines[0];
+  const percStep = model.attributes.find((a) => a.name === 'Perception').step;
+  assert.ok(percStep > 0, 'Perception resolved a real step'); // guards against a false pass on 0
+  assert.ok(d.halfMagicRoll, 'a discipline with half-magic gets a roll'); // PG p.81
+  assert.equal(d.halfMagicRoll.attribute, 'Perception'); // printed default attribute
+  assert.equal(d.halfMagicRoll.step, percStep + d.circle); // Attribute Step + Circle
+  assert.equal(d.halfMagicRoll.karma.grants.length, 1); // Karma may be spent on the test
+});
+
 test('deriveModel attaches rank pricing: step up, refund, and affordability', () => {
   memory.clear();
   const model = deriveModel(baseCharacter(), rules);

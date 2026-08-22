@@ -98,6 +98,7 @@ it for AI sessions; humans use the checklist below):
 |---|---|
 | Architecture, layers, phases | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | UI/UX rules | [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md) |
+| Standard modal implementation (focus contract, Escape/focus handling) | [docs/MODALS.md](docs/MODALS.md) — shared `ui/modal-controller.js` |
 | Effect vocabulary / schema of `effects` | [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md) |
 | Thread-item data model, engine fold, pricing | [docs/THREAD-ITEMS.md](docs/THREAD-ITEMS.md) |
 | Homebrew rules format, term/ref grammar, authoring | [docs/HOMEBREW-RULES.md](docs/HOMEBREW-RULES.md) |
