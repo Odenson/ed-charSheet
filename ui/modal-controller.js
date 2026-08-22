@@ -179,7 +179,11 @@ export class ModalController {
   _focusDialog() {
     const dialog = this._dialog();
     if (!dialog) return;
+    // Priority: an explicit [autofocus] control (e.g. the default option in a
+    // picker), then the configured selector, then the first focusable, then the
+    // dialog itself.
     const target =
+      dialog.querySelector('[autofocus]') ||
       (this._initialFocus && dialog.querySelector(this._initialFocus)) ||
       dialog.querySelector(FOCUSABLE) ||
       dialog;

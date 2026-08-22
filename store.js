@@ -668,21 +668,25 @@ export function deriveModel(character, rules, session = {}) {
       .filter((a) => a.summary);
     // Half-Magic test (PG p.81, "Making Half-Magic Tests"): the Step is the
     // chosen Attribute Step + the character's Circle, and the GM picks the
-    // Attribute per situation. Perception is the printed default — every
-    // Discipline's half-magic description is a Perception-based test — so the
-    // roller offers Perception; the step is derived here (never stored), Karma-
-    // eligible like any Discipline test. Null (no button) if the discipline has
-    // no half-magic or Perception/Circle can't be resolved (no fabricated step).
-    const percStep = attrStepByName.Perception;
-    const halfMagicRoll =
-      ref.halfMagic && percStep != null && d.circle != null
-        ? {
-            attribute: 'Perception',
-            step: percStep + d.circle,
-            dice: diceForStep(percStep + d.circle),
-            karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
-          }
-        : null;
+    // Attribute per situation — so the roller offers ALL attributes, one derived
+    // option each (step never stored). Perception is the printed default (every
+    // Discipline's half-magic description is a Perception-based test), flagged so
+    // the picker focuses it. Karma-eligible like any Discipline test. Null (no
+    // button) if the discipline has no half-magic or the Circle can't resolve.
+    const halfMagicOptions =
+      ref.halfMagic && d.circle != null
+        ? attributes
+            .filter((a) => a.step != null)
+            .map((a) => ({ attribute: a.name, step: a.step + d.circle, dice: diceForStep(a.step + d.circle) }))
+        : [];
+    const halfMagicRoll = halfMagicOptions.length
+      ? {
+          circle: d.circle,
+          defaultAttribute: halfMagicOptions.some((o) => o.attribute === 'Perception') ? 'Perception' : halfMagicOptions[0].attribute,
+          options: halfMagicOptions,
+          karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
+        }
+      : null;
     return {
       name: d.name,
       circle: d.circle,

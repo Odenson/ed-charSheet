@@ -116,15 +116,23 @@ test('a later advancement save replaces the whole arrays (a partial patch must n
   assert.deepEqual(edits.advancements.skills, [{ name: 'Tracking', rank: 4, tier: 'Novice' }]);
 });
 
-test('deriveModel derives the Half-Magic roll: Perception step + Circle, Karma-eligible', () => {
+test('deriveModel derives the Half-Magic roll: one option per attribute, Perception default, Karma-eligible', () => {
   memory.clear();
-  const model = deriveModel({ ...baseCharacter(), attributes: { Perception: { base: 15, points: 0, increases: 0 } } }, rules);
+  const model = deriveModel(
+    { ...baseCharacter(), attributes: { Perception: { base: 15, points: 0, increases: 0 }, Willpower: { base: 10, points: 0, increases: 0 } } },
+    rules,
+  );
   const d = model.disciplines[0];
   const percStep = model.attributes.find((a) => a.name === 'Perception').step;
   assert.ok(percStep > 0, 'Perception resolved a real step'); // guards against a false pass on 0
   assert.ok(d.halfMagicRoll, 'a discipline with half-magic gets a roll'); // PG p.81
-  assert.equal(d.halfMagicRoll.attribute, 'Perception'); // printed default attribute
-  assert.equal(d.halfMagicRoll.step, percStep + d.circle); // Attribute Step + Circle
+  assert.equal(d.halfMagicRoll.defaultAttribute, 'Perception'); // printed default, focused in the picker
+  // One option per resolvable attribute, each = that attribute's step + Circle.
+  assert.equal(d.halfMagicRoll.options.length, model.attributes.filter((a) => a.step != null).length);
+  const perc = d.halfMagicRoll.options.find((o) => o.attribute === 'Perception');
+  assert.equal(perc.step, percStep + d.circle); // Attribute Step + Circle
+  const will = model.attributes.find((a) => a.name === 'Willpower');
+  assert.equal(d.halfMagicRoll.options.find((o) => o.attribute === 'Willpower').step, will.step + d.circle);
   assert.equal(d.halfMagicRoll.karma.grants.length, 1); // Karma may be spent on the test
 });
 
