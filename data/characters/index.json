@@ -1,9 +1,9 @@
 {
   "schema": "ed-characters-index/1",
   "characters": {
-    "chakka-test": {
+    "TEST-Char": {
       "name": "TEST-Char",
-      "portrait": ""
+      "portrait": "data/test-orc.jpg"
     },
     "chakka": {
       "name": "Chakka",
