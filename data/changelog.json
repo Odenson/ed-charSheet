@@ -1,32 +1,47 @@
 {
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
-  "unreleased": {
-    "summary": "Notes tab polish (unsaved-edit confirmation, square read-mode cards, collapsible releases) and talent tiers become derived from the learned Circle.",
-    "changes": [
-      {
-        "type": "added",
-        "text": "Read-mode note cards render as uniform squares — height matches the column width, and long notes fade at the edge. Click a card (or focus it and press Enter) to pop the full note to the front."
-      },
-      {
-        "type": "changed",
-        "text": "Closing the note or history editor with unsaved changes now asks for confirmation first; an untouched form still closes without prompting."
-      },
-      {
-        "type": "changed",
-        "text": "The in-app changelog shows a one-line summary per release with an expand/collapse toggle; the latest release starts expanded."
-      },
-      {
-        "type": "changed",
-        "text": "Talent cost tiers are no longer stored on the character — they derive from the Circle the talent was learned at (Novice 1–4, Journeyman 5–8, Warden 9–12, Master 13–15). Saves and exports write schema ed-character/2 with the stale field stripped; older files keep loading and convert on their next save. Characters whose saved tiers disagreed with their circles (hand-imported data) will reprice to the rule-correct amounts."
-      },
-      {
-        "type": "fixed",
-        "text": "Additional-Discipline audit lines now show the honest tier path (e.g. “Novice → Journeyman”) instead of masking it behind a stale stored tier string."
-      }
-    ]
-  },
+  "unreleased": { "summary": "", "changes": [] },
   "releases": [
+    {
+      "version": "1.17.0",
+      "date": "2026-08-22",
+      "summary": "A Half-Magic dice roller with an attribute picker joins the Disciplines tab, two new thread items are added, Escape stops leaving a focus ring on the button that opened a modal, and Notes-tab polish plus Circle-derived talent tiers land.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Roll a Discipline's Half-Magic test from the Disciplines tab: the Half-magic box gains a dice roller that opens an attribute picker — every attribute with its Half-Magic step (that attribute's step plus your Circle), focused on Perception since almost every Half-Magic test is Perception-based. The GM has the final say on which attribute a given test uses, so you can pick any of them; the roll is Karma-eligible like any Discipline test (Players' Guide p.81)."
+        },
+        {
+          "type": "added",
+          "text": "Two new thread items authored: Night Sting (a Novice armour favoured by thieves — woven ranks raise Physical and Mystic Armour, grant +1 rank of Surprise Strike, and remove the Initiative penalty) and the Great Bloody Clever (a Novice Ork great-blade — woven ranks raise the Damage step and unlock two on-demand combat options, Forced Knockdown and a stacking Bleeding Wound)."
+        },
+        {
+          "type": "fixed",
+          "text": "Closing a modal with Escape no longer leaves a focus ring stuck on the button that opened it. Every modal now moves focus into the dialog when it opens and returns it to the trigger on close — without the leftover highlight after a mouse-opened dialog — covering the detail modals and every dice-roll modal (talents, skills, Half-Magic, combat)."
+        },
+        {
+          "type": "added",
+          "text": "Read-mode note cards render as uniform squares — height matches the column width, and long notes fade at the edge. Click a card (or focus it and press Enter) to pop the full note to the front."
+        },
+        {
+          "type": "changed",
+          "text": "Closing the note or history editor with unsaved changes now asks for confirmation first; an untouched form still closes without prompting."
+        },
+        {
+          "type": "changed",
+          "text": "The in-app changelog shows a one-line summary per release with an expand/collapse toggle; the latest release starts expanded."
+        },
+        {
+          "type": "changed",
+          "text": "Talent cost tiers are no longer stored on the character — they derive from the Circle the talent was learned at (Novice 1–4, Journeyman 5–8, Warden 9–12, Master 13–15). Saves and exports write schema ed-character/2 with the stale field stripped; older files keep loading and convert on their next save. Characters whose saved tiers disagreed with their circles (hand-imported data) will reprice to the rule-correct amounts."
+        },
+        {
+          "type": "fixed",
+          "text": "Additional-Discipline audit lines now show the honest tier path (e.g. “Novice → Journeyman”) instead of masking it behind a stale stored tier string."
+        }
+      ]
+    },
     {
       "version": "1.16.0",
       "date": "2026-08-19",
