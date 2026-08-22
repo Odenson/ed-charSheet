@@ -4,6 +4,17 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.18.0",
+      "date": "2026-08-22",
+      "summary": "A new Crystal Spear weapon joins the equipment catalogue.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "New weapon — the Crystal Spear: a two-handed spear five to eight feet long with a living crystal point (Damage step 8, Strength minimum 13, weight 10 lb). Add it from the Equipment picker like any other weapon."
+        }
+      ]
+    },
+    {
       "version": "1.17.0",
       "date": "2026-08-22",
       "summary": "A Half-Magic dice roller with an attribute picker joins the Disciplines tab, two new thread items are added, Escape stops leaving a focus ring on the button that opened a modal, and Notes-tab polish plus Circle-derived talent tiers land.",
