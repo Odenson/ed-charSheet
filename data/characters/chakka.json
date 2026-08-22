@@ -1,5 +1,5 @@
 {
-  "schema": "ed-character/1",
+  "schema": "ed-character/2",
   "meta": {
     "name": "Chakka",
     "race": "Ork",
@@ -54,85 +54,71 @@
         {
           "name": "Avoid Blow",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Durability",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Karma Ritual",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Missile Weapon",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Mystic Aim",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Thread Weaving (Archer)",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "True Shot",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Awareness",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Mystic Pursuit",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Throwing Weapon",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Anticipate Blow",
           "rank": 4,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Stealthy Stride",
           "rank": 4,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Long Shot",
           "rank": 3,
-          "tier": "Novice",
           "circle": 4
         },
         {
           "name": "First Impression",
           "rank": 5,
-          "tier": "Novice",
           "circle": 4
         }
       ]
@@ -144,61 +130,51 @@
         {
           "name": "Astral Sight",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Frighten",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Patterncraft",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Spellcasting",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Thread Weaving (Nethermancer)",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Dispel Magic",
           "rank": 3,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Steel Thought",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Standard Matrix",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Spirit Talk",
           "rank": 1,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Suppress Curse",
           "rank": 1,
-          "tier": "Novice",
           "circle": 3
         }
       ]
@@ -232,7 +208,7 @@
     },
     {
       "name": "Tracking",
-      "rank": 3,
+      "rank": 2,
       "tier": "Novice"
     },
     {
@@ -247,7 +223,7 @@
     },
     {
       "name": "Tattooist",
-      "rank": 2,
+      "rank": 3,
       "tier": "Novice"
     },
     {
