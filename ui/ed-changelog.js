@@ -20,6 +20,7 @@ class EdChangelog extends LitElement {
   static properties = {
     _data: { state: true },
     _open: { state: true },
+    _expanded: { state: true },
   };
 
   static styles = css`
@@ -82,12 +83,16 @@ class EdChangelog extends LitElement {
       padding: 1px 6px; border-radius: 999px;
       background: var(--accent-bg); color: var(--accent);
     }
+    .relsum { font-size: var(--fs-body); color: var(--muted); margin: 0.1rem 0 0.4rem; line-height: 1.4; }
+    .toggle { background: none; border: none; color: var(--muted); font-size: var(--fs-body); cursor: pointer; padding: 0; line-height: 1; flex: none; margin-left: auto; }
+    .toggle:hover { color: var(--fg); }
   `;
 
   constructor() {
     super();
     this._data = null;
     this._open = false;
+    this._expanded = new Set();
     this._onKeydown = (e) => {
       if (e.key === 'Escape') this._open = false;
     };
@@ -98,7 +103,12 @@ class EdChangelog extends LitElement {
     document.addEventListener('keydown', this._onKeydown);
     try {
       const res = await fetch('./data/changelog.json');
-      if (res.ok) this._data = await res.json();
+      if (res.ok) {
+        this._data = await res.json();
+        // default: latest release + unreleased expanded; older collapsed
+        const latest = this._data?.releases?.[0];
+        this._expanded = new Set(latest ? [latest.version, 'unreleased'] : ['unreleased']);
+      }
     } catch {
       /* If the changelog can't load, the badge simply doesn't render. */
     }
@@ -123,6 +133,28 @@ class EdChangelog extends LitElement {
     </ul>`;
   }
 
+  _toggle(key) {
+    const next = new Set(this._expanded);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    this._expanded = next;
+  }
+
+  _renderRelease(r, key) {
+    const summary = r.summary ?? '';
+    const expanded = !summary || this._expanded.has(key);
+    return html`
+      <div class="rel">
+        <div class="relhead">
+          ${key === 'unreleased'
+            ? html`<span class="relver">Unreleased</span>`
+            : html`<span class="relver">v${r.version}</span><span class="reldate">${r.date}</span>`}
+          ${summary ? html`<button class="toggle" aria-label="${expanded ? 'Collapse' : 'Expand'} v${r.version ?? ''}" @click=${() => this._toggle(key)}>${expanded ? '▾' : '▸'}</button>` : ''}
+        </div>
+        ${summary ? html`<p class="relsum">${summary}</p>` : ''}
+        ${expanded ? this._changeList(r.changes) : ''}
+      </div>`;
+  }
+
   render() {
     const latest = this._latest;
     if (!latest) return html``;
@@ -140,22 +172,9 @@ class EdChangelog extends LitElement {
                   <button class="mclose" aria-label="Close" @click=${() => (this._open = false)}>✕</button>
                 </div>
                 ${unreleased.length
-                  ? html`<div class="rel">
-                      <div class="relhead"><span class="relver">Unreleased</span></div>
-                      ${this._changeList(unreleased)}
-                    </div>`
+                  ? this._renderRelease({ summary: this._data.unreleased?.summary ?? '', changes: unreleased }, 'unreleased')
                   : ''}
-                ${(this._data.releases ?? []).map(
-                  (r) => html`
-                    <div class="rel">
-                      <div class="relhead">
-                        <span class="relver">v${r.version}</span>
-                        <span class="reldate">${r.date}</span>
-                      </div>
-                      ${this._changeList(r.changes)}
-                    </div>
-                  `,
-                )}
+                ${(this._data.releases ?? []).map((r) => this._renderRelease(r, r.version))}
               </div>
             </div>
           `

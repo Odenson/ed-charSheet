@@ -9,7 +9,7 @@
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
-import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle } from './engine/legend-spent.js';
+import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle, tierForCircle } from './engine/legend-spent.js';
 import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
@@ -359,7 +359,7 @@ export function saveKarmaEdits(karma, id) {
 /**
  * Persist the character's advancement inputs (ranked talents + skills) to the
  * edits overlay. Both arrays are pure input — each discipline's circle and its
- * talents' { name, rank, tier, circle }, and each skill's { name, rank, tier } —
+ * talents' { name, rank, circle }, and each skill's { name, rank, tier } —
  * so the whole arrays are stored as-is; every step and dice figure is derived
  * by the engine, never stored. "Store only inputs, never derived" holds, and a
  * later save replaces the whole arrays (items/wealth precedent — a partial
@@ -370,6 +370,26 @@ export function saveAdvancementEdits({ disciplines, skills }, id) {
   edits.advancements = { disciplines, skills };
   localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
+}
+
+/**
+ * Normalize a character for persistence: stamp the current schema tag and strip
+ * talent `tier` — derived from the learned Circle since
+ * PLAN-TALENT-TIER-DERIVATION, never a stored input. The serializer-side
+ * guarantee for files that predate the bump and are saved without ever passing
+ * through an advancement edit (whose overlay merge strips already). Pure:
+ * returns a new object, never mutates the argument.
+ */
+export function forSave(character) {
+  if (!character || typeof character !== 'object') return character;
+  return {
+    ...character,
+    schema: 'ed-character/2',
+    disciplines: (character.disciplines ?? []).map((d) => ({
+      ...d,
+      talents: (d.talents ?? []).map(({ tier, ...t }) => t),
+    })),
+  };
 }
 
 /**
@@ -476,7 +496,19 @@ export function applyEdits(character, edits) {
     };
   }
   if (edits.advancements) {
-    next = { ...next, disciplines: edits.advancements.disciplines, skills: edits.advancements.skills };
+    // Talent `tier` is derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION),
+    // never a stored input — strip any stale copy an older build wrote to the
+    // overlay so the removed field can't leak back into the character on merge
+    // (advancements replace the arrays wholesale). Skills keep their stored tier:
+    // no circle exists to derive one from.
+    const advancements = {
+      ...edits.advancements,
+      disciplines: (edits.advancements.disciplines ?? []).map((d) => ({
+        ...d,
+        talents: (d.talents ?? []).map(({ tier, ...t }) => t),
+      })),
+    };
+    next = { ...next, disciplines: advancements.disciplines, skills: advancements.skills };
   }
   if (edits.notes) next = { ...next, notes: edits.notes };
   if (edits.history) next = { ...next, history: edits.history };
@@ -620,7 +652,9 @@ export function deriveModel(character, rules, session = {}) {
           summary: cat.summary || null,
           versus: cat.versus || null,
           strain: cat.strain ?? null,
-          tier: cat.tier || t.tier || null,
+          // Derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION) — the
+          // chip shows what pricing actually uses, never a stored/catalog copy.
+          tier: tierForCircle(t.circle, legendFile?.costs),
           skillUse: cat.skillUse || null,
           notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
           documented: !!cat.summary,
@@ -632,11 +666,33 @@ export function deriveModel(character, rules, session = {}) {
       .filter((c) => c.circle <= d.circle)
       .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, type: e.type, summary: e.summary })))
       .filter((a) => a.summary);
+    // Half-Magic test (PG p.81, "Making Half-Magic Tests"): the Step is the
+    // chosen Attribute Step + the character's Circle, and the GM picks the
+    // Attribute per situation — so the roller offers ALL attributes, one derived
+    // option each (step never stored). Perception is the printed default (every
+    // Discipline's half-magic description is a Perception-based test), flagged so
+    // the picker focuses it. Karma-eligible like any Discipline test. Null (no
+    // button) if the discipline has no half-magic or the Circle can't resolve.
+    const halfMagicOptions =
+      ref.halfMagic && d.circle != null
+        ? attributes
+            .filter((a) => a.step != null)
+            .map((a) => ({ attribute: a.name, step: a.step + d.circle, dice: diceForStep(a.step + d.circle) }))
+        : [];
+    const halfMagicRoll = halfMagicOptions.length
+      ? {
+          circle: d.circle,
+          defaultAttribute: halfMagicOptions.some((o) => o.attribute === 'Perception') ? 'Perception' : halfMagicOptions[0].attribute,
+          options: halfMagicOptions,
+          karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
+        }
+      : null;
     return {
       name: d.name,
       circle: d.circle,
       durability: ref.durability ?? null,
       halfMagic: ref.halfMagic?.summary ?? null,
+      halfMagicRoll,
       artisanSkills: ref.artisanSkills ?? [],
       talents,
       abilities,

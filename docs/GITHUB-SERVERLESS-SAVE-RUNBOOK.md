@@ -26,7 +26,7 @@ building it — including the manual steps the repo owner completes.
 ## 1. What we're building (recap)
 
 The **write** half of the serverless save. A tiny Cloudflare Worker exposes
-`POST /save`; the app sends the same inputs-only `ed-character/1` bytes it would
+`POST /save`; the app sends the same inputs-only `ed-character` bytes it would
 write to a file; the worker commits them to `data/characters/<id>.json` on the
 `character-data` branch using a server-side GitHub token. The app already
 **reads** that branch live ([store.js](../store.js)), so a save appears on next
@@ -65,7 +65,7 @@ that never leaves the worker's secret store.
 | `SAVE_KEY` | **secret** | 64-char hex from `openssl rand -hex 32` | `wrangler secret put` |
 | `GITHUB_OWNER` | var | `odenson` | `wrangler.toml [vars]` |
 | `GITHUB_REPO` | var | `ed-charSheet` | `wrangler.toml [vars]` |
-| `GITHUB_CHARS_DIR` | var | `data/characters` — per-character files dir (`<id>.json`, raw `ed-character/1`) + create-only `index.json` (`ed-characters-index/1`); saves write one file per character (PLAN-SAVE-CONCURRENCY) | `wrangler.toml [vars]` |
+| `GITHUB_CHARS_DIR` | var | `data/characters` — per-character files dir (`<id>.json`, raw `ed-character` — current tag `/2`, `/1` accepted) + create-only `index.json` (`ed-characters-index/1`); saves write one file per character (PLAN-SAVE-CONCURRENCY) | `wrangler.toml [vars]` |
 | `GITHUB_ITEMS_PATH` | var | `data/custom-items.json` — the custom-item catalog (`ed-items/2`) written by `/save-items` (PLAN-CUSTOM-ITEMS.md) | `wrangler.toml [vars]` |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
@@ -168,14 +168,14 @@ tracking; commands are copy-paste. Placeholders look like `<THIS>`.
 
   # (a) No key → expect HTTP 401
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
-    -d '{"schema":"ed-character/1"}' -w '\n%{http_code}\n'
+    -d '{"schema":"ed-character/2"}' -w '\n%{http_code}\n'
 
   # (b) Correct key + id → writes/updates data/characters/chakka.json (raw
-  #     ed-character/1); expect HTTP 200 + a commit URL. NOTE: the payload must
+  #     ed-character/2); expect HTTP 200 + a commit URL. NOTE: the payload must
   #     be a JSON body (not file bytes), so use -d with a quoted JSON here.
   curl -sS -X POST "$WORKER/save" -H 'Content-Type: application/json' \
     -H "x-save-key: $KEY" \
-    -d '{"id":"chakka","character":{"schema":"ed-character/1","meta":{"id":"chakka"}}}' \
+    -d '{"id":"chakka","character":{"schema":"ed-character/2","meta":{"id":"chakka"}}}' \
     -w '\n%{http_code}\n'
   ```
   Pass = (a) `401` unauthorized, (b) `200` with `commit.url`. If (b) fails, check

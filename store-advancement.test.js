@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { deriveModel, saveAdvancementEdits, hasPendingEdits, reconcileOverlay, applyEdits } from './store.js';
+import { deriveModel, saveAdvancementEdits, hasPendingEdits, reconcileOverlay, applyEdits, forSave } from './store.js';
 
 // Node has no localStorage; the store reads/writes the global. A tiny in-memory
 // stub is enough — the store only uses get/set/removeItem.
@@ -48,7 +48,7 @@ const baseCharacter = () => ({
     {
       name: 'Archer',
       circle: 4,
-      talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }],
+      talents: [{ name: 'Missile Weapon', rank: 5, circle: 1 }],
     },
   ],
   skills: [{ name: 'Tracking', rank: 3, tier: 'Novice' }],
@@ -63,7 +63,7 @@ test('saveAdvancementEdits round-trips and applyEdits replaces the ranked arrays
       {
         name: 'Archer',
         circle: 4,
-        talents: [{ name: 'Missile Weapon', rank: 6, tier: 'Novice', circle: 1 }],
+        talents: [{ name: 'Missile Weapon', rank: 6, circle: 1 }],
       },
     ],
     skills: [{ name: 'Tracking', rank: 3, tier: 'Novice' }],
@@ -116,6 +116,26 @@ test('a later advancement save replaces the whole arrays (a partial patch must n
   assert.deepEqual(edits.advancements.skills, [{ name: 'Tracking', rank: 4, tier: 'Novice' }]);
 });
 
+test('deriveModel derives the Half-Magic roll: one option per attribute, Perception default, Karma-eligible', () => {
+  memory.clear();
+  const model = deriveModel(
+    { ...baseCharacter(), attributes: { Perception: { base: 15, points: 0, increases: 0 }, Willpower: { base: 10, points: 0, increases: 0 } } },
+    rules,
+  );
+  const d = model.disciplines[0];
+  const percStep = model.attributes.find((a) => a.name === 'Perception').step;
+  assert.ok(percStep > 0, 'Perception resolved a real step'); // guards against a false pass on 0
+  assert.ok(d.halfMagicRoll, 'a discipline with half-magic gets a roll'); // PG p.81
+  assert.equal(d.halfMagicRoll.defaultAttribute, 'Perception'); // printed default, focused in the picker
+  // One option per resolvable attribute, each = that attribute's step + Circle.
+  assert.equal(d.halfMagicRoll.options.length, model.attributes.filter((a) => a.step != null).length);
+  const perc = d.halfMagicRoll.options.find((o) => o.attribute === 'Perception');
+  assert.equal(perc.step, percStep + d.circle); // Attribute Step + Circle
+  const will = model.attributes.find((a) => a.name === 'Willpower');
+  assert.equal(d.halfMagicRoll.options.find((o) => o.attribute === 'Willpower').step, will.step + d.circle);
+  assert.equal(d.halfMagicRoll.karma.grants.length, 1); // Karma may be spent on the test
+});
+
 test('deriveModel attaches rank pricing: step up, refund, and affordability', () => {
   memory.clear();
   const model = deriveModel(baseCharacter(), rules);
@@ -136,7 +156,7 @@ test('deriveModel pricing: additional-Discipline talents use the surcharge table
   char.disciplines.push({
     name: 'Nethermancer',
     circle: 3,
-    talents: [{ name: 'Spellcasting', rank: 3, tier: 'Novice', circle: 1 }],
+    talents: [{ name: 'Spellcasting', rank: 3, circle: 1 }],
   });
   const model = deriveModel(char, rules);
   const t = model.disciplines[1].talents[0];
@@ -147,7 +167,7 @@ test('deriveModel pricing: additional-Discipline talents use the surcharge table
 test('deriveModel pricing: unpriceable steps are null, never fabricated', () => {
   memory.clear();
   const char = baseCharacter();
-  char.disciplines[0].talents[0].tier = undefined; // missing tier → first-Disc table can't price
+  delete char.disciplines[0].talents[0].circle; // no learned Circle → no tier band → first-Disc table can't price
   const model = deriveModel(char, rules);
   const t = model.disciplines[0].talents[0];
   assert.equal(t.pricing.increaseCost, null);
@@ -190,7 +210,7 @@ test('deriveModel: a rank change moves the derived Available Legend (increase sp
       {
         name: 'Archer',
         circle: 4,
-        talents: [{ name: 'Missile Weapon', rank: 6, tier: 'Novice', circle: 1 }],
+        talents: [{ name: 'Missile Weapon', rank: 6, circle: 1 }],
       },
     ],
   };
@@ -202,7 +222,7 @@ test('deriveModel: a rank change moves the derived Available Legend (increase sp
       {
         name: 'Archer',
         circle: 4,
-        talents: [{ name: 'Missile Weapon', rank: 4, tier: 'Novice', circle: 1 }],
+        talents: [{ name: 'Missile Weapon', rank: 4, circle: 1 }],
       },
     ],
   };
@@ -210,4 +230,39 @@ test('deriveModel: a rank change moves the derived Available Legend (increase sp
   assert.equal(down.legend.available, 7100 + 800); // the decrease refunded the step into R5
   // The stored inputs are untouched — the sheet stores only inputs.
   assert.equal(baseCharacter().disciplines[0].talents[0].rank, 5);
+});
+
+test('applyEdits strips a stale talent tier from the advancements overlay (never leaks back in)', () => {
+  memory.clear();
+  // An overlay written by a pre-derivation build still carries `tier` on each
+  // talent; merging it must not reintroduce the removed field (knockedDown
+  // precedent). Skills pass through untouched.
+  const edits = saveAdvancementEdits(
+    {
+      disciplines: [
+        { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 6, tier: 'Novice', circle: 1 }] },
+      ],
+      skills: [{ name: 'Tracking', rank: 3, tier: 'Novice' }],
+    },
+    'c4',
+  );
+  const next = applyEdits(baseCharacter(), edits);
+  assert.deepEqual(next.disciplines[0].talents[0], { name: 'Missile Weapon', rank: 6, circle: 1 });
+  assert.deepEqual(next.skills[0], { name: 'Tracking', rank: 3, tier: 'Novice' }); // skill tier stays
+});
+
+test('forSave stamps ed-character/2 and strips talent tier (serializer-side guarantee)', () => {
+  // A pre-bump file whose talents still carry the stored tier.
+  const character = {
+    ...baseCharacter(),
+    disciplines: [
+      { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
+    ],
+  };
+  const out = forSave(character);
+  assert.equal(out.schema, 'ed-character/2');
+  assert.deepEqual(out.disciplines[0].talents[0], { name: 'Missile Weapon', rank: 5, circle: 1 });
+  assert.deepEqual(out.skills, character.skills); // skill tier untouched
+  assert.equal(character.schema, 'ed-character/1'); // pure: input never mutated
+  assert.ok('tier' in character.disciplines[0].talents[0]); // …and its tier is intact
 });

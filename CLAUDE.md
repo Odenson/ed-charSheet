@@ -34,7 +34,8 @@ quote the specific rule and say why the task appears to need it.
   recompute. `Attribute Value`/`Step` and other derived values do not live in
   `character.json` (ARCHITECTURE.md §4.1).
 - **Schema shapes & their version tags** — the top-level shape of
-  `data/character.json` (`schema: "ed-character/1"`) and each `rules/*.json`
+  `data/character.json` (current `schema: "ed-character/2"`; readers accept
+  legacy `/1`) and each `rules/*.json`
   (e.g. `schema: "ed-races/2"`). Adding data within the shape is fine (Tier 3);
   changing the *shape* or renaming its fields is Tier 1.
 
@@ -97,11 +98,13 @@ it for AI sessions; humans use the checklist below):
 |---|---|
 | Architecture, layers, phases | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | UI/UX rules | [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md) |
+| Standard modal implementation (focus contract, Escape/focus handling) | [docs/MODALS.md](docs/MODALS.md) — shared `ui/modal-controller.js` |
 | Effect vocabulary / schema of `effects` | [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md) |
 | Thread-item data model, engine fold, pricing | [docs/THREAD-ITEMS.md](docs/THREAD-ITEMS.md) |
 | Homebrew rules format, term/ref grammar, authoring | [docs/HOMEBREW-RULES.md](docs/HOMEBREW-RULES.md) |
 | Dev → prod deploy, relative-path rule | [WORKFLOW.md](WORKFLOW.md) |
 | Serverless save feature design | [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md) |
+| Earthdawn rules questions | the **rule-agent** (`.opencode/agent/rule-agent.md`) — answers only from the local `rulebook extracts/`, ledger in [docs/RULES-FAQ.md](docs/RULES-FAQ.md). Delegate rules questions there instead of grepping the books ad hoc. |
 
 If code and a doc disagree, that is a bug in one of them — resolve it explicitly,
 don't just follow the code.

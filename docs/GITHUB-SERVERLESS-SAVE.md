@@ -91,7 +91,9 @@ the only offline path; this is strictly an additional option.
    file's blob sha this client last saw (from the read's ETag or the previous
    save's response). Omitting `base` takes the legacy overwrite path (local dev /
    CDN-fallback sessions have no ETag).
-3. **Worker validates.** JSON parses, `schema === "ed-character/1"`, byte size
+3. **Worker validates.** JSON parses, `schema` is `"ed-character/1"` or
+   `"ed-character/2"` (current tag `/2` — talent `tier` stripped as derived;
+   `/1` files keep saving until each is rewritten), byte size
    within the cap, `id` matches `^[a-z0-9][a-z0-9-]{0,63}$` (also a safe
    filename), `base` is a string or omitted, path and branch come from its own
    config, not the request.

@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits } from '../store.js';
+import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { buildActiveSpell, tickActiveSpells } from '../engine/spells.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
@@ -10,6 +10,7 @@ import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../s
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
+import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -237,6 +238,15 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-roll', (e) => {
       const config = this._rollConfig(e.detail);
       if (!config) return;
+      // The roll modal is a separate component that keeps focus on the roll
+      // button that opened it, so closing it (Escape) would leave a focus ring
+      // stuck on that button. Capture the ACTUAL focused element (the button) —
+      // not the event's target, which is the child component that dispatched
+      // `ed-roll`, never the button itself — so `_closeRoll` returns focus to the
+      // right node with the ring suppressed for pointer opens (docs/MODALS.md,
+      // the separate-component case).
+      this._rollTrigger = deepActiveElement();
+      this._rollOpenedByKeyboard = currentModality() === 'keyboard';
       this._roll = config;
       // An Initiative roll (from the Combat OR Spells tab) is the round
       // start/end signal: advance the round counter. Phase 6b (PLAN-SPELLS)
@@ -1090,6 +1100,18 @@ export class EdApp extends LitElement {
     return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
   }
 
+  // Close the roll modal and return focus to the button that opened it, ring
+  // suppressed for pointer opens (docs/MODALS.md). Routed from the modal's
+  // `@close` (Escape / ✕ / backdrop); result-apply closes remove the modal by
+  // in-modal click, so focus falls away from the trigger and needs no restore.
+  _closeRoll() {
+    const trigger = this._rollTrigger;
+    const openedByKeyboard = this._rollOpenedByKeyboard;
+    this._rollTrigger = null;
+    this._roll = null;
+    returnFocusToTrigger(trigger, { openedByKeyboard });
+  }
+
   // Builds the roll modal's config ('ed-roll' dispatch replaces its imperative
   // body). A recovery roll made while a step-boost is armed rolls at the bumped
   // step (Booster/Healing +8) — the dice and the log then show the boosted step.
@@ -1231,7 +1253,7 @@ export class EdApp extends LitElement {
       this._saveOk = null;
     }
     try {
-      let commit = await saveServer(this._character, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
+      let commit = await saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
       this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
       reconcileOverlay(undefined, this._characterId);
       // The save dot also reflects a pending custom-item delta, so a confirmed
@@ -1286,7 +1308,7 @@ export class EdApp extends LitElement {
   _export() {
     if (!this._character) return;
     try {
-      exportCharacter(this._character);
+      exportCharacter(forSave(this._character));
     } catch (e) {
       this._saveError = `Export failed: ${e?.message ? String(e.message) : String(e)}`;
     }
@@ -1490,7 +1512,7 @@ export class EdApp extends LitElement {
             .mods=${this._roll.mods}
             .strain=${this._roll.strain}
             .aim=${this._roll.aim}
-            @close=${() => (this._roll = null)}
+            @close=${() => this._closeRoll()}
           ></ed-roll-modal>`
         : ''}
       ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; this._pendingSaveSilent = null; }}></ed-save-key>` : ''}

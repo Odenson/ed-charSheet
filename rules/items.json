@@ -1113,7 +1113,8 @@
         "strMin": 4,
         "size": 1,
         "damageStep": 2,
-        "description": "A short blade up to a foot long, equally at home thrown."
+        "description": "A short blade up to a foot long, equally at home thrown.",
+        "image": "data/dagger.png"
       },
       "effects": [
         {

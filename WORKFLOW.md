@@ -109,16 +109,28 @@ release. Because the individual dev commits are collapsed, the changelog is
 
 **1. Finalize the changelog** (`data/changelog.json` — the in-app "What's new").
 Move everything under `unreleased.changes` into a **new `releases` entry** at the
-top, with a bumped [SemVer](https://semver.org) version and today's date, and
-empty out `unreleased`:
+top, with a bumped [SemVer](https://semver.org) version, today's date, and a
+**`summary`** — a single sentence naming the headline feature or fix for the
+release (the PR title is a good starting point). Empty out `unreleased`:
 
 ```jsonc
-"unreleased": { "changes": [] },
+"unreleased": { "summary": "", "changes": [] },
 "releases": [
-  { "version": "1.1.0", "date": "2026-08-15", "changes": [ /* moved from unreleased */ ] },
-  { "version": "1.0.0", "date": "2026-08-01", "changes": [ /* … */ ] }
+  {
+    "version": "1.1.0",
+    "date": "2026-08-15",
+    "summary": "One sentence describing what this release adds or fixes.",
+    "changes": [ /* moved from unreleased */ ]
+  },
+  { "version": "1.0.0", "date": "2026-08-01", "summary": "…", "changes": [ /* … */ ] }
 ]
 ```
+
+**`summary` is required on every release entry** — the in-app changelog shows it
+as the collapsed one-liner for that version; without it the version renders
+verbosely with no collapse affordance. Keep `unreleased.summary` up to date as
+you work on `dev` so the `/dev/` instance always has a readable headline; empty
+string is fine when `unreleased.changes` is also empty.
 
 SemVer at a glance: **major** = breaking/removed, **minor** = new features,
 **patch** = fixes only. Commit this on `dev` before opening the PR.

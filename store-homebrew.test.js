@@ -166,8 +166,8 @@ const tierShiftChar = (totalEarnt = 10000) => ({
   attributes: {},
   resources: { legend: { totalEarnt } },
   disciplines: [
-    { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
-    { name: 'Nethermancer', circle: 3, talents: [{ name: 'Spellcasting', rank: 3, tier: 'Novice', circle: 1 }] },
+    { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, circle: 1 }] },
+    { name: 'Nethermancer', circle: 3, talents: [{ name: 'Spellcasting', rank: 3, circle: 1 }] },
   ],
   skills: [],
   knacks: [],

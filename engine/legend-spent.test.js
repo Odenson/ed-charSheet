@@ -12,6 +12,7 @@ import {
   knackCost,
   skillRanksCost,
   lowestDisciplineCircle,
+  tierForCircle,
   equivalentTier,
   shiftedTier,
   newDisciplineRank1Cost,
@@ -107,10 +108,10 @@ const chakka = {
       name: 'Archer',
       circle: 4,
       talents: [
-        { name: 'Avoid Blow', rank: 4, tier: 'Novice' },
-        { name: 'Durability', rank: 5, tier: 'Novice' },
-        { name: 'Karma Ritual', rank: 4, tier: 'Novice' },
-        { name: 'Missile Weapon', rank: 5, tier: 'Novice' },
+        { name: 'Avoid Blow', rank: 4, circle: 1 },
+        { name: 'Durability', rank: 5, circle: 1 },
+        { name: 'Karma Ritual', rank: 4, circle: 1 },
+        { name: 'Missile Weapon', rank: 5, circle: 1 },
       ],
     },
   ],
@@ -146,6 +147,21 @@ test('auditLegendSpent reconciles the modeled total against recorded', () => {
 test('lowestDisciplineCircle takes the minimum Circle', () => {
   assert.equal(lowestDisciplineCircle([{ circle: 4 }, { circle: 3 }]), 3);
   assert.equal(lowestDisciplineCircle([]), null);
+});
+
+test('tierForCircle reads the Circle band ladder (never stored — derived)', () => {
+  assert.equal(tierForCircle(1, costs), 'Novice');
+  assert.equal(tierForCircle(4, costs), 'Novice');
+  assert.equal(tierForCircle(5, costs), 'Journeyman');
+  assert.equal(tierForCircle(8, costs), 'Journeyman');
+  assert.equal(tierForCircle(9, costs), 'Warden');
+  assert.equal(tierForCircle(12, costs), 'Warden');
+  assert.equal(tierForCircle(13, costs), 'Master');
+  assert.equal(tierForCircle(15, costs), 'Master');
+  assert.equal(tierForCircle(0, costs), null); // out of band below
+  assert.equal(tierForCircle(16, costs), null); // out of band above
+  assert.equal(tierForCircle(undefined, costs), null); // missing circle
+  assert.equal(tierForCircle(3, undefined), null); // missing costs
 });
 
 test('equivalentTier shifts up for additional Disciplines', () => {
@@ -330,9 +346,9 @@ test('skillRankStepCost == audit(after) − audit(before)', () => {
 });
 
 test('rank-step costs flag unpriceable steps with null', () => {
-  const noTier = { name: 'Missile Weapon', rank: 5, circle: 1 }; // no stored tier
-  assert.equal(talentRankStepCost(noTier, 1, null, costs, 6), null);
-  const beyondTable = { name: 'Missile Weapon', rank: 15, tier: 'Novice', circle: 1 };
+  const noCircle = { name: 'Missile Weapon', rank: 5, tier: 'Novice' }; // no learned Circle → no tier band
+  assert.equal(talentRankStepCost(noCircle, 1, null, costs, 6), null);
+  const beyondTable = { name: 'Missile Weapon', rank: 15, circle: 1 };
   assert.equal(talentRankStepCost(beyondTable, 1, null, costs, 16), null); // table stops at 15
   const skill = { name: 'Tracking', rank: 10, tier: 'Novice' };
   assert.equal(skillRankStepCost(skill, costs, 11), null); // skills stop at Rank 10
@@ -361,8 +377,8 @@ test('auditLegendSpent with tierShift prices the 2nd Discipline at the bumped co
   const twoDisc = {
     attributes: {},
     disciplines: [
-      { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, tier: 'Novice', circle: 1 }] },
-      { name: 'Nethermancer', circle: 3, talents: [{ name: 'Frighten', rank: 3, tier: 'Novice', circle: 1 }] },
+      { name: 'Archer', circle: 4, talents: [{ name: 'Missile Weapon', rank: 5, circle: 1 }] },
+      { name: 'Nethermancer', circle: 3, talents: [{ name: 'Frighten', rank: 3, circle: 1 }] },
     ],
     resources: { legend: { totalEarnt: 10000, totalSpent: 2900 } },
   };

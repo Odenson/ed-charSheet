@@ -137,8 +137,8 @@ into the property store at load:
   },
   "disciplines": [
     { "name": "Archer", "circle": 4,
-      "talents": [ { "name": "Avoid Blow", "rank": 4 },
-                   { "name": "Missile Weapon", "rank": 5 } ] }
+      "talents": [ { "name": "Avoid Blow", "rank": 4, "circle": 4 },
+                   { "name": "Missile Weapon", "rank": 5, "circle": 3 } ] }
   ],
   "skills":  [ { "name": "Tracking", "rank": 3 } ],
   "items":   [ /* weapons, armor, magic items */ ],
@@ -150,7 +150,10 @@ into the property store at load:
 > Rule of thumb: **store only inputs; never store what a rule can recompute.**
 > `Attribute Value` and `Step` are derived, so they are not in the file — this
 > is what keeps edits consistent and avoids the "I changed X but Y is stale"
-> problem.
+> problem. A talent's cost **tier** is likewise derived, never stored
+> (since `ed-character/2`): it is the Circle band of the discipline placement
+> the talent was learned at (`rules/legend.json` `costs.tiers`; PG pp. 85,
+> 457–458). Skills keep a stored `tier` — no circle exists to derive one from.
 
 ### 4.2 Game rules data (`rules/*.json`) — shared, versioned reference
 Static Earthdawn data, split so the browser only fetches what a view needs:
@@ -347,7 +350,9 @@ as a `.json` file — a local backup, independent of the GitHub save. A plain
 browser (Firefox / Safari / mobile), not just Chromium.
 
 - **Same bytes as a save.** `serializeCharacter` emits the identical merged,
-  inputs-only form the worker commits (`schema: "ed-character/1"`,
+  inputs-only form the worker commits (current tag `schema: "ed-character/2"`
+  — talent `tier` stripped, derived from the learned Circle; `/1` files are
+  still read and re-saved until each is rewritten),
   `JSON.stringify(…, 2) + '\n'`), so an exported file and a GitHub-saved file are
   byte-for-byte the same.
 - **A backup, not the canonical store.** GitHub (§7.5) is the canonical copy that
@@ -431,7 +436,8 @@ legacy no-base callers).
 
 **Multi-character (shipped, v1.6.0; per-character files since the concurrency
 split).** Each character is its **own file** `data/characters/<id>.json` (a raw
-`ed-character/1` entry — no grouped wrapper), discovered through a small
+`ed-character` entry — no grouped wrapper; current tag `/2`, legacy `/1`
+accepted until rewritten), discovered through a small
 create-only index `data/characters/index.json`
 (`{ schema: "ed-characters-index/1", characters: { "<id>": { name, portrait? } } }`).
 A save always carries an `id` (required since v1.6.0); the worker writes
@@ -570,7 +576,7 @@ and its runbook.
   plus a portable Export.** A per-character localStorage edits overlay
   (`ed-character-edits:${id}`, always on, every browser) is the resilient
   autosave *beneath* the primary Save, which writes `data/characters/<id>.json`
-  (raw `ed-character/1`, per-character files + a create-only index,
+  (raw `ed-character`, current tag `/2`, per-character files + a create-only index,
   plans/PLAN-SAVE-CONCURRENCY.md) straight to the `character-data` branch via the
   serverless worker with a per-file optimistic-concurrency check (stale saves
   surface a keep-mine/take-theirs conflict); on success the overlay

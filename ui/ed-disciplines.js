@@ -9,6 +9,7 @@
 // where the detail is a tap away). All talent wording is our own generic
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
 import { LitElement, html, css } from 'lit';
+import { ModalController } from './modal-controller.js';
 
 export class EdDisciplines extends LitElement {
   static properties = {
@@ -41,8 +42,20 @@ export class EdDisciplines extends LitElement {
     .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
     .mcell { background: var(--bg-card); border-radius: 8px; padding: 6px 9px; }
     .mcell.dur { flex: 0 0 auto; }
-    .mcell.half { flex: 1 1 200px; min-width: 0; }
+    .mcell.half { flex: 1 1 200px; min-width: 0; display: flex; align-items: center; gap: 10px; }
+    .mcell.half .htext { min-width: 0; flex: 1 1 auto; }
+    .mcell.half .hroll { display: flex; align-items: center; gap: 6px; flex: none; }
+    .mcell.half .hstep { font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .mcell.art { flex: 0 0 auto; }
+    /* Half-Magic attribute picker (in the shared modal): one button per attribute
+       with its derived step·dice; the default (Perception) wears a chip. */
+    .hmopts { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .hmopt { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: inherit; font-size: var(--fs-body); text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--fg); cursor: pointer; }
+    .hmopt:hover { border-color: var(--accent); }
+    .hmopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .hmatt { display: inline-flex; align-items: center; gap: 8px; }
+    .hmdef { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 1px 7px; }
+    .hmstep { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
     .mcell .k { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .mcell .v { font-size: var(--fs-body); margin-top: 1px; }
     .card { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
@@ -151,19 +164,18 @@ export class EdDisciplines extends LitElement {
     super();
     this._sel = 0;
     this._modal = null;
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._modal = null; }
-    };
+    // Shared modal focus contract (docs/MODALS.md): Escape closes, focus moves
+    // into the dialog on open and returns to the trigger on close (ring
+    // suppressed for pointer opens). The controller owns the Escape listener and
+    // the focus trap; this component only opens/closes it.
+    this._modalCtl = new ModalController(this, { onClose: () => { this._modal = null; } });
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    document.addEventListener('keydown', this._onKeydown);
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
+  // Open the detail modal for `entry` and hand the controller the trigger so
+  // focus can return to it on close. Every info button routes through here.
+  _openModal(entry, event) {
+    this._modal = entry;
+    this._modalCtl.opened(event?.currentTarget);
   }
 
   _talentRow(t, discName) {
@@ -185,7 +197,7 @@ export class EdDisciplines extends LitElement {
             class="tinfo ${t.required ? 'req' : 'opt'}"
             aria-label="${t.name} — ${status}, view details"
             title="${t.name} — ${status}. Click for details."
-            @click=${() => (this._modal = t)}
+            @click=${(e) => this._openModal(t, e)}
           >i</button>
           <span class="lbl">${t.name}</span>
         </span>
@@ -266,11 +278,11 @@ export class EdDisciplines extends LitElement {
       dt.versus ? { v: `vs ${dt.versus}` } : null,
     ].filter(Boolean);
     return html`
-      <div class="overlay" @click=${() => (this._modal = null)}>
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
         <div class="modal" role="dialog" aria-modal="true" aria-label=${t.name} @click=${(e) => e.stopPropagation()}>
           <div class="mhead">
             <span class="mtitle"><span class="tinfo ${t.required ? 'req' : 'opt'}" aria-hidden="true">i</span>${t.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
           <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
           ${dt.summary
@@ -297,7 +309,7 @@ export class EdDisciplines extends LitElement {
             class="sinfo"
             aria-label="${s.name} — view details"
             title="${s.name} — click for details"
-            @click=${() => (this._modal = { type: 'skill', skill: s })}
+            @click=${(e) => this._openModal({ type: 'skill', skill: s }, e)}
           >i</button>
           <span class="lbl">${s.name}</span>
         </span>
@@ -362,7 +374,7 @@ export class EdDisciplines extends LitElement {
           class="kninfo"
           aria-label="${k.name} — view details"
           title="${k.name} — click for details"
-          @click=${() => (this._modal = { type: 'knack', knack: k })}
+          @click=${(e) => this._openModal({ type: 'knack', knack: k }, e)}
         >i</button>
         <span class="knlbl">${k.name}</span>
         <span class="ktag">knack</span>
@@ -382,11 +394,11 @@ export class EdDisciplines extends LitElement {
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
     ].filter(Boolean);
     return html`
-      <div class="overlay" @click=${() => (this._modal = null)}>
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
         <div class="modal" role="dialog" aria-modal="true" aria-label=${k.name} @click=${(e) => e.stopPropagation()}>
           <div class="mhead">
             <span class="mtitle"><span class="kninfo" aria-hidden="true">i</span>${k.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
           <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
           ${dt.summary
@@ -411,11 +423,11 @@ export class EdDisciplines extends LitElement {
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
     ].filter(Boolean);
     return html`
-      <div class="overlay" @click=${() => (this._modal = null)}>
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
         <div class="modal" role="dialog" aria-modal="true" aria-label=${s.name} @click=${(e) => e.stopPropagation()}>
           <div class="mhead">
             <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${s.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
           <div class="mchips">${chips.map((c) => html`<span class="chip">${c.v}</span>`)}</div>
           ${dt.summary
@@ -505,7 +517,7 @@ export class EdDisciplines extends LitElement {
             class="sinfo"
             aria-label="${g.name} — view details"
             title="${g.name} — click for details"
-            @click=${() => (this._modal = { type: 'granted', ability: g })}
+            @click=${(e) => this._openModal({ type: 'granted', ability: g }, e)}
           >i</button>
           <span class="lbl">${g.name}</span>
         </span>
@@ -530,17 +542,88 @@ export class EdDisciplines extends LitElement {
   // Granted-ability detail modal — what granted it and at what standing.
   _grantedModal(g) {
     return html`
-      <div class="overlay" @click=${() => (this._modal = null)}>
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
         <div class="modal" role="dialog" aria-modal="true" aria-label=${g.name} @click=${(e) => e.stopPropagation()}>
           <div class="mhead">
             <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${g.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
           <div class="mchips">
             ${[{ v: `Rank ${g.rank}` }, g.attribute ? { v: g.attribute } : null].filter(Boolean).map((c) => html`<span class="chip">${c.v}</span>`)}
           </div>
           <div class="mtext">Available by grant — not a learned rank, so it costs no Legend and stays here until learned. ${g.step != null ? 'Currently rollable.' : 'Rank it up by learning the talent to roll it.'}</div>
           <div class="mnote">Granted by ${this._grantTitle(g.grantSources)}.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Rightmost control of the Half-magic cell: opens a picker to choose the
+  // Attribute for the Half-Magic test (PG p.81 — the GM picks the Attribute; the
+  // Step is that Attribute's Step + Circle, all engine-derived in r.options). The
+  // subtitle shows the default (Perception) step·dice at a glance. No options ⇒ a
+  // disabled control (never a fabricated number).
+  _halfMagicRoll(r) {
+    const def = r ? (r.options.find((o) => o.attribute === r.defaultAttribute) ?? r.options[0]) : null;
+    return html`
+      <span class="hroll">
+        ${def ? html`<span class="hstep">${def.step} · ${def.dice}</span>` : ''}
+        <button
+          class="roll"
+          ?disabled=${!r}
+          title=${r ? 'Choose an attribute for the Half-Magic test' : 'No step to roll'}
+          aria-label="Choose attribute for Half-Magic test"
+          @click=${(e) => r && this._openModal({ type: 'halfmagic', roll: r }, e)}
+        >⚄</button>
+      </span>
+    `;
+  }
+
+  // Roll the Half-Magic test with the chosen attribute option. Close the picker
+  // first (returns focus to the ⚄), then dispatch `ed-roll` so ed-app opens the
+  // roll modal with the ⚄ as its trigger. Karma-eligible like a talent — the pool
+  // amount/step come off the derived Karma characteristic.
+  _rollHalfMagic(r, option) {
+    const karmaCtx = r.karma?.grants?.length
+      ? {
+          grants: r.karma.grants,
+          available: this.model?.characteristics?.karma?.available ?? null,
+          step: this.model?.characteristics?.karma?.step ?? null,
+        }
+      : null;
+    this._modalCtl.close();
+    this.dispatchEvent(
+      new CustomEvent('ed-roll', {
+        detail: { label: `Half-Magic (${option.attribute})`, step: option.step, karma: karmaCtx, mods: [] },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  // Attribute picker for the Half-Magic test. Lists every attribute with its
+  // derived step·dice; the default (Perception) carries `autofocus` so the modal
+  // opens focused on it (ModalController honours [autofocus]). Escape/backdrop/✕
+  // close via the controller; Enter fires the focused option.
+  _halfMagicModal(r) {
+    return html`
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Half-Magic test attribute" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle">Half-Magic test</span>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
+          </div>
+          <div class="mtext" style="color: var(--muted)">Pick the attribute — the GM has final say. Step = attribute step + Circle ${r.circle}.</div>
+          <div class="hmopts">
+            ${r.options.map(
+              (o) => html`
+                <button class="hmopt" ?autofocus=${o.attribute === r.defaultAttribute} @click=${() => this._rollHalfMagic(r, o)}>
+                  <span class="hmatt">${o.attribute}${o.attribute === r.defaultAttribute ? html`<span class="hmdef">default</span>` : ''}</span>
+                  <span class="hmstep">${o.step} · ${o.dice}</span>
+                </button>
+              `,
+            )}
+          </div>
         </div>
       </div>
     `;
@@ -563,7 +646,7 @@ export class EdDisciplines extends LitElement {
     }
     const meta = [
       d.durability != null ? { k: 'Durability', v: d.durability, cls: 'dur' } : null,
-      d.halfMagic ? { k: 'Half-magic', v: d.halfMagic, cls: 'half' } : null,
+      d.halfMagic ? { k: 'Half-magic', v: d.halfMagic, cls: 'half', roll: d.halfMagicRoll ?? null } : null,
       d.artisanSkills?.length ? { k: 'Artisan', v: d.artisanSkills.join(' · '), cls: 'art' } : null,
     ].filter(Boolean);
 
@@ -586,7 +669,11 @@ export class EdDisciplines extends LitElement {
         ? this._skillsView(skills, this.model?.knacks ?? [])
         : html`
             <div class="meta">
-              ${meta.map((m) => html`<div class="mcell ${m.cls}"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`)}
+              ${meta.map((m) =>
+                m.cls === 'half'
+                  ? html`<div class="mcell half"><div class="htext"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>${this._halfMagicRoll(m.roll)}</div>`
+                  : html`<div class="mcell ${m.cls}"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`,
+              )}
             </div>
 
             <div class="legend">
@@ -637,7 +724,9 @@ export class EdDisciplines extends LitElement {
             ? this._knackModal(this._modal.knack)
             : this._modal.type === 'granted'
               ? this._grantedModal(this._modal.ability)
-              : this._talentModal(this._modal)
+              : this._modal.type === 'halfmagic'
+                ? this._halfMagicModal(this._modal.roll)
+                : this._talentModal(this._modal)
         : ''}
     `;
   }
