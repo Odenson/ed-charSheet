@@ -3,7 +3,7 @@
   "characters": {
     "TEST-Char": {
       "name": "TEST-Char",
-      "portrait": "data/test-orc.jpg"
+      "portrait": "data/test-orc.jpeg"
     },
     "chakka": {
       "name": "Chakka",
