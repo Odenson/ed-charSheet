@@ -24,7 +24,7 @@ import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRati
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
-import { portraitUrlFor } from '../store.js';
+import { itemImageUrl } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
 import './ed-confirm.js';
 
@@ -1342,7 +1342,7 @@ export class EdCombat extends LitElement {
   // --- weapon image (repo-image pattern, UI-GUIDELINES §6; missing-image fallback) ---
   _artBox() {
     const w = this._selWeapon();
-    const url = w?.image ? portraitUrlFor(w.image) : null;
+    const url = w?.image ? itemImageUrl(w.image) : null;
     return html`<div class="artbox" title=${w?.name ?? ''}>
       ${url && this._artOk !== false
         ? html`<img src=${url} alt=${w?.name ?? 'weapon'} @error=${() => (this._artOk = false)} />`

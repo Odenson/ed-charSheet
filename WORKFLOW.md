@@ -179,6 +179,17 @@ entirely while reconnecting the histories, then push.
   asset and `fetch` paths in the app must be relative (`./data/...`,
   `./engine/...`), never root-absolute (`/data/...`). This keeps the same build
   working at both the root and the subpath.
+- **Item images are build assets; portraits are runtime data.** An item/weapon
+  image (`rules/*.json` `ref.image`, e.g. `data/spear.png`) is a static rule
+  asset that ships in the bundle — it lives on `main`/`dev` and is loaded
+  bundle-relative (`./data/…`) everywhere via `store.js` `itemImageUrl`, so
+  adding one is a normal commit and it deploys with the app. It does **not** live
+  on `character-data`. A **character portrait** (`meta.portrait`) is the opposite:
+  runtime data written to `character-data` at save time, gitignored from the
+  build, and read live from that branch via `portraitUrlFor`. Don't route item
+  images through `portraitUrlFor` — that was the old shape and it forced every
+  item image onto `character-data` too (a second home, and a 404 whenever it was
+  missed).
 - **Saves never rebuild the app.** The serverless save target writes
   `data/characters/<id>.json` (per-character files + create-only index) on the
   dedicated `character-data`
