@@ -1,5 +1,5 @@
 {
-  "schema": "ed-character/1",
+  "schema": "ed-character/2",
   "meta": {
     "name": "TEST-Char",
     "race": "Ork",
@@ -10,7 +10,7 @@
     "sex": "Male",
     "height": "6'10",
     "skinTone": "Light Grey",
-    "background": "[LIVE] Chakka drew his first breath in a kaer that was meant to keep its people safe \u2014 until slavers cracked it open and dragged them into the light. Torn from his family before he was old enough to hold their faces in memory, he was shackled aboard a Theran airship and sold into slavery. For two years he laboured under a Theran dwarf, swallowing his rage and biding his time. When fate finally left the door to freedom unguarded, Chakka threw himself through it with everything he had \u2014 and he has never once looked back.",
+    "background": "[LIVE] Chakka drew his first breath in a kaer that was meant to keep its people safe — until slavers cracked it open and dragged them into the light. Torn from his family before he was old enough to hold their faces in memory, he was shackled aboard a Theran airship and sold into slavery. For two years he laboured under a Theran dwarf, swallowing his rage and biding his time. When fate finally left the door to freedom unguarded, Chakka threw himself through it with everything he had — and he has never once looked back.",
     "sourceSheetVersion": "7.13.2",
     "id": "test-char"
   },
@@ -54,73 +54,61 @@
         {
           "name": "Avoid Blow",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Durability",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Karma Ritual",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Missile Weapon",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Mystic Aim",
           "rank": 5,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Thread Weaving (Archer)",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "True Shot",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Awareness",
           "rank": 4,
-          "tier": "Novice",
           "circle": 1
         },
         {
           "name": "Mystic Pursuit",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Throwing Weapon",
           "rank": 3,
-          "tier": "Novice",
           "circle": 2
         },
         {
           "name": "Anticipate Blow",
           "rank": 4,
-          "tier": "Novice",
           "circle": 3
         },
         {
           "name": "Stealthy Stride",
           "rank": 4,
-          "tier": "Novice",
           "circle": 3
         }
       ]
