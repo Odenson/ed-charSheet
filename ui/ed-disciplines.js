@@ -690,9 +690,9 @@ export class EdDisciplines extends LitElement {
         ${at > 1 ? html`<span class="cpill edge" aria-hidden="true">${at - 1}</span><span class="clnk"></span>` : ''}
         <span class="cpill cur ${cs.consistent ? '' : 'warn'}" title=${curTitle}>Circle ${at}</span>
         <span class="clnk ${cs.eligible ? 'ready' : ''}"></span>
-        ${this.editMode && cs.eligible
-          ? html`<button class="cpill edge ready" title=${`Train to Circle ${cs.next}`} aria-label=${`Train to Circle ${cs.next}`} @click=${(e) => this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [] }, e)}><span aria-hidden="true">↑</span>${cs.next}</button>`
-          : html`<span class="cpill edge ${cs.eligible ? 'ready' : ''}" title=${nextTitle}>${cs.eligible ? html`<span aria-hidden="true">↑</span>` : ''}${cs.next}</span>`}
+        ${cs.eligible
+          ? html`<button class="cpill edge ready" title=${`Ready to advance — train to Circle ${cs.next}`} aria-label=${`Train to Circle ${cs.next}`} @click=${(e) => this._trainClick(d, cs, e)}><span aria-hidden="true">↑</span>${cs.next}</button>`
+          : html`<span class="cpill edge" title=${nextTitle}>${cs.next}</span>`}
       </span>
     `;
   }
@@ -733,6 +733,13 @@ export class EdDisciplines extends LitElement {
   _advancePick(discipline) {
     this._modalCtl.close();
     this.dispatchEvent(new CustomEvent('ed-advance-circle', { detail: { discipline }, bubbles: true, composed: true }));
+  }
+
+  // Clicking the green "ready to advance" pill trains up on the spot: enter edit
+  // mode if not already (so the advancement can persist), then open the confirm.
+  _trainClick(d, cs, e) {
+    if (!this.editMode) this.dispatchEvent(new CustomEvent('ed-enter-edit', { bubbles: true, composed: true }));
+    this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [] }, e);
   }
 
   // Pick a talent for an open slot: close the picker (returns focus to the "+"),

@@ -14,7 +14,7 @@
         },
         {
           "type": "added",
-          "text": "Train up to the next Circle. When your Discipline Talents meet the next Circle's Rank requirement, the Circle track's next pill turns green with an up-arrow and, in edit mode, becomes a Train button: confirming grants that Circle's Discipline Talent at Rank 1, advances your stored Circle, and opens the new Circle's option slot to fill. The Legend cost is checked before it applies; the tutor and training time remain the GM's call."
+          "text": "Train up to the next Circle. When your Discipline Talents meet the next Circle's Rank requirement, the Circle track's next pill turns green with an up-arrow and becomes a Train button — click it (from the read view it drops you straight into edit mode) and confirm to grant that Circle's Discipline Talent at Rank 1, advance your stored Circle, and open the new Circle's option slot to fill. The Legend cost is checked before it applies; the tutor and training time remain the GM's call."
         }
       ]
     },

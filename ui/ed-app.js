@@ -388,6 +388,9 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-learn-talent', (e) => this._learnTalent(e.detail));
     // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
     this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
+    // A view asked to enter edit mode (e.g. clicking the green "ready to advance"
+    // Circle pill from the read view, to train up on the spot).
+    this.addEventListener('ed-enter-edit', () => { this._editMode = true; });
     // Notes-tab surfaces (PLAN-NOTES-TAB): the player's hand-written notes and
     // dated history replace their top-level arrays; Legend-earned entries replace
     // resources.legend.earned only — the legacy totalEarnt is never written
