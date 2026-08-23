@@ -37,6 +37,21 @@ export class EdDisciplines extends LitElement {
     .seg button { border: none; background: none; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: var(--fs-body); color: var(--muted); cursor: pointer; }
     .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
     .circle { font-size: var(--fs-small); padding: 2px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
+    /* Circle-advancement track: previous · current · next Circle, keeping the
+       pill (ellipse) shape. Current is amber "Circle N"; the next pill turns
+       green with an up-arrow when the talents meet its rank gate; the current
+       pill flips to a warning tint when the stored Circle isn't justified. */
+    .ctrack { display: inline-flex; align-items: center; gap: 8px; }
+    /* One pill spec for all three so prev/current/next share height and shape; a
+       transparent border on the filled pills keeps the box identical to the
+       bordered step pills. Only colour and label differ. */
+    .cpill { padding: 4px 13px; border: 1px solid transparent; box-sizing: border-box; border-radius: 999px; font-size: var(--fs-small); font-weight: 500; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; cursor: default; }
+    .cpill.edge { border-color: var(--border); color: var(--muted); font-weight: 400; }
+    .cpill.cur { background: var(--accent-bg); color: var(--accent); }
+    .cpill.cur.warn { background: light-dark(#fbe9e7, #3a1f1c); color: light-dark(#c0392b, #e06557); }
+    .cpill.edge.ready { background: var(--karma-bg); color: var(--karma); border-color: var(--karma); font-weight: 500; }
+    .clnk { width: 14px; height: 2px; background: var(--border); flex: none; }
+    .clnk.ready { background: var(--karma); }
     /* Durability fits its label, Half-magic grows into the freed space, Artisan
        keeps its natural content width. */
     .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -89,6 +104,16 @@ export class EdDisciplines extends LitElement {
     .abil { display: flex; gap: 10px; padding: 5px 0; font-size: var(--fs-body); align-items: baseline; }
     .cbadge { font-size: var(--fs-eyebrow); padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
     .section-gap { margin-top: 14px; }
+
+    /* Talent grouping by learned Circle (Option 2 — left circle spine). Each
+       group is a flex row: a fixed left gutter carrying the Circle badge and a
+       connecting line, and the talent rows to its right. The header row rides an
+       empty gutter so its columns line up with every group's rows. */
+    .tgroup { display: flex; gap: 12px; }
+    .tspine { flex: none; width: 30px; display: flex; flex-direction: column; align-items: center; }
+    .tbody { flex: 1; min-width: 0; }
+    .cbadge2 { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-small); font-weight: 500; flex: none; margin-top: 5px; }
+    .cline { flex: 1; width: 2px; background: var(--border); margin-top: 6px; min-height: 8px; }
 
     /* Rank editing (edit mode): the Rank cell becomes a − rank + stepper. The
        grid widens its column to fit; the wide column swaps back on mobile. Only
@@ -629,6 +654,48 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // Circle-advancement track: previous · current · next. `circle` is the stored,
+  // training-gated Circle (input); `circleStatus` (engine/advancement.js) derives
+  // what the talents support. The current pill shows "Circle N" in amber, tinting
+  // to a warning when the stored Circle exceeds what the talents justify; the next
+  // pill turns green with an up-arrow when the talents already meet its Rank gate
+  // (eligible to train). Nothing here fabricates or changes the Circle.
+  _circleTrack(d) {
+    const cs = d.circleStatus ?? { attained: d.circle, supported: d.circle, next: (d.circle ?? 1) + 1, eligible: false, consistent: true };
+    const at = cs.attained;
+    const curTitle = cs.consistent
+      ? `Circle ${at}${cs.eligible ? ` — eligible to train to Circle ${cs.next}` : ''}`
+      : `Stored as Circle ${at}, but this Discipline's talents only support Circle ${cs.supported} — its Circle 1–${at - 1} Discipline Talents are not all at Rank ${at}. Raise them, or correct the stored Circle.`;
+    const nextTitle = cs.eligible
+      ? `All Circle 1–${at} Discipline Talents meet Rank ${cs.next} — eligible to train to Circle ${cs.next}.`
+      : `Circle ${cs.next} — not yet eligible.`;
+    return html`
+      <span class="ctrack">
+        ${at > 1 ? html`<span class="cpill edge" aria-hidden="true">${at - 1}</span><span class="clnk"></span>` : ''}
+        <span class="cpill cur ${cs.consistent ? '' : 'warn'}" title=${curTitle}>Circle ${at}</span>
+        <span class="clnk ${cs.eligible ? 'ready' : ''}"></span>
+        <span class="cpill edge ${cs.eligible ? 'ready' : ''}" title=${nextTitle}>${cs.eligible ? html`<span aria-hidden="true">↑</span>` : ''}${cs.next}</span>
+      </span>
+    `;
+  }
+
+  // Group a discipline's talents by the Circle they were learned at, ascending
+  // (a talent with no recorded Circle sorts last, under a "—" badge). Returns
+  // [circle, talents[]] entries for the left-spine render.
+  _talentGroups(talents) {
+    const byCircle = new Map();
+    for (const t of talents ?? []) {
+      const c = t.circle ?? null;
+      if (!byCircle.has(c)) byCircle.set(c, []);
+      byCircle.get(c).push(t);
+    }
+    return [...byCircle.entries()].sort((a, b) => {
+      if (a[0] == null) return 1;
+      if (b[0] == null) return -1;
+      return a[0] - b[0];
+    });
+  }
+
   render() {
     const list = this.model?.disciplines ?? [];
     if (!list.length) return html`<p>No disciplines.</p>`;
@@ -660,7 +727,9 @@ export class EdDisciplines extends LitElement {
             ? html`<button aria-pressed=${showSkills} @click=${() => (this._sel = list.length)}>Skills</button>`
             : ''}
         </div>
-        <span class="circle">${showSkills ? `${skills.length} skill${skills.length === 1 ? '' : 's'}` : `Circle ${d.circle}`}</span>
+        ${showSkills
+          ? html`<span class="circle">${skills.length} skill${skills.length === 1 ? '' : 's'}</span>`
+          : this._circleTrack(d)}
       </div>
 
       ${this.editMode ? this._legendBar() : ''}
@@ -682,18 +751,35 @@ export class EdDisciplines extends LitElement {
               <span class="li">click a circle for details</span>
             </div>
             <div class="card">
-              <div class="trow h${this.editMode ? ' edit' : ''}">
-                <span class="thpad">Talent</span>
-                <span class="effcol">Effect</span>
-                <span class="num">Rank</span>
-                <span>Step</span>
-                <span class="action">Action</span>
-                <span></span>
+              <div class="tgroup">
+                <div class="tspine"></div>
+                <div class="tbody">
+                  <div class="trow h${this.editMode ? ' edit' : ''}">
+                    <span class="thpad">Talent</span>
+                    <span class="effcol">Effect</span>
+                    <span class="num">Rank</span>
+                    <span>Step</span>
+                    <span class="action">Action</span>
+                    <span></span>
+                  </div>
+                </div>
               </div>
-              ${d.talents.map(
-                (t) => html`
-                  ${this._talentRow(t, d.name)}
-                  ${(knacksByTalent.get(t.name) ?? []).map((k) => this._knackRow(k))}
+              ${this._talentGroups(d.talents).map(
+                ([circle, talents], gi, arr) => html`
+                  <div class="tgroup">
+                    <div class="tspine">
+                      <span class="cbadge2" title=${circle != null ? `Talents learned at Circle ${circle}` : 'Circle not recorded'}>${circle ?? '—'}</span>
+                      ${gi < arr.length - 1 ? html`<span class="cline"></span>` : ''}
+                    </div>
+                    <div class="tbody">
+                      ${talents.map(
+                        (t) => html`
+                          ${this._talentRow(t, d.name)}
+                          ${(knacksByTalent.get(t.name) ?? []).map((k) => this._knackRow(k))}
+                        `,
+                      )}
+                    </div>
+                  </div>
                 `,
               )}
             </div>

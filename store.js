@@ -35,6 +35,7 @@ import {
 import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
+import { circleStatus } from './engine/advancement.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
@@ -650,6 +651,9 @@ export function deriveModel(character, rules, session = {}) {
       return {
         name: t.name,
         rank: t.rank,
+        // The Circle the talent was learned at — a stored input, surfaced so the
+        // Disciplines tab can group talents by Circle. Also drives the derived tier.
+        circle: t.circle ?? null,
         attribute,
         action: cat.action || null,
         step,
@@ -699,9 +703,16 @@ export function deriveModel(character, rules, session = {}) {
           karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
         }
       : null;
+    // Circle-advancement status (engine/advancement.js): `circle` stays the
+    // stored, training-gated attained Circle (input); this DERIVES the
+    // talent-supported Circle so the UI can flag a stored value the talents don't
+    // justify (imported/edited data) and surface eligibility to advance. Pure
+    // derivation — nothing stored (ARCHITECTURE §4.1).
+    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])));
     return {
       name: d.name,
       circle: d.circle,
+      circleStatus: circleInfo,
       durability: ref.durability ?? null,
       halfMagic: ref.halfMagic?.summary ?? null,
       halfMagicRoll,
