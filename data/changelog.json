@@ -4,6 +4,25 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.19.0",
+      "date": "2026-08-22",
+      "summary": "The Disciplines tab gains a Circle-advancement track, checks your Circle against your talents, and groups each Discipline's talents by the Circle they were learned at.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "The Disciplines tab now shows a Circle-advancement track in place of the old Circle chip: the previous Circle, the current Circle (as an amber \"Circle N\"), and the next Circle. When your Discipline Talents already meet the next Circle's Rank requirement, the next Circle turns green with an up-arrow — a glance tells you whether you're ready to train up."
+        },
+        {
+          "type": "added",
+          "text": "The current Circle is now checked against your talents instead of just being displayed. If the stored Circle isn't justified — its Circle 1..N Discipline Talents aren't all at the required Rank (the standard advancement rule, Players' Guide p.453) — the \"Circle N\" pill turns to a warning with a tooltip naming the Circle your talents actually support, so imported or hand-edited data can't quietly claim a Circle it hasn't earned."
+        },
+        {
+          "type": "added",
+          "text": "Talents on the Disciplines tab are grouped by the Circle they were learned at, ascending, with a circle badge and spine down the left. Knacks still nest under their governing talent, and required/optional dots and the roll buttons are unchanged."
+        }
+      ]
+    },
+    {
       "version": "1.18.1",
       "date": "2026-08-22",
       "summary": "Item and weapon images now load straight from the app bundle, so adding a new one is a single commit.",
