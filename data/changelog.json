@@ -4,6 +4,21 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.20.0",
+      "date": "2026-08-23",
+      "summary": "You can now learn new talents on the Disciplines tab — fill a Circle's open Talent Option slot from its eligible pool, and train up to the next Circle when your talents qualify.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Learn a Talent Option. In edit mode, a Circle group with an open option slot shows a \"+ add option\" button; it opens a picker of that Circle's eligible talents (its status pool plus any lower ones, minus talents you already know). Pick one and it joins at Rank 1, recorded at that Circle and priced against your Available Legend by the Circle's tier — the same budget guard as the rank steppers. Each Circle holds one option slot, matching the discipline rules, and a Circle above the game's Novice/Journeyman pools shows a \"pool data not yet added\" note until that data lands."
+        },
+        {
+          "type": "added",
+          "text": "Train up to the next Circle. When your Discipline Talents meet the next Circle's Rank requirement, the Circle track's next pill turns green with an up-arrow and, in edit mode, becomes a Train button: confirming grants that Circle's Discipline Talent at Rank 1, advances your stored Circle, and opens the new Circle's option slot to fill. The Legend cost is checked before it applies; the tutor and training time remain the GM's call."
+        }
+      ]
+    },
+    {
       "version": "1.19.0",
       "date": "2026-08-22",
       "summary": "The Disciplines tab gains a Circle-advancement track, checks your Circle against your talents, and groups each Discipline's talents by the Circle they were learned at.",

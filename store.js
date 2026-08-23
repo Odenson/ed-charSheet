@@ -36,12 +36,13 @@ import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { circleStatus } from './engine/advancement.js';
+import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
-// Talents every adept receives automatically at First Circle, regardless of
-// Discipline — so they count as "required" (Discipline) talents, not options.
-const UNIVERSAL_TALENTS = new Set(['Durability', 'Karma Ritual']);
+// UNIVERSAL_TALENTS (Durability, Karma Ritual) — talents every adept receives
+// automatically, counted as "required" (Discipline) talents, not options. The
+// single source of truth lives in engine/talent-options.js and is imported above.
 
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
@@ -709,10 +710,24 @@ export function deriveModel(character, rules, session = {}) {
     // justify (imported/edited data) and surface eligibility to advance. Pure
     // derivation — nothing stored (ARCHITECTURE §4.1).
     const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])));
+    // Per-Circle option slots (PLAN-LEARN-TALENTS §7). Each open slot carries its
+    // learnable pool (status-eligible talents minus already-known), enriched with
+    // the terse effect for the picker; a Circle with no pool data (Warden+) is
+    // flagged `available:false`. All derived from rule data — nothing stored.
+    const knownNames = new Set((d.talents ?? []).map((t) => t.name));
+    const slots = optionSlots(ref, d.talents, d.circle).map((s) => {
+      if (!s.open) return s;
+      const pool = learnableTalents(ref, s.circle, { costs: legendFile?.costs, knownNames });
+      return { ...s, available: pool.available, learnable: pool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })) };
+    });
     return {
       name: d.name,
       circle: d.circle,
       circleStatus: circleInfo,
+      optionSlots: slots,
+      // Discipline Talent(s) the next Circle would grant (not already known) —
+      // what the "train to next Circle" action adds at Rank 1 (PLAN-LEARN-TALENTS §7).
+      nextGrant: nextCircleGrant(ref, d.circle, knownNames),
       durability: ref.durability ?? null,
       halfMagic: ref.halfMagic?.summary ?? null,
       halfMagicRoll,
