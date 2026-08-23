@@ -1,10 +1,6 @@
 {
   "schema": "ed-characters-index/1",
   "characters": {
-    "TEST-Char": {
-      "name": "TEST-Char",
-      "portrait": "data/test-orc.jpeg"
-    },
     "chakka": {
       "name": "Chakka",
       "portrait": "data/chakka.jpg"
@@ -12,6 +8,10 @@
     "kolon": {
       "name": "Kolon",
       "portrait": "data/kolon.jpeg"
+    },
+    "test-char": {
+      "name": "TEST-Char",
+      "portrait": "data/test-orc.jpeg"
     }
   }
 }
