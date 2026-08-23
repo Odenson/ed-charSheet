@@ -334,11 +334,11 @@
     },
     {
       "name": "Desperate Spell",
-      "equipped": false
+      "equipped": true
     },
     {
       "name": "Horror Fend",
-      "equipped": false
+      "equipped": true
     },
     {
       "name": "Climbing Kit",
