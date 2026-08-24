@@ -12,8 +12,8 @@ import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
 import { payFromPurse } from '../engine/wealth.js';
-import { talentRankStepCost, lowestDisciplineCircle } from '../engine/legend-spent.js';
-import { logCircleTraining, logTalentLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
+import { talentRankStepCost, lowestDisciplineCircle, skillRankStepCost } from '../engine/legend-spent.js';
+import { logCircleTraining, logTalentLearned, logSkillLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -389,6 +389,8 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
     // Learn a Talent Option into an open per-Circle slot (PLAN-LEARN-TALENTS §7.4).
     this.addEventListener('ed-learn-talent', (e) => this._learnTalent(e.detail));
+    // Learn a new Skill at Rank 1 (PLAN-LEARN-SKILLS §7.4) — data-driven fee from costs.skillTraining.
+    this.addEventListener('ed-learn-skill', (e) => this._learnSkill(e.detail));
     // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
     this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
     // A view asked to enter edit mode (e.g. clicking the green "ready to advance"
@@ -1112,6 +1114,54 @@ export class EdApp extends LitElement {
       const cost = talentRankStepCost({ circle }, dIdx + 1, lowest, this._rules.legendFile?.costs, 1, { tierShift: this._model?.legend?.tierShift ?? 0 });
       logTalentLearned(this._characterId, { discipline, name, circle, legendCost: cost });
     }
+  }
+
+  // Learn a new Skill at Rank 1 (PLAN-LEARN-SKILLS §7.4). No slots — any
+  // catalog skill not already known. Data-driven: Legend from skillRank[1][tier],
+  // silver default from costs.skillTraining[1] (not hardcoded). Mirrors
+  // _learnTalent's guard-then-persist shape.
+  _learnSkill({ name, silver } = {}) {
+    if (!this._character || !name) return;
+    if ((this._character.skills ?? []).some((s) => s.name === name)) return; // no duplicate
+    const catalog = this._rules?.skillsFile?.skills ?? [];
+    const cat = catalog.find((s) => s.name === name);
+    if (!cat) return; // picker-only (Q3) — unknown names not learnable via UI
+    const tierLabel = cat.tier === 2 ? 'Journeyman' : 'Novice';
+    // Silver fee — editable default from rules/legend.json costs.skillTraining[1] (data, not code)
+    const fee = Number(silver);
+    const trainingFee = Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : 0;
+    let nextWealth = this._character.wealth;
+    const beforeCoins = this._character.wealth?.coins ?? {};
+    if (trainingFee > 0) {
+      const spent = payFromPurse(beforeCoins, trainingFee);
+      if (!spent.ok) return; // purse cannot cover
+      nextWealth = { ...(this._character.wealth ?? {}), coins: spent.coins };
+    }
+    const nextCharacter = {
+      ...this._character,
+      wealth: nextWealth,
+      skills: [...(this._character.skills ?? []), { name, rank: 1, tier: tierLabel }],
+    };
+    if (!this._canAffordRank(nextCharacter)) return;
+    const _beforeCoins = beforeCoins;
+    const _afterCoins = nextWealth?.coins ?? beforeCoins;
+    const _legendCost = skillRankStepCost({ tier: tierLabel }, this._rules.legendFile?.costs, 1);
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    if (trainingFee > 0) saveWealthEdits(nextWealth, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+    logSkillLearned(this._characterId, {
+      name,
+      tier: tierLabel,
+      legendCost: _legendCost,
+      silverFee: trainingFee,
+      beforeCoins: _beforeCoins,
+      afterCoins: _afterCoins,
+    });
   }
 
   // Train to the next Circle (PLAN-LEARN-TALENTS §7.4). Only when the talents meet

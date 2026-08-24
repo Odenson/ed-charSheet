@@ -37,6 +37,7 @@ import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encu
 import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { circleStatus } from './engine/advancement.js';
 import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
+import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
@@ -1247,6 +1248,14 @@ export function deriveModel(character, rules, session = {}) {
     });
   }
 
+  // Learnable skills (PLAN-LEARN-SKILLS §7.3): every catalog skill not already
+  // known, with Rank-1 Legend + silver previews derived from costs (data, not code).
+  const skillOptions = (() => {
+    const catalog = skillsFile?.skills ?? [];
+    const known = new Set((character.skills ?? []).map((s) => s.name));
+    return learnableSkills(catalog, known, legendFile?.costs ?? null);
+  })();
+
   // Combat surface (PLAN-COMBAT-TAB Phase C): the pieces the Combat tab renders,
   // all derived from values already folded above — no new stored values. Attack
   // talents resolve from the character's owned talents by canonical name (the
@@ -1456,6 +1465,7 @@ export function deriveModel(character, rules, session = {}) {
     // coin/gem silver values, the running total and the resale hint (all derived).
     wealth: deriveWealth(character.wealth ?? {}),
     skills,
+    skillOptions,
     knacks,
     // `set`-granted abilities the character doesn't learn (engine/ability-ranks.js
     // plans/PLAN-RANK-GRANTS.md D2/D5): derived possession rows for the

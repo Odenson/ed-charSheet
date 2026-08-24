@@ -100,6 +100,28 @@ export function logTalentLearned(characterId, { discipline, name, circle, legend
 }
 
 /**
+ * Log learning a new Skill at Rank 1 (PLAN-LEARN-SKILLS). Legend from
+ * skillRank[1][tier]; silver from skillTraining[1] (data, not code).
+ */
+export function logSkillLearned(characterId, { name, tier, legendCost = null, silverFee = 0, beforeCoins = {}, afterCoins = {} }) {
+  const feeDetail = silverFee > 0 ? formatWealthDetail(silverFee, beforeCoins, afterCoins) : 'no silver fee';
+  const detail = `Skill · Rank 1 · ${tier ?? 'Novice'} · ${feeDetail}`;
+  const before = Math.round(coinsSilver(beforeCoins));
+  const after = silverFee > 0 ? Math.round(coinsSilver(afterCoins)) : before;
+  return logSystem(characterId, {
+    label: `Learned ${name} (Skill · ${tier ?? 'Novice'})`,
+    detail,
+    grants: [name],
+    tier,
+    legendCost,
+    silverFee,
+    coinDelta: formatCoinDelta(beforeCoins, afterCoins).trim(),
+    purseBefore: before,
+    purseAfter: after,
+  });
+}
+
+/**
  * Diff two item input arrays (store shape {name, equipped, threadRank?, qty?})
  * and describe adds/removes/equips/thread changes in human terms.
  * @param {Array} before
