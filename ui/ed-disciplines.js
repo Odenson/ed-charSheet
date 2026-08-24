@@ -10,7 +10,7 @@
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
 import { LitElement, html, css } from 'lit';
 import { ModalController } from './modal-controller.js';
-import { allocForSilver, spendAllocation, coinsSilver } from '../engine/wealth.js';
+import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 
 export class EdDisciplines extends LitElement {
   static properties = {
@@ -733,12 +733,11 @@ export class EdDisciplines extends LitElement {
   _advanceModal(m) {
     const available = this.model?.legend?.available ?? null;
     const coins = this.model?.wealth?.coins ?? {};
-    const gems = this.model?.wealth?.gems ?? [];
     const purse = coinsSilver(coins);
     const legendCost = m.cost?.legend ?? null;
     const silver = Number(this._trainSilver) || 0;
     const legendOk = legendCost == null ? true : available != null && available >= legendCost;
-    const silverOk = silver <= 0 ? true : spendAllocation(coins, gems, allocForSilver(silver)).ok;
+    const silverOk = silver <= 0 ? true : payFromPurse(coins, silver).ok;
     const canTrain = legendOk && silverOk;
     const grantText = m.grants.length ? m.grants.join(', ') : 'no new talent (already known)';
     const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;

@@ -11,7 +11,7 @@ import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
-import { allocForSilver, spendAllocation } from '../engine/wealth.js';
+import { payFromPurse } from '../engine/wealth.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -1022,16 +1022,17 @@ export class EdApp extends LitElement {
     if (!mdisc?.circleStatus?.eligible) return;
     const next = mdisc.circleStatus.next;
     const grants = (mdisc.nextGrant ?? []).map((name) => ({ name, rank: 1, circle: next }));
-    // Pay the (editable, negotiable) silver training fee from the purse — the
-    // all-silver default split, like the buy dialog. A fee beyond the coins is
-    // refused so nothing goes negative; 0/absent skips the wealth write.
+    // Pay the (editable, negotiable) silver training fee from the purse across
+    // ANY coin denomination, making change (payFromPurse) — not silver-only. A fee
+    // beyond the coins is refused so nothing goes negative; 0/absent skips the
+    // wealth write. Gems are never spent (sell them first).
     const fee = Number(silver);
     let nextWealth = this._character.wealth;
     if (fee > 0) {
       const w = this._character.wealth ?? {};
-      const spent = spendAllocation(w.coins ?? {}, w.gems ?? [], allocForSilver(fee));
-      if (!spent.ok) return; // purse can't cover the fee (in silver/copper coin)
-      nextWealth = { ...w, coins: spent.coins, gems: spent.gems };
+      const spent = payFromPurse(w.coins ?? {}, fee);
+      if (!spent.ok) return; // total coin value can't cover the fee
+      nextWealth = { ...w, coins: spent.coins };
     }
     const nextCharacter = {
       ...this._character,
