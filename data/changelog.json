@@ -1,21 +1,17 @@
 {
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
-  "unreleased": {
-    "summary": "",
-    "changes": [
-      {
-        "type": "added",
-        "text": "New thread item — Wooden Braces of Fury: leather-bound wooden bracers whose woven ranks grant Melee Weapon and Wood Skin. Rank 1 grants Melee Weapon +1, Rank 2 grants Wood Skin +1, Rank 3 raises Melee Weapon to +2, Rank 4 raises Wood Skin to +2. Works for any character — if you don't already know the talent the item grants it at the woven rank."
-      }
-    ]
-  },
+  "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
       "version": "1.20.0",
-      "date": "2026-08-23",
+      "date": "2026-08-24",
       "summary": "You can now learn new talents on the Disciplines tab — fill a Circle's open Talent Option slot from its eligible pool, and train up to the next Circle when your talents qualify.",
       "changes": [
+        {
+          "type": "added",
+          "text": "New thread item — Wooden Braces of Fury: leather-bound wooden bracers whose woven ranks grant Melee Weapon and Wood Skin. Rank 1 grants Melee Weapon +1, Rank 2 grants Wood Skin +1, Rank 3 raises Melee Weapon to +2, Rank 4 raises Wood Skin to +2. Works for any character — if you don't already know the talent the item grants it at the woven rank."
+        },
         {
           "type": "added",
           "text": "Learn a Talent Option. In edit mode, a Circle group with an open option slot shows a \"+ add option\" button; it opens a picker of that Circle's eligible talents (its status pool plus any lower ones, minus talents you already know). Pick one and it joins at Rank 1, recorded at that Circle and priced against your Available Legend by the Circle's tier — the same budget guard as the rank steppers. Each Circle holds one option slot, matching the discipline rules, and a Circle above the game's Novice/Journeyman pools shows a \"pool data not yet added\" note until that data lands."
