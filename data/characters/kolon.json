@@ -167,7 +167,7 @@
         },
         {
           "name": "Air Dance",
-          "rank": 4,
+          "rank": 3,
           "circle": 3
         },
         {
@@ -329,8 +329,7 @@
     },
     {
       "name": "Crystal Spear",
-      "equipped": true,
-      "qty": 1
+      "equipped": true
     },
     {
       "name": "Wrist Flick Blade",
@@ -471,6 +470,11 @@
     },
     {
       "name": "Night Sting",
+      "equipped": true,
+      "threadRank": 4
+    },
+    {
+      "name": "Wooden Braces of Fury",
       "equipped": true,
       "threadRank": 4
     }
