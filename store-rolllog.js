@@ -1,10 +1,12 @@
-// store-rolllog.js — per-character roll log (PLAN-NOTES-TAB, decisions #2/#5/#7).
+// store-rolllog.js — per-character Log (PLAN-NOTES-TAB, decisions #2/#5/#7).
 // Ephemeral, device-local game-time view: it survives reloads on this browser
 // but is deliberately never part of character data, never exported, and never
 // written to a GitHub save — it does not follow the character to another device,
 // and that is intended. High churn means it never rides the edits overlay.
 // Each roll interaction owns a `rollId`; an entry is UPSERTED by that id, so
 // Karma toggles / "Roll again" replace the row instead of stacking duplicates.
+// The Log now also holds system/app entries (kind 'system'/'action') — e.g.
+// discipline training — each with a unique rollId so they never collide.
 
 export const DEFAULT_MAX = 20;
 export const MAX_OPTIONS = [10, 20, 50];
