@@ -134,6 +134,48 @@ export function coinsSilver(coins = {}) {
   return COIN_DENOMINATIONS.reduce((t, c) => t + num(coins[c.key]) * c.rate, 0);
 }
 
+/**
+ * Pay a silver `amount` from the purse across ANY coin denominations, making
+ * change — the "just pay it from whatever coins I have" default (unlike
+ * `allocForSilver`, which only draws silver + copper). Spends the smallest coins
+ * first so higher and elemental coins are only broken when smaller ones can't
+ * cover the fee; when a coin must be broken, the overpayment is returned as
+ * change in the largest coins that fit. Gems are never spent (sell them first).
+ * Returns `{ ok:false }` if the total coin value can't cover the amount, leaving
+ * the purse untouched. All math is done in copper units so nothing drifts.
+ * @param {object} coins  owned coin counts ({ copper, silver, gold, … })
+ * @param {number} amount  silver to pay
+ * @returns {{ok: boolean, coins?: object}}
+ */
+export function payFromPurse(coins = {}, amount = 0) {
+  const feeCu = Math.round((Number(amount) || 0) * 10);
+  if (feeCu <= 0) return { ok: true, coins: { ...coins } };
+  const asc = COIN_DENOMINATIONS.map((c) => ({ key: c.key, cu: Math.round(c.rate * 10) })).sort((a, b) => a.cu - b.cu);
+  const owned = {};
+  for (const d of asc) owned[d.key] = int(coins[d.key]);
+  if (asc.reduce((t, d) => t + owned[d.key] * d.cu, 0) < feeCu) return { ok: false };
+  const next = { ...coins };
+  let need = feeCu;
+  // Pass 1: take whole coins from the smallest denomination up, without overshooting.
+  for (const d of asc) {
+    if (need <= 0) break;
+    const take = Math.min(owned[d.key], Math.floor(need / d.cu));
+    if (take > 0) { next[d.key] = int(next[d.key]) - take; owned[d.key] -= take; need -= take * d.cu; }
+  }
+  // Pass 2: cover the remainder by breaking the smallest owned coin that covers
+  // it, returning the overpayment as change in the largest coins that fit.
+  if (need > 0) {
+    const brk = asc.find((d) => owned[d.key] > 0 && d.cu >= need);
+    next[brk.key] = int(next[brk.key]) - 1;
+    let change = brk.cu - need;
+    for (const d of [...asc].reverse()) {
+      if (change <= 0) break;
+      if (d.cu <= change) { const add = Math.floor(change / d.cu); next[d.key] = int(next[d.key]) + add; change -= add * d.cu; }
+    }
+  }
+  return { ok: true, coins: next };
+}
+
 /** Total silver value of a gems array ([{ valueSilver, qty }]). */
 export function gemsSilver(gems = []) {
   return (Array.isArray(gems) ? gems : []).reduce((t, g) => t + num(g.valueSilver) * (num(g.qty) || 1), 0);

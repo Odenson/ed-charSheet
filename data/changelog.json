@@ -4,6 +4,25 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.20.0",
+      "date": "2026-08-24",
+      "summary": "You can now learn new talents on the Disciplines tab — fill a Circle's open Talent Option slot from its eligible pool, and train up to the next Circle when your talents qualify.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "New thread item — Wooden Braces of Fury: leather-bound wooden bracers whose woven ranks grant Melee Weapon and Wood Skin. Rank 1 grants Melee Weapon +1, Rank 2 grants Wood Skin +1, Rank 3 raises Melee Weapon to +2, Rank 4 raises Wood Skin to +2. Works for any character — if you don't already know the talent the item grants it at the woven rank."
+        },
+        {
+          "type": "added",
+          "text": "Learn a Talent Option. In edit mode, a Circle group with an open option slot shows a \"+ add option\" button; it opens a picker of that Circle's eligible talents (its status pool plus any lower ones, minus talents you already know). Pick one and it joins at Rank 1, recorded at that Circle and priced against your Available Legend by the Circle's tier — the same budget guard as the rank steppers. Each Circle holds one option slot, matching the discipline rules, and a Circle above the game's Novice/Journeyman pools shows a \"pool data not yet added\" note until that data lands."
+        },
+        {
+          "type": "added",
+          "text": "Train up to the next Circle. When your Discipline Talents meet the next Circle's Rank requirement, the Circle track's next pill turns green with an up-arrow and becomes a Train button — click it (from the read view it drops you straight into edit mode) to open a confirm that shows the Legend to buy the new Circle's Discipline Talent (checked against your Available Legend) and a silver training fee seeded from the Circle Training Cost Table. The fee is negotiable, so you can edit it, and it's checked against your purse; Train stays disabled until both cover. Confirming grants that Circle's Discipline Talent at Rank 1, advances your stored Circle, pays the silver from your purse, and opens the new Circle's option slot to fill. There's no test to learn — finding a tutor and the 40-hour training time remain the GM's call, and only the Legend and silver are tracked."
+        }
+      ]
+    },
+    {
       "version": "1.19.0",
       "date": "2026-08-22",
       "summary": "The Disciplines tab gains a Circle-advancement track, checks your Circle against your talents, and groups each Discipline's talents by the Circle they were learned at.",

@@ -11,6 +11,7 @@ import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
+import { payFromPurse } from '../engine/wealth.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -384,6 +385,13 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-karma', (e) => this._editKarma(e.detail));
     this.addEventListener('ed-edit-talent-rank', (e) => this._editTalentRank(e.detail));
     this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
+    // Learn a Talent Option into an open per-Circle slot (PLAN-LEARN-TALENTS §7.4).
+    this.addEventListener('ed-learn-talent', (e) => this._learnTalent(e.detail));
+    // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
+    this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
+    // A view asked to enter edit mode (e.g. clicking the green "ready to advance"
+    // Circle pill from the read view, to train up on the spot).
+    this.addEventListener('ed-enter-edit', () => { this._editMode = true; });
     // Notes-tab surfaces (PLAN-NOTES-TAB): the player's hand-written notes and
     // dated history replace their top-level arrays; Legend-earned entries replace
     // resources.legend.earned only — the legacy totalEarnt is never written
@@ -969,6 +977,77 @@ export class EdApp extends LitElement {
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
       this._characterId,
     );
+    this._markDirty();
+    this._model = this._derive();
+  }
+
+  // Learn a Talent Option into an open Circle slot (PLAN-LEARN-TALENTS §7.4).
+  // Inputs-only, guard-then-persist like _editTalentRank: validate against the
+  // derived slots (the target Circle's slot must be open and the talent in its
+  // learnable pool — never a duplicate), append `{ name, rank: 1, circle }`, block
+  // if it can't be afforded (the audit prices the new Rank-1 talent by its Circle
+  // tier), then persist the full arrays and re-derive.
+  _learnTalent({ discipline, name, circle }) {
+    if (!this._character || !discipline || !name || !(circle >= 1)) return;
+    const disc = (this._character.disciplines ?? []).find((d) => d.name === discipline);
+    if (!disc || (disc.talents ?? []).some((t) => t.name === name)) return; // no duplicate
+    const mdisc = (this._model?.disciplines ?? []).find((d) => d.name === discipline);
+    const slot = (mdisc?.optionSlots ?? []).find((s) => s.circle === circle);
+    if (!slot || !slot.open || !(slot.learnable ?? []).some((o) => o.name === name)) return; // slot open + eligible pool
+    const nextCharacter = {
+      ...this._character,
+      disciplines: (this._character.disciplines ?? []).map((d) =>
+        d.name === discipline ? { ...d, talents: [...(d.talents ?? []), { name, rank: 1, circle }] } : d,
+      ),
+    };
+    if (!this._canAffordRank(nextCharacter)) return;
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    this._markDirty();
+    this._model = this._derive();
+  }
+
+  // Train to the next Circle (PLAN-LEARN-TALENTS §7.4). Only when the talents meet
+  // the next Circle's Rank gate (circleStatus.eligible); bump the discipline's
+  // stored `circle` and append each newly-available Discipline Talent at Rank 1
+  // (learned at the new Circle). Guard-then-persist like the other edits; reject
+  // if the grant can't be afforded. The training tutor/silver cost is GM territory
+  // (decision Q4) and not modelled.
+  _advanceCircle({ discipline, silver } = {}) {
+    if (!this._character || !discipline) return;
+    const mdisc = (this._model?.disciplines ?? []).find((d) => d.name === discipline);
+    if (!mdisc?.circleStatus?.eligible) return;
+    const next = mdisc.circleStatus.next;
+    const grants = (mdisc.nextGrant ?? []).map((name) => ({ name, rank: 1, circle: next }));
+    // Pay the (editable, negotiable) silver training fee from the purse across
+    // ANY coin denomination, making change (payFromPurse) — not silver-only. A fee
+    // beyond the coins is refused so nothing goes negative; 0/absent skips the
+    // wealth write. Gems are never spent (sell them first).
+    const fee = Number(silver);
+    let nextWealth = this._character.wealth;
+    if (fee > 0) {
+      const w = this._character.wealth ?? {};
+      const spent = payFromPurse(w.coins ?? {}, fee);
+      if (!spent.ok) return; // total coin value can't cover the fee
+      nextWealth = { ...w, coins: spent.coins };
+    }
+    const nextCharacter = {
+      ...this._character,
+      wealth: nextWealth,
+      disciplines: (this._character.disciplines ?? []).map((d) =>
+        d.name === discipline ? { ...d, circle: next, talents: [...(d.talents ?? []), ...grants] } : d,
+      ),
+    };
+    if (!this._canAffordRank(nextCharacter)) return; // the DT purchase must fit Available Legend
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    if (fee > 0) saveWealthEdits(nextWealth, this._characterId);
     this._markDirty();
     this._model = this._derive();
   }

@@ -136,6 +136,49 @@ test('deriveModel derives the Half-Magic roll: one option per attribute, Percept
   assert.equal(d.halfMagicRoll.karma.grants.length, 1); // Karma may be spent on the test
 });
 
+test('deriveModel exposes per-Circle option slots, learnable pools, and the next-Circle grant', () => {
+  memory.clear();
+  const model = deriveModel(baseCharacter(), rules); // Archer Circle 4, only Missile Weapon learned
+  const d = model.disciplines[0];
+  assert.equal(d.optionSlots.length, 4); // Circles 1-4
+  assert.ok(d.optionSlots.every((s) => s.open)); // no options learned yet
+  const c1 = d.optionSlots.find((s) => s.circle === 1);
+  assert.equal(c1.available, true);
+  assert.ok(c1.learnable.length > 0 && c1.learnable.every((o) => typeof o.name === 'string'));
+  assert.ok(d.nextGrant.length > 0); // Circle 5 grants at least one Discipline Talent
+});
+
+test('a learned Talent Option fills its Circle slot and is priced by that Circle', () => {
+  memory.clear();
+  const base = baseCharacter();
+  const before = deriveModel(base, rules).legend.available;
+  const learnable = deriveModel(base, rules).disciplines[0].optionSlots.find((s) => s.circle === 1).learnable[0].name;
+  const withOption = {
+    ...base,
+    disciplines: [{ ...base.disciplines[0], talents: [...base.disciplines[0].talents, { name: learnable, rank: 1, circle: 1 }] }],
+  };
+  const model = deriveModel(withOption, rules);
+  const c1 = model.disciplines[0].optionSlots.find((s) => s.circle === 1);
+  assert.equal(c1.open, false); // slot now filled
+  assert.equal(c1.filledBy, learnable);
+  assert.ok(model.legend.available < before); // the Rank-1 option cost was spent
+});
+
+test('deriveModel emits the advance quote (Legend for the granted DT + silver training fee) only when eligible', () => {
+  memory.clear();
+  assert.equal(deriveModel(baseCharacter(), rules).disciplines[0].advanceCost, null); // not eligible
+  const dts = ['Avoid Blow', 'Missile Weapon', 'Mystic Aim', 'Thread Weaving (Archer)', 'True Shot', 'Mystic Pursuit', 'Anticipate Blow', 'Long Shot'];
+  const eligible = {
+    ...baseCharacter(),
+    resources: { legend: { totalEarnt: 200000 } },
+    disciplines: [{ name: 'Archer', circle: 4, talents: dts.map((n, i) => ({ name: n, rank: 5, circle: i < 5 ? 1 : i === 5 ? 2 : i === 6 ? 3 : 4 })) }],
+  };
+  const d = deriveModel(eligible, rules).disciplines[0];
+  assert.equal(d.circleStatus.eligible, true);
+  assert.ok(d.advanceCost.legend > 0); // Spot Armor Flaw (Circle 5, Journeyman) Rank 1
+  assert.equal(d.advanceCost.trainingSilver, 800); // Circle 5 training fee, PG p.454
+});
+
 test('deriveModel attaches rank pricing: step up, refund, and affordability', () => {
   memory.clear();
   const model = deriveModel(baseCharacter(), rules);

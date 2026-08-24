@@ -10,6 +10,7 @@
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
 import { LitElement, html, css } from 'lit';
 import { ModalController } from './modal-controller.js';
+import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 
 export class EdDisciplines extends LitElement {
   static properties = {
@@ -17,6 +18,7 @@ export class EdDisciplines extends LitElement {
     editMode: { type: Boolean },
     _sel: { state: true },
     _modal: { state: true },
+    _trainSilver: { state: true },
   };
 
   static styles = css`
@@ -52,6 +54,25 @@ export class EdDisciplines extends LitElement {
     .cpill.edge.ready { background: var(--karma-bg); color: var(--karma); border-color: var(--karma); font-weight: 500; }
     .clnk { width: 14px; height: 2px; background: var(--border); flex: none; }
     .clnk.ready { background: var(--karma); }
+    button.cpill { font-family: inherit; cursor: pointer; }
+    button.cpill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--karma-bg); }
+    /* Confirm-modal actions (train to next Circle). */
+    .mactions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .mbtn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
+    .mbtn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+    .mbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+    .mbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Train-to-Circle cost rows: Legend and the editable silver fee, each checked. */
+    .cbox { background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 2px 12px; margin: 10px 0; }
+    .crow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .crow:last-child { border-bottom: none; }
+    .ck { font-size: var(--fs-small); }
+    .csub { font-size: var(--fs-fine); color: var(--muted); margin-top: 2px; }
+    .cchk { font-size: var(--fs-small); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .cchk.ok { color: var(--karma); }
+    .cchk.bad { color: light-dark(#c0392b, #e06557); }
+    .silin { width: 66px; font: inherit; font-size: var(--fs-small); text-align: center; color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; }
+    .mnote2 { display: flex; gap: 7px; align-items: flex-start; font-size: var(--fs-fine); color: var(--muted); line-height: 1.5; margin: 4px 0 12px; }
     /* Durability fits its label, Half-magic grows into the freed space, Artisan
        keeps its natural content width. */
     .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -71,6 +92,15 @@ export class EdDisciplines extends LitElement {
     .hmatt { display: inline-flex; align-items: center; gap: 8px; }
     .hmdef { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 1px 7px; }
     .hmstep { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+    /* "+ add option" affordance and the Talent-Option picker rows. */
+    .addopt { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--fs-small); color: var(--accent); background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 4px 10px; margin: 5px 0 3px; cursor: pointer; }
+    .addopt:hover { border-color: var(--accent); }
+    .addopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .addopt.muted { color: var(--muted); cursor: default; font-style: italic; }
+    .lopt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font: inherit; font-size: var(--fs-body); text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--fg); cursor: pointer; }
+    .lopt:hover { border-color: var(--accent); }
+    .lopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .lbrief { font-size: var(--fs-small); color: var(--muted); }
     .mcell .k { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .mcell .v { font-size: var(--fs-body); margin-top: 1px; }
     .card { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
@@ -674,8 +704,122 @@ export class EdDisciplines extends LitElement {
         ${at > 1 ? html`<span class="cpill edge" aria-hidden="true">${at - 1}</span><span class="clnk"></span>` : ''}
         <span class="cpill cur ${cs.consistent ? '' : 'warn'}" title=${curTitle}>Circle ${at}</span>
         <span class="clnk ${cs.eligible ? 'ready' : ''}"></span>
-        <span class="cpill edge ${cs.eligible ? 'ready' : ''}" title=${nextTitle}>${cs.eligible ? html`<span aria-hidden="true">↑</span>` : ''}${cs.next}</span>
+        ${cs.eligible
+          ? html`<button class="cpill edge ready" title=${`Ready to advance — train to Circle ${cs.next}`} aria-label=${`Train to Circle ${cs.next}`} @click=${(e) => this._trainClick(d, cs, e)}><span aria-hidden="true">↑</span>${cs.next}</button>`
+          : html`<span class="cpill edge" title=${nextTitle}>${cs.next}</span>`}
       </span>
+    `;
+  }
+
+  // Edit-mode "+ add option" affordance for a Circle group whose option slot is
+  // open (PLAN-LEARN-TALENTS §7.5). A Circle with no pool data (Warden+) shows a
+  // muted note instead of a button. Clicking opens the scoped picker modal.
+  _addOptionSlot(d, circle) {
+    const slot = (d.optionSlots ?? []).find((s) => s.circle === circle);
+    if (!slot || !slot.open) return '';
+    if (slot.available === false) {
+      return html`<div class="addopt muted" title="This Circle's Talent-option pool isn't in the rules data yet.">pool data not yet added</div>`;
+    }
+    return html`<button class="addopt" title="Fill this Circle's open Talent Option slot" @click=${(e) => this._openModal({ type: 'learn', discipline: d.name, circle, learnable: slot.learnable }, e)}>＋ add option</button>`;
+  }
+
+  // Confirm training to the next Circle (PLAN-LEARN-TALENTS §7; PG p.454). Shows
+  // the Legend to buy the granted Discipline Talent(s) checked against Available
+  // Legend, and an editable, negotiable silver training fee (seeded from the
+  // Circle Training Cost Table) checked against the purse. Train is blocked until
+  // both cover; on confirm it dispatches ed-advance-circle with the agreed fee.
+  // No test to learn — training is Legend + silver + time (the time/tutor are the
+  // GM's; only the money is tracked).
+  _advanceModal(m) {
+    const available = this.model?.legend?.available ?? null;
+    const coins = this.model?.wealth?.coins ?? {};
+    const purse = coinsSilver(coins);
+    const legendCost = m.cost?.legend ?? null;
+    const silver = Number(this._trainSilver) || 0;
+    const legendOk = legendCost == null ? true : available != null && available >= legendCost;
+    const silverOk = silver <= 0 ? true : payFromPurse(coins, silver).ok;
+    const canTrain = legendOk && silverOk;
+    const grantText = m.grants.length ? m.grants.join(', ') : 'no new talent (already known)';
+    const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
+    return html`
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Train to next Circle" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle">Train to Circle ${m.next}</span>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
+          </div>
+          <div class="mtext">Advancing ${m.discipline} to Circle ${m.next} grants ${grantText} at Rank 1, gains Circle ${m.next}'s Discipline abilities, and opens a new Talent Option slot to fill.</div>
+          <div class="cbox">
+            <div class="crow">
+              <div><div class="ck">Purchase ${grantText} · Rank 1</div><div class="csub">Available Legend ${available ?? '—'}</div></div>
+              <span class="cchk ${legendOk ? 'ok' : 'bad'}">${legendCost == null ? html`<span class="pend">—</span>` : html`${chk(legendOk)}${legendCost} Legend`}</span>
+            </div>
+            <div class="crow">
+              <div><div class="ck">Training fee · silver</div><div class="csub">Circle ${m.next} average — negotiable · purse ${Math.round(purse)} sp</div></div>
+              <span style="display:inline-flex;align-items:center;gap:6px">
+                <input class="silin" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
+                  @input=${(e) => (this._trainSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
+                <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
+              </span>
+            </div>
+          </div>
+          <div class="mnote2"><span aria-hidden="true">ⓘ</span><span>No test to learn — training takes 40 hours over three weeks with a Circle ${m.next}+ tutor. Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</span></div>
+          <div class="mactions">
+            <button class="mbtn" @click=${() => this._modalCtl.close()}>Cancel</button>
+            <button class="mbtn primary" autofocus ?disabled=${!canTrain} title=${canTrain ? '' : 'Not enough Legend or silver'} @click=${() => canTrain && this._advancePick(m.discipline, silver)}>Train</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _advancePick(discipline, silver) {
+    this._modalCtl.close();
+    this.dispatchEvent(new CustomEvent('ed-advance-circle', { detail: { discipline, silver }, bubbles: true, composed: true }));
+  }
+
+  // Clicking the green "ready to advance" pill trains up on the spot: enter edit
+  // mode if not already (so the advancement can persist), seed the editable
+  // training fee, then open the confirm.
+  _trainClick(d, cs, e) {
+    if (!this.editMode) this.dispatchEvent(new CustomEvent('ed-enter-edit', { bubbles: true, composed: true }));
+    this._trainSilver = d.advanceCost?.trainingSilver ?? 0;
+    this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [], cost: d.advanceCost ?? null }, e);
+  }
+
+  // Pick a talent for an open slot: close the picker (returns focus to the "+"),
+  // then dispatch up to ed-app to persist it (data up, engine acts).
+  _learnPick(discipline, name, circle) {
+    this._modalCtl.close();
+    this.dispatchEvent(new CustomEvent('ed-learn-talent', { detail: { discipline, name, circle }, bubbles: true, composed: true }));
+  }
+
+  // Scoped Talent-Option picker: the open slot's eligible pool, each with its
+  // terse effect. First option autofocused; Escape/backdrop/✕ close via the
+  // shared controller.
+  _learnModal(m) {
+    return html`
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Add a talent option" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle">Add a talent option · Circle ${m.circle}</span>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
+          </div>
+          <div class="mtext" style="color: var(--muted)">Pick a talent from ${m.discipline}'s eligible pool — it joins at Rank 1, priced at Circle ${m.circle}.</div>
+          <div class="hmopts">
+            ${m.learnable.length
+              ? m.learnable.map(
+                  (o, i) => html`
+                    <button class="lopt" ?autofocus=${i === 0} @click=${() => this._learnPick(m.discipline, o.name, m.circle)}>
+                      <span>${o.name}</span>
+                      ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
+                    </button>
+                  `,
+                )
+              : html`<div class="mtext" style="color: var(--muted)">No eligible talents left to add at this Circle.</div>`}
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -778,6 +922,7 @@ export class EdDisciplines extends LitElement {
                           ${(knacksByTalent.get(t.name) ?? []).map((k) => this._knackRow(k))}
                         `,
                       )}
+                      ${this.editMode ? this._addOptionSlot(d, circle) : ''}
                     </div>
                   </div>
                 `,
@@ -812,7 +957,11 @@ export class EdDisciplines extends LitElement {
               ? this._grantedModal(this._modal.ability)
               : this._modal.type === 'halfmagic'
                 ? this._halfMagicModal(this._modal.roll)
-                : this._talentModal(this._modal)
+                : this._modal.type === 'learn'
+                  ? this._learnModal(this._modal)
+                  : this._modal.type === 'advance'
+                    ? this._advanceModal(this._modal)
+                    : this._talentModal(this._modal)
         : ''}
     `;
   }

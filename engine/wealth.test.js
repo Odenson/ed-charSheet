@@ -1,7 +1,7 @@
 // engine/wealth.test.js — the coin→silver rates and derived wealth totals.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coinsSilver, gemsSilver, deriveWealth, GEM_RESALE, COIN_DENOMINATIONS, costSilver, spendAllocation, creditAllocation, allocForSilver } from './wealth.js';
+import { coinsSilver, gemsSilver, deriveWealth, GEM_RESALE, COIN_DENOMINATIONS, costSilver, spendAllocation, creditAllocation, allocForSilver, payFromPurse } from './wealth.js';
 
 test('coin denominations use the decimal + elemental silver values', () => {
   const rate = Object.fromEntries(COIN_DENOMINATIONS.map((c) => [c.key, c.rate]));
@@ -132,4 +132,35 @@ test('creditAllocation increments coins and merges/re-appends gems by identity',
     { name: 'Emerald', valueSilver: 100, qty: 5 },
     { name: 'Ruby', valueSilver: 500, qty: 1 },
   ]);
+});
+
+test('payFromPurse pays across denominations, not just silver', () => {
+  // 458 silver + 466 gold + 5 copper = 5123.5 sp; an 800 fee that silver alone can't cover.
+  const purse = { copper: 5, silver: 458, gold: 466 };
+  const r = payFromPurse(purse, 800);
+  assert.equal(r.ok, true);
+  assert.equal(coinsSilver(r.coins), coinsSilver(purse) - 800); // value drops by exactly the fee
+  assert.ok(coinsSilver(purse) >= 800 && purse.silver < 800); // total covers it, silver alone does not
+});
+
+test('payFromPurse breaks a larger coin and returns change', () => {
+  const r = payFromPurse({ gold: 1 }, 3); // 10 sp coin paying a 3 sp fee
+  assert.equal(r.ok, true);
+  assert.equal(coinsSilver(r.coins), 7); // 7 sp change kept in coin
+  assert.equal(r.coins.gold, 0);
+  assert.equal(r.coins.silver, 7);
+});
+
+test('payFromPurse spends smallest coins first, leaving big ones', () => {
+  const r = payFromPurse({ copper: 10, silver: 5, gold: 2 }, 4); // 4 sp: 10 copper (1) + 3 silver (3), gold kept
+  assert.equal(r.ok, true);
+  assert.deepEqual({ copper: r.coins.copper, silver: r.coins.silver, gold: r.coins.gold }, { copper: 0, silver: 2, gold: 2 });
+});
+
+test('payFromPurse refuses a fee beyond the total coin value', () => {
+  assert.deepEqual(payFromPurse({ silver: 10 }, 50), { ok: false });
+});
+
+test('payFromPurse of 0 is a no-op', () => {
+  assert.deepEqual(payFromPurse({ silver: 10 }, 0), { ok: true, coins: { silver: 10 } });
 });
