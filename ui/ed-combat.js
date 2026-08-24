@@ -423,6 +423,16 @@ export class EdCombat extends LitElement {
       }
       this._loadRolls();
     }
+    if (changed.has('model')) {
+      // Global blood-charm activation (session.activeCharms) is the engine-level
+      // source of truth — keep the local SCRATCH `_charmsOn` in sync so the chip
+      // state, the pool, and the persisted scratch all converge. The union read in
+      // `_activeCharmNames()` tolerates a stale local until this sync lands.
+      const global = this.model?.activeCharms;
+      if (Array.isArray(global) && JSON.stringify(global) !== JSON.stringify(this._charmsOn ?? [])) {
+        this._charmsOn = [...global];
+      }
+    }
   }
 
   // The cacheable selections (not mid-action state: pending/undo/modals stay
@@ -622,11 +632,22 @@ export class EdCombat extends LitElement {
   }
 
   // --- pools (pure engine; the view never computes game values) ---
+  // The globally activated blood-charms (session.activeCharms, folded by the
+  // engine so the effect is an effect regardless of tab). The Combat tab's local
+  // SCRATCH `_charmsOn` is the legacy per-tab toggle; the model `activeCharms`
+  // is the engine-level source when present (ed-app dispatches `ed-toggle-charm`).
+  // We read the union so a toggle in either layer is honoured during migration.
+  _activeCharmNames() {
+    const fromModel = this.model?.activeCharms ?? [];
+    const fromScratch = this._charmsOn ?? [];
+    return [...new Set([...fromModel, ...fromScratch])];
+  }
   _poolEffects() {
+    const charmNames = this._activeCharmNames();
     return collectCombatEffects({
       selectedOptions: this._opts ?? [],
       selectedSituations: this._sits ?? [],
-      selectedCharms: this._charmItems().filter((c) => (this._charmsOn ?? []).includes(c.name)),
+      selectedCharms: this._charmItems().filter((c) => charmNames.includes(c.name)),
       selectedWeaponEffects: this._selWeapon()?.effects ?? [],
       rules: this.model?.combatRules
         ? { options: this._allOptions(), situations: this.model.combatRules.situations ?? [] }
@@ -640,12 +661,17 @@ export class EdCombat extends LitElement {
   _attackPool() {
     const t = this._selTalent();
     const { attackEffects } = this._poolEffects();
-    const ap = attackPool({ talentStep: t?.step ?? null, effects: attackEffects });
+    const ap = attackPool({ talentStep: t?.step ?? null, effects: attackEffects, activeTalent: t?.name });
     // A selected TALENT may carry active test-modifier result mods (e.g. a
     // sustained spell's +4 Stealthy Stride) folded onto the model by the engine.
     // The combat attack builder gathers only combat-scoped effects, so merge the
     // talent's result mods here — same universal data the Disciplines tab uses.
-    const testMods = this._talentResultMods(t?.name);
+    // Activated blood-charms are already in `attackEffects` via `selectedCharms`
+    // above, so exclude them from the talent-merge to avoid double-counting the
+    // same +6 (global activeEffects + combat selectedCharms). Other active mods
+    // (sustained spells) still merge.
+    const charmSet = new Set(this._activeCharmNames());
+    const testMods = this._talentResultMods(t?.name).filter((m) => !charmSet.has(m.source));
     return testMods.length ? { ...ap, resultMods: [...ap.resultMods, ...testMods] } : ap;
   }
 
@@ -676,11 +702,13 @@ export class EdCombat extends LitElement {
   _damagePool() {
     const w = this._selWeapon();
     const { damageEffects } = this._poolEffects();
+    const t = this._selTalent();
     return damagePool({
       weaponDamageStep: w.damageStep ?? null,
       strengthStep: this.model?.combat?.strengthStep ?? null,
       effects: damageEffects,
       bonusSteps: this._damageBonus(),
+      activeTalent: t?.name,
     });
   }
   _dice(step) {
@@ -874,7 +902,22 @@ export class EdCombat extends LitElement {
     return parts.join('\n');
   }
   _toggle(section, name) {
-    const key = section === 'opts' ? '_opts' : section === 'sits' ? '_sits' : '_charmsOn';
+    // Blood-charms are global activation (engine-level, not tab-local). Dispatch to
+    // ed-app's session activeCharms so the effect is an effect regardless of tab
+    // (Combat attack/damage, Spells casting/effect, Disciplines badge when armed).
+    // Also keep the local SCRATCH `_charmsOn` in sync for backward compat while
+    // the model `activeCharms` is the source of truth when present.
+    if (section === 'charms') {
+      this.dispatchEvent(new CustomEvent('ed-toggle-charm', { detail: { name }, bubbles: true, composed: true }));
+      // Optimistic local toggle so the chip flips before the re-derive lands.
+      const cur = [...(this._charmsOn ?? [])];
+      const i = cur.indexOf(name);
+      if (i >= 0) cur.splice(i, 1);
+      else cur.push(name);
+      this._charmsOn = cur;
+      return;
+    }
+    const key = section === 'opts' ? '_opts' : '_sits';
     const list = [...(this[key] ?? [])];
     const i = list.indexOf(name);
     const turningOn = i < 0;
@@ -1005,10 +1048,11 @@ export class EdCombat extends LitElement {
   }
   _charmSection() {
     const charms = this._charmItems();
+    const active = this._activeCharmNames();
     const body = charms.length
-      ? this._chips(charms, this._charmsOn, 'charms', 'charm')
+      ? this._chips(charms, active, 'charms', 'charm')
       : html`<div class="empty">No blood charms equipped. Combat-relevant magic implants appear here when worn.</div>`;
-    return this._sec('Blood charms', 'charms', (this._charmsOn ?? []).length, body);
+    return this._sec('Blood charms', 'charms', active.length, body);
   }
 
   // Defence & Armour block (owner-agreed Combat-UI change): the derived Defence

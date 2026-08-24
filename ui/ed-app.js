@@ -18,6 +18,7 @@ import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
 import { clearCombatScratch } from './ed-combat.js';
+import { unequipSpentCharms } from './item-equip-state.js';
 import './ed-custom-item.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
@@ -393,6 +394,11 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-learn-skill', (e) => this._learnSkill(e.detail));
     // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
     this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
+    // Blood-charm activation (global, not tab-local — an effect is an effect): a
+    // view toggles an equipped charm's situational test-mods on/off; the engine
+    // folds them via session.activeCharms (store) so they reach any roll (Combat
+    // attack/damage, Spells casting/effect, Disciplines talent badge) while armed.
+    this.addEventListener('ed-toggle-charm', (e) => this._toggleCharm(e.detail?.name));
     // A view asked to enter edit mode (e.g. clicking the green "ready to advance"
     // Circle pill from the read view, to train up on the spot).
     this.addEventListener('ed-enter-edit', () => { this._editMode = true; });
@@ -480,6 +486,7 @@ export class EdApp extends LitElement {
       this._pendingUse = null;
       this._knockedDown = false;
       this._activeSpells = []; // active self-cast spells (session-only, 6b)
+      this._activeCharms = []; // activated blood-charms (session-only, not persisted — equipped gives always implant, activation gives situational test mods globally)
       this._round = 0;
       this._dayReset = null;
       this._baseSha = base;
@@ -538,6 +545,12 @@ export class EdApp extends LitElement {
     const _charId = this._characterId;
     const _beforeForLog = [...beforeItems];
     this._character = { ...this._character, items };
+    // Prune any activated charm that is no longer equipped (stored/removed).
+    if (this._activeCharms?.length) {
+      const stillEquipped = new Set(items.filter((it) => it.equipped !== false).map((it) => it.name));
+      const pruned = this._activeCharms.filter((n) => stillEquipped.has(n));
+      if (pruned.length !== this._activeCharms.length) this._activeCharms = pruned;
+    }
     saveItemEdits(items, this._characterId);
     this._markDirty();
     this._model = this._derive();
@@ -627,13 +640,30 @@ export class EdApp extends LitElement {
   // The round start/end signal (PLAN-SPELLS §6.1 / 6b). Session-only, never
   // persisted — like knockdown. Each Initiative roll ticks the active self-cast
   // set: decrement remaining rounds and drop the ones that expire, then re-derive
-  // so the fold and the Active-effects card update.
+  // so the fold and the Active-effects card update. It also spends any activated
+  // blood-charms (their situational test-mods were one-shot): clear the activation
+  // set and unequip the spent charms (equipped:false persists, re-equip via
+  // Equipment after healing the Blood Magic Damage), mirroring combat's spend.
   _advanceRound() {
     this._round = (this._round ?? 0) + 1;
+    let needsDerive = false;
     if (this._activeSpells?.length) {
       this._activeSpells = tickActiveSpells(this._activeSpells);
-      this._model = this._derive();
+      needsDerive = true;
     }
+    if (this._activeCharms?.length) {
+      const spent = [...this._activeCharms];
+      this._activeCharms = [];
+      // Spend = unequip the armed charms (input write, not a game-value compute).
+      if (this._character && spent.length) {
+        const items = unequipSpentCharms(this._character.items ?? [], spent);
+        this._character = { ...this._character, items };
+        saveItemEdits(items, this._characterId);
+        this._markDirty();
+      }
+      needsDerive = true;
+    }
+    if (needsDerive) this._model = this._derive();
   }
 
   // A self-cast sustained spell landed: build its active record (sustained
@@ -658,6 +688,21 @@ export class EdApp extends LitElement {
       if (t) return t.rank ?? 0;
     }
     return 0;
+  }
+
+  // Session-only blood-charm activation (not persisted — like knockdown/activeSpells):
+  // an equipped charm's situational effects are armed while in this set. Equipped-
+  // but-inactive contributes nothing beyond its always implant; activated contributes
+  // its test-mods globally via store's activeCharmEffects fold. Toggled via Combat
+  // (and in future Spells) chips; spent (cleared + unequipped) at next Initiative.
+  _toggleCharm(name) {
+    if (!name) return;
+    // Must be equipped — a stored charm cannot be armed (same rule as combat).
+    const equipped = (this._character?.items ?? []).some((it) => it.name === name && it.equipped !== false);
+    if (!equipped) return;
+    const cur = this._activeCharms ?? [];
+    this._activeCharms = cur.includes(name) ? cur.filter((n) => n !== name) : [...cur, name];
+    this._model = this._derive();
   }
 
   _editWealth(wealth) {
@@ -718,6 +763,11 @@ export class EdApp extends LitElement {
     const afterCoins = wealth?.coins ?? {};
     const charId = this._characterId;
     this._character = { ...this._character, items, wealth };
+    if (this._activeCharms?.length) {
+      const stillEquipped = new Set(items.filter((it) => it.equipped !== false).map((it) => it.name));
+      const pruned = this._activeCharms.filter((n) => stillEquipped.has(n));
+      if (pruned.length !== this._activeCharms.length) this._activeCharms = pruned;
+    }
     saveTradeEdits({ items, wealth }, this._characterId);
     this._markDirty();
     this._model = this._derive();
@@ -737,12 +787,16 @@ export class EdApp extends LitElement {
   }
 
   // The single derive call site for the app layer: fold the session-only
-  // knocked-down flag into the pure model derivation (it is never stored; the
-  // engine stays pure and DOM-free — the flag is just another input).
+  // knocked-down flag + active-charms into the pure model derivation (they are
+  // never stored; the engine stays pure and DOM-free — the flags are just
+  // another input). activeCharms is the engine-level activation record for
+  // blood-charms' situational test-mods (equipped gives always implant, activation
+  // gives the situational buff globally — no tab boundary).
   _derive() {
     return deriveModel(this._character, this._rules, {
       knockedDown: this._knockedDown,
       activeSpells: this._activeSpells ?? [],
+      activeCharms: this._activeCharms ?? [],
     });
   }
 
@@ -828,7 +882,8 @@ export class EdApp extends LitElement {
   // Decision H: finalize clears the armed healing aid directly (never via
   // `_editHealth`'s used→0 transition), ends the session knockdown, clears the
   // character's combat scratch (armed options, situations, charms, aim/target —
-  // weapon/talent picks preserved, decisions D/G), then resets recoveries to 0.
+  // weapon/talent picks preserved, decisions D/G) and any globally activated
+  // blood-charms, then resets recoveries to 0.
   _dayResetFinalize() {
     if (!this._character) return;
     const beforeHealth = this._dayResetBeforeHealth ?? { ...(this._character.resources?.health ?? {}) };
@@ -836,6 +891,7 @@ export class EdApp extends LitElement {
     const hadKnockdown = !!this._knockedDown;
     this._pendingUse = null;
     this._knockedDown = false;
+    this._activeCharms = [];
     const combatEl = this.renderRoot?.querySelector('ed-combat');
     clearCombatScratch(this._characterId, combatEl);
     const cur = this._character.resources?.health ?? {};

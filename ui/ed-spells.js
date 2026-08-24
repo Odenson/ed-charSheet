@@ -921,6 +921,28 @@ export class EdSpells extends LitElement {
     });
   }
 
+  // Activated blood-charms' result mods for a test name, read from the
+  // engine-level activeEffects (session.activeCharms folded globally via store).
+  // Only situational effects whose charm is in `model.activeCharms` count — the
+  // panel lists all equipped situational for display, but the roll only sees an
+  // effect while its charm is armed (effect is an effect, no tab boundary).
+  _charmResultMods(testName) {
+    const activeSet = new Set(this.model?.activeCharms ?? []);
+    const out = [];
+    for (const e of this.model?.activeEffects ?? []) {
+      if (e.type !== 'test-modifier' || e.target?.domain !== 'test' || e.target?.name !== testName) continue;
+      if ((e.measure ?? 'result') !== 'result') continue;
+      const v = e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0;
+      if (!v) continue;
+      // Only include situational effects whose charm is currently activated.
+      // Always effects already reach the Spellcasting roll via talent resultMods.
+      if (e.origin?.kind !== 'item') continue;
+      if (!activeSet.has(e.origin?.name)) continue;
+      out.push({ label: e.summary ?? e.origin?.name ?? testName, value: v });
+    }
+    return out;
+  }
+
   _rollCast(plan) {
     if (this._prog.castDone) return; // already cast
     if (this._prog.threadsWoven < plan.threadsToWeave) return; // required threads not forged
@@ -937,8 +959,13 @@ export class EdSpells extends LitElement {
     const disc = this._casterDisc(plan.discipline);
     const sc = disc?.talents?.find((t) => t.name === 'Spellcasting');
     const who = this._subject === 'self' ? ' (on self)' : '';
+    // Spellcasting result mods ride on the talent (store's global fold includes
+    // an activated Desperate Spell there), so the Spells-tab cast sees the same
+    // +6 as a Combat Spellcasting attack — no tab boundary.
+    const mods = (sc?.resultMods ?? []).map((m) => ({ label: m.source ?? 'Spellcasting', value: m.value }));
     this._dispatchRoll(`Cast — ${plan.name}${who}`, plan.castingStep, this._karmaCtx(sc?.karma), {
       difficulty: { value: Number(target), win: 'Success', lose: 'Miss' },
+      ...(mods.length ? { mods } : {}),
     });
   }
 
@@ -950,11 +977,17 @@ export class EdSpells extends LitElement {
 
   // The Effect step resolves the cast and un-greys Weave + Cast for the next one
   // (owner rule). A step effect rolls the dice; a static/none effect just resets.
+  // An activated Desperate Spell's +6 to Effect (result) is a global charm mod —
+  // it rides as a flat result mod on this roll via the same engine fold that
+  // Combat's damage pool uses (effect is an effect, no tab boundary).
   _doEffect(plan) {
     if (!this._prog.castDone) return; // Effect waits for a completed cast
     if (plan.effect.kind === 'step' && plan.effect.step != null) {
       this._pendingStep = 'effect';
-      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan), null, {});
+      const mods = this._charmResultMods('Effect');
+      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan), null, {
+        ...(mods.length ? { mods } : {}),
+      });
     } else {
       const total = plan.effect.kind === 'static' ? plan.effect.value : null;
       this._prog = { ...this._blankProg(),

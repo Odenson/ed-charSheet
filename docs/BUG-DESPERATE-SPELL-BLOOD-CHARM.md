@@ -326,6 +326,26 @@ Per `CLAUDE.md`:
 
 ---
 
+## Implementation (2026-08-24) — Unified engine, no tab boundary
+
+Per owner decision: **an effect is an effect regardless of dimension** (item/spell/
+condition) and **regardless of tab**. The engine records it; the view never does.
+Blood-charms are the one gated class: `equipped` gives its `condition: "always"`
+implant (`characteristic-modifier` Death/Unconsciousness −3) via the normal always
+fold; its `condition: "situational"` `test-modifier` (`+6 Spellcasting` / `+6
+Effect`) folds **only while the charm is in `session.activeCharms`** (global,
+session-only, like `activeSpells`). `store.js:abilityTestMods` now gates
+situational test-mods behind `autoApplies(e) || activeCharmSet.has(origin.name)`,
+so the Disciplines `+6` badge appears only while armed; `engine/combat.js`
+`appliesToTest` maps `Effect → damage` and named-ability via
+`ctx.activeTalent` (`Spellcasting` → attack pool only); `ed-app` holds
+`_activeCharms`, toggled via `ed-toggle-charm` (Combat chips dispatch there),
+spent (cleared + `equipped:false` persisted) on any `Initiative` roll
+(`_advanceRound`) and on New-Day finalize; `ed-combat` reads
+`model.activeCharms` (union with legacy `_charmsOn` + deduped merge) and
+`ed-spells` reads the same global for `Cast` (talent `resultMods`) and `Effect`
+(`activeEffects` filtered to `activeCharms`). No taxonomy/schema change — Tier 3.
+
 ## Related Documentation
 
 - `docs/EFFECT-TAXONOMY.md` — Effect vocabulary (v4)

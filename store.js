@@ -31,6 +31,7 @@ import {
   karmaUse,
   talentKarmaUse,
   collapseByTarget,
+  autoApplies,
 } from './engine/characteristics.js';
 import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
@@ -1378,13 +1379,21 @@ export function deriveModel(character, rules, session = {}) {
   // result mod the roll carries. Mirrors how the Combat tab folds resultMods into
   // attack/damage. `rollMods` carries EVERY applied test-modifier (step, result,
   // …), measure-tagged, so the UI badges them uniformly regardless of measure.
+  // Blood-charms' on-activation test-mods are situational: they are in
+  // `activeEffects` (so the panel lists them) but they must not badge a talent
+  // when merely equipped. They apply only while `session.activeCharms` contains
+  // the charm's name — the engine-level activation record (effect is an effect
+  // regardless of tab, but this class of item gates its test-mods behind activation
+  // while its always implant characteristic-mods apply when equipped).
+  const activeCharmSet = new Set(session?.activeCharms ?? []);
   const abilityTestMods = (name) => {
     const hits = activeEffects.filter(
       (e) =>
         e.type === 'test-modifier' &&
         e.target?.name === name &&
         (e.target?.domain === 'test' || e.target?.domain === 'ability') &&
-        (e.operation === 'add' || e.operation === 'subtract'),
+        (e.operation === 'add' || e.operation === 'subtract') &&
+        (autoApplies(e) || (activeCharmSet.has(e.origin?.name) && !autoApplies(e))),
     );
     const signed = (e) => (e.operation === 'subtract' ? -1 : 1) * (Number(e.value) || 0);
     const rollMods = hits.map((e) => ({
@@ -1500,8 +1509,15 @@ export function deriveModel(character, rules, session = {}) {
     // Every active effect for the Active Effects panel: the always-on fold
     // (race/discipline/equipped items, each tagged with its origin) plus any
     // live condition effects (Knocked Down, and the encumbrance stage's). All
-    // derived, never stored.
+    // derived, never stored. Activated blood-charms' situational effects are
+    // already folded into `activeEffects` above when session.activeCharms is set,
+    // so the panel also surfaces a one-shot charm while armed.
     activeEffects: [...activeEffects, ...conditionEffects, ...encumbranceConditionEffects],
+    // Session-only activated blood-charms (names). The view renders chips from
+    // this (not local SCRATCH) so an activation is an engine-level fact, not a
+    // per-tab toggle — a Spellcasting/Effect bonus armed in Combat also reaches a
+    // Spells-tab roll and a Disciplines talent badge while active.
+    activeCharms: session?.activeCharms ?? [],
     // The enabled homebrew rules (rules/homebrew.json — docs/HOMEBREW-RULES.md),
     // passed through as pure data for the footer pill + modal: { id, name,
     // overrides, summary, formula }. Nothing derived; the rule payloads are
