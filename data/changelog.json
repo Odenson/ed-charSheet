@@ -4,6 +4,21 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.21.1",
+      "date": "2026-08-24",
+      "summary": "Blood charms now correctly require activation and grant Step bonuses, with global effect handling across all tabs.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "Blood charms that grant test bonuses (Desperate Spell, Desperate Blow, and all others) no longer incorrectly showed their +N on the Disciplines tab when merely equipped — the characteristic implant (Death/Unconsciousness −X) still applies when equipped, but the situational test bonus now only applies while the charm is armed. Arming is now an engine-level activation (not per-tab), so a charm armed in Combat also boosts a Spells-tab Spellcasting or Effect roll and vice versa, and the same +N is correctly removed after the next Initiative roll or New Day. Desperate Spell's +6 Spellcasting now correctly boosts the attack pool when Spellcasting is the active talent and its +6 Effect boosts the damage/Effect pool."
+        },
+        {
+          "type": "changed",
+          "text": "All blood-charm test bonuses now grant Steps (changing the dice) rather than flat Result bonuses (changing the total) — the 12 affected charms: Astral-Sensitive Eye (Astral Sensing +1, Astral Sight +1), Death Cheat (Recovery +6), Desperate Blow (Attack +6, Damage +6), Desperate Spell (Spellcasting +6, Effect +6), Horn Needle (Toughness +3), Initiative Booster (Initiative +1), Strength Booster (Strength +1), Targeting Eye (Attack +2), and Wound Balance (Knockdown +3)."
+        }
+      ]
+    },
+    {
       "version": "1.21.0",
       "date": "2026-08-24",
       "summary": "Learn a new skill from the catalog at Rank 1 with Legend and silver costs. Skill picker has live search and attribute/tier pills.",
