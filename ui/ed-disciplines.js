@@ -19,6 +19,8 @@ export class EdDisciplines extends LitElement {
     _sel: { state: true },
     _modal: { state: true },
     _trainSilver: { state: true },
+    _skillSilver: { state: true },
+    _skillSearch: { state: true },
   };
 
   static styles = css`
@@ -101,6 +103,10 @@ export class EdDisciplines extends LitElement {
     .lopt:hover { border-color: var(--accent); }
     .lopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
     .lbrief { font-size: var(--fs-small); color: var(--muted); }
+    .searchin { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin: 6px 0; box-sizing: border-box; }
+    .searchin:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+    .pill { font-size: var(--fs-fine); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
+    .pill.attr { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
     .mcell .k { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .mcell .v { font-size: var(--fs-body); margin-top: 1px; }
     .card { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
@@ -415,8 +421,26 @@ export class EdDisciplines extends LitElement {
             ${(byParent.get(s.name) ?? []).map((k) => this._knackRow(k))}
           `,
         )}
+        ${this.editMode ? this._addSkillSlot() : ''}
       </div>
     `;
+  }
+
+  // Edit-mode "+ add skill" affordance (PLAN-LEARN-SKILLS Q4). Shows whenever
+  // there is at least one learnable catalog skill; opens the scoped picker.
+  _addSkillSlot() {
+    const opts = this.model?.skillOptions ?? [];
+    if (!opts.length) return html`<div class="addopt muted">No skills left to learn</div>`;
+    return html`<button class="addopt" title="Learn a new skill at Rank 1" @click=${(e) => this._openSkillLearnModal(e)}>＋ add skill</button>`;
+  }
+
+  _openSkillLearnModal(e) {
+    const opts = this.model?.skillOptions ?? [];
+    if (!opts.length) return;
+    // Seed fee from costs.skillTraining[1] (data), or 10 sp if costs missing (fallback).
+    this._skillSilver = opts[0]?.trainingSilver != null ? opts[0].trainingSilver : 10;
+    this._skillSearch = '';
+    this._openModal({ type: 'learn-skill', options: opts }, e);
   }
 
   // One indented child row for a knack nested under the skill/talent it derives from.
@@ -823,6 +847,73 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // Pick a skill: close the picker (returns focus to the "+"), then dispatch up.
+  _learnSkillPick(name) {
+    const silver = Number(this._skillSilver) || 0;
+    this._modalCtl.close();
+    this.dispatchEvent(new CustomEvent('ed-learn-skill', { detail: { name, silver }, bubbles: true, composed: true }));
+  }
+
+  // Skill picker + editable fee (PLAN-LEARN-SKILLS §7.5). Seeded from
+  // costs.skillTraining[1] (data, not code), negotiable like Circle training.
+  // Adds search + attribute pills for the long catalog.
+  _learnSkillModal(m) {
+    const opts = m.options ?? [];
+    const available = this.model?.legend?.available ?? null;
+    const coins = this.model?.wealth?.coins ?? {};
+    const purse = coinsSilver(coins);
+    const silver = Number(this._skillSilver) || 0;
+    const silverOk = silver <= 0 ? true : payFromPurse(coins, silver).ok;
+    const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
+    const q = (this._skillSearch ?? '').trim().toLowerCase();
+    const filtered = q
+      ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.attribute ?? '').toLowerCase().includes(q) || (o.brief ?? '').toLowerCase().includes(q) || o.tier.toLowerCase().includes(q))
+      : opts;
+    return html`
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Learn a new skill" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle">Learn a new skill · Rank 1</span>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
+          </div>
+          <div class="mtext" style="color: var(--muted)">Pick a skill from the catalog — it joins at Rank 1, priced by its tier (${opts[0]?.tier ?? 'Novice'} etc.). Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</div>
+          <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._skillSearch ?? ''} aria-label="Search skills" autofocus
+            @input=${(e) => (this._skillSearch = e.target.value)} />
+          <div class="cbox" style="margin: 4px 0 8px">
+            <div class="crow">
+              <div><div class="ck">Training fee · silver</div><div class="csub">Average — negotiable · purse ${Math.round(purse)} sp</div></div>
+              <span style="display:inline-flex;align-items:center;gap:6px">
+                <input class="silin" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
+                  @input=${(e) => (this._skillSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
+                <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
+              </span>
+            </div>
+          </div>
+          <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} skills${q ? html` matching “${q}”` : ''}</div>
+          <div class="hmopts">
+            ${filtered.length
+              ? filtered.map((o, i) => {
+                  const legendOk = o.rank1Cost == null ? true : available == null ? true : available >= o.rank1Cost;
+                  const canPick = legendOk && silverOk;
+                  const costLabel = o.rank1Cost == null ? '—' : `${o.rank1Cost} Legend`;
+                  const tierLabel = o.tier === 'Journeyman' ? 'Journeyman' : 'Novice';
+                  return html`
+                    <button class="lopt" ?disabled=${!canPick}
+                      title=${canPick ? `${o.name} · ${tierLabel} · ${o.attribute ?? ''} · ${costLabel}` : (!legendOk ? 'Not enough Available Legend' : !silverOk ? 'Not enough silver' : '')}
+                      @click=${() => canPick && this._learnSkillPick(o.name)}>
+                      <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}<span class="pill">${tierLabel}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
+                      <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costLabel}</span>
+                    </button>
+                  `;
+                })
+              : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
+          </div>
+          <div class="mnote2" style="margin-top:8px"><span aria-hidden="true">ⓘ</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>
+        </div>
+      </div>
+    `;
+  }
+
   // Group a discipline's talents by the Circle they were learned at, ascending
   // (a talent with no recorded Circle sorts last, under a "—" badge). Returns
   // [circle, talents[]] entries for the left-spine render.
@@ -844,7 +935,8 @@ export class EdDisciplines extends LitElement {
     const list = this.model?.disciplines ?? [];
     if (!list.length) return html`<p>No disciplines.</p>`;
     const skills = this.model?.skills ?? [];
-    const showSkills = skills.length > 0 && this._sel === list.length;
+    const hasSkillsTab = skills.length > 0 || this.editMode;
+    const showSkills = hasSkillsTab && this._sel === list.length;
     const d = list[Math.min(this._sel, list.length - 1)];
     // Knacks governed by a talent render beneath that talent's row (skill-governed
     // knacks already nest under their skill on the Skills tab).
@@ -867,7 +959,7 @@ export class EdDisciplines extends LitElement {
           ${list.map(
             (x, i) => html`<button aria-pressed=${!showSkills && i === this._sel} @click=${() => (this._sel = i)}>${x.name}</button>`,
           )}
-          ${skills.length
+          ${hasSkillsTab
             ? html`<button aria-pressed=${showSkills} @click=${() => (this._sel = list.length)}>Skills</button>`
             : ''}
         </div>
@@ -959,9 +1051,11 @@ export class EdDisciplines extends LitElement {
                 ? this._halfMagicModal(this._modal.roll)
                 : this._modal.type === 'learn'
                   ? this._learnModal(this._modal)
-                  : this._modal.type === 'advance'
-                    ? this._advanceModal(this._modal)
-                    : this._talentModal(this._modal)
+                  : this._modal.type === 'learn-skill'
+                    ? this._learnSkillModal(this._modal)
+                    : this._modal.type === 'advance'
+                      ? this._advanceModal(this._modal)
+                      : this._talentModal(this._modal)
         : ''}
     `;
   }

@@ -309,3 +309,90 @@ test('forSave stamps ed-character/2 and strips talent tier (serializer-side guar
   assert.equal(character.schema, 'ed-character/1'); // pure: input never mutated
   assert.ok('tier' in character.disciplines[0].talents[0]); // …and its tier is intact
 });
+
+test('learn a new skill at Rank 1: appends {name, rank:1, tier} and deducts Legend (PLAN-LEARN-SKILLS §7.6)', () => {
+  memory.clear();
+  const base = baseCharacter();
+  const before = deriveModel(base, rules).legend.available; // 8100 (after Archer costs)
+  const newSkill = 'Alchemy'; // Novice, Rank-1 = 200 Legend
+  const withNewSkill = {
+    ...base,
+    skills: [...base.skills, { name: newSkill, rank: 1, tier: 'Novice' }],
+  };
+  const model = deriveModel(withNewSkill, rules);
+  const newSkillRow = model.skills.find((s) => s.name === newSkill);
+  assert.ok(newSkillRow, 'learned skill appears in model.skills');
+  assert.equal(newSkillRow.rank, 1);
+  assert.equal(newSkillRow.tier, 'Novice');
+  assert.equal(newSkillRow.pricing.increaseCost, 300); // Rank 1→2 = Rank 2 step in Novice table
+  assert.equal(model.legend.available, before - 200); // Rank 1 Novice = 200 Legend
+});
+
+test('learn a new skill: Journeyman tier costs 300 Legend at Rank 1', () => {
+  memory.clear();
+  const base = baseCharacter();
+  const before = deriveModel(base, rules).legend.available;
+  const newSkill = 'Aggressive Maneuver'; // Journeyman, Rank-1 = 300 Legend
+  const withNewSkill = {
+    ...base,
+    skills: [...base.skills, { name: newSkill, rank: 1, tier: 'Journeyman' }],
+  };
+  const model = deriveModel(withNewSkill, rules);
+  const newSkillRow = model.skills.find((s) => s.name === newSkill);
+  assert.equal(newSkillRow.tier, 'Journeyman');
+  assert.equal(model.legend.available, before - 300); // Rank 1 Journeyman = 300 Legend
+});
+
+test('learn a new skill persists and round-trips through applyEdits + forSave', () => {
+  memory.clear();
+  const base = baseCharacter();
+  const newSkill = 'Alchemy';
+  const edits = saveAdvancementEdits(
+    {
+      disciplines: base.disciplines,
+      skills: [...base.skills, { name: newSkill, rank: 1, tier: 'Novice' }],
+    },
+    'c5',
+  );
+  const next = applyEdits(base, edits);
+  assert.equal(next.skills.length, 2);
+  assert.deepEqual(next.skills[1], { name: newSkill, rank: 1, tier: 'Novice' });
+  const saved = forSave(next);
+  assert.equal(saved.skills.length, 2);
+  assert.deepEqual(saved.skills[1], { name: newSkill, rank: 1, tier: 'Novice' }); // tier stays in skills
+});
+
+test('deriveModel skillOptions excludes already-known skill names', () => {
+  memory.clear();
+  const base = baseCharacter(); // has Tracking
+  const model = deriveModel(base, rules);
+  const opts = model.skillOptions ?? [];
+  assert.ok(opts.length > 0, 'skillOptions populated');
+  assert.equal(opts.some((o) => o.name === 'Tracking'), false, 'Tracking excluded from learnable');
+  assert.ok(opts.some((o) => o.name === 'Alchemy'), true, 'Alchemy available to learn');
+});
+
+test('deriveModel skillOptions includes Rank-1 pricing preview from costs.skillRank[1]', () => {
+  memory.clear();
+  const model = deriveModel(baseCharacter(), rules);
+  const opts = model.skillOptions ?? [];
+  const alch = opts.find((o) => o.name === 'Alchemy');
+  assert.ok(alch);
+  assert.equal(alch.tier, 'Novice');
+  assert.equal(alch.tierNumeric, 1);
+  assert.equal(alch.rank1Cost, 200); // Novice Rank 1
+  assert.equal(alch.trainingSilver, 10); // 1 week × 10 sp
+  assert.ok(alch.attribute, 'Perception'); // attribute present
+  assert.ok(alch.brief); // brief/summary present
+});
+
+test('deriveModel skillOptions: Journeyman skills show tier=Journeyman and rank1Cost=300', () => {
+  memory.clear();
+  const model = deriveModel(baseCharacter(), rules);
+  const opts = model.skillOptions ?? [];
+  const aggr = opts.find((o) => o.name === 'Aggressive Maneuver');
+  assert.ok(aggr);
+  assert.equal(aggr.tier, 'Journeyman');
+  assert.equal(aggr.tierNumeric, 2);
+  assert.equal(aggr.rank1Cost, 300);
+});

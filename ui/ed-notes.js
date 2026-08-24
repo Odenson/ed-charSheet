@@ -1,12 +1,13 @@
 // ui/ed-notes.js — the Notes tab (PLAN-NOTES-TAB): four surfaces behind a
-// segmented control — hand-written Notes (info cards), the per-character Roll
-// Log (device-local, decisions #2/#5), the Legend-earned log (with the derived
-// running total, decisions #1/#6), and a dated History timeline (decision #4).
+// segmented control — hand-written Notes (info cards), the per-character Log
+// (device-local, decisions #2/#5 — rolls plus app actions like advancement),
+// the Legend-earned log (with the derived running total, decisions #1/#6), and a
+// dated History timeline (decision #4).
 //
 // Architecture (Tier-1 golden rule): the view never mutates state or persists
 // character data itself. Notes / History / Legend-earned edits dispatch
 // `ed-edit-notes` / `ed-edit-history` / `ed-edit-legend-earned` up to ed-app,
-// which applies the inputs, persists the overlay, and re-derives. The Roll Log
+// which applies the inputs, persists the overlay, and re-derives. The Log
 // is the deliberate exception — it is high-churn, per-character localStorage
 // (decision #2), read/written here directly through store-rolllog.js; it never
 // rides the overlay, an export, or a GitHub save.
@@ -26,7 +27,7 @@ const SEGS = [
   { id: 'notes', label: 'Notes', icon: '▤' },
   { id: 'history', label: 'History', icon: '◷' },
   { id: 'legend', label: 'Legend', icon: '✧' },
-  { id: 'rolls', label: 'Roll Log', icon: '⬡' },
+  { id: 'rolls', label: 'Log', icon: '⬡' },
 ];
 
 export class EdNotes extends LitElement {
@@ -92,7 +93,7 @@ export class EdNotes extends LitElement {
     .cards.read .ncard { position: relative; aspect-ratio: 1 / 1; overflow: hidden; cursor: pointer; }
     .cards.read .ncard::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2.25rem; background: linear-gradient(rgba(0, 0, 0, 0), var(--bg-card)); pointer-events: none; }
 
-    /* Roll Log: newest-first rows (store order). */
+    /* Log: newest-first rows (store order) — rolls plus app actions. */
     .rctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-small); color: var(--muted); }
     .rctl select { font: inherit; font-size: var(--fs-small); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
     .clearbtn { font: inherit; font-size: var(--fs-small); padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
@@ -214,7 +215,7 @@ export class EdNotes extends LitElement {
     return [...this._history()].sort((a, b) => dir * String(a.date ?? '').localeCompare(String(b.date ?? '')));
   }
 
-  // --- Roll Log (device-local, decision #2) ---
+  // --- Log (device-local, decision #2) — rolls plus app actions ---
   _loadRolls() {
     if (!this.characterId) { this._rolls = []; this._rollMax = DEFAULT_MAX; return; }
     const { max, entries } = loadRollLog(this.characterId);
@@ -328,7 +329,7 @@ export class EdNotes extends LitElement {
       case 'note': return 'Delete this note? It can\'t be undone.';
       case 'history': return 'Delete this history entry? It can\'t be undone.';
       case 'legend': return 'Delete this Legend-earned entry? The running total adjusts.';
-      case 'rolls': return 'Clear the entire Roll Log for this character?';
+      case 'rolls': return 'Clear the entire Log for this character?';
       case 'discard-history': return 'Discard this event? Unsaved changes will be lost.';
       case 'discard-note': return 'Discard this note? Unsaved changes will be lost.';
       default: return '';
@@ -336,7 +337,7 @@ export class EdNotes extends LitElement {
   }
   _confirmHeading() {
     switch (this._confirm?.kind) {
-      case 'rolls': return 'Clear the Roll Log?';
+      case 'rolls': return 'Clear the Log?';
       case 'discard-history':
       case 'discard-note': return 'Discard unsaved changes?';
       default: return 'Delete this entry?';
@@ -484,10 +485,10 @@ export class EdNotes extends LitElement {
   _rollsView() {
     return html`
       <div class="headline">
-        <span class="hbig">Roll Log</span>
+        <span class="hbig">Log</span>
         <span class="rctl">
           <label for="n-max">keep last</label>
-          <select id="n-max" .value=${this._rollMax} @change=${this._setMax} aria-label="How many rolls to keep">
+          <select id="n-max" .value=${this._rollMax} @change=${this._setMax} aria-label="How many entries to keep">
             ${MAX_OPTIONS.map((m) => html`<option value=${m}>${m}</option>`)}
           </select>
           <button class="clearbtn" @click=${() => this._requestConfirm('rolls')} ?disabled=${!this._rolls.length}>Clear</button>
@@ -499,11 +500,31 @@ export class EdNotes extends LitElement {
               ${this._rolls.map((r) => this._rollRow(r))}
             </div>
           `
-        : html`<div class="empty">No rolls logged yet — roll a test anywhere in the sheet and it lands here.<br />The Roll Log lives in this browser only.</div>`}
+        : html`<div class="empty">No entries yet — rolls and app actions (like training) land here.<br />The Log lives in this browser only.</div>`}
     `;
   }
 
   _rollRow(r) {
+    // System / advancement entries — app actions like training, also plain
+    // but with optional Legend + silver chips so the spend is visible.
+    if (r.kind === 'system' || r.kind === 'log' || r.kind === 'advancement') {
+      return html`
+        <div class="rrow">
+          <div class="rtop">
+            <span class="rlbl">${r.label ?? 'System'}</span>
+            ${r.at ? html`<span class="ttime">${this._rel(r.at)}</span>` : ''}
+          </div>
+          ${r.detail ? html`<div class="rsub"><span style="font-size: var(--fs-small); color: var(--muted);">${r.detail}</span></div>` : ''}
+          <div class="rsub">
+            ${r.legendCost != null ? html`<span class="chip mod">${r.legendCost} Legend</span>` : ''}
+            ${r.silverFee != null && r.silverFee > 0 ? html`<span class="chip">${r.silverFee} sp training fee</span>` : ''}
+            ${r.silverFee === 0 ? html`<span class="chip">no silver fee</span>` : ''}
+            ${r.coinDelta ? html`<span class="chip" title="Net coin change">${r.coinDelta}</span>` : ''}
+            ${r.purseBefore != null && r.purseAfter != null && r.purseBefore !== r.purseAfter ? html`<span class="chip">purse ${r.purseBefore} → ${r.purseAfter} sp</span>` : ''}
+            ${r.grants?.length ? html`<span class="chip">${r.grants.join(', ')}</span>` : ''}
+          </div>
+        </div>`;
+    }
     // Non-roll entries (e.g. a Combat-tab Stand up) render as a plain action
     // line — no step/dice/total, just the label and its age.
     if (r.kind === 'action') {

@@ -16,7 +16,7 @@
 // Applying a result (strain / incoming damage / a heal) dispatches `ed-edit-health`
 // so ed-app persists the input and re-derives (Phase F). These writes are
 // one-way — there is no Undo: damage taken and healing done are not reversible
-// (owner decision). The Combat log is a view of the device-local Roll Log
+// (owner decision). The Combat log is a view of the device-local Log
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
@@ -280,7 +280,7 @@ export class EdCombat extends LitElement {
     .status { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
     .status.warn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
 
-    /* Combat log — a view of the device-local Roll Log (rolls + actions). */
+    /* Combat log — a view of the device-local Log (rolls + actions). */
     .clear { font: inherit; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
     .clear:hover { color: var(--danger); border-color: var(--danger); }
     .clear:disabled { opacity: 0.4; cursor: default; }
@@ -1292,7 +1292,7 @@ export class EdCombat extends LitElement {
     this._roll('Recovery test', tou.step, null, undefined, { apply: { action: 'recovery-heal', label: 'Heal this amount' } });
   }
 
-  // --- Combat log (device-local Roll Log view: rolls + actions) ---
+  // --- Combat log (device-local Log view: rolls + actions) ---
   _loadRolls() {
     if (!this.characterId) { this._rolls = []; return; }
     this._rolls = loadRollLog(this.characterId).entries;
@@ -1302,6 +1302,12 @@ export class EdCombat extends LitElement {
     if (this.characterId) { clearRollLog(this.characterId); this._loadRolls(); }
   }
   _logRow(r) {
+    if (r.kind === 'system' || r.kind === 'log' || r.kind === 'advancement') {
+      return html`<div class="logrow">
+        <span class="lt" aria-hidden="true">✦</span>
+        <span class="lx"><b>${r.label ?? 'System'}</b>${r.detail ? html` — ${r.detail}` : ''}${r.legendCost != null ? html` · ${r.legendCost} Legend` : ''}${r.silverFee != null && r.silverFee > 0 ? html` · ${r.silverFee} sp` : ''}${r.coinDelta ? html` · ${r.coinDelta}` : ''}</span>
+      </div>`;
+    }
     // Non-roll entries (e.g. Stand up) render as a plain action line — no
     // fabricated step or total (UI-GUIDELINES §5).
     if (r.kind === 'action') {
@@ -1335,7 +1341,7 @@ export class EdCombat extends LitElement {
         </div>
         ${this._rolls.length
           ? html`<div class="log">${this._rolls.map((r) => this._logRow(r))}</div>`
-          : html`<div class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Roll Log).</div>`}
+          : html`<div class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Log).</div>`}
       </div>`;
   }
 
@@ -1421,7 +1427,7 @@ export class EdCombat extends LitElement {
       ${this._confirmClear
         ? html`<ed-confirm
             heading="Clear the Combat log?"
-            message="This clears the Roll Log for this character in this browser — it also clears the Notes-tab Roll Log. It can't be undone."
+            message="This clears the Log for this character in this browser — it also clears the Notes-tab Log. It can't be undone."
             confirmLabel="Clear"
             @confirm=${this._clearLog}
             @close=${() => (this._confirmClear = false)}

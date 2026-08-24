@@ -12,6 +12,8 @@ import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
 import { payFromPurse } from '../engine/wealth.js';
+import { talentRankStepCost, lowestDisciplineCircle, skillRankStepCost } from '../engine/legend-spent.js';
+import { logCircleTraining, logTalentLearned, logSkillLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -42,7 +44,7 @@ const TABS = [
 
 // Id for one roll interaction (PLAN-NOTES-TAB decision #5): generated when the
 // roll modal opens, owned by ed-app, and passed down — so Karma toggles / "Roll
-// again" upsert the same Roll Log row instead of stacking a duplicate.
+// again" upsert the same Log row instead of stacking a duplicate.
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 export class EdApp extends LitElement {
@@ -266,7 +268,7 @@ export class EdApp extends LitElement {
     // sends ONLY the dice result it just computed — `_result`, the resolved
     // `_karmaResult`, the derived outcome, and the per-open `rollId`. This
     // listener merges them with the roll config it already holds (`this._roll`)
-    // and saves one Roll Log entry per interaction, upserted by rollId — so
+    // and saves one Log entry per interaction, upserted by rollId — so
     // Karma toggles replace the row, never duplicate it. The log is
     // device-local (decision #2) and never rides the overlay or an export.
     this.addEventListener('ed-roll-logged', (e) => {
@@ -387,6 +389,8 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-edit-skill-rank', (e) => this._editSkillRank(e.detail));
     // Learn a Talent Option into an open per-Circle slot (PLAN-LEARN-TALENTS §7.4).
     this.addEventListener('ed-learn-talent', (e) => this._learnTalent(e.detail));
+    // Learn a new Skill at Rank 1 (PLAN-LEARN-SKILLS §7.4) — data-driven fee from costs.skillTraining.
+    this.addEventListener('ed-learn-skill', (e) => this._learnSkill(e.detail));
     // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
     this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
     // A view asked to enter edit mode (e.g. clicking the green "ready to advance"
@@ -512,10 +516,36 @@ export class EdApp extends LitElement {
   // defences / initiative recompute from the equipped items (data flows down).
   _editItems(items) {
     if (!this._character || !Array.isArray(items)) return;
+    const beforeItems = this._character.items ?? [];
+    // Capture Legend cost for thread weaves if threadRank changed (audit before vs after)
+    let _legendCostForLog = null;
+    const _hasThreadDelta = JSON.stringify(beforeItems) !== JSON.stringify(items) &&
+      (beforeItems.some((it) => it.threadRank != null) || items.some((it) => it.threadRank != null));
+    if (_hasThreadDelta && this._rules?.legendFile?.costs) {
+      try {
+        const opts = {
+          knacks: this._model?.knacks ?? [],
+          threadItemCatalog: this._rules.threadItemsFile?.items ?? {},
+          spellCatalog: this._rules.spellsFile?.spells,
+          spellCostMultiplier: 1,
+          tierShift: this._model?.legend?.tierShift ?? 0,
+        };
+        const beforeSpent = auditLegendSpent({ ...this._character, items: beforeItems }, this._rules.legendFile.costs, opts).total;
+        const afterSpent = auditLegendSpent({ ...this._character, items }, this._rules.legendFile.costs, opts).total;
+        if (Number.isFinite(beforeSpent) && Number.isFinite(afterSpent)) _legendCostForLog = afterSpent - beforeSpent;
+      } catch {}
+    }
+    const _charId = this._characterId;
+    const _beforeForLog = [...beforeItems];
     this._character = { ...this._character, items };
     saveItemEdits(items, this._characterId);
     this._markDirty();
     this._model = this._derive();
+    // Log after derive so Legend totals are fresh if thread rank changed
+    if (_charId) {
+      const changed = JSON.stringify(_beforeForLog) !== JSON.stringify(items);
+      if (changed) logEquipmentChange(_charId, { beforeItems: _beforeForLog, afterItems: items, legendCost: _legendCostForLog });
+    }
   }
 
   // Drink/Use a consumable potion (plans/PLAN-POTIONS.md). The engine decides what
@@ -632,10 +662,39 @@ export class EdApp extends LitElement {
 
   _editWealth(wealth) {
     if (!this._character || !wealth) return;
+    const beforeCoins = this._character.wealth?.coins ?? {};
+    const afterCoins = wealth?.coins ?? {};
+    const beforeGems = this._character.wealth?.gems ?? [];
+    const afterGems = wealth?.gems ?? [];
+    const charId = this._characterId;
     this._character = { ...this._character, wealth };
     saveWealthEdits(wealth, this._characterId);
     this._markDirty();
     this._model = this._derive();
+    if (charId) {
+      const coinDelta = (() => {
+        const parts = [];
+        const allKeys = new Set([...Object.keys(beforeCoins), ...Object.keys(afterCoins)]);
+        for (const k of allKeys) {
+          const b = Math.floor(Number(beforeCoins[k]) || 0);
+          const a = Math.floor(Number(afterCoins[k]) || 0);
+          const d = a - b;
+          if (d !== 0) parts.push(`${d > 0 ? '+' : ''}${d} ${k}`);
+        }
+        if (JSON.stringify(beforeGems) !== JSON.stringify(afterGems)) {
+          parts.push(`gems ${beforeGems.length} → ${afterGems.length}`);
+        }
+        return parts.length ? parts.join(', ') : 'no change';
+      })();
+      if (coinDelta !== 'no change') {
+        logSystem(charId, {
+          label: 'Wealth updated',
+          detail: coinDelta,
+          beforeCoins,
+          afterCoins,
+        });
+      }
+    }
   }
 
   _editSpells(spells) {
@@ -654,10 +713,27 @@ export class EdApp extends LitElement {
   // two overlapping saves. Nothing but the two existing input shapes is written.
   _editTrade({ items, wealth }) {
     if (!this._character || !Array.isArray(items) || !wealth || !wealth.coins) return;
+    const beforeItems = this._character.items ?? [];
+    const beforeCoins = this._character.wealth?.coins ?? {};
+    const afterCoins = wealth?.coins ?? {};
+    const charId = this._characterId;
     this._character = { ...this._character, items, wealth };
     saveTradeEdits({ items, wealth }, this._characterId);
     this._markDirty();
     this._model = this._derive();
+    if (charId) {
+      // Standard log — trade (items + purse move atomically). Use generic equipment
+      // diff so we don't need the view to ship mode/price; coin delta is still precise.
+      logEquipmentChange(charId, {
+        beforeItems,
+        afterItems: items,
+        beforeCoins,
+        afterCoins,
+      });
+      // Also log a trade-specific line if we can infer buy/sell from coin delta
+      // (negative total = buy, positive = sell) for quick scanning — same entry
+      // is not duplicated, the equipment log above already covers it. No extra.
+    }
   }
 
   // The single derive call site for the app layer: fold the session-only
@@ -689,10 +765,13 @@ export class EdApp extends LitElement {
   _openDayReset({ source } = {}) {
     if (!this._character) return;
     this._dayReset = { source: source ?? null, roll: null };
+    // Snapshot for the New Day log — before any spend loop heals
+    this._dayResetBeforeHealth = { ...(this._character.resources?.health ?? {}) };
   }
 
   _dayResetCancel() {
     this._dayReset = null;
+    this._dayResetBeforeHealth = null;
   }
 
   // The embedded roll's Escape / ✕ / OK-without-applying: drop back to the
@@ -752,14 +831,34 @@ export class EdApp extends LitElement {
   // weapon/talent picks preserved, decisions D/G), then resets recoveries to 0.
   _dayResetFinalize() {
     if (!this._character) return;
+    const beforeHealth = this._dayResetBeforeHealth ?? { ...(this._character.resources?.health ?? {}) };
+    const hadPending = !!this._pendingUse;
+    const hadKnockdown = !!this._knockedDown;
     this._pendingUse = null;
     this._knockedDown = false;
     const combatEl = this.renderRoot?.querySelector('ed-combat');
     clearCombatScratch(this._characterId, combatEl);
     const cur = this._character.resources?.health ?? {};
     if ((Number(cur.recoveriesUsed) || 0) !== 0) this._editHealth({ recoveriesUsed: 0 });
+    // After the reset, capture the final health for the log
+    const afterHealth = { ...(this._character.resources?.health ?? {}) };
+    const maxRec = this._model?.characteristics?.recoveries?.value ?? null;
+    const source = this._dayReset?.source ?? null;
     this._dayReset = null;
+    this._dayResetBeforeHealth = null;
     this._showNotice("New day — Recovery tests reset and the day's combat options cleared.");
+    // Standard log — New Day outcome (Log tab, device-local, via store-log)
+    if (this._characterId) {
+      logNewDay(this._characterId, {
+        beforeHealth,
+        afterHealth,
+        maxRecoveries: maxRec,
+        source,
+        pendingCleared: hadPending,
+        knockdownCleared: hadKnockdown,
+        combatCleared: true,
+      });
+    }
   }
 
   // Pure engine decision-support for the reset modal (data flows down; the UI
@@ -1008,6 +1107,61 @@ export class EdApp extends LitElement {
     );
     this._markDirty();
     this._model = this._derive();
+    // Standard log — Talent Option learned (Legend cost via tier, no silver)
+    {
+      const dIdx = (nextCharacter.disciplines ?? []).findIndex((d) => d.name === discipline);
+      const lowest = lowestDisciplineCircle(nextCharacter.disciplines);
+      const cost = talentRankStepCost({ circle }, dIdx + 1, lowest, this._rules.legendFile?.costs, 1, { tierShift: this._model?.legend?.tierShift ?? 0 });
+      logTalentLearned(this._characterId, { discipline, name, circle, legendCost: cost });
+    }
+  }
+
+  // Learn a new Skill at Rank 1 (PLAN-LEARN-SKILLS §7.4). No slots — any
+  // catalog skill not already known. Data-driven: Legend from skillRank[1][tier],
+  // silver default from costs.skillTraining[1] (not hardcoded). Mirrors
+  // _learnTalent's guard-then-persist shape.
+  _learnSkill({ name, silver } = {}) {
+    if (!this._character || !name) return;
+    if ((this._character.skills ?? []).some((s) => s.name === name)) return; // no duplicate
+    const catalog = this._rules?.skillsFile?.skills ?? [];
+    const cat = catalog.find((s) => s.name === name);
+    if (!cat) return; // picker-only (Q3) — unknown names not learnable via UI
+    const tierLabel = cat.tier === 2 ? 'Journeyman' : 'Novice';
+    // Silver fee — editable default from rules/legend.json costs.skillTraining[1] (data, not code)
+    const fee = Number(silver);
+    const trainingFee = Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : 0;
+    let nextWealth = this._character.wealth;
+    const beforeCoins = this._character.wealth?.coins ?? {};
+    if (trainingFee > 0) {
+      const spent = payFromPurse(beforeCoins, trainingFee);
+      if (!spent.ok) return; // purse cannot cover
+      nextWealth = { ...(this._character.wealth ?? {}), coins: spent.coins };
+    }
+    const nextCharacter = {
+      ...this._character,
+      wealth: nextWealth,
+      skills: [...(this._character.skills ?? []), { name, rank: 1, tier: tierLabel }],
+    };
+    if (!this._canAffordRank(nextCharacter)) return;
+    const _beforeCoins = beforeCoins;
+    const _afterCoins = nextWealth?.coins ?? beforeCoins;
+    const _legendCost = skillRankStepCost({ tier: tierLabel }, this._rules.legendFile?.costs, 1);
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
+      this._characterId,
+    );
+    if (trainingFee > 0) saveWealthEdits(nextWealth, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+    logSkillLearned(this._characterId, {
+      name,
+      tier: tierLabel,
+      legendCost: _legendCost,
+      silverFee: trainingFee,
+      beforeCoins: _beforeCoins,
+      afterCoins: _afterCoins,
+    });
   }
 
   // Train to the next Circle (PLAN-LEARN-TALENTS §7.4). Only when the talents meet
@@ -1042,6 +1196,10 @@ export class EdApp extends LitElement {
       ),
     };
     if (!this._canAffordRank(nextCharacter)) return; // the DT purchase must fit Available Legend
+    // Capture wealth snapshot before mutating for the standard log
+    const _beforeCoins = this._character.wealth?.coins ?? {};
+    const _legendCost = mdisc.advanceCost?.legend ?? null;
+    const _grants = grants.map((g) => g.name);
     this._character = nextCharacter;
     saveAdvancementEdits(
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
@@ -1050,6 +1208,16 @@ export class EdApp extends LitElement {
     if (fee > 0) saveWealthEdits(nextWealth, this._characterId);
     this._markDirty();
     this._model = this._derive();
+    // Standard log — Circle training (Legend + silver + per-coin delta)
+    logCircleTraining(this._characterId, {
+      discipline,
+      circle: next,
+      grants: _grants,
+      legendCost: _legendCost,
+      silverFee: fee,
+      beforeCoins: _beforeCoins,
+      afterCoins: nextWealth?.coins ?? _beforeCoins,
+    });
   }
 
   // A view bumped a skill's rank (edit mode). Same inputs-only flow as talents:
