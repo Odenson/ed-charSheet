@@ -1,7 +1,15 @@
 {
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
-  "unreleased": { "summary": "", "changes": [] },
+  "unreleased": {
+    "summary": "",
+    "changes": [
+      {
+        "type": "added",
+        "text": "New thread item — Wooden Braces of Fury: leather-bound wooden bracers whose woven ranks grant Melee Weapon and Wood Skin. Rank 1 grants Melee Weapon +1, Rank 2 grants Wood Skin +1, Rank 3 raises Melee Weapon to +2, Rank 4 raises Wood Skin to +2. Works for any character — if you don't already know the talent the item grants it at the woven rank."
+      }
+    ]
+  },
   "releases": [
     {
       "version": "1.20.0",

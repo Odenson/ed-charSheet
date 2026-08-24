@@ -896,6 +896,51 @@
           ]
         }
       ]
+    },
+    "Wooden Braces of Fury": {
+      "kind": "thread-item",
+      "tier": "Novice",
+      "maximumThreads": 1,
+      "mysticDefense": 8,
+      "base": { "effects": [] },
+      "ref": {
+        "source": "User custom thread item (GMG-style, not from the rulebook)",
+        "description": "These leather-bound wooden arm bracers are primarily used to attack. Well, some bright weaponsmith thought why not extend the scope of the protection by adding Wood Skin and made himself a fat stack of gold. Used by all races and all disciplines to protect themselves. Without a thread they are ordinary bracers.",
+        "size": 2,
+        "cost": 2800,
+        "availability": "Common",
+        "rankLimit": 4
+      },
+      "threadRanks": [
+        {
+          "rank": 1,
+          "keyKnowledge": "The owner must learn the Name of the braces.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Melee Weapon" }, "operation": "set", "value": 0, "measure": "rank", "condition": "always", "source": "thread", "summary": "Grants Melee Weapon." },
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Melee Weapon" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Melee Weapon." }
+          ]
+        },
+        {
+          "rank": 2,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Wood Skin" }, "operation": "set", "value": 0, "measure": "rank", "condition": "always", "source": "thread", "summary": "Grants Wood Skin." },
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Wood Skin" }, "operation": "add", "value": 1, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+1 rank to Wood Skin." }
+          ]
+        },
+        {
+          "rank": 3,
+          "keyKnowledge": "The owner must learn the Name of the smith who built the braces.",
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Melee Weapon" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Melee Weapon." }
+          ]
+        },
+        {
+          "rank": 4,
+          "effects": [
+            { "type": "grant-ability", "target": { "domain": "ability", "name": "Wood Skin" }, "operation": "add", "value": 2, "measure": "rank", "condition": "always", "stacking": "replace", "source": "thread", "summary": "+2 ranks to Wood Skin." }
+          ]
+        }
+      ]
     }
   }
 }
