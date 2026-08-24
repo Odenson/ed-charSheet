@@ -1,20 +1,23 @@
 {
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
-  "unreleased": {
-    "summary": "Learn a new skill from the catalog at Rank 1 — any skill you don't already know, with Legend and silver checked against your Available Legend and purse. Skill picker has live search and attribute/tier pills for easier scanning.",
-    "changes": [
-      {
-        "type": "added",
-        "text": "Learn a new skill. On the Skills tab in edit mode, a \"+ add skill\" button opens a picker of every catalog skill you don't already know (154 skills, grouped Novice then Journeyman, each showing its tier, attribute, and Rank-1 Legend price). The silver training fee is an editable field seeded from the rulebook's Rank × 10 sp default — now data, not code, in rules/legend.json costs.skillTraining (edit that table to retune) — checked against your purse across any coin denomination, with a ✓/✕. Pick a skill and it joins at Rank 1 (stored as {name, rank:1, tier}), both Legend and silver are checked and blocked if unaffordable, and the result is logged like other training actions. The Skills tab now appears in edit mode even when you have no skills yet, so the first skill can be added without hand-editing the file."
-      },
-      {
-        "type": "improved",
-        "text": "Skill picker search — the long 154-skill catalog is now searchable by name, attribute, brief description, or tier; each row shows both tier and attribute pills for quick visual scanning."
-      }
-    ]
-  },
+  "unreleased": { "summary": "", "changes": [] },
   "releases": [
+    {
+      "version": "1.21.0",
+      "date": "2026-08-24",
+      "summary": "Learn a new skill from the catalog at Rank 1 with Legend and silver costs. Skill picker has live search and attribute/tier pills.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Learn a new skill. On the Skills tab in edit mode, a \"+ add skill\" button opens a picker of every catalog skill you don't already know (154 skills, grouped Novice then Journeyman, each showing its tier, attribute, and Rank-1 Legend price). The silver training fee is an editable field seeded from the rulebook's Rank × 10 sp default — now data, not code, in rules/legend.json costs.skillTraining (edit that table to retune) — checked against your purse across any coin denomination, with a ✓/✕. Pick a skill and it joins at Rank 1 (stored as {name, rank:1, tier}), both Legend and silver are checked and blocked if unaffordable, and the result is logged like other training actions. The Skills tab now appears in edit mode even when you have no skills yet, so the first skill can be added without hand-editing the file."
+        },
+        {
+          "type": "improved",
+          "text": "Skill picker search — the long 154-skill catalog is now searchable by name, attribute, brief description, or tier; each row shows both tier and attribute pills for quick visual scanning."
+        }
+      ]
+    },
     {
       "version": "1.20.0",
       "date": "2026-08-24",
