@@ -93,13 +93,14 @@ export function successCount(total, target) {
 const opValue = (e) => (e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0);
 
 /** Does a test-modifier apply to the test kind being assembled?
- *  ctx: { testKind: 'attack' | 'damage', sightBased?: boolean } */
+ *  ctx: { testKind: 'attack' | 'damage', sightBased?: boolean, activeTalent?: string } */
 function appliesToTest(e, ctx) {
   const t = e.target;
   if (e.type !== 'test-modifier' || !t || t.domain !== 'test') return false;
   const kind = ctx.testKind;
   if (t.name === 'Attack') return kind === 'attack';
   if (t.name === 'Damage') return kind === 'damage';
+  if (t.name === 'Effect') return kind === 'damage';
   if (t.name === 'Action') {
     if (kind === 'attack') {
       if (e.scope === 'sight' && ctx.sightBased === false) return false;
@@ -107,6 +108,11 @@ function appliesToTest(e, ctx) {
     }
     if (kind === 'damage') return e.scope === 'except-knockdown';
   }
+  // Named ability (e.g. "Spellcasting") — the engine already records an
+  // effect as an effect regardless of tab; the charm's Spellcasting +6 applies
+  // only to the attack pool when that talent is the active test. Restrict to
+  // `kind === 'attack'` so it never leaks into a damage/effect pool.
+  if (ctx.activeTalent && t.name === ctx.activeTalent) return kind === 'attack';
   return false;
 }
 
@@ -116,7 +122,7 @@ function appliesToTest(e, ctx) {
  *   Strength step + weapon Damage Step for damage).
  * @param {object[]} effects selected effect bundles (flat, already filtered by
  *   the caller to the bundles the player toggled).
- * @param {{testKind:'attack'|'damage', sightBased?:boolean}} ctx test context.
+ * @param {{testKind:'attack'|'damage', sightBased?:boolean, activeTalent?:string}} ctx test context.
  * @returns {{step:number|null, resultMods:Array<{label:string,value:number}>,
  *   strain:number}}
  */
@@ -151,13 +157,15 @@ function foldPool(baseStep, effects, ctx) {
  * Assemble the attack roll: the talent's step plus the folded step-measure
  * modifiers, any flat result mods, and the declared Strain cost of the selected
  * options.
- * @param {object} args `{ talentStep, effects, opts? }` — `effects` is the flat
+ * @param {object} args `{ talentStep, effects, opts?, activeTalent? }` — `effects` is the flat
  *   list of effects from the toggled option/situation bundles; `opts.sightBased`
  *   (default true) lets a special sense ignore scope:"sight" penalties.
+ *   `activeTalent` names the talent being rolled (e.g. "Spellcasting") so a
+ *   named-ability target like `{test, Spellcasting}` applies only there.
  * @returns {{step:number|null, resultMods:Array, strain:number}}
  */
-export function attackPool({ talentStep, effects, opts = {} }) {
-  const { step, resultMods, strain } = foldPool(talentStep, effects, { testKind: 'attack', sightBased: opts.sightBased !== false });
+export function attackPool({ talentStep, effects, opts = {}, activeTalent }) {
+  const { step, resultMods, strain } = foldPool(talentStep, effects, { testKind: 'attack', sightBased: opts.sightBased !== false, activeTalent });
   return { step, resultMods, strain };
 }
 
@@ -165,14 +173,16 @@ export function attackPool({ talentStep, effects, opts = {} }) {
  * Assemble the damage roll: Strength step + weapon Damage Step, plus the folded
  * step-measure damage modifiers (Aggressive Attack +3, Defensive Stance −3 via
  * its "except Knockdown" scope) and any flat result mods. No strain.
- * @param {object} args `{ weaponDamageStep, strengthStep, effects, bonusSteps? }`
+ * @param {object} args `{ weaponDamageStep, strengthStep, effects, bonusSteps?, activeTalent? }`
  *   `bonusSteps` (default 0) is the extra-success-level damage bonus from the
  *   attack roll (see `attackSuccessLevels`) — added on top of the folded step.
+ *   `activeTalent` is forwarded so an `Effect` test-modifier still knows which
+ *   talent armed the spell (future-proof; Effect itself is talent-agnostic).
  * @returns {{step:number|null, resultMods:Array}}
  */
-export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps = 0 }) {
+export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps = 0, activeTalent }) {
   const base = isFiniteNum(weaponDamageStep) && isFiniteNum(strengthStep) ? weaponDamageStep + strengthStep : null;
-  const { step, resultMods } = foldPool(base, effects, { testKind: 'damage' });
+  const { step, resultMods } = foldPool(base, effects, { testKind: 'damage', activeTalent });
   // Success-level bonus rides on the base step, never fabricates one (null stays
   // null → placeholder pill).
   const withBonus = step != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? step + bonusSteps : step;
