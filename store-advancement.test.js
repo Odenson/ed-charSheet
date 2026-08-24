@@ -164,6 +164,21 @@ test('a learned Talent Option fills its Circle slot and is priced by that Circle
   assert.ok(model.legend.available < before); // the Rank-1 option cost was spent
 });
 
+test('deriveModel emits the advance quote (Legend for the granted DT + silver training fee) only when eligible', () => {
+  memory.clear();
+  assert.equal(deriveModel(baseCharacter(), rules).disciplines[0].advanceCost, null); // not eligible
+  const dts = ['Avoid Blow', 'Missile Weapon', 'Mystic Aim', 'Thread Weaving (Archer)', 'True Shot', 'Mystic Pursuit', 'Anticipate Blow', 'Long Shot'];
+  const eligible = {
+    ...baseCharacter(),
+    resources: { legend: { totalEarnt: 200000 } },
+    disciplines: [{ name: 'Archer', circle: 4, talents: dts.map((n, i) => ({ name: n, rank: 5, circle: i < 5 ? 1 : i === 5 ? 2 : i === 6 ? 3 : 4 })) }],
+  };
+  const d = deriveModel(eligible, rules).disciplines[0];
+  assert.equal(d.circleStatus.eligible, true);
+  assert.ok(d.advanceCost.legend > 0); // Spot Armor Flaw (Circle 5, Journeyman) Rank 1
+  assert.equal(d.advanceCost.trainingSilver, 800); // Circle 5 training fee, PG p.454
+});
+
 test('deriveModel attaches rank pricing: step up, refund, and affordability', () => {
   memory.clear();
   const model = deriveModel(baseCharacter(), rules);

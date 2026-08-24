@@ -11,6 +11,7 @@ import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
+import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -1015,24 +1016,37 @@ export class EdApp extends LitElement {
   // (learned at the new Circle). Guard-then-persist like the other edits; reject
   // if the grant can't be afforded. The training tutor/silver cost is GM territory
   // (decision Q4) and not modelled.
-  _advanceCircle({ discipline }) {
+  _advanceCircle({ discipline, silver } = {}) {
     if (!this._character || !discipline) return;
     const mdisc = (this._model?.disciplines ?? []).find((d) => d.name === discipline);
     if (!mdisc?.circleStatus?.eligible) return;
     const next = mdisc.circleStatus.next;
     const grants = (mdisc.nextGrant ?? []).map((name) => ({ name, rank: 1, circle: next }));
+    // Pay the (editable, negotiable) silver training fee from the purse — the
+    // all-silver default split, like the buy dialog. A fee beyond the coins is
+    // refused so nothing goes negative; 0/absent skips the wealth write.
+    const fee = Number(silver);
+    let nextWealth = this._character.wealth;
+    if (fee > 0) {
+      const w = this._character.wealth ?? {};
+      const spent = spendAllocation(w.coins ?? {}, w.gems ?? [], allocForSilver(fee));
+      if (!spent.ok) return; // purse can't cover the fee (in silver/copper coin)
+      nextWealth = { ...w, coins: spent.coins, gems: spent.gems };
+    }
     const nextCharacter = {
       ...this._character,
+      wealth: nextWealth,
       disciplines: (this._character.disciplines ?? []).map((d) =>
         d.name === discipline ? { ...d, circle: next, talents: [...(d.talents ?? []), ...grants] } : d,
       ),
     };
-    if (!this._canAffordRank(nextCharacter)) return;
+    if (!this._canAffordRank(nextCharacter)) return; // the DT purchase must fit Available Legend
     this._character = nextCharacter;
     saveAdvancementEdits(
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
       this._characterId,
     );
+    if (fee > 0) saveWealthEdits(nextWealth, this._characterId);
     this._markDirty();
     this._model = this._derive();
   }

@@ -10,6 +10,7 @@
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
 import { LitElement, html, css } from 'lit';
 import { ModalController } from './modal-controller.js';
+import { allocForSilver, spendAllocation, coinsSilver } from '../engine/wealth.js';
 
 export class EdDisciplines extends LitElement {
   static properties = {
@@ -17,6 +18,7 @@ export class EdDisciplines extends LitElement {
     editMode: { type: Boolean },
     _sel: { state: true },
     _modal: { state: true },
+    _trainSilver: { state: true },
   };
 
   static styles = css`
@@ -59,6 +61,18 @@ export class EdDisciplines extends LitElement {
     .mbtn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
     .mbtn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
     .mbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+    .mbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Train-to-Circle cost rows: Legend and the editable silver fee, each checked. */
+    .cbox { background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 2px 12px; margin: 10px 0; }
+    .crow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .crow:last-child { border-bottom: none; }
+    .ck { font-size: var(--fs-small); }
+    .csub { font-size: var(--fs-fine); color: var(--muted); margin-top: 2px; }
+    .cchk { font-size: var(--fs-small); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .cchk.ok { color: var(--karma); }
+    .cchk.bad { color: light-dark(#c0392b, #e06557); }
+    .silin { width: 66px; font: inherit; font-size: var(--fs-small); text-align: center; color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; }
+    .mnote2 { display: flex; gap: 7px; align-items: flex-start; font-size: var(--fs-fine); color: var(--muted); line-height: 1.5; margin: 4px 0 12px; }
     /* Durability fits its label, Half-magic grows into the freed space, Artisan
        keeps its natural content width. */
     .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -709,10 +723,25 @@ export class EdDisciplines extends LitElement {
     return html`<button class="addopt" title="Fill this Circle's open Talent Option slot" @click=${(e) => this._openModal({ type: 'learn', discipline: d.name, circle, learnable: slot.learnable }, e)}>＋ add option</button>`;
   }
 
-  // Confirm training to the next Circle. Names the Discipline Talent(s) granted
-  // and what changes; Train dispatches ed-advance-circle. Escape/Cancel close.
+  // Confirm training to the next Circle (PLAN-LEARN-TALENTS §7; PG p.454). Shows
+  // the Legend to buy the granted Discipline Talent(s) checked against Available
+  // Legend, and an editable, negotiable silver training fee (seeded from the
+  // Circle Training Cost Table) checked against the purse. Train is blocked until
+  // both cover; on confirm it dispatches ed-advance-circle with the agreed fee.
+  // No test to learn — training is Legend + silver + time (the time/tutor are the
+  // GM's; only the money is tracked).
   _advanceModal(m) {
+    const available = this.model?.legend?.available ?? null;
+    const coins = this.model?.wealth?.coins ?? {};
+    const gems = this.model?.wealth?.gems ?? [];
+    const purse = coinsSilver(coins);
+    const legendCost = m.cost?.legend ?? null;
+    const silver = Number(this._trainSilver) || 0;
+    const legendOk = legendCost == null ? true : available != null && available >= legendCost;
+    const silverOk = silver <= 0 ? true : spendAllocation(coins, gems, allocForSilver(silver)).ok;
+    const canTrain = legendOk && silverOk;
     const grantText = m.grants.length ? m.grants.join(', ') : 'no new talent (already known)';
+    const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
     return html`
       <div class="overlay" @click=${() => this._modalCtl.close()}>
         <div class="modal" role="dialog" aria-modal="true" aria-label="Train to next Circle" @click=${(e) => e.stopPropagation()}>
@@ -720,26 +749,43 @@ export class EdDisciplines extends LitElement {
             <span class="mtitle">Train to Circle ${m.next}</span>
             <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
-          <div class="mtext">Advancing ${m.discipline} to Circle ${m.next} grants ${grantText} at Rank 1 and opens Circle ${m.next}'s Talent Option slot. Legend is spent per the new talent's Circle ${m.next} tier.</div>
+          <div class="mtext">Advancing ${m.discipline} to Circle ${m.next} grants ${grantText} at Rank 1, gains Circle ${m.next}'s Discipline abilities, and opens a new Talent Option slot to fill.</div>
+          <div class="cbox">
+            <div class="crow">
+              <div><div class="ck">Purchase ${grantText} · Rank 1</div><div class="csub">Available Legend ${available ?? '—'}</div></div>
+              <span class="cchk ${legendOk ? 'ok' : 'bad'}">${legendCost == null ? html`<span class="pend">—</span>` : html`${chk(legendOk)}${legendCost} Legend`}</span>
+            </div>
+            <div class="crow">
+              <div><div class="ck">Training fee · silver</div><div class="csub">Circle ${m.next} average — negotiable · purse ${Math.round(purse)} sp</div></div>
+              <span style="display:inline-flex;align-items:center;gap:6px">
+                <input class="silin" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
+                  @input=${(e) => (this._trainSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
+                <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
+              </span>
+            </div>
+          </div>
+          <div class="mnote2"><span aria-hidden="true">ⓘ</span><span>No test to learn — training takes 40 hours over three weeks with a Circle ${m.next}+ tutor. Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</span></div>
           <div class="mactions">
             <button class="mbtn" @click=${() => this._modalCtl.close()}>Cancel</button>
-            <button class="mbtn primary" autofocus @click=${() => this._advancePick(m.discipline)}>Train</button>
+            <button class="mbtn primary" autofocus ?disabled=${!canTrain} title=${canTrain ? '' : 'Not enough Legend or silver'} @click=${() => canTrain && this._advancePick(m.discipline, silver)}>Train</button>
           </div>
         </div>
       </div>
     `;
   }
 
-  _advancePick(discipline) {
+  _advancePick(discipline, silver) {
     this._modalCtl.close();
-    this.dispatchEvent(new CustomEvent('ed-advance-circle', { detail: { discipline }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('ed-advance-circle', { detail: { discipline, silver }, bubbles: true, composed: true }));
   }
 
   // Clicking the green "ready to advance" pill trains up on the spot: enter edit
-  // mode if not already (so the advancement can persist), then open the confirm.
+  // mode if not already (so the advancement can persist), seed the editable
+  // training fee, then open the confirm.
   _trainClick(d, cs, e) {
     if (!this.editMode) this.dispatchEvent(new CustomEvent('ed-enter-edit', { bubbles: true, composed: true }));
-    this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [] }, e);
+    this._trainSilver = d.advanceCost?.trainingSilver ?? 0;
+    this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [], cost: d.advanceCost ?? null }, e);
   }
 
   // Pick a talent for an open slot: close the picker (returns focus to the "+"),

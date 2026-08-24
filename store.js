@@ -629,7 +629,7 @@ export function deriveModel(character, rules, session = {}) {
 
   // Disciplines -> talents with derived step/dice, plus reference detail
   // (durability, half-magic, artisan skills, per-circle abilities) from rules.
-  let disciplines = (character.disciplines ?? []).map((d) => {
+  let disciplines = (character.disciplines ?? []).map((d, dIdx) => {
     const ref = discByName[d.name] ?? {};
     // "Required" (Discipline) talents = every talent the Discipline grants at any
     // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
@@ -728,6 +728,20 @@ export function deriveModel(character, rules, session = {}) {
       // Discipline Talent(s) the next Circle would grant (not already known) —
       // what the "train to next Circle" action adds at Rank 1 (PLAN-LEARN-TALENTS §7).
       nextGrant: nextCircleGrant(ref, d.circle, knownNames),
+      // The advance quote (only when eligible): the Legend to purchase the granted
+      // Discipline Talent(s) at Rank 1, and the suggested silver training fee from
+      // the Circle Training Cost Table (ED4 p.454 — an editable, negotiable
+      // default). Null/absent leaves the modal to show a placeholder.
+      advanceCost: circleInfo.eligible
+        ? (() => {
+            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestDisciplineCircle(character.disciplines), legendFile?.costs, 1);
+            const grantCount = nextCircleGrant(ref, d.circle, knownNames).length;
+            return {
+              legend: perDT == null ? null : perDT * grantCount,
+              trainingSilver: legendFile?.costs?.circleTraining?.[String(circleInfo.next)] ?? null,
+            };
+          })()
+        : null,
       durability: ref.durability ?? null,
       halfMagic: ref.halfMagic?.summary ?? null,
       halfMagicRoll,
