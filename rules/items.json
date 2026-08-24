@@ -19,7 +19,10 @@
       "living": false,
       "ref": {
         "cost": 2,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Made of layers of cotton stitched tightly together, this simple armour provides basic protection"
       },
@@ -44,7 +47,10 @@
       "living": false,
       "ref": {
         "cost": 15,
-        "weight": {"amount":15,"unit":"lb"},
+        "weight": {
+          "amount": 15,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Layered soft leather that protects the body while leaving the joints free."
       },
@@ -69,7 +75,10 @@
       "living": false,
       "ref": {
         "cost": 20,
-        "weight": {"amount":20,"unit":"lb"},
+        "weight": {
+          "amount": 20,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Padded cloth backed with a covering of leather armour."
       },
@@ -94,7 +103,10 @@
       "living": false,
       "ref": {
         "cost": 40,
-        "weight": {"amount":20,"unit":"lb"},
+        "weight": {
+          "amount": 20,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Leather boiled and waxed hard for sturdier protection."
       },
@@ -132,7 +144,10 @@
       "living": false,
       "ref": {
         "cost": 50,
-        "weight": {"amount":25,"unit":"lb"},
+        "weight": {
+          "amount": 25,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Tanned animal hides sewn onto leather, often keeping the beast's head as a helm."
       },
@@ -183,7 +198,10 @@
       "living": false,
       "ref": {
         "cost": 110,
-        "weight": {"amount":30,"unit":"lb"},
+        "weight": {
+          "amount": 30,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Leather reinforced with riveted metal rings to turn blows."
       },
@@ -221,7 +239,10 @@
       "living": false,
       "ref": {
         "cost": 180,
-        "weight": {"amount":40,"unit":"lb"},
+        "weight": {
+          "amount": 40,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Interlocking metal rings — flexible, but heavy and slow to move in."
       },
@@ -259,7 +280,10 @@
       "living": false,
       "ref": {
         "cost": 3000,
-        "weight": {"amount":60,"unit":"lb"},
+        "weight": {
+          "amount": 60,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Fitted steel plates over chain mail, the heaviest and most cumbersome protection."
       },
@@ -297,7 +321,10 @@
       "living": false,
       "ref": {
         "cost": 2000,
-        "weight": {"amount":50,"unit":"lb"},
+        "weight": {
+          "amount": 50,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Wyvern hide fortified with True Water to keep its natural resilience."
       },
@@ -348,7 +375,10 @@
       "living": false,
       "ref": {
         "cost": 200,
-        "weight": {"amount":10,"unit":"lb"},
+        "weight": {
+          "amount": 10,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A cloak of blue espagra scales — light protection that passes for courtly dress."
       },
@@ -386,7 +416,10 @@
       "living": false,
       "ref": {
         "cost": 100,
-        "weight": {"amount":20,"unit":"lb"},
+        "weight": {
+          "amount": 20,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Armour flayed from a slain obsidiman; wearing it invites loathing and attack."
       },
@@ -424,7 +457,10 @@
       "living": true,
       "ref": {
         "cost": 125,
-        "weight": {"amount":15,"unit":"lb"},
+        "weight": {
+          "amount": 15,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Living armour woven from forest vines that must be watered every few days."
       },
@@ -462,7 +498,9 @@
       "living": true,
       "ref": {
         "cost": 300,
-        "weight": {"negligible":true},
+        "weight": {
+          "negligible": true
+        },
         "availability": "rare",
         "description": "Living elemental stones set into the skin, powered by the wearer's blood."
       },
@@ -513,7 +551,10 @@
       "living": true,
       "ref": {
         "cost": 500,
-        "weight": {"amount":45,"unit":"lb"},
+        "weight": {
+          "amount": 45,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Interlocking rings of living crystal, its enchantment renewed each year."
       },
@@ -564,7 +605,9 @@
       "living": true,
       "ref": {
         "cost": 1100,
-        "weight": {"negligible":true},
+        "weight": {
+          "negligible": true
+        },
         "availability": "rare",
         "description": "Crystal columns grown through the body from the wearer's own blood magic."
       },
@@ -615,7 +658,10 @@
       "living": true,
       "ref": {
         "cost": 12000,
-        "weight": {"amount":90,"unit":"lb"},
+        "weight": {
+          "amount": 90,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Plate armour grown from living crystal rather than forged from metal."
       },
@@ -666,7 +712,10 @@
       "living": false,
       "ref": {
         "cost": 5,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "shatterThreshold": 17,
         "description": "A small forearm shield that still lets the wearer draw a bow.",
@@ -693,7 +742,10 @@
       "living": false,
       "ref": {
         "cost": 50,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "rare",
         "shatterThreshold": 17,
         "description": "A living-crystal buckler favoured by crystal raiders; renewed yearly."
@@ -732,7 +784,10 @@
       "living": false,
       "ref": {
         "cost": 15,
-        "weight": {"amount":10,"unit":"lb"},
+        "weight": {
+          "amount": 10,
+          "unit": "lb"
+        },
         "availability": "average",
         "shatterThreshold": 19,
         "description": "A metal-rimmed wooden shield guarding much of the upper body."
@@ -771,7 +826,10 @@
       "living": false,
       "ref": {
         "cost": 20,
-        "weight": {"amount":8,"unit":"lb"},
+        "weight": {
+          "amount": 8,
+          "unit": "lb"
+        },
         "availability": "average",
         "shatterThreshold": 19,
         "description": "A footman's shield shaped to protect a mounted rider."
@@ -810,7 +868,10 @@
       "living": false,
       "ref": {
         "cost": 22,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "shatterThreshold": 16,
         "description": "A living buckler of woven vines that must be watered every few days."
@@ -862,7 +923,10 @@
       "living": false,
       "ref": {
         "cost": 50,
-        "weight": {"amount":15,"unit":"lb"},
+        "weight": {
+          "amount": 15,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "shatterThreshold": 21,
         "description": "A tall, metal-clad shield covering the wearer from neck to shins."
@@ -901,7 +965,10 @@
       "living": false,
       "ref": {
         "cost": 150,
-        "weight": {"amount":15,"unit":"lb"},
+        "weight": {
+          "amount": 15,
+          "unit": "lb"
+        },
         "availability": "rare",
         "shatterThreshold": 18,
         "description": "A living-crystal shield set in a wood or metal frame; renewed yearly."
@@ -952,7 +1019,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 35,
-        "weight": {"amount":6,"unit":"lb"},
+        "weight": {
+          "amount": 6,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 13,
@@ -980,7 +1050,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 2,
-        "weight": {"amount":10,"unit":"oz"},
+        "weight": {
+          "amount": 10,
+          "unit": "oz"
+        },
         "availability": "unusual",
         "category": "missile",
         "strMin": 3,
@@ -1010,7 +1083,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 10,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": 6,
@@ -1050,7 +1126,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 25,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 12,
@@ -1079,7 +1158,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 2,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 7,
@@ -1107,7 +1189,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 0.8,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 4,
@@ -1136,7 +1221,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 0.8,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 4,
@@ -1165,7 +1253,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 0.3,
-        "weight": {"amount":8,"unit":"oz"},
+        "weight": {
+          "amount": 8,
+          "unit": "oz"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": 4,
@@ -1195,7 +1286,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 6,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 12,
@@ -1223,7 +1317,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 200,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "rare",
         "category": "missile",
         "strMin": 12,
@@ -1254,7 +1351,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 35,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 10,
@@ -1283,7 +1383,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 25,
-        "weight": {"amount":12,"unit":"oz"},
+        "weight": {
+          "amount": 12,
+          "unit": "oz"
+        },
         "availability": "unusual",
         "category": "throwing",
         "strMin": 4,
@@ -1313,7 +1416,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 8,
@@ -1341,7 +1447,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":3.5,"unit":"lb"},
+        "weight": {
+          "amount": 3.5,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 8,
@@ -1370,7 +1479,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 75,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "throwing",
         "strMin": 8,
@@ -1400,7 +1512,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 0.3,
-        "weight": {"amount":10,"unit":"oz"},
+        "weight": {
+          "amount": 10,
+          "unit": "oz"
+        },
         "availability": "everyday",
         "category": "throwing",
         "strMin": 3,
@@ -1430,7 +1545,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 150,
-        "weight": {"amount":10,"unit":"lb"},
+        "weight": {
+          "amount": 10,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 14,
@@ -1458,7 +1576,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 50,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "missile",
         "strMin": 9,
@@ -1467,7 +1588,7 @@
         "shortRange": "2-32",
         "longRange": "33-64",
         "description": "A small, concealable crossbow firing short bolts.",
-        "image":"data/light-crossbow.png"
+        "image": "data/light-crossbow.png"
       },
       "effects": [
         {
@@ -1521,7 +1642,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":7,"unit":"lb"},
+        "weight": {
+          "amount": 7,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 13,
@@ -1549,7 +1673,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 60,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "missile",
         "strMin": 11,
@@ -1580,7 +1707,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 20,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 13,
@@ -1608,7 +1738,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 100,
-        "weight": {"amount":7,"unit":"lb"},
+        "weight": {
+          "amount": 7,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "missile",
         "strMin": 12,
@@ -1617,7 +1750,7 @@
         "shortRange": "2-40",
         "longRange": "41-80",
         "description": "A larger crossbow firing twelve-inch bolts.",
-        "image":"data/medium-crossbow.png"
+        "image": "data/medium-crossbow.png"
       },
       "effects": [
         {
@@ -1639,7 +1772,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": "4-8",
@@ -1668,7 +1804,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 137.5,
-        "weight": {"amount":9,"unit":"lb"},
+        "weight": {
+          "amount": 9,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 14,
@@ -1696,7 +1835,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 150,
-        "weight": {"amount":10,"unit":"lb"},
+        "weight": {
+          "amount": 10,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 16,
@@ -1724,7 +1866,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 5,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 6,
@@ -1753,7 +1898,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 3,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 3,
@@ -1782,7 +1930,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 20,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 12,
@@ -1810,7 +1961,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 16,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 8,
@@ -1838,7 +1992,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "missile",
         "strMin": 8,
@@ -1868,7 +2025,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 3,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "missile",
         "strMin": 5,
@@ -1898,7 +2058,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 9,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": 9,
@@ -1929,7 +2092,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 40,
-        "weight": {"amount":7,"unit":"lb"},
+        "weight": {
+          "amount": 7,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 13,
@@ -1957,7 +2123,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 25,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": 7,
@@ -1987,7 +2156,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 2,
-        "weight": {"amount":12,"unit":"oz"},
+        "weight": {
+          "amount": 12,
+          "unit": "oz"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": 4,
@@ -2018,7 +2190,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 25,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 11,
@@ -2046,7 +2221,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 45,
-        "weight": {"amount":8,"unit":"lb"},
+        "weight": {
+          "amount": 8,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 17,
@@ -2074,7 +2252,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "missile",
         "strMin": 10,
@@ -2104,7 +2285,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 50,
-        "weight": {"amount":6,"unit":"lb"},
+        "weight": {
+          "amount": 6,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 13,
@@ -2132,7 +2316,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 125,
-        "weight": {"amount":7,"unit":"lb"},
+        "weight": {
+          "amount": 7,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 15,
@@ -2160,7 +2347,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 95,
-        "weight": {"amount":8,"unit":"lb"},
+        "weight": {
+          "amount": 8,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 15,
@@ -2188,7 +2378,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 10,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "category": "melee",
         "strMin": 7,
@@ -2226,7 +2419,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 25,
-        "weight": {"amount":14,"unit":"oz"},
+        "weight": {
+          "amount": 14,
+          "unit": "oz"
+        },
         "availability": "average",
         "category": "missile",
         "strMin": 5,
@@ -2256,7 +2452,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 15,
-        "weight": {"amount":12,"unit":"oz"},
+        "weight": {
+          "amount": 12,
+          "unit": "oz"
+        },
         "availability": "average",
         "category": "throwing",
         "strMin": 3,
@@ -2285,7 +2484,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 55,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 7,
@@ -2313,7 +2515,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 25,
-        "weight": {"amount":8,"unit":"oz"},
+        "weight": {
+          "amount": 8,
+          "unit": "oz"
+        },
         "availability": "unusual",
         "category": "throwing",
         "strMin": 4,
@@ -2343,7 +2548,10 @@
       "kind": "weapon",
       "ref": {
         "cost": 45,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "category": "melee",
         "strMin": 6,
@@ -2371,7 +2579,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 15,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Short, thick bolts fired from a light crossbow."
       },
@@ -2381,7 +2592,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 20,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Twelve-inch bolts fired from a medium crossbow."
       },
@@ -2391,7 +2605,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 10,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Long, feather-fletched arrows for a longbow."
       },
@@ -2401,7 +2618,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 5,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Short feather-fletched arrows for a shortbow."
       },
@@ -2411,7 +2631,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 25,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Thick, heavy arrows made for the elven warbow."
       },
@@ -2421,7 +2644,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 5,
-        "weight": {"amount":8,"unit":"oz"},
+        "weight": {
+          "amount": 8,
+          "unit": "oz"
+        },
         "availability": "average",
         "description": "Tiny arrows sized for a windling bow."
       },
@@ -2431,7 +2657,10 @@
       "kind": "ammunition",
       "ref": {
         "cost": 1,
-        "weight": {"amount":8,"unit":"oz"},
+        "weight": {
+          "amount": 8,
+          "unit": "oz"
+        },
         "availability": "unusual",
         "description": "Small metal needles fired from a blowgun, sometimes poisoned."
       },
@@ -2441,7 +2670,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 100,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 10,
         "description": "A quartz, veined with red from the character’s own blood when equipped."
@@ -2495,7 +2727,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 325,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 14,
         "description": "An amber eye-charm and gel worm that replaces an eye to grant astral sight."
@@ -2523,7 +2758,7 @@
           },
           "operation": "add",
           "value": 1,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "uses Perception step",
           "source": "item",
@@ -2537,7 +2772,7 @@
           },
           "operation": "add",
           "value": 1,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "if the character knows the Astral Sight talent",
           "source": "item",
@@ -2581,7 +2816,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 175,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 11,
         "description": "A valorous enemy's bone pinned into the skin to borrow their strength."
@@ -2641,7 +2879,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 200,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 9,
         "description": "A living-crystal eye-charm that lets the wearer see in the dark."
@@ -2698,7 +2939,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 450,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 12,
         "description": "A blood-marked turquoise charm granting one desperate Recovery test at the point of death."
@@ -2712,7 +2956,7 @@
           },
           "operation": "add",
           "value": 6,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "upon the character's death",
           "source": "item",
@@ -2756,7 +3000,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 275,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 10,
         "description": "A blood-fed steel-and-quartz charm that grants a burst of attack or damage."
@@ -2770,7 +3017,7 @@
           },
           "operation": "add",
           "value": 6,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "on activation; chosen by the character",
           "source": "item",
@@ -2784,7 +3031,7 @@
           },
           "operation": "add",
           "value": 6,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "on activation; chosen by the character",
           "source": "item",
@@ -2828,7 +3075,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 300,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 11,
         "description": "A silver-and-pearl charm that grants a burst of spellcasting or spell effect."
@@ -2842,7 +3092,7 @@
           },
           "operation": "add",
           "value": 6,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "on activation; chosen by the character",
           "source": "item",
@@ -2856,7 +3106,7 @@
           },
           "operation": "add",
           "value": 6,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "on activation; chosen by the character",
           "source": "item",
@@ -2900,7 +3150,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 250,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 13,
         "description": "A hairy swallowed pebble, made only by questors of Garlen, that heals Wounds."
@@ -2954,7 +3207,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 450,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 12,
         "description": "A carved horn needle equipped to resist poison and disease."
@@ -2968,7 +3224,7 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "Toughness-based tests to resist poison or disease",
           "source": "item",
@@ -3026,7 +3282,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 500,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 13,
         "description": "A gold-and-silver charm set around True Earth that wards off Horrors."
@@ -3098,7 +3357,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 600,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 15,
         "description": "Ruby crystal that darkens with blood, trading Strain for quicker reactions."
@@ -3112,7 +3374,7 @@
           },
           "operation": "add",
           "value": 1,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "per point of Strain taken, declared before the test",
           "source": "item",
@@ -3156,7 +3418,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 300,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 11,
         "description": "Clear crystal that reddens with blood, trading Strain for greater Strength."
@@ -3170,7 +3435,7 @@
           },
           "operation": "add",
           "value": 1,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "per 2 Strain taken; not Damage tests",
           "source": "item",
@@ -3214,7 +3479,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 450,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 12,
         "description": "A quartz eye-charm that sharpens a ranged attack for a point of Strain."
@@ -3228,7 +3496,7 @@
           },
           "operation": "add",
           "value": 2,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "next ranged combat Attack test; 1 Strain",
           "source": "item",
@@ -3272,7 +3540,10 @@
       "kind": "blood-charm",
       "ref": {
         "cost": 200,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 12,
         "description": "Amber crystal that steadies the wearer against being knocked down."
@@ -3286,7 +3557,7 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "result",
+          "measure": "step",
           "condition": "situational",
           "scope": "Knockdown test; 1 Strain",
           "source": "item",
@@ -3330,12 +3601,19 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 50,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 7,
         "description": "A potion that boosts the next Recovery test with a +8 bonus."
       },
-      "consumable": { "use": { "armNextRoll": true } },
+      "consumable": {
+        "use": {
+          "armNextRoll": true
+        }
+      },
       "effects": [
         {
           "type": "test-modifier",
@@ -3357,12 +3635,17 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 500,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 11,
         "description": "A potion granting a fresh Resistance test against a disease."
       },
-      "consumable": { "use": {} },
+      "consumable": {
+        "use": {}
+      },
       "effects": [
         {
           "type": "test-modifier",
@@ -3390,12 +3673,17 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 100,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 8,
         "description": "A potion that halts a disease's progress for eight hours."
       },
-      "consumable": { "use": {} },
+      "consumable": {
+        "use": {}
+      },
       "effects": [
         {
           "type": "note",
@@ -3413,12 +3701,23 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 300,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 12,
         "description": "A potion that heals a Wound and boosts the next Recovery test."
       },
-      "consumable": { "use": { "armNextRoll": true, "healWounds": 1, "emergencyHeal": { "step": 8 } } },
+      "consumable": {
+        "use": {
+          "armNextRoll": true,
+          "healWounds": 1,
+          "emergencyHeal": {
+            "step": 8
+          }
+        }
+      },
       "effects": [
         {
           "type": "test-modifier",
@@ -3446,7 +3745,10 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 125,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 8,
         "description": "A draught that neutralises poison for eight hours."
@@ -3468,7 +3770,10 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 50,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "craftingDifficultyNumber": 7,
         "description": "A poultice granting a fresh Resistance test to shake off poison."
@@ -3493,7 +3798,10 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 600,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "very Rare",
         "craftingDifficultyNumber": 13,
         "description": "A salve that can revive a character dead only a short while."
@@ -3515,7 +3823,10 @@
       "kind": "healing-aid",
       "ref": {
         "cost": 200,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "craftingDifficultyNumber": 10,
         "description": "A salve that heals a Wound at the cost of a Recovery test."
@@ -3537,7 +3848,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 340,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "An enchanted bedroll that shifts temperature to keep the sleeper comfortable."
       },
@@ -3557,7 +3871,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 250,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Leather boots woven with True Water to keep the wearer's feet dry."
       },
@@ -3577,7 +3894,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 700,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Enchanted boots that keep feet warm and dry and ease a long day's travel."
       },
@@ -3597,7 +3917,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 25,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A magic whisk broom that gathers dust to be dumped on command."
       },
@@ -3617,7 +3940,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 275,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "A waterproof cloak whose ribbed lining warms with a rub; +2 Armour against cold."
       },
@@ -3656,7 +3982,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 275,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A cloak woven to repel dirt and stains for months at a time."
       },
@@ -3676,7 +4005,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 300,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A woollen cloak that warms its wearer when the cold sets in."
       },
@@ -3696,7 +4028,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 75,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "An enchanted forked rod that helps locate water (+3 Wilderness Survival)."
       },
@@ -3721,7 +4056,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 80,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "An exquisitely woven elven robe that never sits right on an ork or dwarf."
       },
@@ -3741,7 +4079,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 100,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A short wand that makes a small flame on command to start fires."
       },
@@ -3761,7 +4102,9 @@
       "kind": "magic-item",
       "ref": {
         "cost": 12,
-        "weight": {"negligible":true},
+        "weight": {
+          "negligible": true
+        },
         "availability": "unusual",
         "description": "Chalk that writes in a soft glow readable under any light."
       },
@@ -3781,7 +4124,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 100,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A True-Earth-and-Fire stone that glows red-hot for about a year."
       },
@@ -3801,7 +4147,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 100,
-        "weight": {"amount":8,"unit":"lb"},
+        "weight": {
+          "amount": 8,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A ceramic pot woven with True Fire that cooks without a flame."
       },
@@ -3821,7 +4170,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 100,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A weapon with a small light-quartz set in the hilt to serve as a lamp."
       },
@@ -3841,7 +4193,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 200,
-        "weight": {"amount":20,"unit":"lb"},
+        "weight": {
+          "amount": 20,
+          "unit": "lb"
+        },
         "availability": "rare",
         "range": "30 yards",
         "description": "A large enchanted crystal that glows on command; the enchantment is renewed yearly."
@@ -3862,7 +4217,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 125,
-        "weight": {"amount":6,"unit":"lb"},
+        "weight": {
+          "amount": 6,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "range": "20 yards",
         "description": "A medium enchanted crystal that glows on command; the enchantment is renewed yearly."
@@ -3883,7 +4241,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 75,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "range": "10 yards",
         "description": "A small enchanted crystal that glows on command; the enchantment is renewed yearly."
@@ -3904,7 +4265,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 300,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "A living crystal that records and replays a spoken message."
       },
@@ -3924,7 +4288,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 600,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A message stone warded to guard its message against tampering."
       },
@@ -3944,7 +4311,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 35,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "A hat charmed to fit any head, of any race."
       },
@@ -3964,7 +4334,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 5000,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A runed box that safely holds up to twenty kernels of a True Element."
       },
@@ -3984,7 +4357,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 200,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A large airtight iron pot that keeps its contents cold and fresh far longer."
       },
@@ -4004,7 +4380,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 75,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A small airtight iron pot that keeps its contents cold and fresh far longer."
       },
@@ -4024,7 +4403,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 150,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A pot enchanted to purify any liquid poured into it."
       },
@@ -4044,7 +4426,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 140,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Gloves that muffle a thief's handiwork, raising the Difficulty to notice it."
       },
@@ -4064,7 +4449,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 65,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A pouch woven with silence to hide the jingle of coins."
       },
@@ -4104,7 +4492,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 350,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "A steel mug that refills with cool, fresh water once a day."
       },
@@ -4124,7 +4515,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 275,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "Combined artisan tools that let a crafter undo a mistake made moments before."
       },
@@ -4144,7 +4538,10 @@
       "kind": "magic-item",
       "ref": {
         "cost": 250,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "rare",
         "description": "An instrument woven with True Air for a clearer, effortless sound (+1 to play)."
       },
@@ -4183,7 +4580,10 @@
       "kind": "gear",
       "ref": {
         "cost": 15,
-        "weight": {"amount":14,"unit":"lb"},
+        "weight": {
+          "amount": 14,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A basic bundle of camp gear for life on the road."
       },
@@ -4203,7 +4603,10 @@
       "kind": "gear",
       "ref": {
         "cost": 40,
-        "weight": {"amount":34,"unit":"lb"},
+        "weight": {
+          "amount": 34,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A basic bundle of camp gear packed with a tent."
       },
@@ -4223,7 +4626,10 @@
       "kind": "gear",
       "ref": {
         "cost": 500,
-        "weight": {"amount":15,"unit":"lb"},
+        "weight": {
+          "amount": 15,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Portable tools and reagents for practising Alchemy in the field."
       },
@@ -4268,7 +4674,10 @@
       "kind": "gear",
       "ref": {
         "cost": 15,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Knives and gouges for a carving artisan."
       },
@@ -4278,7 +4687,10 @@
       "kind": "gear",
       "ref": {
         "cost": 25,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Needles and thread for an embroidery or sewing artisan."
       },
@@ -4288,7 +4700,10 @@
       "kind": "gear",
       "ref": {
         "cost": 100,
-        "weight": {"amount":20,"unit":"lb"},
+        "weight": {
+          "amount": 20,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "A smith's forge tools for a metalworking artisan."
       },
@@ -4298,7 +4713,10 @@
       "kind": "gear",
       "ref": {
         "cost": 45,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Brushes and pigments for a painting artisan."
       },
@@ -4308,7 +4726,10 @@
       "kind": "gear",
       "ref": {
         "cost": 30,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Chisels and tools for a sculpting artisan."
       },
@@ -4318,7 +4739,10 @@
       "kind": "gear",
       "ref": {
         "cost": 5,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A sturdy pack that carries the purchased items."
       },
@@ -4338,7 +4762,10 @@
       "kind": "gear",
       "ref": {
         "cost": 5,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A rolled sleeping mat and blanket for camp."
       },
@@ -4348,7 +4775,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.8,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A small pouch worn at the belt for coins and oddments."
       },
@@ -4368,7 +4798,10 @@
       "kind": "gear",
       "ref": {
         "cost": 1.5,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A woven blanket for warmth on the trail."
       },
@@ -4378,7 +4811,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.3,
-        "weight": {"amount":4,"unit":"oz"},
+        "weight": {
+          "amount": 4,
+          "unit": "oz"
+        },
         "availability": "everyday",
         "description": "A wax candle giving a small, steady light."
       },
@@ -4398,7 +4834,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.3,
-        "weight": {"amount":4,"unit":"oz"},
+        "weight": {
+          "amount": 4,
+          "unit": "oz"
+        },
         "availability": "everyday",
         "description": "Five sticks of chalk for marking trails or leaving notes."
       },
@@ -4408,7 +4847,10 @@
       "kind": "gear",
       "ref": {
         "cost": 36,
-        "weight": {"amount":19,"unit":"lb"},
+        "weight": {
+          "amount": 19,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Rope, spikes, and gear for scaling heights."
       },
@@ -4428,7 +4870,10 @@
       "kind": "gear",
       "ref": {
         "cost": 25,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A general set of tools for a working craftsman."
       },
@@ -4448,7 +4893,10 @@
       "kind": "gear",
       "ref": {
         "cost": 50,
-        "weight": {"amount":6,"unit":"lb"},
+        "weight": {
+          "amount": 6,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Paints, wigs, and props for changing one's appearance."
       },
@@ -4468,7 +4916,10 @@
       "kind": "gear",
       "ref": {
         "cost": 20,
-        "weight": {"amount":14,"unit":"lb"},
+        "weight": {
+          "amount": 14,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Line, hooks, and tackle for catching fish."
       },
@@ -4488,7 +4939,10 @@
       "kind": "gear",
       "ref": {
         "cost": 15,
-        "weight": {"amount":10,"unit":"lb"},
+        "weight": {
+          "amount": 10,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A wide net for catching fish."
       },
@@ -4498,7 +4952,10 @@
       "kind": "gear",
       "ref": {
         "cost": 1,
-        "weight": {"amount":8,"unit":"oz"},
+        "weight": {
+          "amount": 8,
+          "unit": "oz"
+        },
         "availability": "everyday",
         "description": "Flint and steel for striking a fire."
       },
@@ -4508,7 +4965,10 @@
       "kind": "gear",
       "ref": {
         "cost": 10,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A many-pronged hook for anchoring a climbing rope."
       },
@@ -4528,7 +4988,10 @@
       "kind": "gear",
       "ref": {
         "cost": 75,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Bandages and salves for tending wounds, good for three uses."
       },
@@ -4559,7 +5022,9 @@
       "kind": "gear",
       "ref": {
         "cost": 50,
-        "weight": {"negligible":true},
+        "weight": {
+          "negligible": true
+        },
         "availability": "unusual",
         "description": "A refill of bandages and salves, good for three uses."
       },
@@ -4579,7 +5044,10 @@
       "kind": "gear",
       "ref": {
         "cost": 50,
-        "weight": {"amount":9,"unit":"lb"},
+        "weight": {
+          "amount": 9,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Ten feet of heavy iron chain."
       },
@@ -4599,7 +5067,10 @@
       "kind": "gear",
       "ref": {
         "cost": 20,
-        "weight": {"amount":8,"unit":"lb"},
+        "weight": {
+          "amount": 8,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A sturdy iron cooking pot."
       },
@@ -4609,7 +5080,10 @@
       "kind": "gear",
       "ref": {
         "cost": 27,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A lantern with a lens that throws a focused beam."
       },
@@ -4629,7 +5103,10 @@
       "kind": "gear",
       "ref": {
         "cost": 9,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A shuttered lantern whose light can be quickly hidden."
       },
@@ -4649,7 +5126,10 @@
       "kind": "gear",
       "ref": {
         "cost": 85,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "A lantern lit by an enchanted light-quartz crystal."
       },
@@ -4669,7 +5149,10 @@
       "kind": "gear",
       "ref": {
         "cost": 10,
-        "weight": {"amount":6,"unit":"lb"},
+        "weight": {
+          "amount": 6,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Ten feet of light chain."
       },
@@ -4689,7 +5172,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.8,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A tube for protecting maps and scrolls."
       },
@@ -4699,7 +5185,10 @@
       "kind": "gear",
       "ref": {
         "cost": 7,
-        "weight": {"amount":5,"unit":"lb"},
+        "weight": {
+          "amount": 5,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A hand drum for music and signalling."
       },
@@ -4709,7 +5198,10 @@
       "kind": "gear",
       "ref": {
         "cost": 2,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A simple wooden flute."
       },
@@ -4719,7 +5211,10 @@
       "kind": "gear",
       "ref": {
         "cost": 70,
-        "weight": {"amount":7,"unit":"lb"},
+        "weight": {
+          "amount": 7,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A horn for music or signalling."
       },
@@ -4729,7 +5224,10 @@
       "kind": "gear",
       "ref": {
         "cost": 25,
-        "weight": {"amount":6,"unit":"lb"},
+        "weight": {
+          "amount": 6,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "A stringed lute for a travelling musician."
       },
@@ -4739,7 +5237,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.2,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A small whistle for tunes or signals."
       },
@@ -4749,7 +5250,10 @@
       "kind": "gear",
       "ref": {
         "cost": 15,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Charts for plotting a course by land or water."
       },
@@ -4769,7 +5273,10 @@
       "kind": "gear",
       "ref": {
         "cost": 6,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A flask of lamp oil, also useful as a firebomb."
       },
@@ -4789,7 +5296,9 @@
       "kind": "gear",
       "ref": {
         "cost": 1,
-        "weight": {"negligible":true},
+        "weight": {
+          "negligible": true
+        },
         "availability": "unusual",
         "description": "A sheet of paper or parchment for writing."
       },
@@ -4799,7 +5308,10 @@
       "kind": "gear",
       "ref": {
         "cost": 50,
-        "weight": {"amount":3,"unit":"lb"},
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Surgical tools and supplies for a physician, good for three uses."
       },
@@ -4819,7 +5331,10 @@
       "kind": "gear",
       "ref": {
         "cost": 25,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A refill of a physician's supplies, good for three uses."
       },
@@ -4839,7 +5354,9 @@
       "kind": "gear",
       "ref": {
         "cost": 1,
-        "weight": {"negligible":true},
+        "weight": {
+          "negligible": true
+        },
         "availability": "average",
         "description": "A trimmed feather pen for writing."
       },
@@ -4849,7 +5366,10 @@
       "kind": "gear",
       "ref": {
         "cost": 2,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A leather case holding about forty arrows or thirty bolts."
       },
@@ -4869,7 +5389,10 @@
       "kind": "gear",
       "ref": {
         "cost": 3,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Strong rope, sold by the yard."
       },
@@ -4889,7 +5412,10 @@
       "kind": "gear",
       "ref": {
         "cost": 20,
-        "weight": {"amount":15,"unit":"lb"},
+        "weight": {
+          "amount": 15,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "Strong rope, sold by the yard."
       },
@@ -4909,7 +5435,10 @@
       "kind": "gear",
       "ref": {
         "cost": 2,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A plain cloth sack for hauling goods."
       },
@@ -4929,7 +5458,10 @@
       "kind": "gear",
       "ref": {
         "cost": 30,
-        "weight": {"amount":20,"unit":"lb"},
+        "weight": {
+          "amount": 20,
+          "unit": "lb"
+        },
         "availability": "average",
         "description": "A canvas tent for shelter on the road."
       },
@@ -4939,7 +5471,10 @@
       "kind": "gear",
       "ref": {
         "cost": 100,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Lockpicks and fine tools for defeating locks and traps."
       },
@@ -4959,7 +5494,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.5,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A pitch-soaked torch for light."
       },
@@ -4979,7 +5517,10 @@
       "kind": "gear",
       "ref": {
         "cost": 2,
-        "weight": {"amount":4,"unit":"lb"},
+        "weight": {
+          "amount": 4,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A skin holding about a day's water or wine."
       },
@@ -4999,7 +5540,10 @@
       "kind": "gear",
       "ref": {
         "cost": 0.2,
-        "weight": {"amount":1,"unit":"lb"},
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
         "availability": "everyday",
         "description": "A stone for keeping a blade's edge keen."
       },
@@ -5009,7 +5553,10 @@
       "kind": "gear",
       "ref": {
         "cost": 10,
-        "weight": {"amount":8,"unit":"oz"},
+        "weight": {
+          "amount": 8,
+          "unit": "oz"
+        },
         "availability": "unusual",
         "description": "A vial of writing ink."
       },
@@ -5029,7 +5576,10 @@
       "kind": "gear",
       "ref": {
         "cost": 23,
-        "weight": {"amount":2,"unit":"lb"},
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "unusual",
         "description": "Pen, ink, and paper for writing on the road."
       },

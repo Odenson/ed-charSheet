@@ -921,11 +921,12 @@ export class EdSpells extends LitElement {
     });
   }
 
-  // Activated blood-charms' result mods for a test name, read from the
-  // engine-level activeEffects (session.activeCharms folded globally via store).
-  // Only situational effects whose charm is in `model.activeCharms` count — the
-  // panel lists all equipped situational for display, but the roll only sees an
-  // effect while its charm is armed (effect is an effect, no tab boundary).
+  // Activated blood-charms' mods for a test name, read from the engine-level
+  // activeEffects (session.activeCharms folded globally via store). Only
+  // situational effects whose charm is in `model.activeCharms` count — the panel
+  // lists all equipped situational for display, but the roll only sees an effect
+  // while its charm is armed (effect is an effect, no tab boundary). Supports both
+  // `step` (now the blood-charm standard) and legacy `result`.
   _charmResultMods(testName) {
     const activeSet = new Set(this.model?.activeCharms ?? []);
     const out = [];
@@ -934,13 +935,25 @@ export class EdSpells extends LitElement {
       if ((e.measure ?? 'result') !== 'result') continue;
       const v = e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0;
       if (!v) continue;
-      // Only include situational effects whose charm is currently activated.
-      // Always effects already reach the Spellcasting roll via talent resultMods.
       if (e.origin?.kind !== 'item') continue;
       if (!activeSet.has(e.origin?.name)) continue;
       out.push({ label: e.summary ?? e.origin?.name ?? testName, value: v });
     }
     return out;
+  }
+  _charmStepBonus(testName) {
+    const activeSet = new Set(this.model?.activeCharms ?? []);
+    let sum = 0;
+    for (const e of this.model?.activeEffects ?? []) {
+      if (e.type !== 'test-modifier' || e.target?.domain !== 'test' || e.target?.name !== testName) continue;
+      if ((e.measure ?? 'result') !== 'step') continue;
+      const v = e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0;
+      if (!v) continue;
+      if (e.origin?.kind !== 'item') continue;
+      if (!activeSet.has(e.origin?.name)) continue;
+      sum += v;
+    }
+    return sum;
   }
 
   _rollCast(plan) {
@@ -977,15 +990,16 @@ export class EdSpells extends LitElement {
 
   // The Effect step resolves the cast and un-greys Weave + Cast for the next one
   // (owner rule). A step effect rolls the dice; a static/none effect just resets.
-  // An activated Desperate Spell's +6 to Effect (result) is a global charm mod —
-  // it rides as a flat result mod on this roll via the same engine fold that
-  // Combat's damage pool uses (effect is an effect, no tab boundary).
+  // An activated Desperate Spell's +6 to Effect is now `step` (owner update) —
+  // it rides as a step bonus on this roll (like Combat's damage pool), with
+  // legacy `result` still supported as flat mods.
   _doEffect(plan) {
     if (!this._prog.castDone) return; // Effect waits for a completed cast
     if (plan.effect.kind === 'step' && plan.effect.step != null) {
       this._pendingStep = 'effect';
+      const stepBonus = this._charmStepBonus('Effect');
       const mods = this._charmResultMods('Effect');
-      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan), null, {
+      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan) + stepBonus, null, {
         ...(mods.length ? { mods } : {}),
       });
     } else {
