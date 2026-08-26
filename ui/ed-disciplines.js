@@ -271,13 +271,29 @@ export class EdDisciplines extends LitElement {
           ?disabled=${t.step == null}
           title=${t.step == null ? 'No step to roll' : `Roll ${t.name}${karmaCtx ? ' (Karma available)' : ''}`}
           aria-label="Roll ${t.name}"
-          @click=${() =>
-            this.dispatchEvent(
-              new CustomEvent('ed-roll', { detail: { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [] }, bubbles: true, composed: true }),
-            )}
+          @click=${() => this.dispatchEvent(new CustomEvent('ed-roll', { detail: this._rollDetail(t, karmaCtx), bubbles: true, composed: true }))}
         >⚄</button>
       </div>
     `;
+  }
+
+  // The `ed-roll` detail for a talent row. An arms talent (Mystic Aim) rolls its
+  // precursor test: attach `aim` (so the modal prompts for the target defence and
+  // resolves Hit/Miss) and `arms` (so ed-app arms the payload into session on a
+  // hit) — the SAME arm the Combat tab produces, so rolling it here is consistent.
+  // An ordinary talent rolls plainly.
+  _rollDetail(t, karmaCtx) {
+    if (t.arms?.roll) {
+      const roll = t.arms.roll;
+      return {
+        label: `${t.name} — vs ${roll.vs ?? 'Mystic'} Defence`,
+        step: roll.step ?? t.step,
+        karma: karmaCtx,
+        aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0 },
+        arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [] },
+      };
+    }
+    return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [] };
   }
 
   // Edit-mode rank stepper for one talent/skill row. The prices come off the

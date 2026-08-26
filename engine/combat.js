@@ -89,6 +89,21 @@ export function successCount(total, target) {
   return total >= target ? 1 + Math.floor((total - target) / 5) : 0;
 }
 
+/**
+ * Advance the armed-talent set by one round (a new Initiative): decrement each
+ * entry's `roundsLeft` and drop the ones that hit 0. Mirrors `tickActiveSpells`
+ * — an arm that lasts N rounds (Mystic Aim = 1) expires after N Initiative rolls.
+ * An entry with `roundsLeft == null` would persist, but arms are always counted.
+ * Pure — never mutates its input.
+ * @param {Array<{roundsLeft:number|null}>} armed the session armed-talent set
+ * @returns {Array} the surviving entries with `roundsLeft` decremented
+ */
+export function tickArmedTalents(armed) {
+  return (armed ?? [])
+    .map((a) => (a.roundsLeft == null ? a : { ...a, roundsLeft: a.roundsLeft - 1 }))
+    .filter((a) => a.roundsLeft == null || a.roundsLeft > 0);
+}
+
 /** The signed value an effect contributes (operation subtract negates). */
 const opValue = (e) => (e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0);
 
@@ -314,7 +329,7 @@ function weaponPoolEffects(effects, name) {
  *   Defence & Armour block folds into the sheet's derived ratings for display
  *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
-export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], armedOptions = [], rules, conditions = {} }) {
+export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], armedOptions = [], armedTalents = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
   const sitList = rules?.situations ?? [];
   const attackEffects = [];
@@ -331,19 +346,27 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
     // `{ optionName: successCount }` (a legacy name-array counts as 1). 0/absent =
     // not armed.
   const armedCountFor = (name) => (Array.isArray(armedOptions) ? (armedOptions.includes(name) ? 1 : 0) : Number(armedOptions?.[name]) || 0);
-  const addBundle = (bundle, source) => {
+  // `forcedCount` lets an ARMED TALENT (session state) drive the success count
+  // directly; a toggled option falls back to the `armedOptions` map lookup.
+  // Every folded effect is labelled by its bundle SOURCE (the option / situation /
+  // charm / talent NAME — e.g. "Called Shot", "Mystic Aim"), so the step-audit
+  // names the source rather than the effect's prose summary. The effect's own
+  // `source` field is only a category ("condition"/"talent"/…), so the bundle name
+  // passed here is the human-readable source.
+  const addBundle = (bundle, source, forcedCount = null) => {
     for (let e of bundle?.effects ?? []) {
       if (!e || typeof e !== 'object') continue;
       // An `on-success` effect (e.g. Mystic Aim's +2 to the Attack test) folds
-      // only when its option has been ARMED by a successful precursor roll. A
-      // `perSuccess` effect scales by the success count (2 successes → +4 steps):
+      // only when its option/talent has been ARMED by a successful precursor roll.
+      // A `perSuccess` effect scales by the success count (2 successes → +4 steps):
       // bake the scaled value into a copy and drop `perSuccess`, so the pool folds
       // it as a flat modifier. Toggling the option alone is not enough.
       if (e.condition === 'on-success') {
-        const count = armedCountFor(source);
+        const count = forcedCount != null ? forcedCount : armedCountFor(source);
         if (count < 1) continue;
         if (e.perSuccess) e = { ...e, value: (e.value ?? 0) * count, perSuccess: false };
       }
+      e = { ...e, label: source };
       if (e.type === 'defense-modifier') {
         defenseMods.push({ source, name: e.target?.name ?? 'Defence', value: opValue(e) });
         continue;
@@ -360,14 +383,20 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   for (const name of selectedOptions) addBundle(optList.find((o) => o.name === name), name);
   for (const name of selectedSituations) addBundle(sitList.find((o) => o.name === name), name);
   for (const charm of selectedCharms ?? []) addBundle(charm, charm?.name ?? 'Blood charm');
+  // Armed talents (Mystic Aim): their on-success payload folds from the session
+  // arm record, scaled by the stored success count — independent of any chip, so
+  // an arm made from any roll surface reaches the pool. The armed entry supplies
+  // its own `effects` and `successes` (the forced count).
+  for (const at of armedTalents ?? []) addBundle(at, at?.name ?? 'Armed talent', at?.successes ?? 0);
 
   if (conditions.harried) {
     const harriedBundle = sitList.find((o) => o.name === 'Harried');
     if (harriedBundle) {
       for (const e of harriedBundle.effects ?? []) {
         if (e?.type === 'defense-modifier') continue; // already folded into derived defence
-        attackEffects.push(e);
-        damageEffects.push(e);
+        const labelled = { ...e, label: 'Harried' }; // source name, not the summary
+        attackEffects.push(labelled);
+        damageEffects.push(labelled);
       }
     }
   }
