@@ -4,6 +4,29 @@
   "unreleased": { "summary": "", "changes": [] },
   "releases": [
     {
+      "version": "1.22.0",
+      "date": "2026-08-26",
+      "summary": "Mystic Aim and other \"arming\" talents now arm a follow-up bonus consistently from any roll surface, counted down by rounds; combat step breakdowns name their source; the Initiative result shows beside the die.",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Mystic Aim (and any \"arming\" talent whose successful roll boosts a later action) now arms the same way no matter where you roll it — the Combat tab's option chip, the Combat tab's talent dropdown with no weapon selected, or the talent's roll on the Disciplines tab. Previously only the Combat-tab chip armed the bonus. Once armed, the +2 steps per success reach your next ranged attack regardless of the tab it was rolled from."
+        },
+        {
+          "type": "changed",
+          "text": "An armed bonus now lasts a set number of rounds and counts down on each Initiative roll (like a sustained spell), instead of being consumed by a single attack — Mystic Aim lasts 1 round, and the model supports longer-lived armers. The Combat option pill now highlights whenever the talent is armed, regardless of which surface armed it, and shows the rounds remaining."
+        },
+        {
+          "type": "improved",
+          "text": "The Attack and Damage \"step breakdown\" (the ⓘ info modal) now names the source of each modifier — the talent, combat option, blood charm, or weapon (e.g. \"Mystic Aim\", \"Called Shot\", \"Orc Stinger\") — instead of repeating the effect's description."
+        },
+        {
+          "type": "improved",
+          "text": "The Combat tab now shows the result of your last Initiative roll just to the right of the die, so you can see what you rolled without opening the log."
+        }
+      ]
+    },
+    {
       "version": "1.21.1",
       "date": "2026-08-24",
       "summary": "Blood charms now correctly require activation and grant Step bonuses, with global effect handling across all tabs.",
