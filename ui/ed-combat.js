@@ -621,6 +621,7 @@ export class EdCombat extends LitElement {
       selectedSituations: this._sits ?? [],
       selectedCharms: this._charmItems().filter((c) => charmNames.includes(c.name)),
       selectedWeaponEffects: this._selWeapon()?.effects ?? [],
+      selectedWeaponName: this._selWeapon()?.name ?? 'Weapon',
       rules: this.model?.combatRules
         ? { options: this._allOptions(), situations: this.model.combatRules.situations ?? [] }
         : { options: [], situations: [] },

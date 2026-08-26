@@ -257,10 +257,12 @@ test('collectCombatEffects: the selected weapon folds its woven always-on test m
     { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 1, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+1 to Attack tests.' },
     { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+2 to Attack tests.' },
   ];
-  const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: weaponEffects, rules: RULES, conditions: {} });
+  const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: weaponEffects, selectedWeaponName: 'Orc Stinger', rules: RULES, conditions: {} });
   const ap = attackPool({ talentStep: TALENT, effects: r.attackEffects });
   // +2 replaces +1 → the Attack step rises by exactly 2 (never +3).
   assert.equal(ap.step, TALENT + 2);
+  // The woven Attack mod is labelled by the weapon name (source), not its summary.
+  assert.ok(r.attackEffects.some((e) => e.target?.name === 'Attack' && e.label === 'Orc Stinger'), 'weapon effects labelled by weapon name');
   assert.deepEqual(ap.resultMods, [], 'step-measure weave folds into step, not flat mods');
   assert.equal(ap.strain, 0);
   // The Damage attack-modifier must not leak into the damage pool (it already

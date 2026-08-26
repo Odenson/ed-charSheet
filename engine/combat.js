@@ -329,7 +329,7 @@ function weaponPoolEffects(effects, name) {
  *   Defence & Armour block folds into the sheet's derived ratings for display
  *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
-export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], armedOptions = [], armedTalents = [], rules, conditions = {} }) {
+export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], selectedWeaponName = 'Weapon', armedOptions = [], armedTalents = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
   const sitList = rules?.situations ?? [];
   const attackEffects = [];
@@ -337,9 +337,12 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   const defenseMods = [];
   const armorMods = [];
 
-  for (const e of weaponPoolEffects(selectedWeaponEffects, 'weapon')) {
-    attackEffects.push(e);
-    damageEffects.push(e);
+  // The selected weapon's woven effects — labelled by the weapon NAME (e.g. "Orc
+  // Stinger") so the step audit names the source, not the effect's prose summary.
+  for (const e of weaponPoolEffects(selectedWeaponEffects, selectedWeaponName)) {
+    const labelled = { ...e, label: selectedWeaponName };
+    attackEffects.push(labelled);
+    damageEffects.push(labelled);
   }
 
     // How many successes armed this option: `armedOptions` is a map
