@@ -20,7 +20,7 @@
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
-import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from '../engine/combat.js';
+import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
@@ -102,13 +102,6 @@ export class EdCombat extends LitElement {
     // pick changes, so a stale attack never buffs an unrelated damage roll).
     _lastAttack: { state: true },
     _attackArmed: { state: true },
-    // Aim options (Mystic Aim): the success count of the armed aim test (0 =
-    // not armed — not rolled, missed, or consumed). Each success arms +2 steps to
-    // the Attack test. `_aimConsumed` marks that a buffed Attack has been rolled,
-    // so the persistent aim Roll-Log entry does not re-arm until a fresh aim.
-    // Both clear on a new round (Initiative), a pick change, or deselect.
-    _aimSuccesses: { state: true },
-    _aimConsumed: { state: true },
   };
 
   static styles = css`
@@ -161,6 +154,8 @@ export class EdCombat extends LitElement {
     .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
     .h .r { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: var(--fs-small); display: inline-flex; align-items: center; gap: 6px; }
     .h .r b { color: var(--fg); font-weight: 500; }
+    /* The last Initiative roll result, shown just right of the die. */
+    .h .r b.initres { color: var(--accent); font-variant-numeric: tabular-nums; }
 
     /* Weapon image: a square as tall as the pickers + statlines. Grid (not flex)
        so the auto column derives its width from the stretched height. The img is
@@ -339,9 +334,6 @@ export class EdCombat extends LitElement {
     this._rolls = [];
     this._lastAttack = null;
     this._attackArmed = false;
-    this._aimSuccesses = 0;
-    this._aimConsumed = false;
-    this._aimSince = null;
   }
 
   connectedCallback() {
@@ -366,30 +358,11 @@ export class EdCombat extends LitElement {
         const atk = (this._rolls ?? []).find((r) => /^Attack/.test(r.label ?? ''));
         this._lastAttack = atk ? { total: atk.total ?? null, target: atk.difficulty ?? null } : null;
       }
-      // Aim options (Mystic Aim): reflect the latest aim test's success count. The
-      // log is newest-first, so the first entry whose label starts with the toggled
-      // aim option's name is that test — arm `2 × successes` steps only when it HIT
-      // *and* the entry is newer than this option's last selection (`_aimSince`,
-      // stops a stale prior-round entry re-arming). Once a buffed Attack has been
-      // rolled (`_aimConsumed`), stay disarmed until the next aim roll. MA4/MA6.
-      const aimOpt = this._aimOption();
-      if (aimOpt && !this._aimConsumed) {
-        const entry = (this._rolls ?? []).find((r) => (r.label ?? '').startsWith(aimOpt.name));
-        const fresh = entry && this._aimSince != null && Date.parse(entry.at ?? '') >= this._aimSince;
-        this._aimSuccesses = fresh && entry.outcome?.ok ? successCount(entry.total, entry.difficulty) : 0;
-        // Consume: an Attack logged AFTER this aim spends the bonus (one buffed
-        // attack, then re-aim). The buffed Attack already baked the steps into its
-        // rolled step at dispatch; this only stops the NEXT attack re-using them.
-        if (this._aimSuccesses > 0 && entry) {
-          const atk = (this._rolls ?? []).find((r) => /^Attack/.test(r.label ?? ''));
-          if (atk && Date.parse(atk.at ?? '') > Date.parse(entry.at ?? '')) {
-            this._aimConsumed = true;
-            this._aimSuccesses = 0;
-          }
-        }
-      } else if (!aimOpt) {
-        this._aimSuccesses = 0;
-      }
+      // Aim/arm state (Mystic Aim) is no longer tracked here: an `arms` roll is
+      // armed centrally by ed-app (on the roll's resolution) into session
+      // `armedTalents`, so it is honoured regardless of which surface rolled it.
+      // This view reads that session state (model.armedTalents) for the fold and
+      // the chip badge.
     };
     document.addEventListener('ed-roll-logged', this._onRollLogged);
     this._loadRolls();
@@ -475,8 +448,6 @@ export class EdCombat extends LitElement {
     this._confirmClear = false;
     this._lastAttack = null;
     this._attackArmed = false;
-    this._aimSuccesses = 0;
-    this._aimConsumed = false;
   }
 
   _clearDayState() {
@@ -490,8 +461,6 @@ export class EdCombat extends LitElement {
     this._confirmClear = false;
     this._lastAttack = null;
     this._attackArmed = false;
-    this._aimSuccesses = 0;
-    this._aimConsumed = false;
   }
 
   _damageBonusBadge() {
@@ -591,6 +560,9 @@ export class EdCombat extends LitElement {
           // Active test-modifiers folded onto this talent (a sustained spell's +N
           // step, etc.) — the step audit itemises them off the pre-modifier base.
           rollMods: t.rollMods ?? [],
+          // Arming descriptor (Mystic Aim): surfaced so picking the talent as the
+          // action (weapon None) routes its roll through the aim flow and arms it.
+          arms: t.arms ?? null,
         });
       }
     }
@@ -649,14 +621,23 @@ export class EdCombat extends LitElement {
       selectedSituations: this._sits ?? [],
       selectedCharms: this._charmItems().filter((c) => charmNames.includes(c.name)),
       selectedWeaponEffects: this._selWeapon()?.effects ?? [],
+      selectedWeaponName: this._selWeapon()?.name ?? 'Weapon',
       rules: this.model?.combatRules
         ? { options: this._allOptions(), situations: this.model.combatRules.situations ?? [] }
         : { options: [], situations: [] },
       conditions: this.model?.combat?.conditions ?? {},
-      // A hit aim test arms its option's on-success effect, scaled by the success
-      // count (Mystic Aim: +2 steps × successes). Map: { optionName: successCount }.
-      armedOptions: this._aimSuccesses > 0 && this._aimOption() ? { [this._aimOption().name]: this._aimSuccesses } : {},
+      // Session-armed talents (Mystic Aim) whose scope matches the current pick.
+      // Their on-success payload folds scaled by the stored success count — armed
+      // centrally by ed-app, so ANY roll surface that hit reaches this pool.
+      armedTalents: this._armedForPick(),
     });
+  }
+  // The session-armed talents (model.armedTalents) whose weapon scope matches the
+  // current pick: an armed Mystic Aim (`appliesTo` missile/throwing) folds into a
+  // missile attack but not a melee one. A null `appliesTo` is unscoped (always).
+  _armedForPick() {
+    const scopes = this._attackScopes();
+    return (this.model?.armedTalents ?? []).filter((a) => !a.appliesTo || a.appliesTo.some((s) => scopes.includes(s)));
   }
   _attackPool() {
     const t = this._selTalent();
@@ -745,30 +726,30 @@ export class EdCombat extends LitElement {
   _armedKarmaDiceOption() {
     return this._allOptions().find((o) => o.karmaDice && (this._opts ?? []).includes(o.name)) ?? null;
   }
-  // The toggled option that runs a precursor aim test (Mystic Aim). null when no
-  // aim option is armed for the current pick.
+  // The toggled option that runs a precursor arm test (Mystic Aim). null when no
+  // arms option is toggled for the current pick.
   _aimOption() {
-    return this._allOptions().find((o) => o.aimRoll && (this._opts ?? []).includes(o.name)) ?? null;
+    return this._allOptions().find((o) => o.arms && (this._opts ?? []).includes(o.name)) ?? null;
   }
-  // Selecting an aim option fires its test immediately (the workflow: pick Mystic
-  // Aim → the modal pops up to roll vs the target's Mystic Defence). The result
-  // arms/disarms the +2 via `_onRollLogged`; nothing is armed until it HITS.
+  // Fire an `arms` talent's precursor test (Mystic Aim). Works from either surface:
+  // the Combat-option chip passes the option bundle, the talent dropdown passes the
+  // action node — both carry the derived `arms` descriptor. The modal rolls vs the
+  // entered defence and resolves Hit/Miss; ed-app arms the payload into session
+  // `armedTalents` on a hit (nothing is armed until it HITS), so the bonus reaches
+  // any later attack regardless of which surface rolled the aim.
   _rollAim(opt) {
-    const step = opt?.aimRoll?.step;
-    if (step == null) return; // no derived step (rank 0) — option wouldn't be offered
-    this._aimSuccesses = 0; // pending until the test resolves
-    this._aimConsumed = false; // a fresh aim can arm again
-    // Freshness anchor: only a log entry newer than this moment arms the bonus,
-    // so a stale entry from a previous round can't re-arm on re-selection.
-    this._aimSince = Date.now();
+    const roll = opt?.arms?.roll;
+    if (roll?.step == null) return; // no derived step (rank 0) — wouldn't be offered
     this.dispatchEvent(
       new CustomEvent('ed-roll', {
         detail: {
-          label: `${opt.name} — vs Mystic Defence`,
-          step,
+          label: `${opt.name} — vs ${roll.vs ?? 'Mystic'} Defence`,
+          step: roll.step,
           // The aim test is Karma-eligible (MA8) — offer the talent's Karma die.
-          karma: opt.aimRoll.karma ?? null,
-          aim: { vs: opt.aimRoll.vs ?? 'Mystic', strain: opt.aimRoll.strain ?? 0 },
+          karma: roll.karma ?? null,
+          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0 },
+          // ed-app arms this on a hit (name + rounds + scope + the folded payload).
+          arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [] },
         },
         bubbles: true,
         composed: true,
@@ -795,6 +776,10 @@ export class EdCombat extends LitElement {
     const w = this._selWeapon();
     const opt = this._selTalent();
     if (ap.step == null) return;
+    // An `arms` talent picked as the action (e.g. Mystic Aim with no weapon) is a
+    // precursor aim test, not an attack — route it through the same arm flow the
+    // Combat-option chip uses so it arms into session consistently.
+    if (opt?.arms) { this._rollAim(opt); return; }
     const target = this._targetNum();
     // "None" = a standalone talent/skill roll (free action), not a weapon attack:
     // label it by the talent/skill and do NOT arm the success-level damage bonus
@@ -841,6 +826,11 @@ export class EdCombat extends LitElement {
       { mods: dp.resultMods },
     );
   }
+  // The most recent Initiative roll's total from the device-local Log (newest
+  // first), shown beside the die once rolled; null before any roll this session.
+  _lastInitTotal() {
+    return (this._rolls ?? []).find((r) => r.label === 'Initiative')?.total ?? null;
+  }
   _rollInitiative() {
     const c = this.model?.characteristics?.initiative;
     if (!c?.value) return;
@@ -851,11 +841,10 @@ export class EdCombat extends LitElement {
     // is an input write (ed-edit-items), never a game-value computation here.
     this._spendRoundCharms();
     // A new round also clears the round's declared Combat options (they are
-    // chosen fresh each round; a Mystic Aim from last round is no longer armed);
-    // situational modifiers persist.
+    // chosen fresh each round); situational modifiers persist. Armed talents
+    // (Mystic Aim) are counted down by ed-app's `_advanceRound` (fired by this
+    // Initiative dispatch) — a 1-round arm expires here, not by a local reset.
     this._opts = [];
-    this._aimSuccesses = 0;
-    this._aimConsumed = false;
     // A new round: no attack has been rolled yet, so clear the armed attack and
     // the manually-adjudicated successes (the manual input hides until the next
     // attack is rolled).
@@ -934,14 +923,12 @@ export class EdCombat extends LitElement {
       }
     }
     this[key] = list;
-    // Aim options (Mystic Aim): selecting one fires its test at once; deselecting
-    // disarms any bonus it had armed.
-    if (section === 'opts') {
+    // Arms options (Mystic Aim): selecting one fires its precursor test at once.
+    // Deselecting does NOT disarm — the arm is session state (armedTalents) that
+    // lasts its `rounds` or until a fresh miss, independent of this chip.
+    if (section === 'opts' && turningOn) {
       const opt = this._allOptions().find((o) => o.name === name);
-      if (opt?.aimRoll) {
-        if (turningOn) this._rollAim(opt);
-        else { this._aimSuccesses = 0; this._aimConsumed = false; }
-      }
+      if (opt?.arms) this._rollAim(opt);
     }
   }
   _chips(items, toggled, section, cls = '') {
@@ -953,18 +940,25 @@ export class EdCombat extends LitElement {
         // bites at a 0 Karma balance.
         const noKarma = o.karmaDice != null && Math.min(o.karmaDice.max ?? 0, karmaAvail) < 1;
         const disabled = o.locked || noKarma;
-        const on = o.locked || (toggled ?? []).includes(o.name);
         const badges = this._badges(o.effects ?? []);
-        // Aim options show the armed step bonus (+2 × successes) once the test hit.
-        const aimArmed = o.aimRoll != null && (toggled ?? []).includes(o.name) && this._aimSuccesses > 0;
-        const aimBonus = aimArmed ? 2 * this._aimSuccesses : 0;
+        // Arms options show the armed step bonus (+2 × successes) once the precursor
+        // test hit — read from session `armedTalents` (the chip no longer holds it),
+        // with the rounds left so the countdown is visible.
+        const armed = o.arms ? (this.model?.armedTalents ?? []).find((a) => a.name === o.name) : null;
+        const aimArmed = !!armed && armed.successes > 0;
+        const aimBonus = aimArmed ? 2 * armed.successes : 0;
+        // Highlight (aria-pressed) reflects ACTUAL state: an arms pill is "on" iff
+        // it is armed in session — regardless of which surface armed it (chip,
+        // dropdown, Disciplines tab) — not whether this chip was toggled. Other
+        // options stay driven by the toggled set.
+        const on = o.locked || (o.arms ? aimArmed : (toggled ?? []).includes(o.name));
         return html`<button
           class="chip ${cls}${o.locked ? ' locked' : ''}${noKarma ? ' spent' : ''}${aimArmed ? ' aimed' : ''}"
           aria-pressed=${on}
           ?disabled=${disabled}
           title=${noKarma ? 'No Karma left to spend' : this._chipTitle(o)}
           @click=${() => this._toggle(section, o.name)}
-        >${o.name}${badges.map((b) => html`<span class="badge ${b.cls}" title=${b.title}>${b.text}</span>`)}${aimArmed ? html`<span class="badge pos" title="Aim hit — ${this._aimSuccesses} success${this._aimSuccesses > 1 ? 'es' : ''}, +${aimBonus} steps armed for the Attack roll">✓ +${aimBonus}</span>` : ''}</button>`;
+        >${o.name}${badges.map((b) => html`<span class="badge ${b.cls}" title=${b.title}>${b.text}</span>`)}${aimArmed ? html`<span class="badge pos" title="Aim hit — ${armed.successes} success${armed.successes > 1 ? 'es' : ''}, +${aimBonus} steps armed for the Attack roll (${armed.roundsLeft} round${armed.roundsLeft > 1 ? 's' : ''} left)">✓ +${aimBonus}</span>` : ''}</button>`;
       })}
     </div>`;
   }
@@ -1012,7 +1006,10 @@ export class EdCombat extends LitElement {
 
   _optSection() {
     const opts = this._allOptions();
-    const active = opts.filter((o) => (this._opts ?? []).includes(o.name)).length;
+    // "N on" counts what's actually active: a toggled option, or an arms option
+    // that is armed in session (from any surface) — matching the pill highlight.
+    const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
+    const active = opts.filter((o) => (o.arms ? armedNames.has(o.name) : (this._opts ?? []).includes(o.name))).length;
     return this._sec('Combat options', 'opts', active, this._chips(opts, this._opts, 'opts'));
   }
   _sitSection() {
@@ -1416,6 +1413,7 @@ export class EdCombat extends LitElement {
               <span>Your attack</span>
               <span class="r">Initiative <b>${init?.value ?? this._pend()}</b>
                 <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+                ${this._lastInitTotal() != null ? html`<b class="initres" title="Last Initiative roll result">${this._lastInitTotal()}</b>` : ''}
               </span>
             </div>
 
@@ -1423,7 +1421,7 @@ export class EdCombat extends LitElement {
               ${this._artBox()}
               <div class="attackrows">
                 <div class="row2">
-                  <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._aimSuccesses = 0; this._aimConsumed = false; this._artOk = true; }}>
+                  <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._artOk = true; }}>
                     ${this._weapons().map((x) => html`<option value=${x.name}>${x.name}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
                   </select>
                   <select aria-label="Attack talent or skill" .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>

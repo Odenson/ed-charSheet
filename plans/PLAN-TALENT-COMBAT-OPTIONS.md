@@ -5,6 +5,12 @@
 > talentOptions). **A second talent option — Mystic Aim (aim-roll pattern) —
 > landed on the same rails; see §12. `+2 steps PER SUCCESS`, aim Karma-eligible,
 > bonus consumed by one attack.** Suite **537**.
+>
+> **Superseded (2026-08-26): the `aimRoll`/`_aimSuccesses` model of §12 was
+> refactored to a first-class talent-level `arms` field with a round countdown and
+> cross-surface arming — see §13.** The combat-option construct no longer carries
+> the aim descriptor or a copy of the talent's effect; a Combat chip, the Combat
+> talent dropdown, and the Disciplines-tab roll now all arm the same session state.
 
 Extend the Combat tab so a **talent** can grant a combat-option bundle, the same
 way a thread item or the global rules already do. The driving example is **True
@@ -495,3 +501,129 @@ the talent's **1 Strain**, charged **when the aim test is rolled** (owner-confir
   (Aim mode already supports the Karma toggle once the roll lands — no new work
   beyond passing a non-null `karma`.)
 - Tests above.
+
+---
+
+## 13. Third revision — the talent-level `arms` field (2026-08-26)
+
+**Status: implemented on `dev` (2026-08-26).** Suite **663** green. This revision
+addresses two problems the §12 design left open.
+
+### 13.1 The two problems
+
+1. **Duplication.** A talent's `combatOptions` entry repeated the talent's own
+   `name`, `summary`, and a copy of its `effects` — data with no independent
+   value. (True Shot and Mystic Aim both did this.)
+2. **Inconsistent arming.** The Mystic Aim bonus was tab-local UI state
+   (`_aimSuccesses` in `ui/ed-combat.js`), armable only through the Combat-option
+   **chip**. Rolling Mystic Aim from the Combat talent **dropdown**, or from the
+   **Disciplines tab**, did not arm the bonus — the effect was supposed to apply
+   regardless of which surface rolled the precursor test.
+
+### 13.2 The fix — `arms` on the talent
+
+The identifier for "this talent arms an effect for a later action" is a
+first-class **talent-level** field, `arms`, **not** a `combatOptions` flag —
+because `combatOptions` is Combat-tab-only data (the Disciplines tab never reads
+it) and is weapon-scoped, whereas arming is a general talent property every roll
+surface must see.
+
+**Authored shape** (`rules/talents.json`) — carries only the precursor mechanics
+and the duration; the armed payload stays in the talent's own `effects`:
+
+```jsonc
+"Mystic Aim": {
+  ...,
+  "arms": {
+    "roll": { "vs": "Mystic" },   // precursor rolls vs the entered defence; omit `vs` for a no-target arm
+    "rounds": 1                    // how many rounds the armed bonus lasts (ticks down each Initiative)
+  },
+  "effects": [
+    { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" },
+      "operation": "add", "value": 2, "measure": "step",
+      "condition": "on-success", "perSuccess": true, ... }   // the armed payload — unchanged, no duplication
+  ],
+  "combatOptions": [ { "appliesTo": ["missile", "throwing"] } ]   // now ONLY the pill's weapon scope
+}
+```
+
+| `arms` field | Meaning |
+|---|---|
+| `roll.vs` | Which defence the player enters as the precursor target number (`Mystic`/`Physical`/`Social`). Omit for a flat / no-target arm. |
+| `rounds` | How many rounds the armed bonus lasts. Ticked down on each Initiative like a spell (`tickArmedTalents`), dropped at 0. Mystic Aim = `1`; other armers may be `2` or `3`. |
+| *(armed payload)* | **Not** re-listed in `arms` — it is the talent's own `on-success` effects that target a test (`target.domain === "test"`). If a talent has two such effects, **both** arm, all against the one target (owner decision, 2026-08-26). |
+
+`roll.strain`, `roll.step`, and `roll.karma` are **derived** in the store from the
+talent (its `strain`, derived Step, and karma context) — not authored — the same
+injection pattern True Shot uses for `karmaDice.max`.
+
+### 13.3 Session state + fold (mirrors activeCharms / activeSpells)
+
+- **Store** (`store.js`): every talent model node gains a derived `arms`
+  (`roll` injected, `rounds`, `appliesTo` from its pill, `effects` = its
+  on-success test payload). `deriveModel` accepts `session.armedTalents` and
+  exposes it as `model.armedTalents`. The `talentOptions` bundle carries the same
+  derived `arms` so the chip can run the flow and badge itself.
+- **Engine** (`engine/combat.js`): `collectCombatEffects` gains an `armedTalents`
+  input — each entry's on-success payload folds scaled by its stored success
+  count, **independent of any chip toggle**. New `tickArmedTalents(armed)`
+  decrements `roundsLeft` and drops the expired (mirrors `tickActiveSpells`).
+- **App** (`ui/ed-app.js`): session `_armedTalents`; the **single** roll-resolution
+  point (`ed-roll-logged`) arms an `arms` talent on a HIT with ≥1 success (miss/0
+  clears it) — so a Combat chip, a Combat dropdown, and a Disciplines-tab roll all
+  arm identically. `_advanceRound` ticks the set each Initiative; `_derive` feeds
+  it back.
+- **Views**: `ui/ed-combat.js` dropped the local `_aimSuccesses`/`_aimConsumed`
+  machinery; both the chip and the talent dropdown route an `arms` talent through
+  `_rollAim`; the fold + badge read `model.armedTalents`, scoped to the pick's
+  weapon type (`appliesTo`), and the badge shows rounds-left. `ui/ed-disciplines.js`
+  routes an `arms` talent's roll through the aim flow (`_rollDetail`) so it arms
+  the same session state.
+
+### 13.4 Behavior change vs §12
+
+- **Duration model:** §12 consumed the bonus on the **next attack** (`_aimConsumed`).
+  §13 is **round-based** — the bonus lasts `arms.rounds` rounds and expires at
+  Initiative. For Mystic Aim (1 round) the two are near-identical, but the round
+  model generalizes to multi-round armers.
+- **Chip independence:** deselecting the Mystic Aim chip no longer disarms — the
+  arm is session state, cleared only by expiry or a fresh miss.
+- **Scope enforced:** an armed Mystic Aim (`appliesTo` missile/throwing) folds
+  into a missile attack but **not** a melee one.
+
+### 13.5 Decisions (arms)
+
+- **AR1:** the arming identifier is a **talent-level `arms`**, not a `combatOptions`
+  flag — every roll surface must see it, and arming is not weapon-specific.
+- **AR2:** the armed payload is **not duplicated** into `arms` — it is the talent's
+  own `on-success` effects targeting a test. A talent with two such effects arms
+  **both**, all against the one target (owner, 2026-08-26).
+- **AR3:** duration is a **round counter** (`arms.rounds`), ticked each Initiative
+  like a spell — **not** next-attack consumption. Mystic Aim = 1; others 2–3.
+- **AR4:** arming is honoured from **any** surface — armed centrally by ed-app at
+  roll resolution into `session.armedTalents` (session-only, never persisted).
+- **AR5:** the legacy `armedOptions` engine input is **retained** (a name→count
+  map for toggled options); `armedTalents` is the new session-driven path. Both
+  fold through the same `addBundle` per-success logic.
+
+### 13.6 Files changed
+
+| File | Change |
+|---|---|
+| `rules/talents.json` | Mystic Aim gains `arms`; its `combatOptions` (and True Shot's) slimmed to option-only fields. |
+| `store.js` | Derive `arms` on each talent node; expose `model.armedTalents`; `talentOptions` carries derived `arms`, drops `aimRoll`. |
+| `engine/combat.js` | `collectCombatEffects` gains `armedTalents`; new `tickArmedTalents`. |
+| `ui/ed-app.js` | Session `_armedTalents`; arm-on-hit centrally; tick each Initiative; feed `deriveModel`; carry `arms` in the roll config. |
+| `ui/ed-combat.js` | Read `model.armedTalents` for fold + badge (pick-scoped); chip + dropdown route `arms` talents through `_rollAim`; local aim state removed. |
+| `ui/ed-disciplines.js` | `_rollDetail` routes an `arms` talent through the aim flow. |
+| `store-combat.test.js`, `engine/combat.test.js` | `arms.roll`/`rounds`/node-`arms` surfacing; `armedTalents` fold + `tickArmedTalents`. |
+
+### 13.7 Tier classification (guardrail)
+
+- **Tier 1 — schema shape:** the `combatOptions` construct shrank and talent
+  entries gained an `arms` field the engine reads. Owner-directed (2026-08-26).
+- **Taxonomy — no change (no bump):** `arms` is talent metadata alongside
+  `combatOptions`; no effect `type`/`vocabulary` added or renamed. The armed
+  payload uses the existing `on-success` / `perSuccess` / `test-modifier` grammar.
+- **Data-model invariant — intact:** `armedTalents` is session-only, never stored
+  (like `activeCharms` / `activeSpells`).

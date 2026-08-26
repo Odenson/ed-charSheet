@@ -274,6 +274,18 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 - `"on-success"` — applies only when the triggering test (usually the talent's
   own roll) succeeds. Pair with `perSuccess: true` when the effect scales per
   success, and often with `duration: "rounds"`. Used mainly by talent outcomes.
+  - **Arming talents (`on-success` targeting a *later* action).** When a talent's
+    `on-success` effect targets a **different** test than the talent's own roll —
+    a precursor test that, on a hit, buffs a following action (e.g. Mystic Aim: hit
+    vs Mystic Defence → `+2 steps perSuccess` to a later **Attack**) — the talent
+    is flagged with a sibling `arms` field (`{ roll: { vs }, rounds }`) that names
+    how the precursor rolls and how many rounds the buff lasts. `arms` is
+    **talent-level metadata** (like `combatOptions` / `karmaDice`, §2), **not** an
+    effect: the armed payload is still an ordinary `on-success` (+ `perSuccess`)
+    `test-modifier` in the talent's `effects[]`, and the engine folds it only while
+    the arm is live. This documents how existing vocabulary composes; it adds no
+    field or term, so it is **not** a taxonomy-version change (cf. §6 auto-apply).
+    Authoring detail lives in `plans/PLAN-TALENT-COMBAT-OPTIONS.md` §13.
 - A structured **trigger** for future automation, reusing the sheet's model:
 
 ```jsonc

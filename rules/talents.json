@@ -6,7 +6,9 @@
     "460 talents catalogued. Mechanics (name/action/attribute) for all; strain/skillUse/tier/summary/effects fully authored for Chakka's 24 talents plus all 22 Thief/Warrior discipline talents \u2014 the rest are enriched incrementally.",
     "Talent step = attribute step + rank (attribute-less talents like Durability/True Shot use rank only).",
     "Karma: every talent test is Karma-eligible BY DEFAULT (core rule; the engine handles this, so eligible talents carry no flag). Set \"karma\": false only on a talent that 'notes otherwise'. Versatility-learned talents can never use Karma either, but that is per-character (a \"viaVersatility\": true flag on the character's talent entry), not a property of the talent itself.",
-    "Effects follow docs/EFFECT-TAXONOMY.md; action outcomes use condition:on-success (+ perSuccess where they scale)."
+    "Effects follow docs/EFFECT-TAXONOMY.md; action outcomes use condition:on-success (+ perSuccess where they scale).",
+    "combatOptions: a talent may grant a Combat-tab option pill. Carry ONLY option-specific fields (appliesTo weapon scope, karmaDice, excludes, restricted); name/summary/effects are derived from the base talent by the store, never duplicated. See plans/PLAN-TALENT-COMBAT-OPTIONS.md.",
+    "arms: flags an 'arming' talent whose on-success effect buffs a LATER action (e.g. Mystic Aim boosts a following Attack). Shape { roll: { vs? }, rounds }: 'roll.vs' is the defence the precursor test is entered against (omit for a no-target arm); 'rounds' is how many rounds the buff lasts (ticks down each Initiative, like a spell). roll.strain/step/karma are derived from the talent, and the armed payload stays in this talent's effects[] as an on-success (+perSuccess) test-modifier — do NOT copy it into arms. Any roll surface (Combat chip, Combat dropdown, Disciplines tab) arms it into session state. See plans/PLAN-TALENT-COMBAT-OPTIONS.md §13."
   ],
   "talents": {
     "Acrobatic Defense": {
@@ -613,6 +615,10 @@
       "tier": "Novice",
       "versus": "target's Mystic Defense",
       "summary": "Take careful, magically-marked aim at a visible target (vs Mystic Defense); each success grants +2 to ranged attacks against that target.",
+      "arms": {
+        "roll": { "vs": "Mystic" },
+        "rounds": 1
+      },
       "effects": [
         {
           "type": "test-modifier",
@@ -633,13 +639,7 @@
       ],
       "combatOptions": [
         {
-          "name": "Mystic Aim",
-          "appliesTo": ["missile", "throwing"],
-          "aimRoll": { "vs": "Mystic", "strain": 1 },
-          "summary": "Roll Mystic Aim vs the target's Mystic Defence; +2 steps to the Attack test per success. 1 Strain.",
-          "effects": [
-            { "type": "test-modifier", "target": { "domain": "test", "name": "Attack" }, "operation": "add", "value": 2, "measure": "step", "condition": "on-success", "perSuccess": true, "source": "talent", "summary": "+2 steps to the Attack test per Mystic Aim success." }
-          ]
+          "appliesTo": ["missile", "throwing"]
         }
       ]
     },
@@ -816,24 +816,8 @@
       ],
       "combatOptions": [
         {
-          "name": "True Shot",
           "appliesTo": ["missile", "throwing"],
-          "karmaDice": { "source": "rank" },
-          "summary": "Add up to (rank) Karma dice to a ranged Attack test at the cost of 2 Strain.",
-          "effects": [
-            { "type": "resource-modifier", 
-              "target": 
-                { "domain": "resource", 
-                  "name": "Strain" 
-                }, 
-              "operation": "add", 
-              "value": 2, 
-              "measure": "points", 
-              "condition": "situational", 
-              "source": "condition", 
-              "summary": "2 Strain." 
-            }
-          ]
+          "karmaDice": { "source": "rank" }
         }
       ]
     },

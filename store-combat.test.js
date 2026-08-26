@@ -307,9 +307,9 @@ test('True Shot bundle carries its 2-Strain effect (folds via the pool like any 
   assert.equal(strain.value, 2);
 });
 
-// --- Mystic Aim (aim-roll talent option) --------------------------------------
+// --- Mystic Aim (arms talent option) ------------------------------------------
 
-test('Mystic Aim surfaces as a talent option with the talent Step injected into aimRoll', () => {
+test('Mystic Aim surfaces as a talent option with the talent Step injected into arms.roll', () => {
   const charT = {
     ...charA,
     disciplines: [{ name: 'Archer', circle: 5, talents: [{ name: 'Missile Weapon', rank: 5 }, { name: 'Mystic Aim', rank: 4 }] }],
@@ -318,18 +318,34 @@ test('Mystic Aim surfaces as a talent option with the talent Step injected into 
   const aim = m.combat.talentOptions.find((o) => o.name === 'Mystic Aim');
   assert.ok(aim, 'Mystic Aim should be offered as a talent-scoped combat option');
   assert.deepEqual(aim.appliesTo, ['missile', 'throwing']);
-  assert.equal(aim.aimRoll.vs, 'Mystic');
-  assert.equal(aim.aimRoll.strain, 1);
+  // The precursor roll descriptor (arms.roll) carries the injected talent context.
+  assert.equal(aim.arms.roll.vs, 'Mystic');
+  assert.equal(aim.arms.roll.strain, 1);
   // Perception 14 → step 6; + rank 4 = step 10. The aim test rolls this Step.
-  assert.equal(aim.aimRoll.step, 10);
-  // The aim test is Karma-eligible: the talent's karma context rides aimRoll.
-  assert.ok(aim.aimRoll.karma, 'aimRoll carries the talent karma context');
+  assert.equal(aim.arms.roll.step, 10);
+  // The aim test is Karma-eligible: the talent's karma context rides arms.roll.
+  assert.ok(aim.arms.roll.karma, 'arms.roll carries the talent karma context');
+  // Mystic Aim arms for 1 round (ticks down each Initiative).
+  assert.equal(aim.arms.rounds, 1);
   // Its on-success +2-STEP perSuccess bundle effect is present (folds, scaled by
   // successes, only once armed).
   const onSuccess = aim.effects.find((e) => e.condition === 'on-success' && e.measure === 'step');
   assert.ok(onSuccess);
   assert.equal(onSuccess.value, 2);
   assert.equal(onSuccess.perSuccess, true);
+});
+
+test('a Mystic Aim talent node carries its derived arms descriptor', () => {
+  const charT = {
+    ...charA,
+    disciplines: [{ name: 'Archer', circle: 5, talents: [{ name: 'Mystic Aim', rank: 4 }] }],
+  };
+  const m = deriveModel(charT, rules);
+  const node = m.disciplines[0].talents.find((t) => t.name === 'Mystic Aim');
+  assert.ok(node.arms, 'the talent node exposes arms so any roll surface sees it');
+  assert.equal(node.arms.rounds, 1);
+  assert.deepEqual(node.arms.appliesTo, ['missile', 'throwing']);
+  assert.equal(node.arms.effects.length, 1); // the armed on-success payload
 });
 
 test('Mystic Aim is absent when the talent is unowned', () => {

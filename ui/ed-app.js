@@ -3,6 +3,7 @@ import { LitElement, html, css } from 'lit';
 import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
 import { buildActiveSpell, tickActiveSpells } from '../engine/spells.js';
+import { successCount, tickArmedTalents } from '../engine/combat.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
@@ -277,6 +278,14 @@ export class EdApp extends LitElement {
       const { rollId, result, karmaResult, outcome } = e.detail ?? {};
       const r = result;
       if (!r || !rollId) return;
+      // The full displayed number the modal showed: dice + Karma die + roll-time
+      // mods — so the log matches what the player saw, and the recorded
+      // `mods`/`karma` sub-objects explain a total that isn't the raw dice sum
+      // without double-counting on render (decision #8).
+      const total = r.total + (karmaResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
+      // An aim roll's difficulty is entered in the modal, so it rides the logged
+      // event (`e.detail.difficulty`); ordinary rolls carry it on the roll config.
+      const difficulty = this._roll.difficulty?.value ?? e.detail.difficulty ?? null;
       saveRollLog(
         {
           rollId,
@@ -286,21 +295,30 @@ export class EdApp extends LitElement {
           dice: r.dice,
           groups: r.groups,
           modifier: r.modifier,
-          // The full displayed number the modal showed: dice + Karma die +
-          // roll-time mods — so the log matches what the player saw, and the
-          // recorded `mods`/`karma` sub-objects explain a total that isn't the
-          // raw dice sum without double-counting on render (decision #8).
-          total: r.total + (karmaResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0),
-          // An aim roll's difficulty is entered in the modal, so it rides the
-          // logged event (`e.detail.difficulty`); ordinary rolls carry it on the
-          // roll config. The stored outcome is what the Combat tab reads to arm.
-          difficulty: this._roll.difficulty?.value ?? e.detail.difficulty ?? null,
+          total,
+          difficulty,
           outcome: outcome ?? null,
           karma: karmaResult ? { step: karmaResult.step, dice: karmaResult.dice, total: karmaResult.total } : null,
           mods: this._roll.mods ?? [],
         },
         this._characterId,
       );
+      // Arm/disarm an `arms` talent (Mystic Aim) from ANY roll surface. This is the
+      // one place a precursor roll resolves, so a Combat chip, a Combat-dropdown
+      // roll, and a Disciplines-tab roll all arm identically (data-down/dispatch-up:
+      // the views send the arm descriptor; the app owns the session state). A HIT
+      // with ≥1 success arms the payload for `rounds` rounds (ticked at Initiative);
+      // a miss / 0 successes clears any existing arm for that talent.
+      const arms = this._roll.arms;
+      if (arms?.name) {
+        const successes = successCount(total, difficulty);
+        const rest = (this._armedTalents ?? []).filter((a) => a.name !== arms.name);
+        this._armedTalents =
+          successes > 0
+            ? [...rest, { name: arms.name, successes, roundsLeft: arms.rounds ?? 1, roundsTotal: arms.rounds ?? 1, appliesTo: arms.appliesTo ?? null, effects: arms.effects ?? [] }]
+            : rest;
+        this._model = this._derive();
+      }
     });
     // A roll modal with an apply context (e.g. a Recovery test) hands its total
     // back up; apply it to the character's inputs via the pure engine and
@@ -487,6 +505,7 @@ export class EdApp extends LitElement {
       this._knockedDown = false;
       this._activeSpells = []; // active self-cast spells (session-only, 6b)
       this._activeCharms = []; // activated blood-charms (session-only, not persisted — equipped gives always implant, activation gives situational test mods globally)
+      this._armedTalents = []; // armed `arms` talents (Mystic Aim): session-only, counted down each Initiative
       this._round = 0;
       this._dayReset = null;
       this._baseSha = base;
@@ -651,6 +670,12 @@ export class EdApp extends LitElement {
       this._activeSpells = tickActiveSpells(this._activeSpells);
       needsDerive = true;
     }
+    // Armed talents (Mystic Aim) count down like a spell: decrement each and drop
+    // the expired ones. A 1-round arm is gone by the next Initiative.
+    if (this._armedTalents?.length) {
+      this._armedTalents = tickArmedTalents(this._armedTalents);
+      needsDerive = true;
+    }
     if (this._activeCharms?.length) {
       const spent = [...this._activeCharms];
       this._activeCharms = [];
@@ -797,6 +822,7 @@ export class EdApp extends LitElement {
       knockedDown: this._knockedDown,
       activeSpells: this._activeSpells ?? [],
       activeCharms: this._activeCharms ?? [],
+      armedTalents: this._armedTalents ?? [],
     });
   }
 
@@ -892,6 +918,7 @@ export class EdApp extends LitElement {
     this._pendingUse = null;
     this._knockedDown = false;
     this._activeCharms = [];
+    this._armedTalents = [];
     const combatEl = this.renderRoot?.querySelector('ed-combat');
     clearCombatScratch(this._characterId, combatEl);
     const cur = this._character.resources?.health ?? {};
@@ -1419,7 +1446,7 @@ export class EdApp extends LitElement {
   // body). A recovery roll made while a step-boost is armed rolls at the bumped
   // step (Booster/Healing +8) — the dice and the log then show the boosted step.
   // The +N comes from the armed potion's catalog data, never a view literal.
-  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim }) {
+  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim, arms }) {
     let rollStep = step;
     const recBonus = armedRecoveryBonus(this._pendingUse);
     if (apply?.action === 'recovery-heal' && recBonus.stepBonus) rollStep += recBonus.stepBonus;
@@ -1460,6 +1487,9 @@ export class EdApp extends LitElement {
       // An aim roll (Mystic Aim): the modal takes the target's defence as input,
       // rolls the talent vs it, and resolves Hit/Miss. `aim` carries { vs, strain }.
       aim: aim ?? null,
+      // An `arms` roll (Mystic Aim): on a HIT the ed-roll-logged handler arms this
+      // talent's payload. Carries { name, rounds, appliesTo, effects }.
+      arms: arms ?? null,
     };
   }
 

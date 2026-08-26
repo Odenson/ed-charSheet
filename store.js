@@ -654,6 +654,27 @@ export function deriveModel(character, rules, session = {}) {
       return {
         name: t.name,
         rank: t.rank,
+        // Arming talents (Mystic Aim): a precursor test that, on a HIT, arms an
+        // effect for a later action, lasting `arms.rounds` rounds. Surfaced on the
+        // talent (not just the Combat pill) so EVERY roll surface recognises it and
+        // dispatches the same armed session state. Derived here: the precursor
+        // roll gets this talent's Step/karma/Strain injected; `effects` is the
+        // armed payload (its on-success test-targeting effects — both fold if a
+        // talent has more than one); `appliesTo` carries the weapon scope from its
+        // combat pill so an armed bonus only applies to the right attack type.
+        arms: cat.arms
+          ? {
+              roll: {
+                vs: cat.arms.roll?.vs ?? null,
+                strain: cat.arms.roll?.strain ?? cat.strain ?? 0,
+                step: step ?? null,
+                karma,
+              },
+              rounds: cat.arms.rounds ?? 1,
+              appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
+              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && e?.target?.domain === 'test'),
+            }
+          : null,
         // The Circle the talent was learned at — a stored input, surfaced so the
         // Disciplines tab can group talents by Circle. Also drives the derived tier.
         circle: t.circle ?? null,
@@ -1333,28 +1354,61 @@ export function deriveModel(character, rules, session = {}) {
       .filter((it) => it.equipped && (it.combatOptions?.length ?? 0) > 0 && it.kind !== 'weapon' && !it.ref?.category)
       .flatMap((it) => it.combatOptions ?? []),
     // Talent-scoped combat-option bundles (a talent may declare `combatOptions`
-    // in rules/talents.json — e.g. True Shot). The talent's current rank is
-    // resolved into each bundle's `karmaDice.max`, so the roll modal can cap the
-    // extra Karma dice without looking the talent up. Only owned talents at rank
-    // ≥ 1 contribute; a talent held in two Disciplines is deduped keeping the
-    // highest rank (plans/PLAN-TALENT-COMBAT-OPTIONS.md §4).
+    // in rules/talents.json — e.g. True Shot). The JSON option construct carries
+    // ONLY what is option-specific: the `appliesTo` weapon-category scope that
+    // gates the pill, plus the behaviour flags (`karmaDice`, `excludes`,
+    // `restricted`). Arming (`arms`) is declared on the TALENT (surfaced above) so
+    // every roll surface sees it. Everything the pill renders and folds — its
+    // `name`, tooltip `summary`, and `effects` — is DERIVED from the base talent
+    // here, so the rule data isn't duplicated across the talent and its option
+    // (plans/PLAN-TALENT-COMBAT-OPTIONS.md §4). The talent's current rank is
+    // resolved into `karmaDice.max` and the aim test's derived Step/karma, so the
+    // roll modal never has to look the talent up. Only owned talents at rank ≥ 1
+    // contribute; a talent held in two Disciplines is deduped keeping the highest
+    // rank.
     talentOptions: (() => {
       const byName = new Map();
+      // A situational Strain cost as a foldable effect (True Shot's 2 Strain):
+      // built from the talent's own `strain` so the cost lives in one place. The
+      // pool sums it (badge + set-dice commit charge) like any resource-modifier.
+      const strainEffect = (n) => ({
+        type: 'resource-modifier',
+        target: { domain: 'resource', name: 'Strain' },
+        operation: 'add',
+        value: n,
+        measure: 'points',
+        condition: 'situational',
+        source: 'condition',
+        summary: `${n} Strain.`,
+      });
       for (const d of disciplines) {
         for (const t of d.talents ?? []) {
-          const defs = talentCatalog[t.name]?.combatOptions;
+          const cat = talentCatalog[t.name];
+          const defs = cat?.combatOptions;
           if (!defs?.length || (t.rank ?? 0) < 1) continue;
           for (const o of defs) {
-            const prev = byName.get(o.name);
+            const name = o.name ?? t.name; // pill name = the talent (derived)
+            const prev = byName.get(name);
             if (prev && (prev._rank ?? 0) >= t.rank) continue;
-            byName.set(o.name, {
+            // An arms talent (Mystic Aim) charges its Strain on the precursor test,
+            // not the attack — the derived `t.arms` (surfaced on the talent above)
+            // carries that roll. A NON-arms option's Strain rides the attack pool,
+            // so synthesise it from the talent's `strain` (True Shot's 2).
+            const isArms = !!t.arms;
+            const strain = o.strain ?? cat?.strain ?? 0; // the talent owns the cost
+            const baseEffects = o.effects ?? cat?.effects ?? [];
+            const effects = !isArms && strain ? [strainEffect(strain), ...baseEffects] : baseEffects;
+            byName.set(name, {
               ...o,
+              name,
+              summary: o.summary ?? cat?.summary ?? '',
+              effects,
               // True Shot: cap the extra Karma dice at the talent rank.
               karmaDice: o.karmaDice ? { ...o.karmaDice, max: t.rank } : null,
-              // Mystic Aim: the aim test is the talent's own test — inject its
-              // derived Step and karma context so the Combat tab can roll it
-              // (Karma-eligible) without re-deriving.
-              aimRoll: o.aimRoll ? { ...o.aimRoll, step: t.step ?? null, karma: t.karma ?? null } : null,
+              // The derived arming descriptor (precursor roll + rounds + payload),
+              // so the chip can run the aim flow and mark itself armed without
+              // re-deriving. null for non-arms options (True Shot).
+              arms: t.arms ?? null,
               grantedBy: t.name,
               _rank: t.rank,
             });
@@ -1518,6 +1572,13 @@ export function deriveModel(character, rules, session = {}) {
     // per-tab toggle — a Spellcasting/Effect bonus armed in Combat also reaches a
     // Spells-tab roll and a Disciplines talent badge while active.
     activeCharms: session?.activeCharms ?? [],
+    // Session-only ARMED talents (Mystic Aim and other `arms` talents): a
+    // precursor roll that HIT arms an effect on a later action, counted down over
+    // `rounds` (ticked each Initiative like a spell). Engine-level like activeCharms
+    // so the arm is honoured regardless of which surface rolled it (Combat chip,
+    // Combat dropdown, Disciplines tab). Each entry:
+    // { name, successes, roundsLeft, roundsTotal, appliesTo, effects }.
+    armedTalents: session?.armedTalents ?? [],
     // The enabled homebrew rules (rules/homebrew.json — docs/HOMEBREW-RULES.md),
     // passed through as pure data for the footer pill + modal: { id, name,
     // overrides, summary, formula }. Nothing derived; the rule payloads are

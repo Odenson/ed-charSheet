@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount } from './combat.js';
+import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -173,7 +173,9 @@ test('collectCombatEffects: player toggles return attack/damage effects AND defe
     rules: RULES,
     conditions: {},
   });
-  assert.ok(r.attackEffects.includes(option('Aggressive Attack').effects[0]), 'attack step mod present');
+  // Folded effects are COPIES stamped with their source name (label), so compare
+  // by content, not identity: the +3 Attack step mod is present, labelled by source.
+  assert.ok(r.attackEffects.some((e) => e.type === 'test-modifier' && e.target?.name === 'Attack' && e.value === 3 && e.label === 'Aggressive Attack'), 'attack step mod present, labelled by source');
   assert.ok(r.attackEffects.some((e) => e.type === 'resource-modifier'), 'strain mod present');
   assert.ok(!r.attackEffects.some((e) => e.type === 'defense-modifier'), 'defense mods never enter the pool (B7)');
   // defenseMods: Aggressive Attack −3/−3 + Partial Cover +2/+2
@@ -224,7 +226,8 @@ test('collectCombatEffects: blood-charm effects fold (result-measure → resultM
   const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [charm], rules: RULES, conditions: {} });
   const ap = attackPool({ talentStep: TALENT, effects: r.attackEffects });
   assert.equal(ap.step, TALENT);
-  assert.deepEqual(ap.resultMods, [{ label: '+6 to the Attack result.', value: 6 }]);
+  // The result mod is labelled by its source (the charm name), not its summary.
+  assert.deepEqual(ap.resultMods, [{ label: 'Desperate Blow', value: 6 }]);
   assert.equal(ap.strain, 1);
 });
 
@@ -254,10 +257,12 @@ test('collectCombatEffects: the selected weapon folds its woven always-on test m
     { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 1, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+1 to Attack tests.' },
     { type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+2 to Attack tests.' },
   ];
-  const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: weaponEffects, rules: RULES, conditions: {} });
+  const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: weaponEffects, selectedWeaponName: 'Orc Stinger', rules: RULES, conditions: {} });
   const ap = attackPool({ talentStep: TALENT, effects: r.attackEffects });
   // +2 replaces +1 → the Attack step rises by exactly 2 (never +3).
   assert.equal(ap.step, TALENT + 2);
+  // The woven Attack mod is labelled by the weapon name (source), not its summary.
+  assert.ok(r.attackEffects.some((e) => e.target?.name === 'Attack' && e.label === 'Orc Stinger'), 'weapon effects labelled by weapon name');
   assert.deepEqual(ap.resultMods, [], 'step-measure weave folds into step, not flat mods');
   assert.equal(ap.strain, 0);
   // The Damage attack-modifier must not leak into the damage pool (it already
@@ -420,4 +425,52 @@ test('auditPool: a null base keeps step null but still lists the base part', () 
   assert.equal(a.parts.length, 1);
   assert.equal(a.parts[0].kind, 'base');
   assert.equal(a.parts[0].value, null);
+});
+
+// --- armed talents (Mystic Aim): session-driven fold + round countdown ---------
+
+const AIM_EFFECT = {
+  type: 'test-modifier',
+  target: { domain: 'test', name: 'Attack' },
+  operation: 'add',
+  value: 2,
+  measure: 'step',
+  condition: 'on-success',
+  perSuccess: true,
+  source: 'talent',
+};
+
+test('collectCombatEffects folds an armed talent scaled by its success count', () => {
+  const armed = [{ name: 'Mystic Aim', successes: 3, effects: [AIM_EFFECT] }];
+  const { attackEffects } = collectCombatEffects({ armedTalents: armed, rules: { options: [], situations: [] } });
+  // 3 successes × +2 step = +6, baked flat (perSuccess dropped) so the pool folds it.
+  const e = attackEffects.find((x) => x.target?.name === 'Attack');
+  assert.ok(e);
+  assert.equal(e.value, 6);
+  assert.equal(e.perSuccess, false);
+  // The folded effect is labelled by its SOURCE (the talent name), so the step
+  // audit names "Mystic Aim" rather than the effect's prose summary.
+  assert.equal(e.label, 'Mystic Aim');
+  // It lands on the Attack step of the pool.
+  const ap = attackPool({ talentStep: 10, effects: attackEffects, activeTalent: 'Missile Weapon' });
+  assert.equal(ap.step, 16);
+});
+
+test('an armed talent with 0 successes folds nothing (a miss never buffs)', () => {
+  const armed = [{ name: 'Mystic Aim', successes: 0, effects: [AIM_EFFECT] }];
+  const { attackEffects } = collectCombatEffects({ armedTalents: armed, rules: { options: [], situations: [] } });
+  assert.equal(attackEffects.filter((x) => x.target?.name === 'Attack').length, 0);
+});
+
+test('tickArmedTalents decrements roundsLeft and drops the expired', () => {
+  const armed = [
+    { name: 'Mystic Aim', successes: 2, roundsLeft: 1, effects: [] },
+    { name: 'Long Aim', successes: 1, roundsLeft: 3, effects: [] },
+  ];
+  const next = tickArmedTalents(armed);
+  assert.equal(next.length, 1); // the 1-round arm expired
+  assert.equal(next[0].name, 'Long Aim');
+  assert.equal(next[0].roundsLeft, 2);
+  // Pure: the input is untouched.
+  assert.equal(armed[0].roundsLeft, 1);
 });
