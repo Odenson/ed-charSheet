@@ -145,3 +145,36 @@ Sources:
 - text-RB-companions-guide.txt:393 (Circles 9–15 scope), :777–782 (per-tier options format), :804–829 (example)
 - text-RB-companions-guide.txt:2753–2823 (pp. 75–77 — knack learning, minimum rank, cost, requirements/restrictions)
 - text-RB-deeper-secrets.txt:22584 (tier band names corroborated)
+
+### Q003 — Anticipate Spell (4E Companion knack): attribute, action, strain, effect, and per-success bonuses
+Keywords: Anticipate Spell · Anticipate Blow · Mystic Defense · Spellcasting · knack · Perfect Anticipation · Rank+PER · Strain 2 · Simple action · Resolved: 2026-08-28
+
+**Anticipate Spell is a knack of the Anticipate Blow talent (Earthdawn
+Companion, p. 80), not a standalone Player's Guide talent.** Its stat block:
+Step Rank+PER (attribute = **Perception**), Action **Simple**, Strain **2**,
+Skill Use **No**, Restrictions None, requires Anticipate Blow at **Rank 5**.
+
+Effect (verbatim structure): the adept must have a **higher Initiative result
+than their target** and makes the test **against the target's Mystic Defense**.
+**Each success adds +2 to the adept's Mystic Defense against that target until
+the end of the round** — the Physical-Defense counterpart stays with Anticipate
+Blow (PG p. 128, +2 Physical per success). The adept **also gains +2 per
+success to the first Attack or Spellcasting test** they make against the
+target, who may be the only target of the test. Per-round usage is limited to
+**a number of times equal to their Anticipate Blow rank each round** (rank of
+the parent talent, not of the knack), and **Anticipate Blow or any associated
+knacks may not be used for other purposes that round**.
+
+The dual-defence version (+2 per success to **both** Physical and Mystic
+Defense + first Attack or Spellcasting test) is the higher-rank knack **Perfect
+Anticipation** (Deeper Secrets p. 204: Anticipate Blow Rank 12 *and* Anticipate
+Spell; once per round). So for authoring: Anticipate Spell = +2 Mystic Defense
+per success, +2 per success to first Attack/Spellcasting test, usage cap keyed
+to Anticipate Blow rank.
+
+Sources:
+- text-RB-companions-guide.txt:2947–2960 (p. 80 — Anticipate Spell knack: Talent Anticipate Blow, Req. Rank 5, Step Rank+PER, Action Simple, Strain 2, Skill Use No, full effect)
+- text-RB-companions-guide.txt:16827 (p. 80 — index; page-break corroborated at :2973 "81Take the Hit")
+- text-RB-players-guide.txt:5467–5484 (p. 128 — Anticipate Blow base talent for contrast: +2 Physical Defense per success, first Attack test only, Rank usage cap)
+- text-RB-deeper-secrets.txt:8692–8705 (p. 204 — Perfect Anticipation: Req. Anticipate Blow Rank 12 + Anticipate Spell; +2/success Physical AND Mystic Defense + first Attack or Spellcasting test; once per round)
+- rules/knacks.json:133–144 (repo entry — matches book text verbatim)

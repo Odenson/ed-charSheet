@@ -462,6 +462,35 @@ test('an armed talent with 0 successes folds nothing (a miss never buffs)', () =
   assert.equal(attackEffects.filter((x) => x.target?.name === 'Attack').length, 0);
 });
 
+test('an armed talent carrying a defense-modifier folds it into defenseMods (Anticipate Blow)', () => {
+  // Anticipate Blow arms TWO on-success payloads per success: +2 steps to the
+  // first Attack test AND +2 Physical Defence vs that foe. The engine must fold
+  // the defence bonus (scaled by successes) into defenseMods while the Attack
+  // bonus folds into the pool effects — neither double-counted.
+  const DEF_EFFECT = {
+    type: 'defense-modifier',
+    target: { domain: 'defense', name: 'Physical' },
+    operation: 'add',
+    value: 2,
+    measure: 'rating',
+    condition: 'on-success',
+    perSuccess: true,
+    source: 'talent',
+  };
+  const armed = [{ name: 'Anticipate Blow', successes: 2, effects: [AIM_EFFECT, DEF_EFFECT] }];
+  const r = collectCombatEffects({ armedTalents: armed, rules: { options: [], situations: [] } });
+  // Defence: 2 per success × 2 = +4, into defenseMods (informational, B7).
+  const def = r.defenseMods.find((d) => d.source === 'Anticipate Blow' && d.name === 'Physical');
+  assert.ok(def, 'the armed Defence bonus reaches defenseMods');
+  assert.equal(def.value, 4);
+  // Attack: 2 per success × 2 = +4, into the attack effects.
+  const atk = r.attackEffects.find((x) => x.target?.name === 'Attack' && x.label === 'Anticipate Blow');
+  assert.ok(atk, 'the armed Attack bonus reaches the pool effects');
+  assert.equal(atk.value, 4);
+  // The defence mod must never leak into a roll pool.
+  assert.equal(r.damageEffects.filter((x) => x.type === 'defense-modifier').length, 0, 'defence mods never enter the pools');
+});
+
 test('tickArmedTalents decrements roundsLeft and drops the expired', () => {
   const armed = [
     { name: 'Mystic Aim', successes: 2, roundsLeft: 1, effects: [] },

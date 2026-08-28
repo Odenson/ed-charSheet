@@ -150,6 +150,24 @@ export class EdRollModal extends LitElement {
     const n = Number(t);
     return Number.isFinite(n) ? n : null;
   }
+  // The per-success armed bonuses for the aim roll, derived from the talent's own
+  // on-success payload (carried on this.aim.effects): e.g. "+2 steps to the Attack
+  // roll" for Mystic Aim, "+2 steps to the Attack roll and +2 Physical Defence"
+  // for Anticipate Blow. `s` is the success count for the display scale.
+  _aimSummary(s) {
+    const per = (type, name) => {
+      const e = (this.aim?.effects ?? []).find((x) => x.type === type && x.target?.name === name);
+      if (!e) return null;
+      const v = (e.value ?? 0) * (e.perSuccess ? s : 1);
+      return e.measure === 'rating' ? `${v} ${name} Defence` : `+${v} steps to ${name}`;
+    };
+    const parts = [];
+    const atk = per('test-modifier', 'Attack') || per('test-modifier', 'Effect');
+    if (atk) parts.push(atk);
+    const def = per('defense-modifier', 'Physical') || per('defense-modifier', 'Mystic');
+    if (def) parts.push(def);
+    return parts.length ? parts.join(' and ') : '';
+  }
 
   // A set-dice roll adds up to `rank` Karma dice (True Shot); `karma.rank` is the
   // signal (only present when a karmaDice option is armed and affordable).
@@ -326,13 +344,15 @@ export class EdRollModal extends LitElement {
   // the apply event.
   _outcome() {
     // Aim roll: resolve against the target defence entered in the modal, in
-    // success levels — each success arms +2 steps for the Attack roll (MA7).
+    // success levels — each success arms a per-success bonus for a later roll
+    // (MA7; e.g. Mystic Aim +2 steps to Attack, Anticipate Blow +2 steps Attack
+    // and +2 Physical Defence).
     if (this._isAim()) {
       const d = this._aimTargetNum();
       if (d == null || !this._result) return null;
       const s = successCount(this._grandTotal(), d);
       return s > 0
-        ? { word: `Aim hit — ${s} success${s > 1 ? 'es' : ''}, +${2 * s} steps`, ok: true }
+        ? { word: `Aim hit — ${s} success${s > 1 ? 'es' : ''}, ${this._aimSummary(s)}`, ok: true }
         : { word: 'Aim missed', ok: false };
     }
     const d = this.difficulty?.value;
@@ -410,7 +430,7 @@ export class EdRollModal extends LitElement {
             </label>
           </div>
           <div class="foot">
-            <span class="hint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''} +2 steps per success arm for the Attack roll.</span>
+            <span class="hint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}</span>
             <button class="commit" ?disabled=${!ready} @click=${this._commitAim}>Roll</button>
           </div>
         </div>

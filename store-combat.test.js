@@ -353,6 +353,70 @@ test('Mystic Aim is absent when the talent is unowned', () => {
   assert.ok(!m.combat.talentOptions.some((o) => o.name === 'Mystic Aim'));
 });
 
+// --- Anticipate Blow (un-scoped arms talent option) ---------------------------
+
+// Anticipate Blow is a Warrior novice talent-option. Its combat pill has NO
+// appliesTo — un-scoped, always available (vs Mystic Aim's ranged-only gate).
+const warriorA = {
+  ...charA,
+  disciplines: [{ name: 'Warrior', circle: 3, talents: [{ name: 'Anticipate Blow', rank: 2 }] }],
+};
+
+test('Anticipate Blow surfaces as an un-scoped (always-available) arms talent option', () => {
+  const m = deriveModel(warriorA, rules);
+  const opt = m.combat.talentOptions.find((o) => o.name === 'Anticipate Blow');
+  assert.ok(opt, 'Anticipate Blow should be offered as a talent-scoped combat option');
+  // No weapon-category gate: un-scoped/always available.
+  assert.ok(opt.appliesTo == null, 'absent appliesTo is the always-available signal');
+  // Precursor roll vs Mystic Defence, 1 round, 1 Strain (the talent's own).
+  assert.equal(opt.arms.roll.vs, 'Mystic');
+  assert.equal(opt.arms.roll.strain, 1);
+  assert.equal(opt.arms.rounds, 1);
+  // Two armed on-success payloads ride arms.effects: the Attack test-modifier
+  // AND the Physical Defence modifier (the defence payload is new — Mystic Aim
+  // had only the test payload).
+  assert.equal(opt.arms.effects.length, 2);
+});
+
+test('an Anticipate Blow talent node carries both armed payload effects', () => {
+  const m = deriveModel(warriorA, rules);
+  const node = m.disciplines[0].talents.find((t) => t.name === 'Anticipate Blow');
+  assert.ok(node.arms, 'the talent node exposes arms so any roll surface sees it');
+  assert.equal(node.arms.rounds, 1);
+  assert.deepEqual(node.arms.appliesTo, null, 'un-scoped — always available');
+  const types = node.arms.effects.map((e) => e.type);
+  assert.ok(types.includes('test-modifier'), 'the Attack test payload is armed');
+  assert.ok(types.includes('defense-modifier'), 'the Physical Defence payload is armed');
+});
+
+test('Anticipate Blow is absent when the talent is unowned', () => {
+  const m = deriveModel(charA, rules); // charA (Archer) has no Anticipate Blow
+  assert.ok(!m.combat.talentOptions.some((o) => o.name === 'Anticipate Blow'));
+});
+
+test('an armed Anticipate Blow folds its Defence mod into defenseMods', () => {
+  const m = deriveModel(warriorA, rules);
+  // Arms the payload with 2 successes: +2/+2 per success → +4 Attack steps, +4
+  // Physical Defence. The armed record carries a test- AND defense-modifier.
+  const arms = {
+    name: 'Anticipate Blow',
+    successes: 2,
+    roundsLeft: 1,
+    roundsTotal: 1,
+    appliesTo: null,
+    effects: m.combat.talentOptions.find((o) => o.name === 'Anticipate Blow').arms.effects,
+  };
+  const out = collectCombatEffects({ armedTalents: [arms], rules: m.combatRules, conditions: {} });
+  // The Physical Defence bonus — scaled per success — lands in defenseMods.
+  const def = out.defenseMods.find((d) => d.source === 'Anticipate Blow' && d.name === 'Physical');
+  assert.ok(def, 'the armed Defence bonus reaches defenseMods');
+  assert.equal(def.value, 4, '2 per success × 2 successes = +4 Physical Defence');
+  // ...and the Attack step bonus folds into the attack effects list.
+  const atk = out.attackEffects.find((e) => e.type === 'test-modifier' && e.target?.name === 'Attack' && e.label === 'Anticipate Blow');
+  assert.ok(atk, 'the armed Attack bonus reaches the pool effects');
+  assert.equal(atk.value, 4, '2 per success × 2 successes = +4 steps');
+});
+
 // --- rollMods: consistent active-test-modifier surfacing across measures -------
 
 test('rollMods badges every applied test-modifier on a skill, regardless of measure', () => {

@@ -747,7 +747,7 @@ export class EdCombat extends LitElement {
           step: roll.step,
           // The aim test is Karma-eligible (MA8) — offer the talent's Karma die.
           karma: roll.karma ?? null,
-          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0 },
+          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, effects: opt.arms.effects ?? [] },
           // ed-app arms this on a hit (name + rounds + scope + the folded payload).
           arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [] },
         },
@@ -941,24 +941,36 @@ export class EdCombat extends LitElement {
         const noKarma = o.karmaDice != null && Math.min(o.karmaDice.max ?? 0, karmaAvail) < 1;
         const disabled = o.locked || noKarma;
         const badges = this._badges(o.effects ?? []);
-        // Arms options show the armed step bonus (+2 × successes) once the precursor
+        // Arms options show the armed bonus once the precursor
         // test hit — read from session `armedTalents` (the chip no longer holds it),
-        // with the rounds left so the countdown is visible.
+        // with the rounds left so the countdown is visible. The per-success totals
+        // are derived from the armed talent's own on-success payload (Mystic Aim:
+        // +N steps Attack; Anticipate Blow: +N steps Attack AND +N Physical Defence),
+        // so the badge generalises rather than hardcoding a +2.
         const armed = o.arms ? (this.model?.armedTalents ?? []).find((a) => a.name === o.name) : null;
         const aimArmed = !!armed && armed.successes > 0;
-        const aimBonus = aimArmed ? 2 * armed.successes : 0;
+        const armedPart = (type, name) => {
+          const e = (armed?.effects ?? []).find((x) => x.type === type && x.target?.name === name);
+          const per = e?.perSuccess ? (e?.value ?? 0) * armed.successes : e?.value ?? 0;
+          return per;
+        };
+        const atkBonus = armedPart('test-modifier', 'Attack');
+        const defBonus = armedPart('defense-modifier', 'Physical');
         // Highlight (aria-pressed) reflects ACTUAL state: an arms pill is "on" iff
         // it is armed in session — regardless of which surface armed it (chip,
         // dropdown, Disciplines tab) — not whether this chip was toggled. Other
         // options stay driven by the toggled set.
         const on = o.locked || (o.arms ? aimArmed : (toggled ?? []).includes(o.name));
+        const armBadges = aimArmed
+          ? html`<span class="badge pos" title="Aim hit — ${armed.successes} success${armed.successes > 1 ? 'es' : ''}, +${atkBonus} steps to the Attack roll${defBonus ? ` and +${defBonus} Physical Defence` : ''} (${armed.roundsLeft} round${armed.roundsLeft > 1 ? 's' : ''} left)">✓${atkBonus ? ` +${atkBonus}` : ''}${defBonus ? ` +${defBonus} Def` : ''}</span>`
+          : '';
         return html`<button
           class="chip ${cls}${o.locked ? ' locked' : ''}${noKarma ? ' spent' : ''}${aimArmed ? ' aimed' : ''}"
           aria-pressed=${on}
           ?disabled=${disabled}
           title=${noKarma ? 'No Karma left to spend' : this._chipTitle(o)}
           @click=${() => this._toggle(section, o.name)}
-        >${o.name}${badges.map((b) => html`<span class="badge ${b.cls}" title=${b.title}>${b.text}</span>`)}${aimArmed ? html`<span class="badge pos" title="Aim hit — ${armed.successes} success${armed.successes > 1 ? 'es' : ''}, +${aimBonus} steps armed for the Attack roll (${armed.roundsLeft} round${armed.roundsLeft > 1 ? 's' : ''} left)">✓ +${aimBonus}</span>` : ''}</button>`;
+        >${o.name}${badges.map((b) => html`<span class="badge ${b.cls}" title=${b.title}>${b.text}</span>`)}${armBadges}</button>`;
       })}
     </div>`;
   }

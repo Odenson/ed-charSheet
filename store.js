@@ -662,6 +662,9 @@ export function deriveModel(character, rules, session = {}) {
         // armed payload (its on-success test-targeting effects — both fold if a
         // talent has more than one); `appliesTo` carries the weapon scope from its
         // combat pill so an armed bonus only applies to the right attack type.
+        // Anticipate Blow also arms an on-success defence-modifier, so the payload
+        // filter admits defense-modifiers too (the engine folds those into the
+        // live Defence figure, not a roll pool).
         arms: cat.arms
           ? {
               roll: {
@@ -672,7 +675,7 @@ export function deriveModel(character, rules, session = {}) {
               },
               rounds: cat.arms.rounds ?? 1,
               appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
-              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && e?.target?.domain === 'test'),
+              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
             }
           : null,
         // The Circle the talent was learned at — a stored input, surfaced so the
