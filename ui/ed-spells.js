@@ -976,7 +976,14 @@ export class EdSpells extends LitElement {
     // an activated Desperate Spell there), so the Spells-tab cast sees the same
     // +6 as a Combat Spellcasting attack — no tab boundary.
     const mods = (sc?.resultMods ?? []).map((m) => ({ label: m.source ?? 'Spellcasting', value: m.value }));
-    this._dispatchRoll(`Cast — ${plan.name}${who}`, plan.castingStep, this._karmaCtx(sc?.karma), {
+    // Armed Spellcasting step bonus (Anticipate Spell). Added to the dispatched
+    // STEP the same way the learn flow adds the teacher-TW bonus (`_rollLearn`)
+    // — the store derived it from session.armedTalents (spells slice
+    // `castingArmed`), never onto the shared Spellcasting talent step, so no
+    // double-count with a Combat Spellcasting pick.
+    const armed = this.ctx?.castingArmed;
+    const step = plan.castingStep != null ? plan.castingStep + (armed?.step ?? 0) : plan.castingStep;
+    this._dispatchRoll(`Cast — ${plan.name}${who}`, step, this._karmaCtx(sc?.karma), {
       difficulty: { value: Number(target), win: 'Success', lose: 'Miss' },
       ...(mods.length ? { mods } : {}),
     });
@@ -1102,7 +1109,18 @@ export class EdSpells extends LitElement {
         <div class="step ${!threadsMet ? 'skip' : ''}">
           <span class="lab">Cast</span>
           <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
-          <span class="stepnote">${!threadsMet ? 'Weave the thread first' : `Step ${plan.castingStep ?? '—'} vs ${target ?? 'TMD'}`}</span>
+          <span class="stepnote">${!threadsMet
+            ? 'Weave the thread first'
+            : (() => {
+                const armed = this.ctx?.castingArmed;
+                const base = plan.castingStep;
+                return armed && base != null
+                  ? `Step ${base} +${armed.step} = ${base + armed.step} vs ${target ?? 'TMD'}`
+                  : `Step ${base ?? '—'} vs ${target ?? 'TMD'}`;
+              })()}</span>
+          ${threadsMet && this.ctx?.castingArmed
+            ? html`<span class="armedchip" title="Armed — ${this.ctx.castingArmed.source} (${this.ctx.castingArmed.successes} success${this.ctx.castingArmed.successes > 1 ? 'es' : ''})">+${this.ctx.castingArmed.step} armed</span>`
+            : ''}
           ${this._rollRes(prog.cast)}
         </div>
         <div class="step ${!prog.castDone ? 'skip' : ''}">

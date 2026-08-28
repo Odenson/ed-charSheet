@@ -460,3 +460,111 @@ test('rollMods badges every applied test-modifier on a skill, regardless of meas
     { value: 2, source: 'Shadow Meld', measure: 'result' },
   ]);
 });
+
+// --- Anticipate Spell (knack-sourced arms combat option) ----------------------
+
+// Anticipate Spell is a KNACK of Anticipate Blow (Companion p.80, requiredRank 5),
+// not a discipline talent. It surfaces as an armed combat option only when the
+// parent talent is owned at rank >= 5 and the knack is owned. Its arms roll Step
+// derives from Perception + the Anticipate Blow rank (never parsed from "Rank+PER").
+const knackCasterBase = {
+  ...charA,
+  disciplines: [{ name: 'Warrior', circle: 5, talents: [{ name: 'Anticipate Blow', rank: 6 }] }],
+  knacks: [{ name: 'Anticipate Spell' }],
+};
+
+test('Anticipate Spell surfaces as a knack-sourced arms option at Anticipate Blow rank >= 5', () => {
+  const m = deriveModel(knackCasterBase, rules);
+  const opt = m.combat.talentOptions.find((o) => o.name === 'Anticipate Spell');
+  assert.ok(opt, 'the knack should surface as a combat option');
+  assert.ok(opt.appliesTo == null, 'un-scoped — always available');
+  assert.equal(opt.arms.roll.vs, 'Mystic');
+  assert.equal(opt.arms.roll.strain, 2, "the knack's own Strain");
+  // Perception 14 → step 6; + Anticipate Blow rank 6 = step 12 (derived, not parsed).
+  assert.equal(opt.arms.roll.step, 12);
+  assert.ok(opt.arms.roll.karma, 'the aim test is Karma-eligible');
+  assert.equal(opt.arms.rounds, 1);
+  // Three armed on-success payloads: Mystic Defence + Attack + Spellcasting.
+  assert.equal(opt.arms.effects.length, 3);
+  assert.equal(opt.grantedBy, 'Anticipate Blow', 'the option is granted by the parent talent');
+  assert.ok(opt.note && /other purposes this round/.test(opt.note), 'the same-round lockout note rides the option');
+});
+
+test('Anticipate Spell is absent when Anticipate Blow is under rank 5', () => {
+  const under = { ...knackCasterBase, disciplines: [{ name: 'Warrior', circle: 5, talents: [{ name: 'Anticipate Blow', rank: 4 }] }] };
+  const m = deriveModel(under, rules);
+  assert.ok(!m.combat.talentOptions.some((o) => o.name === 'Anticipate Spell'));
+});
+
+test('Anticipate Spell is absent when the knack is not owned', () => {
+  const noKnack = { ...knackCasterBase, knacks: [] };
+  const m = deriveModel(noKnack, rules);
+  assert.ok(!m.combat.talentOptions.some((o) => o.name === 'Anticipate Spell'));
+});
+
+test('an armed Anticipate Spell folds its Mystic Defence and Attack payloads', () => {
+  const m = deriveModel(knackCasterBase, rules);
+  const arms = {
+    name: 'Anticipate Spell',
+    successes: 2,
+    roundsLeft: 1,
+    roundsTotal: 1,
+    appliesTo: null,
+    effects: m.combat.talentOptions.find((o) => o.name === 'Anticipate Spell').arms.effects,
+  };
+  const out = collectCombatEffects({ armedTalents: [arms], rules: m.combatRules, conditions: {} });
+  const def = out.defenseMods.find((d) => d.source === 'Anticipate Spell' && d.name === 'Mystic');
+  assert.ok(def, 'the armed Mystic Defence bonus reaches defenseMods');
+  assert.equal(def.value, 4, '2 per success × 2 successes = +4 Mystic Defence');
+  const atk = out.attackEffects.find((e) => e.type === 'test-modifier' && e.target?.name === 'Attack' && e.label === 'Anticipate Spell');
+  assert.ok(atk, 'the armed Attack step bonus reaches the pool');
+  assert.equal(atk.value, 4);
+});
+
+// --- Anticipate Spell: the Spellcasting half reaches the Spells-tab cast -------
+
+// A caster who also has Anticipate Spell: an armed record must surface a
+// `castingArmed` step bonus on the spells slice (store boundary), NOT on the
+// shared Spellcasting talent step (which would double-count a Combat pick).
+const spellArmedCaster = {
+  ...knackCasterBase,
+  disciplines: [
+    { name: 'Warrior', circle: 5, talents: [{ name: 'Anticipate Blow', rank: 6 }] },
+    { name: 'Nethermancer', circle: 3, talents: [{ name: 'Spellcasting', rank: 5 }] },
+  ],
+  spells: { known: [{ name: 'Bone Dance' }], matrices: [] },
+};
+
+const spellcastingStepPayload = [{
+  type: 'test-modifier',
+  target: { domain: 'test', name: 'Spellcasting' },
+  operation: 'add',
+  value: 2,
+  measure: 'step',
+  condition: 'on-success',
+  perSuccess: true,
+}];
+
+test('an armed Anticipate Spell attaches castingArmed to the spells slice', () => {
+  const armed = { name: 'Anticipate Spell', successes: 2, roundsLeft: 1, appliesTo: null, effects: spellcastingStepPayload };
+  const m = deriveModel(spellArmedCaster, rules, { armedTalents: [armed] });
+  assert.ok(m.spells, 'the caster has a spells slice');
+  assert.ok(m.spells.castingArmed, 'the armed Spellcasting bonus is attached');
+  assert.equal(m.spells.castingArmed.step, 4, '2 per success × 2 successes = +4 steps');
+  assert.equal(m.spells.castingArmed.source, 'Anticipate Spell');
+  // The shared Spellcasting talent step is NOT mutated (no double-count).
+  const sc = m.disciplines.find((d) => d.name === 'Nethermancer').talents.find((t) => t.name === 'Spellcasting');
+  assert.equal(sc.stepBase == null || sc.stepBase === sc.step, true, 'Spellcasting talent step carries no armed bonus');
+});
+
+test('castingArmed is absent when nothing is armed', () => {
+  const m = deriveModel(spellArmedCaster, rules);
+  assert.ok(m.spells, 'the caster has a spells slice');
+  assert.ok(!m.spells.castingArmed, 'no armed bonus without an armed record');
+});
+
+test('a zero-success armed record produces no castingArmed (arms only on a hit)', () => {
+  const armed = { name: 'Anticipate Spell', successes: 0, roundsLeft: 1, appliesTo: null, effects: spellcastingStepPayload };
+  const m = deriveModel(spellArmedCaster, rules, { armedTalents: [armed] });
+  assert.ok(!m.spells.castingArmed, 'a miss (0 successes) arms nothing');
+});

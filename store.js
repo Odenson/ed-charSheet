@@ -107,6 +107,17 @@ export function resolveKnack(owned, catalog = {}, skillNames = new Set(), talent
     requiredRank: ref?.requiredRank ?? owned.rank ?? null,
     action: ref?.action ?? null,
     brief: ref?.brief ?? null,
+    // Structured mechanics for a knack that grants a combat option (e.g.
+    // Anticipate Spell — a knack of Anticipate Blow). The combat slice reads
+    // these to surface a knack-sourced armed option, gating on the parent
+    // talent's rank and deriving the arms roll Step from `attribute` + that rank
+    // — the numeric step is NEVER parsed from the `step: "Rank+PER"` display
+    // string (ARCHITECTURE §5.5). Null for the vast majority of knacks.
+    attribute: ref?.attribute ?? null,
+    versus: ref?.versus ?? null,
+    arms: ref?.arms ?? null,
+    effects: ref?.effects ?? null,
+    combatOptions: ref?.combatOptions ?? null,
     detail: { summary: ref?.summary ?? null, strain: ref?.strain ?? null, documented: !!ref?.summary },
   };
 }
@@ -1418,6 +1429,57 @@ export function deriveModel(character, rules, session = {}) {
           }
         }
       }
+      // Knack-sourced combat options (e.g. Anticipate Spell — a knack of
+      // Anticipate Blow). Unlike a talent, a knack is gated on its PARENT
+      // talent's rank (`requiredRank`) and derives its arms roll Step from the
+      // knack's `attribute` + that parent rank — NOT from the `step: "Rank+PER"`
+      // display string (ARCHITECTURE §5.5). The arms descriptor is built here
+      // directly (a knack has no talent object to carry it), mirroring the
+      // talent arms shape at ~:668 so every roll surface arms it identically.
+      // Only knacks that declare `combatOptions` AND `arms`, whose parent talent
+      // is owned at rank ≥ `requiredRank`, contribute.
+      for (const k of knacks) {
+        const defs = k.combatOptions;
+        if (!defs?.length || !k.arms) continue;
+        const parentName = k.parent?.name;
+        if (!parentName) continue;
+        let parentRank = 0;
+        for (const d of disciplines)
+          for (const t of d.talents ?? [])
+            if (t.name === parentName) parentRank = Math.max(parentRank, t.rank ?? 0);
+        if (parentRank < (k.requiredRank ?? 1)) continue; // parent unowned or under-rank
+        const aStep = k.attribute ? attrStepByName[k.attribute] : undefined;
+        const step = aStep != null ? talentStep(aStep, parentRank) : null;
+        const karma = step != null ? talentKarmaUse({ karma: true }) : null;
+        const arms = {
+          roll: {
+            vs: k.arms.roll?.vs ?? null,
+            strain: k.arms.roll?.strain ?? (Number(k.detail?.strain) || 0),
+            step,
+            karma,
+          },
+          rounds: k.arms.rounds ?? 1,
+          appliesTo: defs[0]?.appliesTo ?? null,
+          effects: (k.effects ?? []).filter(
+            (e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier'),
+          ),
+        };
+        for (const o of defs) {
+          const name = o.name ?? k.name;
+          const prev = byName.get(name);
+          if (prev && (prev._rank ?? 0) >= parentRank) continue;
+          byName.set(name, {
+            ...o,
+            name,
+            summary: o.summary ?? k.detail?.summary ?? '',
+            effects: k.effects ?? [],
+            karmaDice: o.karmaDice ? { ...o.karmaDice, max: parentRank } : null,
+            arms,
+            grantedBy: parentName,
+            _rank: parentRank,
+          });
+        }
+      }
       return [...byName.values()].map(({ _rank, ...o }) => o);
     })(),
     strengthStep: strStep,
@@ -1485,6 +1547,29 @@ export function deriveModel(character, rules, session = {}) {
   const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
   if (spellsCtx) {
     spellsCtx.active = session?.activeSpells ?? [];
+    // Armed Spellcasting step bonus (Anticipate Spell — "+2 per success to the
+    // first Attack OR Spellcasting test"). The armed record lives in session
+    // state, so this fold is done HERE at the store boundary — never inside the
+    // session-free `buildSpellsContext`, which returns only the base
+    // `castingStep` (golden rule: the engine reads no session state). We do NOT
+    // write it onto the shared Spellcasting talent `.step`: the Combat tab reads
+    // that same object AND folds the armed payload itself, so mutating it would
+    // double-count a Combat Spellcasting pick. `_rollCast` adds this to the
+    // dispatched step and shows an armed chip (mirrors the learn-TW pattern).
+    let castingArmed = null;
+    for (const a of session?.armedTalents ?? []) {
+      if (!(a.successes > 0)) continue; // only a HIT arms anything
+      const e = (a.effects ?? []).find(
+        (x) => x.type === 'test-modifier' && x.target?.name === 'Spellcasting' && x.measure === 'step' && x.condition === 'on-success',
+      );
+      if (!e) continue;
+      const step = e.perSuccess ? (e.value ?? 0) * a.successes : (e.value ?? 0);
+      if (!step) continue;
+      castingArmed = castingArmed
+        ? { step: castingArmed.step + step, source: `${castingArmed.source}, ${a.name}`, successes: a.successes }
+        : { step, source: a.name, successes: a.successes };
+    }
+    if (castingArmed) spellsCtx.castingArmed = castingArmed;
     // Learn-flow tables (PLAN-LEARN-SPELLS §5): the learning block (difficulty/
     // cost by Circle) and the Legend talentRank table — pushed down as rules data
     // so the Learn modal reads values, never formulas (ARCHITECTURE §5.5).

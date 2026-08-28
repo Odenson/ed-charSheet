@@ -887,6 +887,9 @@ export class EdCombat extends LitElement {
   _chipTitle(o) {
     const parts = [];
     if (o.summary) parts.push(o.summary);
+    // Option-specific usage note (e.g. Anticipate Spell's same-round lockout) —
+    // passive text only, no enforcement.
+    if (o.note) parts.push(o.note);
     if (o.locked) parts.push('Live condition — the sheet already applies this; it cannot be removed here.');
     return parts.join('\n');
   }
@@ -949,20 +952,25 @@ export class EdCombat extends LitElement {
         // so the badge generalises rather than hardcoding a +2.
         const armed = o.arms ? (this.model?.armedTalents ?? []).find((a) => a.name === o.name) : null;
         const aimArmed = !!armed && armed.successes > 0;
-        const armedPart = (type, name) => {
-          const e = (armed?.effects ?? []).find((x) => x.type === type && x.target?.name === name);
-          const per = e?.perSuccess ? (e?.value ?? 0) * armed.successes : e?.value ?? 0;
-          return per;
-        };
-        const atkBonus = armedPart('test-modifier', 'Attack');
-        const defBonus = armedPart('defense-modifier', 'Physical');
+        const perSucc = (e) => (e?.perSuccess ? (e?.value ?? 0) * (armed?.successes ?? 0) : e?.value ?? 0);
+        // The armed test bonus and its target name(s) — Attack for Mystic Aim /
+        // Anticipate Blow, Attack AND Spellcasting for Anticipate Spell — read
+        // generically from the payload rather than hardcoding "Attack".
+        const testEntries = (armed?.effects ?? []).filter((x) => x.type === 'test-modifier' && x.measure === 'step');
+        const atkBonus = testEntries.length ? perSucc(testEntries[0]) : 0;
+        const testLabel = testEntries.map((e) => e.target?.name).filter(Boolean).join('/') || 'Attack';
+        // The armed defence bonus and its actual defence name (Physical for
+        // Anticipate Blow, Mystic for Anticipate Spell) — never hardcoded.
+        const defEntry = (armed?.effects ?? []).find((x) => x.type === 'defense-modifier');
+        const defName = defEntry?.target?.name ?? null;
+        const defBonus = defEntry ? perSucc(defEntry) : 0;
         // Highlight (aria-pressed) reflects ACTUAL state: an arms pill is "on" iff
         // it is armed in session — regardless of which surface armed it (chip,
         // dropdown, Disciplines tab) — not whether this chip was toggled. Other
         // options stay driven by the toggled set.
         const on = o.locked || (o.arms ? aimArmed : (toggled ?? []).includes(o.name));
         const armBadges = aimArmed
-          ? html`<span class="badge pos" title="Aim hit — ${armed.successes} success${armed.successes > 1 ? 'es' : ''}, +${atkBonus} steps to the Attack roll${defBonus ? ` and +${defBonus} Physical Defence` : ''} (${armed.roundsLeft} round${armed.roundsLeft > 1 ? 's' : ''} left)">✓${atkBonus ? ` +${atkBonus}` : ''}${defBonus ? ` +${defBonus} Def` : ''}</span>`
+          ? html`<span class="badge pos" title="Aim hit — ${armed.successes} success${armed.successes > 1 ? 'es' : ''}, +${atkBonus} steps to the ${testLabel} roll${defBonus ? ` and +${defBonus} ${defName} Defence` : ''} (${armed.roundsLeft} round${armed.roundsLeft > 1 ? 's' : ''} left)">✓${atkBonus ? ` +${atkBonus}` : ''}${defBonus ? ` +${defBonus} Def` : ''}</span>`
           : '';
         return html`<button
           class="chip ${cls}${o.locked ? ' locked' : ''}${noKarma ? ' spent' : ''}${aimArmed ? ' aimed' : ''}"

@@ -140,6 +140,70 @@
       "step": "Rank+PER",
       "skillUse": "No",
       "restrictions": "None",
+      "source": "Companion p.80",
+      "attribute": "Perception",
+      "versus": "target's Mystic Defense (requires higher Initiative than the target)",
+      "presentation": {
+        "shortEffect": "+Mystic Def & Attack/Spellcast"
+      },
+      "arms": {
+        "roll": { "vs": "Mystic" },
+        "rounds": 1
+      },
+      "effects": [
+        {
+          "type": "defense-modifier",
+          "target": {
+            "domain": "defense",
+            "name": "Mystic"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "rating",
+          "condition": "on-success",
+          "perSuccess": true,
+          "duration": "rounds",
+          "rounds": 1,
+          "scope": "vs the target",
+          "source": "knack",
+          "summary": "+2 Mystic Defense vs that foe until end of round (per success)."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Attack"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "on-success",
+          "perSuccess": true,
+          "scope": "first Attack test vs the target",
+          "source": "knack",
+          "summary": "+2 per success to your first Attack test against the target."
+        },
+        {
+          "type": "test-modifier",
+          "target": {
+            "domain": "test",
+            "name": "Spellcasting"
+          },
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "condition": "on-success",
+          "perSuccess": true,
+          "scope": "first Spellcasting test vs the target",
+          "source": "knack",
+          "summary": "+2 per success to your first Spellcasting test against the target."
+        }
+      ],
+      "combatOptions": [
+        {
+          "note": "Anticipate Blow and its knacks may not be used for other purposes this round."
+        }
+      ],
       "summary": "The adept anticipates mystic attacks made against them, making them more difficult to target astrally. The adept must have a higher Initiative result than their target, and makes an Anticipate Spell test against the target\u2019s Mystic Defense. Each success adds +2 to their Mystic Defense against the target until the end of the round. The adept also gains +2 per success to the first Attack or Spellcasting test they make against the target, who may be the only target of the test. The adept can use this knack a number of times equal to their Anticipate Blow rank each round. Anticipate Blow or any associated knacks may not be used for other purposes this round."
     },
     "Arcane Accuracy": {

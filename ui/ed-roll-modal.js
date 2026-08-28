@@ -155,18 +155,20 @@ export class EdRollModal extends LitElement {
   // roll" for Mystic Aim, "+2 steps to the Attack roll and +2 Physical Defence"
   // for Anticipate Blow. `s` is the success count for the display scale.
   _aimSummary(s) {
-    const per = (type, name) => {
-      const e = (this.aim?.effects ?? []).find((x) => x.type === type && x.target?.name === name);
-      if (!e) return null;
-      const v = (e.value ?? 0) * (e.perSuccess ? s : 1);
-      return e.measure === 'rating' ? `${v} ${name} Defence` : `+${v} steps to ${name}`;
-    };
+    const val = (e) => (e.value ?? 0) * (e.perSuccess ? s : 1);
     const parts = [];
-    const atk = per('test-modifier', 'Attack') || per('test-modifier', 'Effect');
-    if (atk) parts.push(atk);
-    const def = per('defense-modifier', 'Physical') || per('defense-modifier', 'Mystic');
-    if (def) parts.push(def);
-    return parts.length ? parts.join(' and ') : '';
+    // Test bonus target(s), read generically: Attack for Mystic Aim / Anticipate
+    // Blow, Attack AND Spellcasting for Anticipate Spell (combined label since
+    // only the first such test benefits). Never hardcodes the target name.
+    const tests = (this.aim?.effects ?? []).filter((x) => x.type === 'test-modifier');
+    if (tests.length) {
+      const names = [...new Set(tests.map((e) => e.target?.name).filter(Boolean))].join('/');
+      parts.push(`+${val(tests[0])} steps to ${names}`);
+    }
+    // Defence bonus named by its actual defence (Physical / Mystic), never hardcoded.
+    const defE = (this.aim?.effects ?? []).find((x) => x.type === 'defense-modifier');
+    if (defE) parts.push(`${val(defE)} ${defE.target?.name} Defence`);
+    return parts.join(' and ');
   }
 
   // A set-dice roll adds up to `rank` Karma dice (True Shot); `karma.rank` is the
