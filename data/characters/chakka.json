@@ -118,7 +118,7 @@
         },
         {
           "name": "First Impression",
-          "rank": 5,
+          "rank": 3,
           "circle": 4
         }
       ]
@@ -144,7 +144,7 @@
         },
         {
           "name": "Spellcasting",
-          "rank": 3,
+          "rank": 4,
           "circle": 1
         },
         {
@@ -169,7 +169,7 @@
         },
         {
           "name": "Spirit Talk",
-          "rank": 1,
+          "rank": 2,
           "circle": 3
         },
         {
@@ -179,7 +179,7 @@
         },
         {
           "name": "Command Nightflyer",
-          "rank": 1,
+          "rank": 2,
           "circle": 2
         }
       ]
