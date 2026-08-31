@@ -174,16 +174,6 @@
           "name": "Missile Weapon",
           "rank": 2,
           "circle": 3
-        },
-        {
-          "name": "Waterfall Slam",
-          "rank": 1,
-          "circle": 4
-        },
-        {
-          "name": "Maneuver",
-          "rank": 1,
-          "circle": 4
         }
       ]
     }
