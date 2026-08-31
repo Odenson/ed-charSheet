@@ -176,6 +176,11 @@
           "name": "Suppress Curse",
           "rank": 1,
           "circle": 3
+        },
+        {
+          "name": "Command Nightflyer",
+          "rank": 1,
+          "circle": 2
         }
       ]
     }
