@@ -40,6 +40,7 @@ import { circleStatus } from './engine/advancement.js';
 import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
 import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
+import { learnableKnacks } from './engine/knack-options.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // UNIVERSAL_TALENTS (Durability, Karma Ritual) — talents every adept receives
@@ -392,9 +393,18 @@ export function saveKarmaEdits(karma, id) {
  * later save replaces the whole arrays (items/wealth precedent — a partial
  * patch must never drop the recorded ranks on replay).
  */
-export function saveAdvancementEdits({ disciplines, skills }, id) {
+export function saveAdvancementEdits({ disciplines, skills, knacks }, id) {
   const edits = loadEdits(id);
-  edits.advancements = { disciplines, skills };
+  // Knacks ride the same `advancements` slot (PLAN-ADD-KNACKS §7.3). This slot is
+  // rebuilt wholesale each call, so PRESERVE any previously-staged knacks when a
+  // caller (e.g. the rank stepper) omits them — the `...edits.advancements` spread
+  // keeps the prior value; the conditional writes a new one only when provided.
+  edits.advancements = {
+    ...edits.advancements,
+    disciplines,
+    skills,
+    ...(knacks !== undefined ? { knacks } : {}),
+  };
   localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
@@ -536,6 +546,11 @@ export function applyEdits(character, edits) {
       })),
     };
     next = { ...next, disciplines: advancements.disciplines, skills: advancements.skills };
+    // Knacks ride the advancements slot (PLAN-ADD-KNACKS §7.3). GUARDED merge: only
+    // replace when the slot actually carries `knacks`, so a disciplines-only overlay
+    // (the common rank-edit case) never wipes the character's knacks. Knacks are
+    // pure `{name, via?}` inputs — no derived-field stripping (unlike talent tier).
+    if (advancements.knacks) next = { ...next, knacks: advancements.knacks };
   }
   if (edits.notes) next = { ...next, notes: edits.notes };
   if (edits.history) next = { ...next, history: edits.history };
@@ -581,8 +596,9 @@ async function loadRules() {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md)
-  // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/3 — docs/HOMEBREW-RULES.md)
+  // are optional and data-only. Rules ship disabled; only `enabled` ones apply
+  // (a `knackParents` rule is active by its existence — docs §5.6).
   const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
   // Combat options + situational effects (rules/combat.json, ed-combat/1 —
   // PLAN-COMBAT-TAB Phase A). The Combat tab renders its chips from these and
@@ -888,9 +904,10 @@ export function deriveModel(character, rules, session = {}) {
     };
   });
 
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md):
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/3 — docs/HOMEBREW-RULES.md):
   // a file-based, data-only list of rating overrides + effects. Only `enabled`
-  // rules apply; the last enabled rule wins per rating (no merge). A rule's own
+  // rules apply (a `knackParents` rule is active by its existence — §5.6); the
+  // last enabled rule wins per rating (no merge). A rule's own
   // `effects` fold like any always-on effect, tagged `kind: 'homebrew'` so a
   // tooltip can name the rule. Rules ship disabled.
   const homebrewRules = (homebrewFile?.rules ?? []).filter((r) => r.enabled !== false);
@@ -1143,6 +1160,43 @@ export function deriveModel(character, rules, session = {}) {
     (character.disciplines ?? []).flatMap((d) => (d.talents ?? []).map((t) => t.name)),
   );
   const knacks = (character.knacks ?? []).map((k) => resolveKnack(k, knackCatalog, skillNames, talentNames));
+
+  // Learnable-knacks derivation (PLAN-ADD-KNACKS §7.3): the knacks the character may
+  // acquire in edit mode, gated on a governing parent at raw rank >= requiredRank, the
+  // per-parent cap, and not-already-owned. `parentTalents` maps each Discipline-taught
+  // talent name -> { rank } using the raw stored rank (never grant/thread bonuses — only
+  // the actual rank counts; Companion), deduped to the highest rank across Disciplines.
+  // When the `knackParents` homebrew lever is active (rules/homebrew.json `knackParents:
+  // true`, docs/HOMEBREW-RULES.md §5.6), `parentSkills` maps each owned skill name ->
+  // { rank } the same way, so skill-named knack parents also qualify. Always derived,
+  // never stored. `skillKnackEnabled` tells the UI whether the skill path is live so it
+  // can show skill-knack rows/add-slots only when the ruling is on.
+  const skillKnackEnabled = homebrewRules.some((r) => r.knackParents === true);
+  const parentTalents = {};
+  for (const d of character.disciplines ?? []) {
+    for (const t of d.talents ?? []) {
+      if (!t?.name) continue;
+      const rank = t.rank ?? 0;
+      if (parentTalents[t.name] == null || rank > parentTalents[t.name].rank) parentTalents[t.name] = { rank };
+    }
+  }
+  const parentSkills = {};
+  if (skillKnackEnabled) {
+    for (const s of character.skills ?? []) {
+      if (!s?.name) continue;
+      const rank = s.rank ?? 0;
+      if (parentSkills[s.name] == null || rank > parentSkills[s.name].rank) parentSkills[s.name] = { rank };
+    }
+  }
+  const knackOptions = learnableKnacks(knackCatalog, {
+    ownedKnacks: character.knacks ?? [],
+    parentTalents,
+    parentSkills,
+    // The character's own disciplines gate `discipline`-restricted knacks
+    // (PLAN-KNACK-RESTRICTIONS §2 / docs/RESTRICTION-TAXONOMY.md). Always derived
+    // from stored inputs; never stored.
+    characterDisciplines: (character.disciplines ?? []).map((d) => ({ name: d?.name, circle: d?.circle })),
+  }, legendFile?.costs);
 
   // Rank grants (engine/ability-ranks.js, plans/PLAN-RANK-GRANTS.md): always-on
   // `grant-ability` effects (measure `rank`, EFFECT-TAXONOMY §5) fold into the
@@ -1618,6 +1672,8 @@ export function deriveModel(character, rules, session = {}) {
     skills,
     skillOptions,
     knacks,
+    knackOptions,
+    skillKnackEnabled,
     // `set`-granted abilities the character doesn't learn (engine/ability-ranks.js
     // plans/PLAN-RANK-GRANTS.md D2/D5): derived possession rows for the
     // Disciplines tab's "Granted abilities" group. Never stored.

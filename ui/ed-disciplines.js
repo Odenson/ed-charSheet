@@ -11,6 +11,7 @@
 import { LitElement, html, css } from 'lit';
 import { ModalController } from './modal-controller.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
+import { scopeKnackOptions } from '../engine/knack-options.js';
 
 export class EdDisciplines extends LitElement {
   static properties = {
@@ -102,6 +103,10 @@ export class EdDisciplines extends LitElement {
     .lopt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font: inherit; font-size: var(--fs-body); text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--fg); cursor: pointer; }
     .lopt:hover { border-color: var(--accent); }
     .lopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .lpick { font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--fg); cursor: pointer; }
+    .lpick:hover:not(:disabled) { border-color: var(--accent); background: var(--accent); color: var(--bg-card); }
+    .lpick:disabled { opacity: 0.5; cursor: not-allowed; }
+    .lpick:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
     .lbrief { font-size: var(--fs-small); color: var(--muted); }
     .searchin { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin: 6px 0; box-sizing: border-box; }
     .searchin:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
@@ -225,6 +230,7 @@ export class EdDisciplines extends LitElement {
     super();
     this._sel = 0;
     this._modal = null;
+    this._knackInfo = {}; // picker rows expanded to show their description (name -> bool)
     // Shared modal focus contract (docs/MODALS.md): Escape closes, focus moves
     // into the dialog on open and returns to the trigger on close (ring
     // suppressed for pointer opens). The controller owns the Escape listener and
@@ -408,19 +414,26 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
-  // Skills tab: the character's skills in the same table shape as the talent list,
-  // with any knacks nested under the skill they derive from. Knacks arrive already
-  // resolved from the store ({ name, parent:{type,name} }) — only knacks whose parent
-  // is a skill belong here, nested under that skill's row; a knack whose parent is a
-  // talent renders on the discipline talent tables instead. No stray knacks at the end.
-  _skillsView(skills, knacks) {
-    const byParent = new Map();
-    for (const k of knacks ?? []) {
-      if (k.parent?.type !== 'skill') continue;
-      const parent = k.parent?.name ?? null;
-      if (!byParent.has(parent)) byParent.set(parent, []);
-      byParent.get(parent).push(k);
-    }
+  // Skills tab: the character's skills in the same table shape as the talent list.
+  // By default knacks are talent-governed and render ONLY beneath their governing
+  // talent on the discipline tables. When the `knackParents` homebrew lever is enabled
+  // (model.skillKnackEnabled), a character can also learn knacks through their owned
+  // skills, so skill-governed knacks nest under the skill row and the tab offers a
+  // scoped "＋ add knack" slot (docs/HOMEBREW-RULES.md §5.6).
+  _skillsView(skills) {
+    const knacksBySkill = this.model?.skillKnackEnabled
+      ? (() => {
+          const m = new Map();
+          for (const k of this.model?.knacks ?? []) {
+            if (k.parent?.type !== 'skill') continue;
+            const parent = k.parent?.name ?? null;
+            if (!parent) continue;
+            if (!m.has(parent)) m.set(parent, []);
+            m.get(parent).push(k);
+          }
+          return m;
+        })()
+      : new Map();
     return html`
       <div class="card">
         <div class="trow h${this.editMode ? ' edit' : ''}">
@@ -431,13 +444,12 @@ export class EdDisciplines extends LitElement {
           <span class="action">Action</span>
           <span></span>
         </div>
-        ${skills.map(
-          (s) => html`
-            ${this._skillRow(s)}
-            ${(byParent.get(s.name) ?? []).map((k) => this._knackRow(k))}
-          `,
-        )}
+        ${skills.map((s) => html`
+          ${this._skillRow(s)}
+          ${(knacksBySkill.get(s.name) ?? []).map((k) => this._knackRow(k))}
+        `)}
         ${this.editMode ? this._addSkillSlot() : ''}
+        ${this.editMode ? this._addSkillKnackSlot() : ''}
       </div>
     `;
   }
@@ -457,6 +469,69 @@ export class EdDisciplines extends LitElement {
     this._skillSilver = opts[0]?.trainingSilver != null ? opts[0].trainingSilver : 10;
     this._skillSearch = '';
     this._openModal({ type: 'learn-skill', options: opts }, e);
+  }
+
+  // Edit-mode "＋ add knack" affordance (PLAN-ADD-KNACKS Q1/§7.5). Rendered as a per-
+  // discipline footer under the talent card; the picker is scoped to the knacks whose
+  // governing parent talent belongs to that discipline (scopeKnackOptions). Shows
+  // whenever that discipline has at least one candidate.
+  _addKnackSlot(d) {
+    const opts = this._disciplineKnackOptions(d);
+    if (!opts.length) return '';
+    return html`<button class="addopt" title="Learn a knack you qualify for in ${d.name}" @click=${(e) => this._openKnackLearnModal(opts, e)}>＋ add knack</button>`;
+  }
+
+  // The learnable knacks governed by a talent in the given discipline (pure filter).
+  _disciplineKnackOptions(d) {
+    const talentSet = new Set((d?.talents ?? []).map((t) => t?.name).filter(Boolean));
+    return scopeKnackOptions(this.model?.knackOptions ?? [], talentSet);
+  }
+
+  // The learnable knacks governed by one of the character's owned skills (pure filter).
+  // A candidate qualifies for the Skills-tab scope only if one of its qualifying
+  // parents is actually a skill the character owns (kind 'skill'), not merely a name
+  // that also exists as a skill. Only reachable when the `knackParents` homebrew lever
+  // is on (model.skillKnackEnabled gates the whole affordance at the view level).
+  _skillKnackOptions() {
+    const skillSet = new Set((this.model?.skills ?? []).map((s) => s?.name).filter(Boolean));
+    return (this.model?.knackOptions ?? []).filter((o) =>
+      (o.qualifies ?? []).some((q) => q.kind === 'skill' && skillSet.has(q.name)),
+    );
+  }
+
+  // Edit-mode "＋ add knack" affordance for the Skills tab (docs/HOMEBREW-RULES.md §5.6).
+  // Shows only when the `knackParents` lever is active and some skill-named parent
+  // qualifies a knack; mirrors the per-discipline add slot but scoped to owned skills.
+  _addSkillKnackSlot() {
+    if (!this.model?.skillKnackEnabled) return '';
+    const opts = this._skillKnackOptions();
+    if (!opts.length) return '';
+    return html`<button class="addopt" title="Learn a knack your skills govern" @click=${(e) => this._openKnackLearnModal(opts, e)}>＋ add knack</button>`;
+  }
+
+  _openKnackLearnModal(opts, e) {
+    if (!opts?.length) return;
+    this._knackSearch = '';
+    this._knackSilver = ''; // empty = use each candidate's own knackTraining[rank] default
+    this._knackVia = {}; // per-knack chosen parent for multi-parent candidates
+    this._knackInfo = {}; // collapse any previews from a previous session
+    this._openModal({ type: 'learn-knack', options: opts }, e);
+  }
+
+  _learnKnackPick(o) {
+    const via = this._knackVia?.[o.name] ?? o.viaDefault;
+    const override = String(this._knackSilver ?? '').trim();
+    const silver = override !== '' ? Math.max(0, Math.round(Number(override) || 0)) : (o.trainingFee ?? 0);
+    this.dispatchEvent(new CustomEvent('ed-learn-knack', { detail: { name: o.name, via, silver }, bubbles: true, composed: true }));
+    this._modalCtl.close();
+  }
+
+  // Info icon on a picker row: toggle the knack's FULL description (the bonuses) inline
+  // beneath the row. Inline rather than a stacked modal — the shared controller owns one
+  // dialog at a time, so the picker stays open and Escape still closes the whole picker.
+  _toggleKnackInfo(name) {
+    this._knackInfo = { ...(this._knackInfo ?? {}), [name]: !(this._knackInfo?.[name] ?? false) };
+    this.requestUpdate?.();
   }
 
   // One indented child row for a knack nested under the skill/talent it derives from.
@@ -930,6 +1005,135 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // Learn-a-knack picker (PLAN-ADD-KNACKS §7.5, docs/HOMEBREW-RULES.md §5.6). One
+  // global list of every knack the character qualifies for (governed by a
+  // Discipline-taught talent, and — when the "skills may govern knacks" house rule is
+  // on — by an owned skill). Each row shows its governing parent(s), required rank, restrictions (discipline ones enforced, other GM-adjudicated), and Legend · silver
+  // price; a multi-parent knack offers a parent chooser. The silver fee is per-rank
+  // (costs.knackTraining[requiredRank]); the top input is an optional override applied
+  // to every pick (blank = each knack uses its own default).
+  _learnKnackModal(m) {
+    const opts = m.options ?? [];
+    const available = this.model?.legend?.available ?? null;
+    const coins = this.model?.wealth?.coins ?? {};
+    const purse = coinsSilver(coins);
+    const override = String(this._knackSilver ?? '').trim();
+    const overrideNum = override !== '' ? Math.max(0, Math.round(Number(override) || 0)) : null;
+    const feeFor = (o) => (overrideNum != null ? overrideNum : (o.trainingFee ?? 0));
+    const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
+    // Restriction display (PLAN-KNACK-RESTRICTIONS §2, docs/RESTRICTION-TAXONOMY.md):
+    // a non-empty `discipline` restriction is engine-enforced — render it as an
+    // enforcement note, not "GM adjudicates". All other keys stay notes the GM
+    // adjudicates. `{}` / null => no restriction line.
+    const restrictionRender = (rest) => {
+      if (!rest || typeof rest !== 'object') return '';
+      const disc = rest.discipline;
+      if (Array.isArray(disc) && disc.length) {
+        const parts = disc.map((d) => {
+          const nm = typeof d === 'string' ? d : d?.name;
+          const circ = typeof d === 'string' ? null : d?.circle ?? null;
+          return circ == null ? nm : `${nm} ${circ}`;
+        });
+        return html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${parts.join(', or ')} · enforced</span>` + (rest.note ? html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${rest.note} (GM adjudicates)</span>` : '');
+      }
+      if (typeof disc === 'string' && disc) {
+        return html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${disc} · enforced</span>` + (rest.note ? html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${rest.note} (GM adjudicates)</span>` : '');
+      }
+      const gmParts = [];
+      if (rest.attribute) {
+        const v = rest.attribute.value;
+        gmParts.push(`Attribute ${rest.attribute.name}${v != null ? ` ${v}+` : ''}`);
+      }
+      if (Array.isArray(rest.race) && rest.race.length) gmParts.push(rest.race.join(' / '));
+      if (Array.isArray(rest.ability) && rest.ability.length) {
+        gmParts.push(rest.ability.map((a) => a.rank != null ? `${a.name} ${a.rank}` : a.name).join(' / '));
+      }
+      if (rest.note) gmParts.push(rest.note);
+      if (!gmParts.length) return '';
+      return html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${gmParts.join('; ')} (GM adjudicates)</span>`;
+    };
+    const q = (this._knackSearch ?? '').trim().toLowerCase();
+    const filtered = q
+      ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.brief ?? '').toLowerCase().includes(q) || o.qualifies.some((p) => p.name.toLowerCase().includes(q)))
+      : opts;
+    return html`
+      <div class="overlay" @click=${() => this._modalCtl.close()}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Learn a knack" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="mtitle">Learn a knack</span>
+            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
+          </div>
+          <div class="mtext" style="color: var(--muted)">A knack is learned at its governing talent's (or skill's) rank, costs Legend = a Novice talent of that rank, and takes Rank days of training (~50 sp/day). Time and finding a mentor are the GM's call; only Legend and silver are tracked here. Discipline restrictions are enforced; other restrictions the GM adjudicates.</div>
+          <input class="searchin" type="search" placeholder="Search knacks, parents, effects…" .value=${this._knackSearch ?? ''} aria-label="Search knacks" autofocus
+            @input=${(e) => (this._knackSearch = e.target.value)} />
+          <div class="cbox" style="margin: 4px 0 8px">
+            <div class="crow">
+              <div><div class="ck">Training fee · silver</div><div class="csub">Per-rank default · blank = auto · purse ${Math.round(purse)} sp</div></div>
+              <span style="display:inline-flex;align-items:center;gap:6px">
+                <input class="silin" type="number" min="0" step="1" placeholder="auto" .value=${String(this._knackSilver ?? '')} aria-label="Training fee override in silver"
+                  @input=${(e) => (this._knackSilver = e.target.value)} />
+                <span class="csub" style="margin:0">sp</span>
+              </span>
+            </div>
+          </div>
+          <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} knacks${q ? html` matching “${q}”` : ''}</div>
+          <div class="hmopts">
+            ${filtered.length
+              ? filtered.map((o) => {
+                  const fee = feeFor(o);
+                  const silverOk = fee <= 0 ? true : payFromPurse(coins, fee).ok;
+                  const legendOk = o.cost == null ? true : available == null ? true : available >= o.cost;
+                  const canPick = legendOk && silverOk;
+                  const costLabel = o.cost == null ? '—' : `${o.cost} Legend`;
+                  const feeLabel = o.trainingFee == null ? '—' : `${fee} sp`;
+                  const multi = o.qualifies.length > 1;
+                  const via = this._knackVia?.[o.name] ?? o.viaDefault;
+                  const parents = o.qualifies.map((p) => `${p.name} · Rank ${p.rank}`).join(' / ');
+                  const infoOpen = !!this._knackInfo?.[o.name];
+                  const mech = [
+                    o.action && o.action !== 'None' ? `${o.action} action` : null,
+                    o.strain != null && o.strain !== 'None' ? `Strain ${o.strain}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return html`
+                    <div class="lopt" style="cursor:default">
+                      <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">
+                        <button class="kninfo" aria-label="Read ${o.name} description" aria-expanded=${infoOpen} title="Read ${o.name} description" @click=${() => this._toggleKnackInfo(o.name)}>i</button>
+                        ${o.name}<span class="pill">Rank ${o.requiredRank ?? '—'}</span>
+                      </span>
+                      <span class="lbrief">${multi ? html`Talent: ${o.qualifies.map((p) => `${p.name} (R${p.rank})`).join(' / ')}` : `Talent: ${parents}`} · ${costLabel} · ${feeLabel}</span>
+                      ${restrictionRender(o.restriction)}
+                      <span style="display:inline-flex;align-items:center;gap:8px;margin-top:4px">
+                        ${multi
+                          ? html`<select class="silin" aria-label="Learn under which talent" @change=${(e) => { this._knackVia = { ...(this._knackVia ?? {}), [o.name]: e.target.value }; this.requestUpdate?.(); }}>
+                              ${o.qualifies.map((p) => html`<option value=${p.name} ?selected=${p.name === via}>${p.name} · Rank ${p.rank}</option>`)}
+                            </select>`
+                          : ''}
+                        ${chk(canPick)}
+                        <button class="lpick" ?disabled=${!canPick}
+                          title=${canPick ? `Learn ${o.name} via ${via}` : (!legendOk ? 'Not enough Available Legend' : 'Not enough silver')}
+                          @click=${() => canPick && this._learnKnackPick(o)}>Learn</button>
+                      </span>
+                      ${infoOpen
+                        ? html`
+                            <div style="margin-top:6px;white-space:normal;line-height:1.45">
+                              <div style="color:var(--fg);font-size:var(--fs-small)">${o.summary ?? (o.brief ?? 'No description recorded.')}</div>
+                              ${mech ? html`<div style="color:var(--muted);font-size:var(--fs-small);margin-top:2px">${mech}</div>` : ''}
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  `;
+                })
+              : html`<div class="mtext" style="color: var(--muted)">${q ? html`No knacks match “${q}”.` : 'No knacks left to learn.'}</div>`}
+          </div>
+          <div class="mnote2" style="margin-top:8px"><span aria-hidden="true">ⓘ</span><span>Only knacks you qualify for are listed: a governing talent is known through a Discipline at the required rank (and, when the "skills may govern knacks" house rule is on, a governing skill you own at the required rank), and you are under the per-parent cap. Silver fee from <code>rules/legend.json</code> <code>costs.knackTraining[rank]</code> — edit that table to retune.</span></div>
+        </div>
+      </div>
+    `;
+  }
+
   // Group a discipline's talents by the Circle they were learned at, ascending
   // (a talent with no recorded Circle sorts last, under a "—" badge). Returns
   // [circle, talents[]] entries for the left-spine render.
@@ -954,8 +1158,9 @@ export class EdDisciplines extends LitElement {
     const hasSkillsTab = skills.length > 0 || this.editMode;
     const showSkills = hasSkillsTab && this._sel === list.length;
     const d = list[Math.min(this._sel, list.length - 1)];
-    // Knacks governed by a talent render beneath that talent's row (skill-governed
-    // knacks already nest under their skill on the Skills tab).
+    // Knacks governed by a talent render beneath that talent's row. Skill-governed
+    // knacks render on the Skills tab only when the knackParents homebrew lever is on
+    // (handled in _skillsView); talent-governed knacks never appear under the skill tab.
     const knacksByTalent = new Map();
     for (const k of this.model?.knacks ?? []) {
       if (k.parent?.type !== 'talent') continue;
@@ -987,7 +1192,7 @@ export class EdDisciplines extends LitElement {
       ${this.editMode ? this._legendBar() : ''}
 
       ${showSkills
-        ? this._skillsView(skills, this.model?.knacks ?? [])
+        ? this._skillsView(skills)
         : html`
             <div class="meta">
               ${meta.map((m) =>
@@ -1037,6 +1242,8 @@ export class EdDisciplines extends LitElement {
               )}
             </div>
 
+            ${this.editMode ? this._addKnackSlot(d) : ''}
+
             ${d.abilities?.length
               ? html`
                   <h4 class="section-gap">Discipline abilities by circle</h4>
@@ -1069,9 +1276,11 @@ export class EdDisciplines extends LitElement {
                   ? this._learnModal(this._modal)
                   : this._modal.type === 'learn-skill'
                     ? this._learnSkillModal(this._modal)
-                    : this._modal.type === 'advance'
-                      ? this._advanceModal(this._modal)
-                      : this._talentModal(this._modal)
+                    : this._modal.type === 'learn-knack'
+                      ? this._learnKnackModal(this._modal)
+                      : this._modal.type === 'advance'
+                        ? this._advanceModal(this._modal)
+                        : this._talentModal(this._modal)
         : ''}
     `;
   }

@@ -122,6 +122,30 @@ export function logSkillLearned(characterId, { name, tier, legendCost = null, si
 }
 
 /**
+ * Log learning a new Knack (PLAN-ADD-KNACKS §7.4). Legend from the knack's flat
+ * cost (a Novice talent at the required Rank); silver from knackTraining[requiredRank]
+ * (data, not code). `via` names the governing parent talent it was learned under.
+ */
+export function logKnackLearned(characterId, { name, via = null, requiredRank = null, legendCost = null, silverFee = 0, beforeCoins = {}, afterCoins = {} }) {
+  const feeDetail = silverFee > 0 ? formatWealthDetail(silverFee, beforeCoins, afterCoins) : 'no silver fee';
+  const parent = via ? ` · via ${via}` : '';
+  const rankPart = requiredRank != null ? ` · Rank ${requiredRank}` : '';
+  const detail = `Knack${rankPart}${parent} · ${feeDetail}`;
+  const before = Math.round(coinsSilver(beforeCoins));
+  const after = silverFee > 0 ? Math.round(coinsSilver(afterCoins)) : before;
+  return logSystem(characterId, {
+    label: `Learned ${name} (Knack${via ? ` · ${via}` : ''})`,
+    detail,
+    grants: [name],
+    legendCost,
+    silverFee,
+    coinDelta: formatCoinDelta(beforeCoins, afterCoins).trim(),
+    purseBefore: before,
+    purseAfter: after,
+  });
+}
+
+/**
  * Diff two item input arrays (store shape {name, equipped, threadRank?, qty?})
  * and describe adds/removes/equips/thread changes in human terms.
  * @param {Array} before

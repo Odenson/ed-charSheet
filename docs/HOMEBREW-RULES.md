@@ -18,9 +18,9 @@ or editing a rule. The active build plan lives in
 
 | Piece | File / location | Schema |
 |---|---|---|
-| Rules file | `rules/homebrew.json` | `ed-homebrew/2` |
+| Rules file | `rules/homebrew.json` | `ed-homebrew/3` |
 | Loading | `store.js` `loadCharacter` — optional (`loadJSONOptional`, knacks/thread-items precedent) | — |
-| Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v3 |
+| Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v4 |
 | Build plan | `plans/PLAN-HOMEBREW.md` | — |
 
 The file is **optional**: if it's absent the app behaves exactly as before.
@@ -31,7 +31,7 @@ Top-level shape:
 
 ```jsonc
 {
-  "schema": "ed-homebrew/2",                 // Tier-1: don't rename fields
+  "schema": "ed-homebrew/3",                 // Tier-1: don't rename fields
   "source": "… provenance note …",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
   "note": "… file-level note (optional, documentation only) …",
@@ -62,10 +62,11 @@ Top-level shape:
 | `name` | yes | no | Display name; free to reword without changing identity. |
 | `overrides` | yes | no | Which rulebook section the rule replaces (provenance). |
 | `summary` | yes | no | One plain-English sentence describing the rule. |
-| `enabled` | yes | yes | Global toggle: `true` applies the rule to every character. |
+| `enabled` | yes* | yes | Global toggle: `true` applies the rule to every character. *Every rule except a `knackParents` rule carries it — a `knackParents` rule is **active by its existence** (§5.6). |
 | `formula` | no | yes | Replaces the standard computation for the named ratings (§3). |
 | `effects` | no | yes | Taxonomy effects merged into the active-effects fold (§5). |
 | `set` | no | yes | **v2:** override a registry target with a scalar or race-keyed value (§5.5). |
+| `knackParents` | no | yes | **v3:** boolean; when `true`, the character's owned skills govern knacks (§5.6). |
 | `note` | no | no | Documentation only; the engine ignores it. |
 
 ### 2.1 The `id`
@@ -218,6 +219,46 @@ with a scalar or a **race-keyed map**.
 
 ---
 
+## 5.6 `knackParents` — owned skills govern knacks (v3)
+
+The standard rule (Companion "Learning Talent Knacks") gates knacks on the
+**governing talent** known through a Discipline at the required rank. `knackParents`
+is a **boolean** lever that lets a GM relax this to the character's **skills**:
+
+```jsonc
+{
+  "id": "hb-skill-knacks",
+  "name": "Skills may govern knacks",
+  "overrides": "Companion — Learning Talent Knacks (house rule)",
+  "summary": "A character's owned skills can govern knacks.",
+  "knackParents": true        // v3 — active by its existence, no `enabled` field
+}
+```
+
+- **Present and `true` = active.** A `knackParents` rule intentionally has **no
+  `enabled` field** — it is active the moment it appears in an enabled rule
+  (store.js treats `enabled` absent as enabled). Remove or set `false`* to turn it
+  off. (`false` is honored but meaningless to ship — omit the field entirely.)
+- **Semantics.** When active, any knack whose catalog `parents` includes a name the
+  character owns as a **skill** becomes learnable through it, under the *same* gate
+  as talents: owned **skill raw rank ≥ the knack's `requiredRank`**, the per-parent
+  cap (knacks-under-parent ≤ that parent's rank), and not already owned. No list is
+  maintained anywhere — eligibility is derived from the character's owned skills.
+- **Talent wins.** If the character owns a parent name as *both* a talent and a
+  skill, the talent path governs (no duplication); the skill path applies only to
+  parents owned **as skills only** for that knack.
+- **When off, skills disappear from knacks entirely**: no skill-governed knacks are
+  learnable, none render on the Skills tab, none feed any calculation.
+- **Fields:** only `knackParents` (boolean) + the standard `id`/`name`/`overrides`/
+  `summary`. `formula`/`effects`/`set` are orthogonal and may be omitted.
+- **Engine:** the store builds `parentSkills` (owned `character.skills` → `{rank}`)
+  and passes it to `learnableKnacks` (engine/knack-options.js), which emits skill
+  parents in `qualifies` with `kind: 'skill'`. The UI gates the Skills-tab knack
+  rows/add-slot on `model.skillKnackEnabled`. Storing a knack learned through a
+  skill pins its `via` to the skill name so reload re-attaches correctly.
+
+---
+
 ## 6. Authoring workflow — creating a new rule
 
 1. **Identify the standard rule** being overridden and cite it in `overrides`
@@ -225,24 +266,29 @@ with a scalar or a **race-keyed map**.
 2. **Pick an id** — `hb-` prefix + kebab-case slug naming the subject.
 3. **Write the summary** — one plain-English sentence.
 4. **Choose the lever** — `formula` to *replace* a computation, `effects` to
-   *adjust* one, or both.
+   *adjust* one, `set` to override a registry target, `knackParents` to let owned
+   skills govern knacks, or any combination of these.
 5. **Express the formula as terms** — product refs go in `times`, subtraction
    in `sign`, division in `over`, scalars in `coef`. Keep terms minimal.
 6. **Annotate** each rating and each term with a plain-English `note` stating
    what that term contributes.
-7. **Ship dormant** — set `enabled: false` and validate. Flipping the toggle
-   later is a data edit; no UI or code change.
+7. **Ship dormant** — set `enabled: false` and validate (unless the rule is a
+   `knackParents` rule, which is active by existence — see §5.6). Flipping the
+   toggle later is a data edit; no UI or code change.
 8. **Test** — every grammar form used (`ref`, `times`, `coef`, `sign`, `over`)
-   needs a case in `engine/homebrew.test.js`.
+   needs a case in `engine/homebrew.test.js`; a `knackParents` rule needs cases
+   in `engine/knack-options.test.js` and `store-knack.test.js`.
 
 ---
 
 ## 7. Versioning & governance
 
-- The file's shape is its own schema (`ed-homebrew/2`). A **format change** must
+- The file's shape is its own schema (`ed-homebrew/3`). A **format change** must
   bump the schema tag **and** migrate `rules/homebrew.json` in the same change.
   **v2 (2026-08-13)** added the `set` lever (§5.5) — the `formula`/`effects`
-  shape from v1 is unchanged, so v1 rules validate as-is under v2.
+  shape from v1 is unchanged, so v1 rules validate as-is under v2. **v3**
+  (2026-08-31) added the `knackParents` boolean lever (§5.6) — the v1/v2 shapes
+  are unchanged, so v1/v2 rules validate as-is under v3.
 - A rule's `effects` must conform to the effect taxonomy; a taxonomy change is
   governed by EFFECT-TAXONOMY.md (bump + migrate + update references).
 - Authoring a new rule that fits this format is **Tier 3** (new data); changing

@@ -178,3 +178,62 @@ Sources:
 - text-RB-players-guide.txt:5467–5484 (p. 128 — Anticipate Blow base talent for contrast: +2 Physical Defense per success, first Attack test only, Rank usage cap)
 - text-RB-deeper-secrets.txt:8692–8705 (p. 204 — Perfect Anticipation: Req. Anticipate Blow Rank 12 + Anticipate Spell; +2/success Physical AND Mystic Defense + first Attack or Spellcasting test; once per round)
 - rules/knacks.json:133–144 (repo entry — matches book text verbatim)
+
+### Q004 — Which talents govern the magic "Weaving" knacks? (catalog parent-name normalisation)
+Keywords: knack, parent, governing talent, thread weaving, thread smithing, nethermancy, elementalism, thief weaving, scout weaving, magic knack, craft poison, create orichalcum, detect spirit, detect true element, handle elements, harvest true element, design enchanting pattern, talent only · Resolved: 2026-08-30
+
+Ruling for the "add a knack" feature's catalog normalisation
+(PLAN-ADD-KNACKS §7.1a): five knack parent names in `rules/knacks.json` are
+colloquial shorthand rather than catalog talent keys. All five resolve to an
+existing `Thread Weaving (<Discipline>)` talent, and that is the canonical
+governing talent — **not Spellcasting**:
+
+- `Thief Weaving` → **`Thread Weaving (Thief)`**
+- `Scout Weaving` → **`Thread Weaving (Scout)`**
+- `Thread Smithing` → **`Thread Weaving (Weaponsmith)`**
+- `Nethermancy` → **`Thread Weaving (Nethermancer)`** (not Spellcasting)
+- `Elementalism` → **`Thread Weaving (Elementalist)`** (not Spellcasting)
+
+The `X Weaving` naming convention makes Thread Weaving high-confidence, and the
+owner confirmed it (2026-08-30) over Spellcasting — the magician disciplines'
+weaving talents are Thread Weaving. Only Discipline-taught talents qualify as a
+knack parent (Q002); owning only the same-named skill never does. The rename is
+applied in `rules/knacks.json`; a guard test asserts no parent name is orphaned.
+
+Sources:
+- rules/knacks.json (renamed parent keys — owner sign-off 2026-08-30)
+- rules/talents.json (all five `Thread Weaving (…)` target keys exist)
+- Owner answer, 2026-08-30: Thread Weaving correct, keep data.
+
+### Q005 — Are knack restrictions enforced, or GM-adjudicated? (structured `restrictions`, ed-knacks/2)
+Keywords: knack, restriction, discipline, circle, spellcasting, nethermancer, elementalist, wizard, illusionist, weaponsmith, attribute, race, ability, ed-knacks/2, RESTRICTION-TAXONOMY · Resolved: 2026-08-31
+
+Ruling for the knack restrictions reform (PLAN-KNACK-RESTRICTIONS): the `restrictions`
+field on every knack in `rules/knacks.json` is now a **structured object**
+(schema bumped to `ed-knacks/2`; vocabulary defined in `docs/RESTRICTION-TAXONOMY.md`
+v1), not a free-text string. The engine enforces the **`discipline`** type; the other
+types (`attribute`, `race`, `ability`, `note`) are structured for future enforcement
+and currently render as "GM adjudicates".
+
+Enforced today:
+- A `discipline` restriction is an OR-list of `{name, circle?}` entries (a bare
+  `name` string is shorthand). A knack is learnable iff the character's own
+  discipline-name set intersects an entry **and**, when that entry carries a
+  `circle`, the character's discipline is at that circle or higher. A character
+  therefore only sees Spellcasting knacks belonging to their own magician
+  disciplines (e.g. a Nethermancer sees Nethermancer Spellcasting knacks, never
+  Elementalist/Wizard/Illusionist ones).
+
+Not enforced (GM adjudicates):
+- `attributes` (e.g. `Strength of Bronze` → `{attribute:{name:"Strength",value:14}, race:["Dwarf"]}`),
+  `race`, `ability` (e.g. `Tail Weapon` → `{ability:[{name:"Tail Combat"}]}`), and a
+  `note` fallback (e.g. `"Any Discipline"`).
+
+Two restriction types on the same knack combine with AND; the `discipline` entries
+are an OR-list. An empty object `{}` means no restriction.
+
+Sources:
+- docs/RESTRICTION-TAXONOMY.md (v1) — the vocabulary contract
+- rules/knacks.json (`restrictionTaxonomy: "docs/RESTRICTION-TAXONOMY.md (v1)"`)
+- engine/knack-options.js (`learnableKnacks` discipline gate)
+- Owner answers, 2026-08-31: fully structure all 16 compounds; new taxonomy doc; bump to ed-knacks/2.
