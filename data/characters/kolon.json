@@ -123,7 +123,7 @@
     },
     {
       "name": "Warrior",
-      "circle": 4,
+      "circle": 3,
       "talents": [
         {
           "name": "Avoid Blow",
