@@ -337,7 +337,7 @@
     },
     {
       "name": "Horror Fend",
-      "equipped": true
+      "equipped": false
     },
     {
       "name": "Climbing Kit",
