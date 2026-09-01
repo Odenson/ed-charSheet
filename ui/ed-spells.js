@@ -12,6 +12,7 @@ import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepB
   learnableSpells, learnPlan } from '../engine/spells.js';
 import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import { successCount } from '../engine/combat.js';
+import { loadRollLog } from '../store-rolllog.js';
 
 // Per-character cast-workspace scratchpad, kept in module memory so the in-flight
 // cast (selection, target, subject, weave/cast/effect progress) survives a tab
@@ -35,6 +36,7 @@ export class EdSpells extends LitElement {
     _castErr: { state: true },
     _prog: { state: true },
     _learn: { state: true },
+    _rolls: { state: true },
   };
 
   static styles = css`
@@ -51,6 +53,7 @@ export class EdSpells extends LitElement {
       --danger: light-dark(#a63a2b, #e0846f);
       --amber: light-dark(#8a5a12, #e0a94e);
       --amber-bg: light-dark(#f6ecd9, #3a2f17);
+      --accent: light-dark(#7a3e12, #d9944e);
       display: block;
     }
     .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -61,6 +64,7 @@ export class EdSpells extends LitElement {
     .kchip b { color: var(--karma); font-weight: 500; }
     .initpill { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 10px; }
     .initpill b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .initpill b.initres { color: var(--accent); }
     .initbtn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--karma); background: var(--karma-bg); color: var(--karma); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); padding: 0; flex: none; }
     .initbtn:disabled { opacity: 0.4; cursor: default; }
 
@@ -228,6 +232,7 @@ export class EdSpells extends LitElement {
     this._learn = null;
     this._pendingLearn = null; // 'teacher' | 'patterncraft' | null — which learn roll to fold next
     this._learnRollDiff = null;    // difficulty for the pending Patterncraft success-count
+    this._rolls = [];              // device-local Log view (newest first) — see _loadRolls
   }
 
   // Per-cast progress: threads woven so far, the greying flags, and each step's
@@ -254,9 +259,12 @@ export class EdSpells extends LitElement {
     document.addEventListener('keydown', this._onKey);
     // The shared roll modal reports each completed roll via ed-roll-logged
     // (composed → reaches document). We tag the step we just dispatched
-    // (`_pendingStep`) so the result lands on the right cast step.
-    this._onRollLogged = (e) => this._onRoll(e.detail);
+    // (`_pendingStep`) so the result lands on the right cast step, and reload
+    // the device-local Log view so the Initiative pill shows its last total
+    // beside the die (same behaviour as the Combat tab's roll log).
+    this._onRollLogged = (e) => { this._onRoll(e.detail); this._loadRolls(); };
     document.addEventListener('ed-roll-logged', this._onRollLogged);
+    this._loadRolls();
   }
   disconnectedCallback() {
     // Tab switch destroys this element — stash the cast workspace so returning
@@ -281,6 +289,7 @@ export class EdSpells extends LitElement {
         this._resetWorkspace();
         this._restoreScratch();
       }
+      this._loadRolls();
     }
   }
 
@@ -479,6 +488,17 @@ export class EdSpells extends LitElement {
       detail: { label: 'Initiative', step: c.value, karma: this._karmaCtx(c.karma), kind: 'initiative' },
       bubbles: true, composed: true,
     }));
+  }
+
+  // The device-local Log view (same source as the Combat tab's roll log): the
+  // newest Initiative entry's total, shown beside the die once rolled (null
+  // before any roll this session / for this log).
+  _loadRolls() {
+    if (!this.characterId) { this._rolls = []; return; }
+    this._rolls = loadRollLog(this.characterId).entries;
+  }
+  _lastInitTotal() {
+    return (this._rolls ?? []).find((r) => r.label === 'Initiative')?.total ?? null;
   }
 
   // Build the next spells block (pure inputs) and dispatch it up for saving.
@@ -1080,6 +1100,7 @@ export class EdSpells extends LitElement {
         ${this._initiative
           ? html`<div class="initpill">Initiative <b>${this._initiative.value ?? '—'}</b>
               <button class="initbtn" ?disabled=${!this._initiative.value} title="Roll initiative — starts a new round" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+              ${this._lastInitTotal() != null ? html`<b class="initres" title="Last Initiative roll result">${this._lastInitTotal()}</b>` : ''}
             </div>`
           : ''}
       </div>
