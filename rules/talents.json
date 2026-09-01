@@ -324,8 +324,26 @@
     },
     "Command Nightflyer": {
       "name": "Command Nightflyer",
+      "presentation": {
+        "shortEffect": "Converse with & command nocturnal fliers"
+      },
       "action": "Sustain",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "target's Mystic Defense",
+      "summary": "Converse with and command a nocturnal, flying creature (owls, bats, krilworms) for rank minutes, entering a test against its Mystic Defense; on a success the adept can converse in the creature's tongue and give it simple commands equal to the number of successes, which are obeyed even after the talent ends.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Converse with the creature in its tongue for rank minutes; give it simple commands equal to the number of successes, which remain in effect after the talent ends unless the result needs another conversation."
+        }
+      ]
     },
     "Conceal Object": {
       "name": "Conceal Object",

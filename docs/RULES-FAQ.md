@@ -237,3 +237,92 @@ Sources:
 - rules/knacks.json (`restrictionTaxonomy: "docs/RESTRICTION-TAXONOMY.md (v1)"`)
 - engine/knack-options.js (`learnableKnacks` discipline gate)
 - Owner answers, 2026-08-31: fully structure all 16 compounds; new taxonomy doc; bump to ed-knacks/2.
+
+### Q006 — Command Nightflyer talent: step, action, strain, skill use, attribute, target, duration, command count, limitations
+Keywords: Command Nightflyer · nightflyer owl bat krilworm nocturnal flying command conversation · Resolved: 2026-08-31
+
+Command Nightflyer (Nethermancer novice talent option) is confirmed as follows
+from the Players Guide. **Step:** Rank + WIL. **Action:** Sustained. **Strain:** 1.
+**Skill Use:** No. **Attribute:** Willpower (WIL). **Test target:** the creature's
+**Mystic Defense**. A successful test lets the adept converse with the nocturnal,
+flying creature (owls, bats, krilworms) in its "tongue" for **Rank minutes**; the
+adept may also give it **simple commands equal to the number of successes** scored,
+which are obeyed during that time (and commands continue to be obeyed after the
+talent ends, though reusing the talent is required if the action's result needs
+another conversation). **Limitations:** the creature's survival instincts cannot be
+overridden, nor can it be ordered to behave against its basic nature (e.g. "a bat
+could not be forced to scout around during daylight hours when it would normally be
+resting"). Both `text-talents-players.txt` and `text-RB-players-guide.txt` give
+identical wording. Note: the guide's index places the talent on printed **p. 135**.
+
+Sources:
+- rulebook extracts/text-talents-players.txt:161-164
+- rulebook extracts/text-RB-players-guide.txt:5770-5782 (p. 135 per index at text-RB-players-guide.txt:20064)
+- rulebook extracts/text-discipline-players.txt:222 (novice Nethermancer talent option)
+
+### Q007 — Advancing through Discipline Circles: when, requirements, cost, and Legend Points
+Keywords: discipline circle advancement, advance to next circle, higher circle, minimum rank requirement, discipline talents rank, talent options no role, initiate, tutor, master, train 40 hours, three-week period, circle training cost table, silver pieces, paying trainer, learn new discipline, reaching next circle, purchase discipline talent one option, personal legend, defeat a horror, current legend points, total legend points, spend legend points, circle-based attribute improvement · Resolved: 2026-08-31
+
+A character advances to the next Circle of a Discipline in exactly one way: reach
+the minimum ability requirement of the current Circle, then be trained/initiated
+by a higher-Circle member of the same Discipline (PG p. 452, "Advancing
+Discipline Circles"). Two conditions must be met to be eligible (p. 452):
+(1) the adept must have raised **all of his Discipline Talents to a rank equal
+to the Circle he wants to attain** — e.g. to train for Fifth Circle he must know
+all First–Fourth Circle Discipline Talents at minimum Rank 5, and **Talent
+Options are not used and play no role** in advancement; and (2) he must train
+with a higher-Circle member of his Discipline. (Optional rule "Using All Talents
+To Advance," p. 453: instead, know N talents at a minimum rank with one from the
+current Circle, per the Optional Advancement Table.)
+
+Training: the character seeks out a higher-Circle member of the same Discipline,
+negotiates payment, and trains **40 hours within a three-week period**; if not
+completed in that window he loses the benefits and starts over (may need to
+re-pay or find a new teacher) (p. 454). The **Circle Training Cost Table** gives
+typical trainer fees **in silver pieces** (Circle 2 → 200 sp up to Circle 15 →
+20,000 sp), negotiable by the GM (pp. 454–455). The trainer must be of a **higher
+Circle than the student** (p. 81).
+
+Reaching the new Circle (p. 454): the character advances after meeting the rank
+requirement and completing training; this entitles him to **purchase the new
+Circle's Discipline Talent and one of its Talent Options**, and he gains any
+characteristic/Discipline Ability improvements. On advancing, the adept also
+gains automatic bonuses to some Discipline-listed abilities (p. 86), which "come
+with the character's Circle—he does not need to spend Legend Points to advance"
+them (p. 86).
+
+**Legend Points and advancement**: there is **no Legend Point cost for the Circle
+advancement itself** — the cost is the trainer's silver fee and the LP you spend
+*separately* to buy the new talent ranks. LP are deducted only from the **Current
+Legend Points** tally; **Total Legend Points** never decrease and feed Legendary
+Status (pp. 446–447). Buying the new talent's Rank 1 (and raising other talent
+ranks) is normal talent purchasing: full LP cost from the Talent Cost Table,
+8 hours meditation per rank, one rank per day, sufficient Current LP (p. 449).
+Spending LP to raise talent ranks is what *eventually* qualifies an adept to
+advance (p. 53). Optional rule "Circle-Based Attribute Improvement" (pp. 448–449):
+tie one Attribute +1 per new Circle either free (no LP) or paid (normal LP, one
+per Circle, cannot carry over) — independent of the rank/training requirement.
+Thread-rank bonuses to talents do **not** count toward the advancement rank
+requirement (p. 231).
+
+**Not covered in the local extracts**: no extract requires "defeating a Horror,"
+an "achieving personal legend," or a formal in-game declaration/GM approval of
+advancement beyond the two conditions + training above. Those notions do not
+appear in the Player's Guide, GM's Guide, or Companion extracts as Circle-
+advancement requirements. (The GM Guide does note lower-Circle characters advance
+more quickly; p. 109.)
+
+Sources:
+- text-RB-players-guide.txt:18183–18202 (p. 452 — one way to advance; two conditions; minimum Discipline Talent rank; options no role)
+- text-RB-players-guide.txt:18204–18241 (p. 453 — Optional Rule "Using All Talents To Advance" + table; Legend Award guidance for Circles 11+)
+- text-RB-players-guide.txt:18242–18267 (p. 454 — Training Requirements: 40 hours in 3 weeks, restart on lapse, fee negotiation)
+- text-RB-players-guide.txt:18268–18280 (p. 454 — Reaching The Next Circle; entitlements; Specific Training optional rule)
+- text-RB-players-guide.txt:18281–18299 (pp. 454–455 — Circle Training Cost Table, silver-piece fees)
+- text-RB-players-guide.txt:3792–3807 (p. 81 — Training for Circle Advancement; trainer must be higher Circle)
+- text-RB-players-guide.txt:3966–3972, 4013–4035 (p. 86 — Circle-granted ability/Defense bonuses; free from LP spending)
+- text-RB-players-guide.txt:17932–17950, 17972–17982 (pp. 446–447 — Current vs Total Legend Points; spending)
+- text-RB-players-guide.txt:18036–18078 (p. 449 — Improving Talent Ranks: LP cost, meditation, conditions)
+- text-RB-players-guide.txt:18042–18056 (pp. 448–449 — Circle-Based Attribute Improvement optional rule)
+- text-RB-players-guide.txt:9631–9636 (p. 231 — thread-rank bonuses do not count toward Circle advancement)
+- text-RB-players-guide.txt:2086–2091 (p. 53 — spending LP on ranks allows Circle advancement)
+- text-RB-gamemasters-guide.txt:4918–4921 (p. 109 — lower-Circle characters advance more quickly)
