@@ -396,3 +396,61 @@ test('deriveModel skillOptions: Journeyman skills show tier=Journeyman and rank1
   assert.equal(aggr.tierNumeric, 2);
   assert.equal(aggr.rank1Cost, 300);
 });
+
+// --- Add-a-knack: model.knackOptions + overlay persistence (PLAN-ADD-KNACKS) ------
+
+// A character who owns Anticipate Blow at rank 6 qualifies for the Anticipate Spell
+// knack (parent Anticipate Blow, requiredRank 5).
+const knackReadyCharacter = () => {
+  const c = baseCharacter();
+  c.disciplines[0].talents.push({ name: 'Anticipate Blow', rank: 6, circle: 3 });
+  return c;
+};
+
+test('model.knackOptions surfaces a qualifying knack and prices it', () => {
+  memory.clear();
+  const m = deriveModel(knackReadyCharacter(), rules);
+  const opt = (m.knackOptions ?? []).find((o) => o.name === 'Anticipate Spell');
+  assert.ok(opt, 'Anticipate Spell is learnable at Anticipate Blow rank 6');
+  assert.equal(opt.viaDefault, 'Anticipate Blow');
+  assert.equal(opt.requiredRank, 5);
+  assert.equal(opt.cost, rules.legendFile.costs.talentRank['5'].Novice, 'Legend = Novice talent at rank 5');
+  assert.equal(opt.trainingFee, rules.legendFile.costs.knackTraining['5'], 'silver fee = knackTraining[5]');
+});
+
+test('model.knackOptions excludes an already-owned knack and one whose parent is under-rank', () => {
+  memory.clear();
+  const owned = knackReadyCharacter();
+  owned.knacks = [{ name: 'Anticipate Spell' }];
+  assert.ok(!(deriveModel(owned, rules).knackOptions ?? []).some((o) => o.name === 'Anticipate Spell'), 'owned → excluded');
+  const under = baseCharacter();
+  under.disciplines[0].talents.push({ name: 'Anticipate Blow', rank: 4, circle: 3 });
+  assert.ok(!(deriveModel(under, rules).knackOptions ?? []).some((o) => o.name === 'Anticipate Spell'), 'parent rank 4 < 5 → excluded');
+});
+
+test('overlay guard: a later disciplines-only save preserves a staged knack', () => {
+  memory.clear();
+  // Stage a learned knack via the advancements slot...
+  saveAdvancementEdits({ disciplines: knackReadyCharacter().disciplines, skills: [], knacks: [{ name: 'Anticipate Spell' }] }, 'k1');
+  // ...then a rank-path save that omits knacks (the common case).
+  const edits = saveAdvancementEdits({ disciplines: knackReadyCharacter().disciplines, skills: [] }, 'k1');
+  assert.deepEqual(edits.advancements.knacks, [{ name: 'Anticipate Spell' }], 'staged knack is preserved, not dropped');
+});
+
+test('overlay guard: a disciplines-only overlay never wipes the character knacks', () => {
+  memory.clear();
+  const character = knackReadyCharacter();
+  character.knacks = [{ name: 'Anticipate Spell' }];
+  // An overlay with NO knacks in the advancements slot (a plain rank edit).
+  const edits = saveAdvancementEdits({ disciplines: character.disciplines, skills: [] }, 'k2');
+  const next = applyEdits(character, edits);
+  assert.deepEqual(next.knacks, [{ name: 'Anticipate Spell' }], 'character knacks intact (guarded merge)');
+});
+
+test('overlay round-trip: a staged knack replays onto the character', () => {
+  memory.clear();
+  const character = knackReadyCharacter();
+  const edits = saveAdvancementEdits({ disciplines: character.disciplines, skills: [], knacks: [{ name: 'Anticipate Spell', via: 'Anticipate Blow' }] }, 'k3');
+  const next = applyEdits(character, edits);
+  assert.deepEqual(next.knacks, [{ name: 'Anticipate Spell', via: 'Anticipate Blow' }]);
+});

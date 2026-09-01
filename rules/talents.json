@@ -8,7 +8,8 @@
     "Karma: every talent test is Karma-eligible BY DEFAULT (core rule; the engine handles this, so eligible talents carry no flag). Set \"karma\": false only on a talent that 'notes otherwise'. Versatility-learned talents can never use Karma either, but that is per-character (a \"viaVersatility\": true flag on the character's talent entry), not a property of the talent itself.",
     "Effects follow docs/EFFECT-TAXONOMY.md; action outcomes use condition:on-success (+ perSuccess where they scale).",
     "combatOptions: a talent may grant a Combat-tab option pill. Carry ONLY option-specific fields (appliesTo weapon scope, karmaDice, excludes, restricted); name/summary/effects are derived from the base talent by the store, never duplicated. See plans/PLAN-TALENT-COMBAT-OPTIONS.md.",
-    "arms: flags an 'arming' talent whose on-success effect buffs a LATER action (e.g. Mystic Aim boosts a following Attack). Shape { roll: { vs? }, rounds }: 'roll.vs' is the defence the precursor test is entered against (omit for a no-target arm); 'rounds' is how many rounds the buff lasts (ticks down each Initiative, like a spell). roll.strain/step/karma are derived from the talent, and the armed payload stays in this talent's effects[] as an on-success (+perSuccess) test-modifier — do NOT copy it into arms. Any roll surface (Combat chip, Combat dropdown, Disciplines tab) arms it into session state. See plans/PLAN-TALENT-COMBAT-OPTIONS.md §13."
+    "arms: flags an 'arming' talent whose on-success effect buffs a LATER action (e.g. Mystic Aim boosts a following Attack). Shape { roll: { vs? }, rounds }: 'roll.vs' is the defence the precursor test is entered against (omit for a no-target arm); 'rounds' is how many rounds the buff lasts (ticks down each Initiative, like a spell). roll.strain/step/karma are derived from the talent, and the armed payload stays in this talent's effects[] as an on-success (+perSuccess) test-modifier — do NOT copy it into arms. Any roll surface (Combat chip, Combat dropdown, Disciplines tab) arms it into session state. An arms talent may ALSO carry an on-success defense-modifier (Anticipate Blow's +2 Physical Defence): both the test and defense payloads fold from the armed record. See plans/PLAN-TALENT-COMBAT-OPTIONS.md §13.",
+    "combatOptions: a talent may grant a Combat-tab option pill. The pill name/summary are derived from the base talent, never duplicated; the entry carries ONLY option-specific fields (appliesTo weapon scope, karmaDice, excludes, restricted). An EMPTY bundle {} (no appliesTo) is un-scoped — always available regardless of the selected weapon or pick (Anticipate Blow), unlike Mystic Aim's appliesTo:[\"missile\",\"throwing\"] ranged-only gate. See plans/PLAN-TALENT-COMBAT-OPTIONS.md."
   ],
   "talents": {
     "Acrobatic Defense": {
@@ -98,6 +99,10 @@
       "tier": "Novice",
       "versus": "target's Mystic Defense (requires higher Initiative than the target)",
       "summary": "Read a foe you out-initiative (vs Mystic Defense): each success adds +2 to your Physical Defense against that foe's attacks until end of round, and +2 per success to your first Attack test against them. Usable up to rank times per round.",
+      "arms": {
+        "roll": { "vs": "Mystic" },
+        "rounds": 1
+      },
       "effects": [
         {
           "type": "defense-modifier",
@@ -124,13 +129,16 @@
           },
           "operation": "add",
           "value": 2,
-          "measure": "result",
+          "measure": "step",
           "condition": "on-success",
           "perSuccess": true,
           "scope": "first Attack test vs the target",
           "source": "talent",
           "summary": "+2 per success to your first Attack test against the target."
         }
+      ],
+      "combatOptions": [
+        {}
       ]
     },
     "Arcane Mutterings": {
@@ -316,8 +324,26 @@
     },
     "Command Nightflyer": {
       "name": "Command Nightflyer",
+      "presentation": {
+        "shortEffect": "Converse with & command nocturnal fliers"
+      },
       "action": "Sustain",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": {
+        "allowed": false
+      },
+      "tier": "Novice",
+      "versus": "target's Mystic Defense",
+      "summary": "Converse with and command a nocturnal, flying creature (owls, bats, krilworms) for rank minutes, entering a test against its Mystic Defense; on a success the adept can converse in the creature's tongue and give it simple commands equal to the number of successes, which are obeyed even after the talent ends.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Converse with the creature in its tongue for rank minutes; give it simple commands equal to the number of successes, which remain in effect after the talent ends unless the result needs another conversation."
+        }
+      ]
     },
     "Conceal Object": {
       "name": "Conceal Object",
@@ -1410,10 +1436,6 @@
     },
     "Anticipate Movement": {
       "name": "Anticipate Movement",
-      "action": "Simple"
-    },
-    "Anticipate Spell": {
-      "name": "Anticipate Spell",
       "action": "Simple"
     },
     "Arcane Accuracy": {

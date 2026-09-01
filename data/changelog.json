@@ -1,8 +1,46 @@
 {
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
-  "unreleased": { "summary": "", "changes": [] },
+  "unreleased": {
+    "summary": "",
+    "changes": []
+  },
   "releases": [
+    {
+      "version": "1.23.0",
+      "date": "2026-09-01",
+      "summary": "Learn knacks in edit mode, gated by the governing talent (or by an owned skill with the \"Skills may govern knacks\" house rule on); Anticipate Spell works as an armed combat option; Arrow of Night's corrected spell folds its +6 Damage step onto your missile while active; the Spells-tab Initiative die shows its last result.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "You can now learn a knack from the Disciplines tab in edit mode. A \"＋ add knack\" picker lists every knack you qualify for — the governing talent is known through a Discipline at the required rank and you're under the per-talent cap — priced in Legend (a Novice talent of that rank) with an editable silver training fee from the purse. Multi-parent knacks let you choose which talent you learn it under. Discipline restrictions (e.g. a Nethermancer Spellcasting knack) are enforced to your own disciplines; other restrictions are shown and left to the GM."
+        },
+        {
+          "type": "added",
+          "text": "Knack restrictions are now structured data (rules/knacks.json bumped to ed-knacks/2; docs/RESTRICTION-TAXONOMY.md) instead of free text. The engine enforces the discipline type: a Spellcasting knack restricted to a discipline appears in your picker only if you belong to that discipline (at the required circle). Attribute/race/ability restrictions stay notes you and the GM adjudicate."
+        },
+        {
+          "type": "added",
+          "text": "New homebrew lever \"Skills may govern knacks\" (ed-homebrew/3, rules/homebrew.json): when enabled, any knack whose parents include a skill the character owns becomes learnable through that skill at its rank (>= the knack's required rank). Skill-governed knacks then nest under their skill on the Skills tab, whose edit mode gains its own scoped \"＋ add knack\" slot. Turned off, the talent-only default is unchanged and skills never touch knacks."
+        },
+        {
+          "type": "added",
+          "text": "Anticipate Spell (a knack of Anticipate Blow, rank 5) now works as an armed combat option: it arms vs Mystic Defense and, on a hit, adds +2 per success to your Mystic Defense and to the first Attack or Spellcasting test against the target — the Spellcasting bonus reaching the Spells-tab cast roll as well."
+        },
+        {
+          "type": "added",
+          "text": "Arrow of Night now matches the book: it needs no threads to weave (Weaving Difficulty 7/12), and a successful self-cast activates +6 to the enchanted missile's Damage step on the Combat tab — an active effect that folds into a ranged (missile) weapon's Damage pool for its 2-round duration, never a melee weapon's. The −2 Mystic Armor rider on a damaged target stays a GM-adjudicated note, and the Increase Effect (+2 Damage) extra thread now raises the Damage step (not a flat number)."
+        },
+        {
+          "type": "improved",
+          "text": "The Spells tab's Initiative die now shows your last roll's result just to its right, like the Combat tab's — the total you rolled is readable at a glance without opening the log."
+        },
+        {
+          "type": "fixed",
+          "text": "Seven Elementalist/Nethermancer/Weaponsmith/Thief/Scout knacks whose governing talent was recorded under a colloquial name (e.g. \"Elementalism\", \"Thread Smithing\") now resolve to the correct Thread Weaving talent, so they can be learned by a qualifying adept."
+        }
+      ]
+    },
     {
       "version": "1.22.0",
       "date": "2026-08-26",

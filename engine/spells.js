@@ -148,6 +148,17 @@ function parseRef(ref) {
   return { domain, name, prop };
 }
 
+// A terse subject label for an effect's target: "Mystic armor" for an
+// {armor, Mystic} target reads by its domain; an {attack, Damage} target reads
+// by its MEASURE instead — "Damage step", never the word "attack" ("Damage
+// attack" would be confusing for a fold onto a damage roll).
+function effectSubject(e) {
+  if (!e?.target) return null;
+  return e.target.domain === 'attack'
+    ? `${e.target.name} ${e.measure ?? 'step'}`
+    : `${e.target.name} ${e.target.domain}`;
+}
+
 /**
  * The spell's Effect readout for the cast panel (§3.4 archetypes):
  *   { kind: 'step',   base, add, step, label }   — instantaneous roll (set+add)
@@ -167,8 +178,7 @@ export function effectReadout(ctx, spell) {
   }
   const sustained = fx.find((e) => e.duration === 'sustained' && typeof e.value === 'number');
   if (sustained) {
-    const label = sustained.target ? `${sustained.target.name} ${sustained.target.domain}` : 'Effect';
-    return { kind: 'static', value: sustained.value, label };
+    return { kind: 'static', value: sustained.value, label: effectSubject(sustained) ?? 'Effect' };
   }
   return { kind: 'none' };
 }
@@ -215,18 +225,29 @@ export function durationRounds(duration, rank) {
  * `rank` is the caster's Spellcasting rank; `ctx` carries the cast's boosts —
  * `{ extraPicks: string[], successLevels: number }` — so the assigned extra
  * threads and the EXTRA successes (levels − 1) raise the folded effect value
- * (`ratingAdd`) and extend the duration (`durationRounds`), read from the
- * options' structured `effects[]` (taxonomy v4). No label parsing.
+ * (`stepAdd` for a step-measure effect, `ratingAdd` for a rating one) and extend
+ * the duration (`durationRounds`), read from the options' structured `effects[]`
+ * (taxonomy v4). No label parsing.
+ *
+ * Known limitation (single `boosted` flag): only the FIRST numeric sustained
+ * effect receives a boost, and it receives exactly one of `stepAdd`/`ratingAdd` —
+ * whichever matches its measure. Safe for every spell today (one numeric
+ * sustained effect, one measure); a future spell with both a step and a rating
+ * sustained effect could mis-target (the plan documents this as a chosen limit).
  */
 export function buildActiveSpell(spell, rank, ctx = {}) {
-  const { ratingAdd, durationRounds: durationBoost } = castBoosts(spell, ctx.extraPicks, ctx.successLevels);
+  const { stepAdd, ratingAdd, durationRounds: durationBoost } = castBoosts(spell, ctx.extraPicks, ctx.successLevels);
 
-  // Fold the effect boost into the first numeric sustained effect (the buff's rating).
+  // Fold the effect boost into the first numeric sustained effect (the buff's
+  // rating or step), measure-matched.
   let boosted = false;
   const effects = sustainedEffectsOf(spell).map((e) => {
-    if (!boosted && ratingAdd && typeof e.value === 'number') {
-      boosted = true;
-      return { ...e, value: e.value + ratingAdd };
+    if (!boosted && typeof e.value === 'number') {
+      const need = (e.measure ?? 'rating') === 'step' ? stepAdd : ratingAdd;
+      if (need) {
+        boosted = true;
+        return { ...e, value: e.value + need };
+      }
     }
     return e;
   });
@@ -235,8 +256,9 @@ export function buildActiveSpell(spell, rank, ctx = {}) {
   const rounds = base == null ? null : base + durationBoost;
 
   const stat = effects.find((e) => typeof e.value === 'number');
+  const subject = effectSubject(stat);
   const effectLabel = stat
-    ? `+${stat.value}${stat.target ? ` ${stat.target.name} ${stat.target.domain}` : ''}`
+    ? `+${stat.value}${subject ? ` ${subject}` : ''}`
     : (spell.summary ?? '');
   return {
     name: spell.name,

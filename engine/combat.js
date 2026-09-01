@@ -107,10 +107,23 @@ export function tickArmedTalents(armed) {
 /** The signed value an effect contributes (operation subtract negates). */
 const opValue = (e) => (e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0);
 
-/** Does a test-modifier apply to the test kind being assembled?
- *  ctx: { testKind: 'attack' | 'damage', sightBased?: boolean, activeTalent?: string } */
+/** Does a test/attack-modifier apply to the test kind being assembled?
+ *  ctx: { testKind: 'attack' | 'damage', sightBased?: boolean, activeTalent?: string }
+ *  test-modifier targets:
+ *    { test, Attack }  → the attack roll (kind 'attack')
+ *    { test, Damage }  → the damage test (kind 'damage')
+ *  attack-modifier targets (an active spell's fold onto a weapon roll, e.g.
+ *  Arrow of Night's +6 to the missile's Damage step):
+ *    { attack, Damage } → the attack's damage step (kind 'damage')
+ *    { attack, Attack } → the attack test itself (kind 'attack') */
 function appliesToTest(e, ctx) {
   const t = e.target;
+  if (e.type === 'attack-modifier') {
+    if (!t || t.domain !== 'attack') return false;
+    if (t.name === 'Damage') return ctx.testKind === 'damage';
+    if (t.name === 'Attack') return ctx.testKind === 'attack';
+    return false;
+  }
   if (e.type !== 'test-modifier' || !t || t.domain !== 'test') return false;
   const kind = ctx.testKind;
   if (t.name === 'Attack') return kind === 'attack';
@@ -155,7 +168,8 @@ function foldPool(baseStep, effects, ctx) {
       }
       continue;
     }
-    if (e.type !== 'test-modifier' || !appliesToTest(e, ctx)) continue;
+    if (e.type !== 'test-modifier' && e.type !== 'attack-modifier') continue;
+    if (!appliesToTest(e, ctx)) continue;
     const v = opValue(e);
     const label = e.label ?? e.summary ?? `${e.target.name} ${e.target.domain}`;
     if (e.measure === 'result') {
@@ -285,6 +299,38 @@ function weaponPoolEffects(effects, name) {
 }
 
 /**
+ * The session's active self-cast spell bundles whose sustained attack-modifier
+ * effects fold into the combat pools while active (Arrow of Night's +6 to the
+ * missile's Damage step). Pure — the view supplies the origin-tagged active
+ * effects (from `model.activeEffects`) and the selected weapon's category; the
+ * engine picks the foldable bundles so the scope gate is unit-testable. Only
+ * auto-apply (`condition` 'always'/absent, not `gmDiscretion`) attack-modifiers
+ * targeting `{attack, Attack|Damage}` are admitted; a `scope` must equal the
+ * weapon category ('missile' → missile weapons only, mirroring `_armedForPick`).
+ * Test-modifiers (Shadow Meld's +4 Stealthy Stride) already fold onto the
+ * ability's own step, so they never route here.
+ * @param {object[]} [activeEffects] `model.activeEffects` (origin-tagged)
+ * @param {string|null} [weaponCategory] the selected weapon's category
+ * @returns {Array<{name:string, effects:object[]}>} bundles named by the spell
+ */
+export function activeSpellBundlesFor(activeEffects, weaponCategory) {
+  const cat = weaponCategory ?? null;
+  const bySpell = new Map();
+  for (const e of activeEffects ?? []) {
+    if (e?.origin?.kind !== 'spell') continue;
+    if (e.type !== 'attack-modifier') continue;
+    if (!e.target || e.target.domain !== 'attack') continue;
+    if (e.target.name !== 'Damage' && e.target.name !== 'Attack') continue;
+    if ((e.condition ?? 'always') !== 'always' || e.gmDiscretion) continue;
+    if (e.scope && e.scope !== cat) continue;
+    const name = e.origin.name;
+    if (!bySpell.has(name)) bySpell.set(name, { name, effects: [] });
+    bySpell.get(name).effects.push(e);
+  }
+  return [...bySpell.values()];
+}
+
+/**
  * Build the effect lists the Combat tab feeds to `attackPool` / `damagePool`
  * from the player's selections, applying the **asymmetric locked-condition
  * strip** (PLAN-COMBAT-TAB B11). The view never computes these selections
@@ -313,6 +359,12 @@ function weaponPoolEffects(effects, name) {
  *   (player-added only — locked Knocked Down/Harried come from `conditions`)
  * @param {Array<{name:string, effects:object[]}>} args.selectedCharms  toggled
  *   equipped blood-charm items (their activatable effects)
+ * @param {Array<{name:string, effects:object[]}>} [args.activeSpellBundles]  the
+ *   session's active self-cast spell bundles whose sustained attack-modifier
+ *   effects fold while active (an Arrow of Night +6 to the missile Damage step).
+ *   Pre-screened by the view (origin spell, {attack, Attack|Damage} target,
+ *   scope matched to the weapon); folded through `addBundle` so the step-audit
+ *   names the SPELL as the source.
  * @param {object[]} [args.selectedWeaponEffects]  the selected weapon's woven
  *   effects (from its `equippedWeapons` entry)
  * @param {Object<string,number>|string[]} [args.armedOptions]  a map
@@ -329,7 +381,7 @@ function weaponPoolEffects(effects, name) {
  *   Defence & Armour block folds into the sheet's derived ratings for display
  *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
-export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], selectedWeaponEffects = [], selectedWeaponName = 'Weapon', armedOptions = [], armedTalents = [], rules, conditions = {} }) {
+export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], activeSpellBundles = [], selectedWeaponEffects = [], selectedWeaponName = 'Weapon', armedOptions = [], armedTalents = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
   const sitList = rules?.situations ?? [];
   const attackEffects = [];
@@ -391,6 +443,12 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   // an arm made from any roll surface reaches the pool. The armed entry supplies
   // its own `effects` and `successes` (the forced count).
   for (const at of armedTalents ?? []) addBundle(at, at?.name ?? 'Armed talent', at?.successes ?? 0);
+  // Active self-cast spells (session): a sustained attack-modifier (Arrow of
+  // Night) folds while active, labelled by the spell name. The bundles are
+  // pre-screened by the view (origin spell, {attack, Attack|Damage}, scope
+  // matched) — `addBundle` only re-labels — and each pool admits the effect via
+  // the widened appliesToTest (Damage → damage pool only).
+  for (const bundle of activeSpellBundles ?? []) addBundle(bundle, bundle?.name ?? 'Active spell');
 
   if (conditions.harried) {
     const harriedBundle = sitList.find((o) => o.name === 'Harried');

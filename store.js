@@ -40,6 +40,7 @@ import { circleStatus } from './engine/advancement.js';
 import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
 import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
+import { learnableKnacks } from './engine/knack-options.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 
 // UNIVERSAL_TALENTS (Durability, Karma Ritual) — talents every adept receives
@@ -107,6 +108,17 @@ export function resolveKnack(owned, catalog = {}, skillNames = new Set(), talent
     requiredRank: ref?.requiredRank ?? owned.rank ?? null,
     action: ref?.action ?? null,
     brief: ref?.brief ?? null,
+    // Structured mechanics for a knack that grants a combat option (e.g.
+    // Anticipate Spell — a knack of Anticipate Blow). The combat slice reads
+    // these to surface a knack-sourced armed option, gating on the parent
+    // talent's rank and deriving the arms roll Step from `attribute` + that rank
+    // — the numeric step is NEVER parsed from the `step: "Rank+PER"` display
+    // string (ARCHITECTURE §5.5). Null for the vast majority of knacks.
+    attribute: ref?.attribute ?? null,
+    versus: ref?.versus ?? null,
+    arms: ref?.arms ?? null,
+    effects: ref?.effects ?? null,
+    combatOptions: ref?.combatOptions ?? null,
     detail: { summary: ref?.summary ?? null, strain: ref?.strain ?? null, documented: !!ref?.summary },
   };
 }
@@ -381,9 +393,18 @@ export function saveKarmaEdits(karma, id) {
  * later save replaces the whole arrays (items/wealth precedent — a partial
  * patch must never drop the recorded ranks on replay).
  */
-export function saveAdvancementEdits({ disciplines, skills }, id) {
+export function saveAdvancementEdits({ disciplines, skills, knacks }, id) {
   const edits = loadEdits(id);
-  edits.advancements = { disciplines, skills };
+  // Knacks ride the same `advancements` slot (PLAN-ADD-KNACKS §7.3). This slot is
+  // rebuilt wholesale each call, so PRESERVE any previously-staged knacks when a
+  // caller (e.g. the rank stepper) omits them — the `...edits.advancements` spread
+  // keeps the prior value; the conditional writes a new one only when provided.
+  edits.advancements = {
+    ...edits.advancements,
+    disciplines,
+    skills,
+    ...(knacks !== undefined ? { knacks } : {}),
+  };
   localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
@@ -525,6 +546,11 @@ export function applyEdits(character, edits) {
       })),
     };
     next = { ...next, disciplines: advancements.disciplines, skills: advancements.skills };
+    // Knacks ride the advancements slot (PLAN-ADD-KNACKS §7.3). GUARDED merge: only
+    // replace when the slot actually carries `knacks`, so a disciplines-only overlay
+    // (the common rank-edit case) never wipes the character's knacks. Knacks are
+    // pure `{name, via?}` inputs — no derived-field stripping (unlike talent tier).
+    if (advancements.knacks) next = { ...next, knacks: advancements.knacks };
   }
   if (edits.notes) next = { ...next, notes: edits.notes };
   if (edits.history) next = { ...next, history: edits.history };
@@ -570,8 +596,9 @@ async function loadRules() {
   const knacksFile = await loadJSONOptional('./rules/knacks.json', { knacks: {} });
   // Thread-item catalog is optional too (rules/thread-items.json, ed-thread-items/1).
   const threadItemsFile = await loadJSONOptional('./rules/thread-items.json', { items: {} });
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md)
-  // are optional and data-only. Rules ship disabled; only `enabled` ones apply.
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/3 — docs/HOMEBREW-RULES.md)
+  // are optional and data-only. Rules ship disabled; only `enabled` ones apply
+  // (a `knackParents` rule is active by its existence — docs §5.6).
   const homebrewFile = await loadJSONOptional('./rules/homebrew.json', { rules: [] });
   // Combat options + situational effects (rules/combat.json, ed-combat/1 —
   // PLAN-COMBAT-TAB Phase A). The Combat tab renders its chips from these and
@@ -662,6 +689,9 @@ export function deriveModel(character, rules, session = {}) {
         // armed payload (its on-success test-targeting effects — both fold if a
         // talent has more than one); `appliesTo` carries the weapon scope from its
         // combat pill so an armed bonus only applies to the right attack type.
+        // Anticipate Blow also arms an on-success defence-modifier, so the payload
+        // filter admits defense-modifiers too (the engine folds those into the
+        // live Defence figure, not a roll pool).
         arms: cat.arms
           ? {
               roll: {
@@ -672,7 +702,7 @@ export function deriveModel(character, rules, session = {}) {
               },
               rounds: cat.arms.rounds ?? 1,
               appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
-              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && e?.target?.domain === 'test'),
+              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
             }
           : null,
         // The Circle the talent was learned at — a stored input, surfaced so the
@@ -874,9 +904,10 @@ export function deriveModel(character, rules, session = {}) {
     };
   });
 
-  // Homebrew rules (rules/homebrew.json, ed-homebrew/2 — docs/HOMEBREW-RULES.md):
+  // Homebrew rules (rules/homebrew.json, ed-homebrew/3 — docs/HOMEBREW-RULES.md):
   // a file-based, data-only list of rating overrides + effects. Only `enabled`
-  // rules apply; the last enabled rule wins per rating (no merge). A rule's own
+  // rules apply (a `knackParents` rule is active by its existence — §5.6); the
+  // last enabled rule wins per rating (no merge). A rule's own
   // `effects` fold like any always-on effect, tagged `kind: 'homebrew'` so a
   // tooltip can name the rule. Rules ship disabled.
   const homebrewRules = (homebrewFile?.rules ?? []).filter((r) => r.enabled !== false);
@@ -1129,6 +1160,43 @@ export function deriveModel(character, rules, session = {}) {
     (character.disciplines ?? []).flatMap((d) => (d.talents ?? []).map((t) => t.name)),
   );
   const knacks = (character.knacks ?? []).map((k) => resolveKnack(k, knackCatalog, skillNames, talentNames));
+
+  // Learnable-knacks derivation (PLAN-ADD-KNACKS §7.3): the knacks the character may
+  // acquire in edit mode, gated on a governing parent at raw rank >= requiredRank, the
+  // per-parent cap, and not-already-owned. `parentTalents` maps each Discipline-taught
+  // talent name -> { rank } using the raw stored rank (never grant/thread bonuses — only
+  // the actual rank counts; Companion), deduped to the highest rank across Disciplines.
+  // When the `knackParents` homebrew lever is active (rules/homebrew.json `knackParents:
+  // true`, docs/HOMEBREW-RULES.md §5.6), `parentSkills` maps each owned skill name ->
+  // { rank } the same way, so skill-named knack parents also qualify. Always derived,
+  // never stored. `skillKnackEnabled` tells the UI whether the skill path is live so it
+  // can show skill-knack rows/add-slots only when the ruling is on.
+  const skillKnackEnabled = homebrewRules.some((r) => r.knackParents === true);
+  const parentTalents = {};
+  for (const d of character.disciplines ?? []) {
+    for (const t of d.talents ?? []) {
+      if (!t?.name) continue;
+      const rank = t.rank ?? 0;
+      if (parentTalents[t.name] == null || rank > parentTalents[t.name].rank) parentTalents[t.name] = { rank };
+    }
+  }
+  const parentSkills = {};
+  if (skillKnackEnabled) {
+    for (const s of character.skills ?? []) {
+      if (!s?.name) continue;
+      const rank = s.rank ?? 0;
+      if (parentSkills[s.name] == null || rank > parentSkills[s.name].rank) parentSkills[s.name] = { rank };
+    }
+  }
+  const knackOptions = learnableKnacks(knackCatalog, {
+    ownedKnacks: character.knacks ?? [],
+    parentTalents,
+    parentSkills,
+    // The character's own disciplines gate `discipline`-restricted knacks
+    // (PLAN-KNACK-RESTRICTIONS §2 / docs/RESTRICTION-TAXONOMY.md). Always derived
+    // from stored inputs; never stored.
+    characterDisciplines: (character.disciplines ?? []).map((d) => ({ name: d?.name, circle: d?.circle })),
+  }, legendFile?.costs);
 
   // Rank grants (engine/ability-ranks.js, plans/PLAN-RANK-GRANTS.md): always-on
   // `grant-ability` effects (measure `rank`, EFFECT-TAXONOMY §5) fold into the
@@ -1415,6 +1483,57 @@ export function deriveModel(character, rules, session = {}) {
           }
         }
       }
+      // Knack-sourced combat options (e.g. Anticipate Spell — a knack of
+      // Anticipate Blow). Unlike a talent, a knack is gated on its PARENT
+      // talent's rank (`requiredRank`) and derives its arms roll Step from the
+      // knack's `attribute` + that parent rank — NOT from the `step: "Rank+PER"`
+      // display string (ARCHITECTURE §5.5). The arms descriptor is built here
+      // directly (a knack has no talent object to carry it), mirroring the
+      // talent arms shape at ~:668 so every roll surface arms it identically.
+      // Only knacks that declare `combatOptions` AND `arms`, whose parent talent
+      // is owned at rank ≥ `requiredRank`, contribute.
+      for (const k of knacks) {
+        const defs = k.combatOptions;
+        if (!defs?.length || !k.arms) continue;
+        const parentName = k.parent?.name;
+        if (!parentName) continue;
+        let parentRank = 0;
+        for (const d of disciplines)
+          for (const t of d.talents ?? [])
+            if (t.name === parentName) parentRank = Math.max(parentRank, t.rank ?? 0);
+        if (parentRank < (k.requiredRank ?? 1)) continue; // parent unowned or under-rank
+        const aStep = k.attribute ? attrStepByName[k.attribute] : undefined;
+        const step = aStep != null ? talentStep(aStep, parentRank) : null;
+        const karma = step != null ? talentKarmaUse({ karma: true }) : null;
+        const arms = {
+          roll: {
+            vs: k.arms.roll?.vs ?? null,
+            strain: k.arms.roll?.strain ?? (Number(k.detail?.strain) || 0),
+            step,
+            karma,
+          },
+          rounds: k.arms.rounds ?? 1,
+          appliesTo: defs[0]?.appliesTo ?? null,
+          effects: (k.effects ?? []).filter(
+            (e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier'),
+          ),
+        };
+        for (const o of defs) {
+          const name = o.name ?? k.name;
+          const prev = byName.get(name);
+          if (prev && (prev._rank ?? 0) >= parentRank) continue;
+          byName.set(name, {
+            ...o,
+            name,
+            summary: o.summary ?? k.detail?.summary ?? '',
+            effects: k.effects ?? [],
+            karmaDice: o.karmaDice ? { ...o.karmaDice, max: parentRank } : null,
+            arms,
+            grantedBy: parentName,
+            _rank: parentRank,
+          });
+        }
+      }
       return [...byName.values()].map(({ _rank, ...o }) => o);
     })(),
     strengthStep: strStep,
@@ -1482,6 +1601,29 @@ export function deriveModel(character, rules, session = {}) {
   const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
   if (spellsCtx) {
     spellsCtx.active = session?.activeSpells ?? [];
+    // Armed Spellcasting step bonus (Anticipate Spell — "+2 per success to the
+    // first Attack OR Spellcasting test"). The armed record lives in session
+    // state, so this fold is done HERE at the store boundary — never inside the
+    // session-free `buildSpellsContext`, which returns only the base
+    // `castingStep` (golden rule: the engine reads no session state). We do NOT
+    // write it onto the shared Spellcasting talent `.step`: the Combat tab reads
+    // that same object AND folds the armed payload itself, so mutating it would
+    // double-count a Combat Spellcasting pick. `_rollCast` adds this to the
+    // dispatched step and shows an armed chip (mirrors the learn-TW pattern).
+    let castingArmed = null;
+    for (const a of session?.armedTalents ?? []) {
+      if (!(a.successes > 0)) continue; // only a HIT arms anything
+      const e = (a.effects ?? []).find(
+        (x) => x.type === 'test-modifier' && x.target?.name === 'Spellcasting' && x.measure === 'step' && x.condition === 'on-success',
+      );
+      if (!e) continue;
+      const step = e.perSuccess ? (e.value ?? 0) * a.successes : (e.value ?? 0);
+      if (!step) continue;
+      castingArmed = castingArmed
+        ? { step: castingArmed.step + step, source: `${castingArmed.source}, ${a.name}`, successes: a.successes }
+        : { step, source: a.name, successes: a.successes };
+    }
+    if (castingArmed) spellsCtx.castingArmed = castingArmed;
     // Learn-flow tables (PLAN-LEARN-SPELLS §5): the learning block (difficulty/
     // cost by Circle) and the Legend talentRank table — pushed down as rules data
     // so the Learn modal reads values, never formulas (ARCHITECTURE §5.5).
@@ -1530,6 +1672,8 @@ export function deriveModel(character, rules, session = {}) {
     skills,
     skillOptions,
     knacks,
+    knackOptions,
+    skillKnackEnabled,
     // `set`-granted abilities the character doesn't learn (engine/ability-ranks.js
     // plans/PLAN-RANK-GRANTS.md D2/D5): derived possession rows for the
     // Disciplines tab's "Granted abilities" group. Never stored.

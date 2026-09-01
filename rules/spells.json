@@ -1699,10 +1699,10 @@
       "description": "Cloaks an arrow, bolt, sling stone, or blowpipe dart in a chilled sheath of midnight darkness. A successful Spellcasting (6) test adds +6 to the missile's Damage test, and anyone damaged by it takes a -2 penalty to Mystic Armor until the end of the next round.",
       "discipline": "Nethermancer",
       "circle": 3,
-      "threadsToWeave": 1,
+      "threadsToWeave": 0,
       "weavingDifficulty": {
-        "value": 6,
-        "reattune": 11
+        "value": 7,
+        "reattune": 12
       },
       "castingTarget": "Fixed 6",
       "range": "Touch",
@@ -1737,7 +1737,7 @@
               },
               "operation": "add",
               "value": 2,
-              "measure": "rating",
+              "measure": "step",
               "source": "spell",
               "summary": "Increase Effect (+2 Damage)",
               "duration": "test"
@@ -1751,7 +1751,7 @@
               "type": "note",
               "source": "spell",
               "gmDiscretion": true,
-              "summary": "Increase Effect (-2 Mystic Armor penalty)"
+              "summary": "Target damaged by the missile suffers -2 Mystic Armor until the end of the next round."
             }
           ]
         },
@@ -1776,10 +1776,18 @@
           },
           "operation": "add",
           "value": 6,
-          "measure": "rating",
-          "duration": "test",
+          "measure": "step",
+          "duration": "sustained",
+          "condition": "always",
+          "scope": "missile",
           "source": "spell",
-          "summary": "+6 to the enchanted missile Damage test."
+          "summary": "+6 to the enchanted missile's Damage step while active."
+        },
+        {
+          "type": "note",
+          "gmDiscretion": true,
+          "source": "spell",
+          "summary": "Target damaged by the missile suffers −2 Mystic Armor until the end of the next round."
         }
       ],
       "summary": "+6 bonus to a missile Damage test and a -2 penalty to Mystic Armor"

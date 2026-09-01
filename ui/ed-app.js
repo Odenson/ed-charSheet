@@ -14,7 +14,7 @@ import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
 import { payFromPurse } from '../engine/wealth.js';
 import { talentRankStepCost, lowestDisciplineCircle, skillRankStepCost } from '../engine/legend-spent.js';
-import { logCircleTraining, logTalentLearned, logSkillLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
+import { logCircleTraining, logTalentLearned, logSkillLearned, logKnackLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -410,6 +410,7 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-learn-talent', (e) => this._learnTalent(e.detail));
     // Learn a new Skill at Rank 1 (PLAN-LEARN-SKILLS §7.4) — data-driven fee from costs.skillTraining.
     this.addEventListener('ed-learn-skill', (e) => this._learnSkill(e.detail));
+    this.addEventListener('ed-learn-knack', (e) => this._learnKnack(e.detail));
     // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
     this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
     // Blood-charm activation (global, not tab-local — an effect is an effect): a
@@ -1244,6 +1245,60 @@ export class EdApp extends LitElement {
       silverFee: trainingFee,
       beforeCoins: _beforeCoins,
       afterCoins: _afterCoins,
+    });
+  }
+
+  // Learn a knack (PLAN-ADD-KNACKS §7.4). The engine is the gate: the candidate must
+  // be in the derived `knackOptions` (Discipline-taught parent talent at rank ≥
+  // requiredRank, under the per-parent cap, not already owned). Pay the editable
+  // silver fee from the purse, guard Legend affordability, then persist the pure
+  // `{name, via?}` input via the advancements overlay and log the outcome.
+  _learnKnack({ name, via = null, silver } = {}) {
+    if (!this._character || !name) return;
+    if ((this._character.knacks ?? []).some((k) => k.name === name)) return; // no duplicate
+    const cand = (this._model?.knackOptions ?? []).find((o) => o.name === name);
+    if (!cand) return; // ineligible / unknown (picker-only, engine-gated)
+    if (via && !cand.qualifies.some((q) => q.name === via)) return; // via must be a qualifying parent
+    const chosenVia = via ?? cand.viaDefault;
+    // Silver fee — editable default from rules/legend.json costs.knackTraining (data, not code)
+    const fee = Number(silver);
+    const trainingFee = Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : 0;
+    let nextWealth = this._character.wealth;
+    const beforeCoins = this._character.wealth?.coins ?? {};
+    if (trainingFee > 0) {
+      const spent = payFromPurse(beforeCoins, trainingFee);
+      if (!spent.ok) return; // purse cannot cover
+      nextWealth = { ...(this._character.wealth ?? {}), coins: spent.coins };
+    }
+    // Store `via` when it disambiguates: a multi-parent knack, or any skill-governed
+    // knack (its parent must be pinned so resolveKnack re-attaches to the skill, not
+    // the catalog's first parent, on reload). A single talent parent stays bare.
+    const chosenQ = cand.qualifies.find((q) => q.name === chosenVia);
+    const storeVia = cand.qualifies.length > 1 || chosenQ?.kind === 'skill';
+    const entry = storeVia ? { name, via: chosenVia } : { name };
+    const nextCharacter = {
+      ...this._character,
+      wealth: nextWealth,
+      knacks: [...(this._character.knacks ?? []), entry],
+    };
+    if (!this._canAffordRank(nextCharacter)) return;
+    const afterCoins = nextWealth?.coins ?? beforeCoins;
+    this._character = nextCharacter;
+    saveAdvancementEdits(
+      { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [], knacks: nextCharacter.knacks },
+      this._characterId,
+    );
+    if (trainingFee > 0) saveWealthEdits(nextWealth, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+    logKnackLearned(this._characterId, {
+      name,
+      via: chosenVia,
+      requiredRank: cand.requiredRank,
+      legendCost: cand.cost,
+      silverFee: trainingFee,
+      beforeCoins,
+      afterCoins,
     });
   }
 
