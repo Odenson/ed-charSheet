@@ -326,3 +326,98 @@ Sources:
 - text-RB-players-guide.txt:9631–9636 (p. 231 — thread-rank bonuses do not count toward Circle advancement)
 - text-RB-players-guide.txt:2086–2091 (p. 53 — spending LP on ranks allows Circle advancement)
 - text-RB-gamemasters-guide.txt:4918–4921 (p. 109 — lower-Circle characters advance more quickly)
+
+### Q008 — Arrow of Night: full spell mechanics (circle, step, damage bonus, Mystic Armor penalty, strain, duration, threading)
+
+Keywords: Arrow of Night, nethermancer, third circle, missile damage, mystic armor penalty, strain, spellcasting test, weaving, darkness arrow, black missile, quiver of night, quiver of black missiles · Resolved: 2026-09-01
+
+Arrow of Night is a **Nethermancer** spell, **not** an Elementalist spell. It is a
+Third Circle spell that enchants a physical missile (arrow, crossbow bolt, sling
+stone, or blowpipe dart) with a sheath of astral darkness. The missile must be
+fired within one round of casting or the enchantment is lost.
+
+**Core mechanics:**
+
+| Field | Value |
+|---|---|
+| Circle | Third |
+| Caster | Nethermancer only |
+| Threads required | 0 |
+| Weaving Difficulty | 7 / 12 |
+| Casting Step | 6 (Spellcasting test) |
+| Range | Touch (the caster touches the arrowhead) |
+| Duration | 2 rounds |
+| Effect | +6 bonus to the missile's Damage test; target suffers −2 penalty to Mystic Armor until the end of the next round (only if the target takes damage from the spell) |
+| Strain | 1 (paid by the character who fires the enchanted missile) |
+
+**How it works in play:** The caster wraps their hand around the arrowhead and
+makes a Spellcasting (6) test. On success, darkness wraps the arrow, granting +6
+to the missile's Damage test. If the target is damaged, they suffer a −2 penalty
+to Mystic Armor until the end of the next round. The arrow is consumed — it
+crumbles to dust the round after it strikes.
+
+**Success levels:** Increase Duration (+2 rounds per success level).
+
+**Extra threads** (for Thread Weaving, even though base threads = 0):
+- Increase Effect (+2 Damage bonus)
+- Increase Effect (−2 additional Mystic Armor penalty)
+- Additional Target (+Rank number of additional missiles/targets)
+
+**Spell Knacks (Deeper Secrets):**
+- **Black Missile** (Circle 3 knack): When casting Arrow of Night, places glyph on
+  the missile; target suffers −4 Mystic Armor (instead of −2) until end of next
+  round. Requires Patterncraft rank 5, Nethermancer Circle 5, 1 Strain.
+- **Quiver of Night** (Circle 3 knack): Enchants Patterncraft rank missiles at
+  once (batch enchantment). Requires Patterncraft rank 5, Nethermancer Circle 5, 2 Strain.
+- **Quiver of Black Missiles** (Circle 3 knack): Combines both — batch-enchants
+  Patterncraft rank missiles with glyph; target suffers −4 Mystic Armor. Requires
+  Patterncraft rank 8, both Black Missile and Quiver of Night knacks, Nethermancer
+  Circle 8, 3 Strain.
+
+**Flagging user note against source:**
+- "Conjures a missile/arrow" — **not supported.** The spell does *not* conjure a
+  projectile. It enchants an existing physical missile that the caster already has.
+  The caster must provide their own arrow, bolt, stone, or dart.
+- "−2 to Mystic Armor for 1 round" — **partially confirmed, partially corrected.**
+  The source says the penalty lasts "until the end of the next round" (not simply
+  "1 round"). In Earthdawn round counting this is functionally equivalent in most
+  cases, but the phrasing is "until the end of the next round," which is the
+  canonical wording for the app's effect description.
+- "Damage bonus from higher circle" — the base spell gives +6 to the missile Damage
+  test. Extra threads increase this by +2 per thread spent. There is no automatic
+  per-circle scaling; the bonus is fixed at +6 unless extra threads are woven.
+
+Sources:
+- text-spell-players.txt:2838–2861 (p. 324–325 — full spell stat block and description)
+- text-player-guide-nethermancer-spells.txt:326–345 (p. 324–326 — same text, chapter slice)
+- text-spell-table-all.txt:342 (one-line spell summary table)
+- text-RB-deeper-secrets.txt:16539–16564 (pp. 403–404 — Black Missile, Quiver of Night, Quiver of Black Missiles spell knacks)
+- narative_spells_by_circle.txt:405 (Arrow of Night listed as Third Circle Nethermancer spell)
+
+### Q009 — Bonus to a Damage test: Step modifier or flat result add?
+Keywords: bonus to a test, Damage test bonus, step modifier, flat add, Aggressive Attack, Arrow of Night, +6 bonus, +2 bonus damage, test result modifier · Resolved: 2026-09-01
+
+**General rule:** The Player's Guide states: "Test results may be modified by a bonus or a penalty, indicated in the rules where appropriate. As a general rule, the modifier is applied to the Step number of the test before the dice are rolled." (p. 34, lines 1952–1954). The book immediately follows this with an explicit example: "a character using the Aggressive Attack combat option adds +3 to his Attack and Damage Steps—increasing a Step 10 (2D8) to a Step 13 (D10+D12)." (p. 34, lines 1955–1957). This establishes that the default meaning of "bonus to a test" is a Step modifier.
+
+**Critical Hits confirm the pattern:** The Critical Hits sidebar (p. 378, lines 15273–15276) states that extra successes on attack tests "add +2 bonus damage," and the worked example clarifies: "each extra success adds +2 damage, so Silar's crossbow goes from Step 10 to Step 14 damage." Here "+2 damage" unambiguously means +2 to the Damage Step. Similarly, the Success Levels example (p. 34, lines 1998–2001) says "each extra success adds +2 Steps to her Damage test."
+
+**Application to Arrow of Night:** Arrow of Night's base effect is "+6 bonus to a missile's Damage test" (p. 325, line 13300). Its Extra Thread says "Increase Effect (+2 Damage)" (p. 326, line 13307). Under the general rule, the +6 should be applied to the missile's Damage Step (Strength Step + weapon Damage Step) before dice are rolled.
+
+**However, there is an ambiguity.** Several other spells explicitly say "Increase Effect (+X Damage Step)" when they mean a Step modifier (e.g., Winter Touch at p. 310, line 13234; Bramble Wall at p. 294, line 11933; Earth Staff "Increase Weapon Damage (+2 Steps)" at p. 288, line 11666). Arrow of Night's "+2 Damage" and Astral Weapon's "+2 Damage" (p. 338, line 13892) omit the word "Step," while Iron Hand's "+3 bonus to close combat Damage tests" (p. 345, line 14022) and Rampage's "+3 bonus to close combat Attack and Damage tests" (p. 357, line 14525) use the same phrasing as Arrow of Night. The books do not resolve whether the omission of "Step" is intentional (indicating a flat result add) or merely informal shorthand (with the general rule still applying).
+
+**Best-supported interpretation:** Arrow of Night's +6 (and the Extra Thread's +2) modify the missile's Damage Step, not the rolled result. The general rule at p. 34 is explicit, the Critical Hit and Success Level examples consistently treat "+X damage" as Step modifiers, and the Aggressive Attack description uses the same "bonus to Damage tests" phrasing that Arrow of Night uses. The absence of "Step" in some extra-thread lines is more likely informal than dispositive. **This is flagged as an area where the books are internally inconsistent in their phrasing, and a definitive answer requires a ruling.**
+
+**Mystic Armor penalty wording (from Q008, confirmed):** "If the target suffers damage from the spell, they suffer a -2 penalty to their Mystic Armor until the end of the next round." (p. 326, lines 13301–13302). Conditional on taking damage; duration is "until the end of the next round," not "1 round."
+
+Sources:
+- text-RB-players-guide.txt:1952–1958 (p. 34 — general rule: "modifier is applied to the Step number" + Aggressive Attack example)
+- text-RB-players-guide.txt:1996–2001 (p. 34 — Success Levels example: "+2 Steps to her Damage test")
+- text-RB-players-guide.txt:15270–15276 (p. 378 — Critical Hits: "+2 bonus damage" → Step 10 → Step 14)
+- text-RB-players-guide.txt:15449–15458 (p. 382 — Aggressive Attack: "+3 bonus to close combat Attack and Damage tests")
+- text-RB-players-guide.txt:13295–13308 (pp. 325–326 — Arrow of Night: "+6 bonus to a missile's Damage test"; Extra Thread "+2 Damage")
+- text-RB-players-guide.txt:14018–14029 (p. 345 — Iron Hand: "+3 bonus to close combat Damage tests")
+- text-RB-players-guide.txt:13234 (p. 310 — Winter Touch Extra Thread: "Increase Effect (+2 Damage Step)" — explicit Step wording)
+- text-RB-players-guide.txt:11933 (p. 294 — Bramble Wall Extra Thread: "Increase Effect (+2 Damage Steps)" — explicit Steps wording)
+- text-RB-players-guide.txt:11666 (p. 288 — Earth Staff Extra Thread: "Increase Weapon Damage (+2 Steps)" — explicit Steps wording)
+- text-RB-players-guide.txt:13892 (p. 338 — Astral Weapon Extra Thread: "Increase Effect (+2 Damage)" — no Step)
+- text-RB-companions-guide.txt:7968 (p. 214 — Lightning Mace Thread Rank Six: "+6 bonus to a Damage test")

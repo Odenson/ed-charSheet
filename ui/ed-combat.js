@@ -20,7 +20,7 @@
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css } from 'lit';
-import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels } from '../engine/combat.js';
+import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
@@ -630,7 +630,18 @@ export class EdCombat extends LitElement {
       // Their on-success payload folds scaled by the stored success count — armed
       // centrally by ed-app, so ANY roll surface that hit reaches this pool.
       armedTalents: this._armedForPick(),
+      // Active self-cast spells whose sustained attack-modifier folds into the
+      // pools while active (Arrow of Night's +6 to the missile's Damage step).
+      activeSpellBundles: this._activeSpellBundles(),
     });
+  }
+  // Active self-cast spells whose sustained attack-modifier folds into the
+  // pools while active (Arrow of Night's +6 to the missile's Damage step). The
+  // scope gate + grouping is the pure engine `activeSpellBundlesFor`; the view
+  // only supplies the tagged active effects and the selected weapon's category
+  // (the "selection" — mirroring _armedForPick's scopes).
+  _activeSpellBundles() {
+    return activeSpellBundlesFor(this.model?.activeEffects ?? [], this._selWeapon()?.category ?? null);
   }
   // The session-armed talents (model.armedTalents) whose weapon scope matches the
   // current pick: an armed Mystic Aim (`appliesTo` missile/throwing) folds into a

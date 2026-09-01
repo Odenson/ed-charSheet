@@ -174,6 +174,13 @@ test('effectReadout: sustained static, instantaneous step, note → none', () =>
   assert.equal(spear.step, 10);
 
   assert.equal(effectReadout(c, c.catalog['Pain']).kind, 'none');
+
+  // Arrow of Night: the sustained +6 step attack-modifier reads as a static
+  // buff on the Damage step — label by measure, never "Damage attack".
+  const arrow = effectReadout(ctx(), spellsFile.spells['Arrow of Night']);
+  assert.equal(arrow.kind, 'static');
+  assert.equal(arrow.value, 6);
+  assert.equal(arrow.label, 'Damage step');
 });
 
 test('isSustainedSelfEffect flags folding buffs, not gmDiscretion debuffs', () => {
@@ -262,6 +269,46 @@ test('buildActiveSpell folds structured extra-thread effect + success duration b
   assert.equal(s.effects[0].value, 5);        // +3 base + 2 extra thread
   assert.equal(s.effectLabel, '+5 Mystic armor');
   assert.equal(s.roundsLeft, 70);             // 30 base + 2 extra successes × 20
+});
+
+test('Arrow of Night: stat block matches the book (threads 0, weaving 7/12)', () => {
+  const a = spellsFile.spells['Arrow of Night'];
+  assert.equal(a.threadsToWeave, 0);
+  assert.deepEqual(a.weavingDifficulty, { value: 7, reattune: 12 });
+  assert.equal(a.castingTarget, 'Fixed 6');
+  assert.equal(a.duration, '2 rounds');
+});
+
+test('Arrow of Night: a self-cast folds ONLY the +6 step attack-modifier', () => {
+  const a = spellsFile.spells['Arrow of Night'];
+  assert.equal(isSustainedSelfEffect(a), true);
+  const folded = sustainedEffectsOf(a);
+  assert.equal(folded.length, 1, 'the gmDiscretion note and nothing else is excluded');
+  assert.equal(folded[0].type, 'attack-modifier');
+  assert.deepEqual(folded[0].target, { domain: 'attack', name: 'Damage' });
+  assert.equal(folded[0].value, 6);
+  assert.equal(folded[0].measure, 'step');
+  assert.equal(folded[0].duration, 'sustained');
+  assert.equal(folded[0].scope, 'missile');
+  // The −2 Mystic Armor rider is a gmDiscretion note — never folds, stays display.
+  assert.equal(a.effects[1].type, 'note');
+  assert.equal(a.effects[1].gmDiscretion, true);
+});
+
+test('Arrow of Night: buildActiveSpell produces an active record at value 6, label "+6 Damage step"', () => {
+  const s = buildActiveSpell(spellsFile.spells['Arrow of Night'], 3, {});
+  assert.equal(s.effects.length, 1);
+  assert.equal(s.effects[0].value, 6);
+  assert.equal(s.effects[0].measure, 'step');
+  assert.equal(s.roundsLeft, 2); // "2 rounds"
+  assert.equal(s.roundsTotal, 2);
+  assert.equal(s.effectLabel, '+6 Damage step');
+  // The +2 Damage extra thread (now measure "step") raises the folded value to 8.
+  const woven = buildActiveSpell(spellsFile.spells['Arrow of Night'], 3, {
+    extraPicks: ['Increase Effect (+2 Damage)'],
+  });
+  assert.equal(woven.effects[0].value, 8);
+  assert.equal(woven.effectLabel, '+8 Damage step');
 });
 
 test('tickActiveSpells: decrements, drops at 0, keeps null', () => {

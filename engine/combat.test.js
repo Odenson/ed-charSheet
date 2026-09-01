@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents } from './combat.js';
+import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents, activeSpellBundlesFor } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -271,6 +271,104 @@ test('collectCombatEffects: the selected weapon folds its woven always-on test m
   // A fresh weapon with no woven effects folds nothing.
   const none = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], selectedWeaponEffects: [], rules: RULES, conditions: {} });
   assert.equal(none.attackEffects.length, 0);
+});
+
+// --- active self-cast spells: attack-modifier bundle fold (PLAN-ARROW-OF-NIGHT) ---
+
+// The session active record's sustained effect as the store tags it (origin spell).
+const ARROW_DMG = {
+  type: 'attack-modifier',
+  target: { domain: 'attack', name: 'Damage' },
+  operation: 'add', value: 6, measure: 'step',
+  condition: 'always', scope: 'missile', source: 'spell',
+  summary: '+6 to the enchanted missile Damage step while active.',
+};
+const SPELL_ATK = {
+  type: 'attack-modifier',
+  target: { domain: 'attack', name: 'Attack' },
+  operation: 'add', value: 2, measure: 'step', source: 'spell',
+};
+
+test('attackPool/damagePool fold attack-modifiers by target (Damage → damage only)', () => {
+  // {attack, Damage}: folds into the DAMAGE step; the attack pool ignores it.
+  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [ARROW_DMG] }).step, STR + WEAPON + 6);
+  assert.equal(attackPool({ talentStep: TALENT, effects: [ARROW_DMG] }).step, TALENT, 'Damage target never touches the attack pool');
+  // {attack, Attack}: folds into the ATTACK step; the damage pool ignores it.
+  assert.equal(attackPool({ talentStep: TALENT, effects: [SPELL_ATK] }).step, TALENT + 2);
+  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [SPELL_ATK] }).step, STR + WEAPON, 'Attack target never touches the damage pool');
+});
+
+test('measure guard: a "rating"-measure attack-modifier stays out of a step pool (taxonomy §6)', () => {
+  const rating = { ...ARROW_DMG, measure: 'rating' };
+  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [rating] }).step, STR + WEAPON);
+  assert.equal(attackPool({ talentStep: TALENT, effects: [rating] }).step, TALENT);
+});
+
+test('activeSpellBundlesFor: origin spell + attack-modifier + scope gate', () => {
+  const taggedDmg = { ...ARROW_DMG, origin: { kind: 'spell', name: 'Arrow of Night' } };
+  // Non-spell origins, notes and test-modifiers never route here.
+  assert.deepEqual(activeSpellBundlesFor([{ ...taggedDmg, origin: { kind: 'item', name: 'Foo' } }], 'missile'), []);
+  assert.deepEqual(activeSpellBundlesFor([{ ...taggedDmg, type: 'note' }], 'missile'), []);
+  // A rating-measure attack-modifier is admitted here but dropped at the FOLD
+  // (foldPool's measure guard / taxonomy §6 — see the measure-guard test above).
+  assert.equal(activeSpellBundlesFor([{ ...taggedDmg, measure: 'rating' }], 'missile').length, 1);
+  const taggedAtk = { ...SPELL_ATK, origin: { kind: 'spell', name: 'Arrow of Night' } };
+  // Unscoped effects fold for any weapon category.
+  assert.equal(activeSpellBundlesFor([taggedAtk], 'melee').length, 1);
+  // Scope gate: a missile-scoped buff folds for 'missile' only, never a 'melee' pick.
+  assert.equal(activeSpellBundlesFor([taggedDmg], 'missile').length, 1);
+  assert.deepEqual(activeSpellBundlesFor([taggedDmg], 'melee'), []);
+  assert.deepEqual(activeSpellBundlesFor([taggedDmg], null), []);
+  // Bundles group by spell name.
+  const two = activeSpellBundlesFor([taggedDmg, taggedAtk], 'missile');
+  assert.deepEqual(two.map((b) => b.name), ['Arrow of Night']);
+  assert.equal(two[0].effects.length, 2);
+});
+
+test('collectCombatEffects folds activeSpellBundles labelled by the spell name', () => {
+  const r = collectCombatEffects({ activeSpellBundles: [{ name: 'Arrow of Night', effects: [ARROW_DMG] }], rules: { options: [], situations: [] } });
+  const dmg = r.damageEffects.find((e) => e.type === 'attack-modifier' && e.target?.name === 'Damage');
+  assert.ok(dmg, 'the spell bundle reaches the pool effects');
+  assert.equal(dmg.label, 'Arrow of Night', 'the step audit names the spell as the source');
+  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: r.damageEffects }).step, STR + WEAPON + 6);
+  assert.equal(attackPool({ talentStep: TALENT, effects: r.attackEffects }).step, TALENT, 'a Damage-scoped mod never touches the attack pool');
+});
+
+test('corpus regression: an active-spell bundle changes ONLY its own fold; existing sources fold identically', () => {
+  // A representative "everything on" corpus: a combat option, a toggled
+  // situation, a blood charm, the selected weapon's woven effects, and an armed
+  // talent. The pool output with the Arrow of Night bundle present must be the
+  // no-bundle output plus exactly the spell's +6 to the DAMAGE step — nothing
+  // else shifts, so a future bundle that feeds an attack-modifier through an
+  // EXISTING path would trip this pin.
+  const charm = {
+    name: 'Desperate Blow',
+    effects: [{ type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 6, measure: 'result', source: 'condition', summary: '+6 to the Attack result.' }],
+  };
+  const base = {
+    selectedOptions: ['Aggressive Attack'],
+    selectedSituations: ['Harried'],
+    selectedCharms: [charm],
+    selectedWeaponEffects: [{ type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', condition: 'always', stacking: 'replace', source: 'thread', summary: '+2 to Attack tests.' }],
+    selectedWeaponName: 'Orc Stinger',
+    armedTalents: [{ name: 'Mystic Aim', successes: 1, effects: [aimBundle.effects[0]] }],
+    rules: RULES,
+    conditions: {},
+  };
+  const before = collectCombatEffects(base);
+  // Existing corpus paths never carry an attack-modifier into the pools (it
+  // rides weaponDamageStep instead — the no-double-fold guarantee).
+  assert.ok(!before.attackEffects.some((e) => e.type === 'attack-modifier'));
+  assert.ok(!before.damageEffects.some((e) => e.type === 'attack-modifier'));
+  const beforeAtk = attackPool({ talentStep: TALENT, effects: before.attackEffects });
+  const beforeDmg = damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: before.damageEffects });
+
+  const after = collectCombatEffects({ ...base, activeSpellBundles: [{ name: 'Arrow of Night', effects: [ARROW_DMG] }] });
+  const afterAtk = attackPool({ talentStep: TALENT, effects: after.attackEffects });
+  const afterDmg = damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: after.damageEffects });
+  assert.equal(afterAtk.step, beforeAtk.step, 'attack pool unchanged by the spell bundle');
+  assert.equal(afterAtk.strain, beforeAtk.strain, 'strain unchanged by the spell bundle');
+  assert.equal(afterDmg.step, beforeDmg.step + 6, 'damage pool gains exactly the +6');
 });
 
 // --- foldCombatRatings (Overview-style live Defence & Armour figure) ---
