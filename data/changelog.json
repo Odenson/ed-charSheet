@@ -7,6 +7,33 @@
   },
   "releases": [
     {
+      "version": "1.24.0",
+      "date": "2026-09-02",
+      "summary": "A backpack and a clearer Carried Weight banner on the Equipment tab, real weights for every thread item so encumbrance adds up, a fix that unblocks saving custom items, and spell cast-flow refinements.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "The Equipment tab's Carried Weight banner now shows a backpack image, and the \"items with unrecorded weight\" line gained an ⓘ that lists exactly which items are missing a weight — so you can see what to fill in rather than just a count."
+        },
+        {
+          "type": "changed",
+          "text": "The encumbrance chip now reads \"Unencumbered\" when you're at or under your Carrying Capacity (it used to say \"Clear\", which looked like a button)."
+        },
+        {
+          "type": "changed",
+          "text": "Every thread item now carries a weight (estimated from its mundane equivalent — Faerie Mail at half a chain mail's weight, the Elemental Long Spear as a long spear, and so on), and the Season Lamp gained one too. Carried weight and the encumbrance stage now count them instead of listing them as unrecorded."
+        },
+        {
+          "type": "fixed",
+          "text": "Saving or updating a custom item no longer fails with a schema error. The shared custom-item catalog was still on the older ed-items/2 format with text weights like \"2\"; it's been migrated to the current ed-items/3 structured weights, which every save validates against."
+        },
+        {
+          "type": "changed",
+          "text": "Spell casting refinements: a spell effect with no die to roll (a static or no-effect result) now applies the moment the cast lands instead of leaving a stray Effect roll waiting, the step-by-step weave table shows a Success column, and assigning extra threads counts toward the weave the same as required threads."
+        }
+      ]
+    },
+    {
       "version": "1.23.0",
       "date": "2026-09-01",
       "summary": "Learn knacks in edit mode, gated by the governing talent (or by an owned skill with the \"Skills may govern knacks\" house rule on); Anticipate Spell works as an armed combat option; Arrow of Night's corrected spell folds its +6 Damage step onto your missile while active; the Spells-tab Initiative die shows its last result.",
