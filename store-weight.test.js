@@ -74,7 +74,7 @@ test('clear: at/under capacity — engine totals every owned item, no fold, per-
   assert.equal(model.weight.unweighed, 0);
   assert.equal(model.weight.capacity, 125);
   assert.equal(model.weight.stage, 'clear');
-  assert.equal(model.weight.label, 'Clear');
+  assert.equal(model.weight.label, 'Unencumbered');
   assert.equal(model.characteristics.movementRate.value, 10);
   assert.equal(model.characteristics.physicalDefense.value, 8);
   assert.equal(model.characteristics.mysticDefense.value, 7);
@@ -150,6 +150,11 @@ test('unknown weights count as unweighed instead of fabricating pounds', () => {
   assert.equal(model.weight.carried, 1); // only the Dagger weighs something
   assert.equal(model.weight.unweighed, 2); // NA item + unknown catalog entry
   assert.equal(model.weight.stage, 'clear');
+  // The model names each unweighed row so the banner's ⓘ can list them.
+  assert.deepEqual(model.weight.unweighedItems, [
+    { name: 'Season Lamp', qty: 1 },
+    { name: 'Not in Catalog', qty: 1 },
+  ]);
 });
 
 test('moving items never mutates the derived weight — it recomputes from inputs', () => {

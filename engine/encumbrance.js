@@ -34,7 +34,7 @@ export const ENCUMBRANCE = {
 
 /** Display labels for the state chip (UI renders; engine supplies the word). */
 export const STAGE_LABELS = {
-  [ENCUMBRANCE.CLEAR]: 'Clear',
+  [ENCUMBRANCE.CLEAR]: 'Unencumbered',
   [ENCUMBRANCE.BURDENED]: 'Burdened',
   [ENCUMBRANCE.OVERBURDENED]: 'Overburdened',
   [ENCUMBRANCE.EXCESS]: 'Exceeds lift',
