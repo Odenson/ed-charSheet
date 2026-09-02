@@ -475,22 +475,53 @@ and its runbook.
     ed-app.js         # root: loads the model, renders the tab shell, routes tabs
     ed-overview.js    # Overview tab (fit-to-viewport)
     ed-disciplines.js # Disciplines tab (incl. talents)
-    ed-equipment.js   # Gear tab (items grouped by function)
+    ed-combat.js      # Combat tab (per-encounter scratchpad, roll log)
+    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow)
+    ed-equipment.js   # Equipment tab (items grouped by function)
+    ed-notes.js       # Notes tab (running character log)
+    ed-settings.js    # settings modal
+    ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal
+    ed-trade-modal.js # buy/sell / wealth transaction modal
     ed-edit-meta.js   # meta edit modal
+    ed-add-legend.js  # add Legend Points modal
+    ed-day-reset.js   # new-day / recovery reset modal
+    ed-custom-item.js # player-created custom item modal
     ed-save-key.js    # GitHub save key prompt
     ed-confirm.js     # reusable confirmation modal
+    ed-conflict.js    # save-conflict modal (§7.5, UI-GUIDELINES §8)
     ed-character-picker.js # character chooser modal (first-run picker, §7.5)
     ed-changelog.js   # changelog badge/modal
+    modal-controller.js    # shared modal focus/Escape contract (docs/MODALS.md)
+    item-equip-state.js    # input-time equip rules (one armour worn)
+    custom-item-state.js   # custom-item builder state
+    custom-item-builder.js # custom-item builder view
+    legend-spent-view.js   # Legend-spent audit view
+    picker.js              # generic list picker
+    format.js              # display formatting helpers
+    # *.test.js siblings run under node --test (see `npm test`)
   engine/                    # pure, DOM-free, independently testable
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller
     wealth.js                # starting wealth / resource calcs
-    characteristics.test.js  # node --test (see `npm test`)
-    wealth.test.js
-    # planned: expr.js (ref resolution), actions.js (action executor),
-    #          dddice.js (optional 3D dice adapter)
+    combat.js                # combat stat-lines (attack/damage/strain)
+    health.js                # health ratings (Unconscious/Death/wound/recovery)
+    encumbrance.js           # carry/lift capacity + encumbrance
+    weight.js                # item-weight totals
+    spells.js                # spell/matrix fold (grandfathered display parser, §5.5)
+    legend.js                # Legend Point totals
+    legend-spent.js          # Legend-spent reconciliation audit
+    advancement.js           # talent/skill advancement costs
+    potions.js               # potion/consumable effects
+    formula.js               # rule-expression evaluator (§4.2)
+    ability-ranks.js         # ability rank resolution
+    knack-options.js         # knack availability / restrictions
+    skill-options.js         # skill option resolution
+    talent-options.js        # talent combat/option resolution
+    validate-item.js         # item shape validation
+    # *.test.js siblings run under node --test (see `npm test`)
+    # planned: dddice.js (optional 3D dice adapter)
   data/
     changelog.json    # feature changelog (shipped history)
     # data/characters/ (one <id>.json per character + index.json) and the
@@ -504,6 +535,8 @@ and its runbook.
   rules/
     steps.json attributes.json characteristics.json talents.json
     disciplines.json races.json skills.json items.json
+    spells.json knacks.json legend.json combat.json thread-items.json
+    custom-items.json homebrew.json
     # hand-curated; schema-tagged per EFFECT-TAXONOMY
   vendor/
     lit-3.2.1.js         # self-hosted Lit bundle (no external runtime dep)
@@ -541,20 +574,22 @@ and its runbook.
   plus a File System Access **Save** to a player-picked `character.json`,
   dual-written and kept in sync (§7.1–7.2). GitHub-direct commit is sketched as a
   future Save target (§7.4–7.5).
-- **Phase 3 — Engine: cascade.** *(In progress.)* Derived characteristics from
+- **Phase 3 — Engine: cascade.** *(Landed.)* Derived characteristics from
   `characteristics.json` + taxonomy `effects`, via recompute-all (§5.2). Landed:
-  all three **Defences** (Physical/Mystic/Social, table base + discipline effects)
-  and the **Combat** steps — **Initiative** (Dexterity step − armour), **Knockdown**
-  (Strength step), and **Karma** (max = karmaModifier × Circle; D6 die) — with the
-  combat steps wired to the dice roller. All verified against the rulebook in
-  `characteristics.test.js`. Remaining (health ratings, carry, armour) repeat the
-  pattern; armour/health will force the first `operation: set` taxonomy decision.
+  all three **Defences** (Physical/Mystic/Social, table base + discipline effects);
+  the **Combat** steps — **Initiative** (Dexterity step − armour), **Knockdown**
+  (Strength step), and **Karma** (max = karmaModifier × Circle; D6 die); and the
+  **health ratings**, **carry/lift capacity**, and **armour** (v1.2.0 — Overview
+  is now fully calculated), with the combat steps wired to the dice roller. All
+  verified against the rulebook in `characteristics.test.js`, `health.test.js`,
+  and `encumbrance.test.js`.
 - **Phase 4 — Dice.** *(Landed early, ahead of Phase 3.)* `dice.js` exploding-dice
   roller with a result modal is wired. Optional dddice adapter still later.
 - **Phase 5 — Actions & talents.** `actions.js`; talents/attacks become
   clickable actions driven entirely by data.
-- **Phase 6+** — Magic, thread items, karma management, combat tracker — each a
-  lazy module.
+- **Phase 6+** — *(Landed.)* Magic/Spells (v1.15.0), thread items (v1.7.0), karma
+  management (v1.11.0), and the combat tracker (v1.11.0) each shipped as a lazy
+  module. Still future: the optional dddice 3D-dice adapter.
 
 ---
 

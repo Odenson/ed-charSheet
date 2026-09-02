@@ -57,15 +57,15 @@ Six tabs, each a distinct lens on the character:
 | Overview | At-a-glance: hero portrait + header, attributes, defences, armour, movement, health, combat |
 | Disciplines | Per-discipline detail with a toggle between the character's disciplines (talents live here — there is no separate Talents tab) |
 | Combat | Per-encounter scratchpad: equipped weapon + attack talent, attack/damage/strain stat-lines with a target-# field, collapsible combat-option / situational / blood-charm chip sections, a damage-taken rail, and the device-local roll log |
-| Spells | Matrices and spells by circle (later) |
-| Gear | Weapons, armour, thread items, kit |
+| Spells | Grimoire + spell matrices by circle, the Weave/Cast/Effect cast flow, and self-cast active effects — spellcasters only |
+| Equipment | Weapons, armour, thread items, kit |
 | Notes | Running character history / log over time |
 
 *Sixth tab (Combat) added 2026-08-11 by owner sign-off
 ([PLAN-COMBAT-TAB.md](../plans/PLAN-COMBAT-TAB.md) — six labels still fit the desktop
 tab bar on one row; the bar wraps to stacked rows on mobile). Reordered
 2026-08-11 by owner request to sit directly after Disciplines (Overview ·
-Disciplines · Combat · Spells · Gear · Notes).*
+Disciplines · Combat · Spells · Equipment · Notes).*
 
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,
@@ -124,7 +124,7 @@ concurrency — plans/PLAN-SAVE-CONCURRENCY.md):
   two font weights. The same modal surfaces for background auto-saves (silent
   saves never suppress a conflict).
 
-## Gear tab — one armour worn
+## Equipment tab — one armour worn
 A character can wear **one set of armour**: equipping a second armour (from the
 picker, the row toggle, or the item modal) asks for confirmation first —
 Escape/backdrop/✕ keeps the current armour as-is, **Swap** (Enter confirms)
