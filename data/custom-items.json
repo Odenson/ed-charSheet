@@ -1,5 +1,5 @@
 {
-  "schema": "ed-items/2",
+  "schema": "ed-items/3",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "source": "custom",
   "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
@@ -49,7 +49,10 @@
       ],
       "ref": {
         "cost": 500,
-        "weight": "0.1",
+        "weight": {
+          "amount": 0.1,
+          "unit": "lb"
+        },
         "availability": "Very Rare",
         "range": "Touch",
         "description": "Chakka's travelling beer mug, it gives him both great tasting beer regardless of the quality in the inn and if there is a brawl provides bonus to holder ability to brawl"
@@ -63,7 +66,10 @@
       "effects": [],
       "ref": {
         "cost": 100,
-        "weight": "2",
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
         "availability": "very rare",
         "description": "Hunted by Chakka at the Zeta Prime location and tailed by the party scoute"
       }
