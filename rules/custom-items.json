@@ -1,8 +1,8 @@
 {
   "schema": "ed-items/3",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "source": "custom",
-  "notes": "Player-created items fall back file, folded into rules/custom-items.json on dev by CI.",
+  "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
   "items": {
     "Beer Mug of Brawling": {
       "kind": "magic-item",
