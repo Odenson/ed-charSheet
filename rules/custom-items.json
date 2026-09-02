@@ -67,11 +67,14 @@
       "ref": {
         "cost": 100,
         "weight": {
-          "amount": 2,
+          "amount": 2.5,
           "unit": "lb"
         },
         "availability": "very rare",
         "description": "Hunted by Chakka at the Zeta Prime location and tailed by the party scoute"
+      },
+      "presentation": {
+        "shortEffect": "personally hunted"
       }
     }
   }
