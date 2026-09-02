@@ -4472,7 +4472,7 @@
       "kind": "magic-item",
       "ref": {
         "cost": 350,
-        "weight": null,
+        "weight": { "amount": 3, "unit": "lb" },
         "availability": "rare",
         "description": "A hanging lamp that keeps a room at a steady temperature."
       },

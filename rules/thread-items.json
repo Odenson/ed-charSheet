@@ -31,6 +31,7 @@
       "mysticDefense": 10,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 1, "unit": "lb" },
         "source": "GMG p. 207",
         "description": "Metal bands worn on the upper arm, adorned with five stones each infused with one of the true elements. Given by Warrior brotherhoods to those who have shown the qualities the brotherhood prizes."
       },
@@ -83,6 +84,7 @@
       "mysticDefense": 8,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 3, "unit": "lb" },
         "source": "User custom thread item (GMG-style, not from the rulebook)",
         "description": "These leather-bound steel arm bracers are primarily used to defend oneself against physical attacks. Well, some bright weaponsmith thought why not extend the scope of the protection and made himself a fat stack of gold. Used by all races and all disciplines to protect themselves. Without a thread they are ordinary bracers.",
         "size": 2,
@@ -126,6 +128,7 @@
       "mysticDefense": 12,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 3, "unit": "lb" },
         "source": "GMG p. 208",
         "description": "Flexible, silvery metal bracers that wrap around the wrists and forearms, forged with elemental water. The water gems resemble one-inch aquamarine pieces and their color constantly shifts from deep aqua to bright blue."
       },
@@ -220,6 +223,7 @@
       "mysticDefense": 12,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 6, "unit": "lb" },
         "source": "GMG p. 209",
         "description": "Bracers shaped from stone that form perfectly to the owner once a thread is attached, usually both from a single stone. Decorations may include metal inlay or carvings; obsidimen are generally believed to have originated them."
       },
@@ -278,6 +282,7 @@
         ]
       },
       "ref": {
+        "weight": { "amount": 27, "unit": "lb" },
         "source": "GMG p. 210",
         "description": "Alligator hide armor covered with buckles, pouches, and places to store, hang, or hide nearly anything. Soft and supple, water beads off the surface. Bright colored patches stand out in any setting. Without a thread it is treated as normal hide armor."
       },
@@ -396,6 +401,7 @@
         ]
       },
       "ref": {
+        "weight": { "amount": 7, "unit": "lb" },
         "source": "GMG pp. 210-211",
         "description": "A six- to eight-foot wooden spear incorporating each of the five True Elements: the shaft woven with True Wood, the hollow core filled with True Air, the metal tip woven with True Earth, soaked in liquid rich in True Water, and hardened in True Fire. Spears float in water. Without a thread it has the same characteristics as a normal long spear.",
         "category": "melee",
@@ -454,6 +460,7 @@
       "mysticDefense": 12,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 2, "unit": "lb" },
         "source": "GMG pp. 211-212",
         "description": "Fine boots made from the hides of espagra — bright blue interwoven with brown leather, with a brilliant luster from the scales. Often worn by those whose work requires stealth, secrecy, or great agility."
       },
@@ -506,6 +513,7 @@
       "mysticDefense": 10,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 20, "unit": "lb" },
         "source": "GMG p. 212",
         "description": "A saddle of espagra hide and scales with a shimmering blue luster. The hanging flaps are made entirely of the creatures' hide; one saddle typically requires three to seven hides."
       },
@@ -563,6 +571,7 @@
         ]
       },
       "ref": {
+        "weight": { "amount": 20, "unit": "lb" },
         "source": "GMG p. 213",
         "description": "Very high-quality armor of fine links, up to half the size of normal chain mail, fitting the owner better. Color varies from steel-gray to bronze or orichalcum-like. Without a thread it has the same characteristics as normal chain mail."
       },
@@ -615,6 +624,7 @@
       "mysticDefense": 14,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 4, "unit": "lb" },
         "source": "GMG p. 214",
         "description": "A staff of black and white wood perfectly fitted in an intricate interlacing design, adorned with a collection of bones and feathers braided with leather. The shaft is carved with runes affirming how very impressive is Fastoon."
       },
@@ -668,6 +678,7 @@
       "mysticDefense": 10,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 3, "unit": "lb" },
         "source": "GMG pp. 214-215",
         "description": "Rugged leather bracers popular with Beastmasters — thick leather with beadwork or tooling, sometimes elaborate metal inlay and precious stones. All share prominent markings suggesting the bracers were gashed by claws."
       },
@@ -742,6 +753,7 @@
         ]
       },
       "ref": {
+        "weight": { "amount": 10, "unit": "lb" },
         "source": "User custom thread item (GMG-style, not from the rulebook)",
         "description": "A devastating Ork weapon favoured among the strongest fighters. Its impressive size and ability to leave bleeding wounds mark the wielder as a serious threat — built for both wounding and knocking opponents down.",
         "category": "melee",
@@ -794,6 +806,7 @@
         ]
       },
       "ref": {
+        "weight": { "amount": 15, "unit": "lb" },
         "source": "User custom thread item (GMG-style, not from the rulebook)",
         "description": "Favoured by thieves — the joins are all padded, making movement very silent. Made to surprise your target; its ability to absorb magical energy adds to a thief's desire to own this masterpiece.",
         "rankLimit": 4,
@@ -904,6 +917,7 @@
       "mysticDefense": 8,
       "base": { "effects": [] },
       "ref": {
+        "weight": { "amount": 2, "unit": "lb" },
         "source": "User custom thread item (GMG-style, not from the rulebook)",
         "description": "These leather-bound wooden arm bracers are primarily used to attack. Well, some bright weaponsmith thought why not extend the scope of the protection by adding Wood Skin and made himself a fat stack of gold. Used by all races and all disciplines to protect themselves. Without a thread they are ordinary bracers.",
         "size": 2,

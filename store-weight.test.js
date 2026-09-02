@@ -143,16 +143,18 @@ test('unknown weights count as unweighed instead of fabricating pounds', () => {
   const model = deriveModel(
     {
       ...baseCharacter(),
-      items: [ITEMS.dagger, { name: 'Season Lamp', equipped: false }, { name: 'Not in Catalog', equipped: false }],
+      // Alchemist's Shop is catalogued with an intentional null weight (a
+      // workshop is not carried); "Not in Catalog" is an unknown name.
+      items: [ITEMS.dagger, { name: "Alchemist's Shop", equipped: false }, { name: 'Not in Catalog', equipped: false }],
     },
     rules,
   );
   assert.equal(model.weight.carried, 1); // only the Dagger weighs something
-  assert.equal(model.weight.unweighed, 2); // NA item + unknown catalog entry
+  assert.equal(model.weight.unweighed, 2); // null-weight item + unknown catalog entry
   assert.equal(model.weight.stage, 'clear');
   // The model names each unweighed row so the banner's ⓘ can list them.
   assert.deepEqual(model.weight.unweighedItems, [
-    { name: 'Season Lamp', qty: 1 },
+    { name: "Alchemist's Shop", qty: 1 },
     { name: 'Not in Catalog', qty: 1 },
   ]);
 });
