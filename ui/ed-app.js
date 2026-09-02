@@ -511,6 +511,7 @@ export class EdApp extends LitElement {
       this._dayReset = null;
       this._baseSha = base;
       this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
+      if (this._dirty) this._scheduleAutosave();
       this._picker = false;
       this._noSelection = false;
       this._error = null;

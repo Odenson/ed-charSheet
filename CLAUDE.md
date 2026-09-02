@@ -21,7 +21,7 @@ quote the specific rule and say why the task appears to need it.
 
 - **UI/UX contract** — every rule in [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md):
   Overview fits the desktop viewport without vertical scroll; mobile folds to a
-  single stacked column; two font weights only (400/500); five tabs with their
+  single stacked column; two font weights only (400/500); six tabs with their
   defined contents; **derived values render as muted dashed placeholder pills,
   never a fabricated number**; every modal honors Escape-closes / Enter-confirms;
   everything is theme-aware (light + dark).
@@ -42,7 +42,7 @@ quote the specific rule and say why the task appears to need it.
 ### 🔄 Tier 2 — Change only with ceremony.
 
 The **effect taxonomy** ([docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md)) is
-explicitly `v1, under review` — it is *meant* to evolve, but never silently.
+explicitly `v4, under review` — it is *meant* to evolve, but never silently.
 A change to the taxonomy's field names or controlled vocabularies must:
 
 1. Update the doc **and bump its version** (`v1` → `v2`).

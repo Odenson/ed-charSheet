@@ -33,7 +33,7 @@ test('encumbranceStage: a missing capacity is judged clear (UI shows the placeho
 });
 
 test('encumbranceStage: labels read for the chip', () => {
-  assert.equal(encumbranceStage(100, 125).label, 'Clear');
+  assert.equal(encumbranceStage(100, 125).label, 'Unencumbered');
   assert.equal(encumbranceStage(130, 125).label, 'Burdened');
   assert.equal(encumbranceStage(200, 125).label, 'Overburdened');
   assert.equal(encumbranceStage(300, 125).label, 'Exceeds lift');

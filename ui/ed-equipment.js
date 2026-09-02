@@ -19,6 +19,7 @@ import { boostHasNoEffect } from '../engine/potions.js';
 import { recoveriesRemaining } from '../engine/health.js';
 import { spendAllocation, creditAllocation } from '../engine/wealth.js';
 import { numFmt, cap, prettyName } from './format.js';
+import { itemImageUrl } from '../store.js';
 import './ed-confirm.js';
 import './ed-trade-modal.js';
 
@@ -126,6 +127,7 @@ export class EdEquipment extends LitElement {
     _customItemsOpen: { state: true }, // custom-item manager modal open
     _swapPrompt: { state: true },     // { name, via } — armour swap confirmation
     _usePrompt: { state: true },      // item name — Use/Drink confirmation
+    _showUnweighed: { state: true },  // the unrecorded-weight item list is expanded
   };
 
   constructor() {
@@ -257,11 +259,35 @@ export class EdEquipment extends LitElement {
     .wstage.burdened { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
     .wstage.overburdened, .wstage.excess { color: var(--danger); border-color: var(--danger); background: light-dark(rgba(192, 57, 43, 0.08), rgba(229, 115, 115, 0.12)); }
 
+    /* Carried-weight banner: a backpack image sits to the left of the Carried
+       Weight block. The block alone drives the row height — the image column is
+       fixed-width with an absolutely-positioned img, so it contributes no height
+       and can only re-fit inside the block's height, never stretch the row. */
+    .wbanner { display: flex; align-items: stretch; gap: 12px; margin-bottom: 12px; }
+    .wbanner .blk { flex: 1 1 auto; margin-bottom: 0; }
+    .pack { flex: 0 0 auto; align-self: stretch; width: 62px; position: relative; border: 1px solid var(--border); background: var(--bg-chip); border-radius: 10px; }
+    .pack img { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; }
     /* Carried-weight banner */
     .wrow { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body); color: var(--fg); margin: 2px 2px 4px; flex-wrap: wrap; }
     .wrow b { font-weight: 500; font-family: var(--mono); }
     .wline { font-size: var(--fs-fine); color: var(--muted); margin: 0 2px; }
     .wline b { font-weight: 500; font-family: var(--mono); color: var(--fg); }
+    /* Unrecorded-weight disclosure: a muted ⓘ that reveals which items lack a
+       weight. The icon hides until you hover the line on pointer devices, but
+       stays visible on touch (no hover) so mobile can still reach it. */
+    .uwline { display: flex; align-items: center; gap: 2px; }
+    .uwinfo { font: inherit; font-size: var(--fs-body); line-height: 1; border: none; background: none; color: var(--muted); cursor: pointer; padding: 0 3px; opacity: 0.8; transition: opacity 0.12s, color 0.12s; }
+    .uwinfo:hover { color: var(--accent); opacity: 1; }
+    .uwinfo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 5px; opacity: 1; }
+    @media (hover: hover) {
+      .uwline .uwinfo { opacity: 0; }
+      .uwline:hover .uwinfo { opacity: 0.8; }
+      .uwline:hover .uwinfo:hover { opacity: 1; }
+      .uwline .uwinfo:focus-visible, .uwline .uwinfo[aria-expanded="true"] { opacity: 1; }
+    }
+    .uwlist { list-style: none; margin: 3px 2px 4px; padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-chip); display: flex; flex-direction: column; gap: 3px; }
+    .uwlist li { font-size: var(--fs-fine); color: var(--fg); }
+    .uwq { color: var(--muted); font-family: var(--mono); }
     /* Unavailable capacity renders as the muted dashed placeholder pill
        (UI-GUIDELINES §5 — never a fabricated number). */
     .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
@@ -770,7 +796,11 @@ export class EdEquipment extends LitElement {
     const known = capacity != null;
     const shifted = w.stage !== 'clear' && mv && mv.value != null && mv.base != null && mv.value !== mv.base;
     return html`
-      <div class="blk">
+      <div class="wbanner">
+        <div class="pack" aria-hidden="true">
+          <img src=${itemImageUrl('data/Backpack.png')} alt="" loading="lazy" />
+        </div>
+        <div class="blk">
         <h4><span class="glyph">⚖</span>Carried Weight<span class="total">${numFmt(w.carried)} lb</span></h4>
         <div class="wrow">
           ${known
@@ -779,7 +809,20 @@ export class EdEquipment extends LitElement {
           ${known ? html`<span class="statechip wstage ${w.stage}">${w.label}</span>` : ''}
         </div>
         ${shifted ? html`<div class="wline">Movement <b>${mv.base} → ${mv.value}</b>${mv.value === 2 ? ' · reduced to 2' : ' · halved'}</div>` : ''}
-        ${w.unweighed ? html`<div class="wline">${w.unweighed} item${w.unweighed > 1 ? 's' : ''} with unrecorded weight</div>` : ''}
+        ${w.unweighed ? html`
+          <div class="wline uwline">
+            ${w.unweighed} item${w.unweighed > 1 ? 's' : ''} with unrecorded weight
+            ${w.unweighedItems?.length ? html`<button class="uwinfo"
+                aria-expanded=${this._showUnweighed ? 'true' : 'false'}
+                aria-label="List the items with unrecorded weight"
+                title="Which items?"
+                @click=${() => { this._showUnweighed = !this._showUnweighed; }}>ⓘ</button>` : ''}
+          </div>
+          ${this._showUnweighed && w.unweighedItems?.length ? html`
+            <ul class="uwlist">
+              ${w.unweighedItems.map((u) => html`<li>${u.name ?? '—'}${u.qty > 1 ? html` <span class="uwq">×${numFmt(u.qty)}</span>` : ''}</li>`)}
+            </ul>` : ''}` : ''}
+        </div>
       </div>
     `;
   }

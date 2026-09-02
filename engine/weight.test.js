@@ -43,32 +43,39 @@ test('weightPounds: negligible and unknown values', () => {
 
 test('carriedWeight: sums every owned item (equipped and stored) and counts the unweighed', () => {
   const items = [
-    { ref: { weight: { amount: 10, unit: 'lb' } }, equipped: true },
-    { ref: { weight: { amount: 8, unit: 'oz' } }, equipped: false },
-    { ref: { weight: { amount: 9, unit: 'lb' } } }, // migrated "8-10 lb" → 9
-    { ref: { weight: null } }, // unrecorded
-    { ref: {} }, // thread item / unknown — no weight recorded
-    { ref: { weight: { negligible: true } } },
+    { name: 'Broadsword', ref: { weight: { amount: 10, unit: 'lb' } }, equipped: true },
+    { name: 'Rations', ref: { weight: { amount: 8, unit: 'oz' } }, equipped: false },
+    { name: 'Hand Axe', ref: { weight: { amount: 9, unit: 'lb' } } }, // migrated "8-10 lb" → 9
+    { name: 'Mystery Charm', ref: { weight: null } }, // unrecorded
+    { name: 'Woven Blade', ref: {} }, // thread item / unknown — no weight recorded
+    { name: 'Feather', ref: { weight: { negligible: true } } },
   ];
   const w = carriedWeight(items);
   assert.equal(w.carried, 19.5); // 10 + 0.5 (8 oz) + 9 (midpoint range) + 0 (negligible) — null/unrecorded skipped
   assert.equal(w.unweighed, 2); // the unrecorded and the no-weight item
+  // unweighedItems names each null-weight row so the UI can list them.
+  assert.deepEqual(w.unweighedItems, [
+    { name: 'Mystery Charm', qty: 1 },
+    { name: 'Woven Blade', qty: 1 },
+  ]);
 });
 
 test('carriedWeight: empty and missing inputs are safe', () => {
-  assert.deepEqual(carriedWeight([]), { carried: 0, unweighed: 0 });
-  assert.deepEqual(carriedWeight(undefined), { carried: 0, unweighed: 0 });
+  assert.deepEqual(carriedWeight([]), { carried: 0, unweighed: 0, unweighedItems: [] });
+  assert.deepEqual(carriedWeight(undefined), { carried: 0, unweighed: 0, unweighedItems: [] });
 });
 
 test('carriedWeight: quantity multiplies both the weight and the unweighed count', () => {
   const items = [
     { ref: { weight: { amount: 2, unit: 'lb' } }, qty: 3 }, // 2 × 3 = 6
     { ref: { weight: { amount: 10, unit: 'lb' } } }, // no qty → defaults to 1
-    { ref: { weight: null }, qty: 4 }, // 4 unknowns, not 1
+    { name: 'Unlabelled Potion', ref: { weight: null }, qty: 4 }, // 4 unknowns, not 1
   ];
   const w = carriedWeight(items);
   assert.equal(w.carried, 16); // 6 + 10
   assert.equal(w.unweighed, 4); // the null stack counts per dose
+  // The unweighed row carries its full quantity, not one per dose.
+  assert.deepEqual(w.unweighedItems, [{ name: 'Unlabelled Potion', qty: 4 }]);
 });
 
 test('carriedWeight: a non-finite or zero quantity is safe', () => {

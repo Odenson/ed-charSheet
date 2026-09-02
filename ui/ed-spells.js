@@ -72,7 +72,7 @@ export class EdSpells extends LitElement {
 
     .circlelbl { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 12px 0 3px; }
     .card { background: var(--bg-card); border-radius: 8px; overflow: hidden; }
-    .srow { display: grid; grid-template-columns: 16px minmax(0, 1.4fr) 42px 44px 62px 84px 22px; gap: 8px; align-items: center; font-size: var(--fs-small); padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .srow { display: grid; grid-template-columns: 16px minmax(0, 1.4fr) 42px 44px 44px 62px 84px 22px; gap: 8px; align-items: center; font-size: var(--fs-small); padding: 6px 10px; border-bottom: 1px solid var(--border); }
     .srow:last-child { border-bottom: none; }
     .srow.h { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -405,6 +405,19 @@ export class EdSpells extends LitElement {
           detail: { name: this._castName, extraPicks: [...this._prog.extraPicks], successLevels: levels },
           bubbles: true, composed: true,
         }));
+      }
+      // A non-step (static/none) effect has no die to roll — it resolves with the
+      // cast itself, so un-grey Weave + Cast for the next one right away, keeping
+      // the last-cast readout for the success banner. Step effects keep waiting
+      // for the Effect roll (which resets on landing).
+      if (this._castEffectKind && this._castEffectKind !== 'step') {
+        const ok = levels >= 1;
+        this._prog = {
+          ...this._blankProg(),
+          cast: this._prog.cast,
+          effect: { total: null,
+            outcome: { word: ok ? (this._castEffectKind === 'static' ? 'Applied' : 'Done') : 'No effect', ok } },
+        };
       }
     } else if (step === 'effect') {
       // Effect landing un-greys Weave + Cast for the next cast (owner rule).
@@ -806,7 +819,7 @@ export class EdSpells extends LitElement {
             ${Object.keys(grouped[disc]).sort((a, b) => a - b).map((circle) => html`
               <div class="circlelbl">Circle ${circle}</div>
               <div class="card">
-                <div class="srow h"><span></span><span>Spell</span><span class="num">Thr</span><span class="num">Weave</span><span>Cast</span><span>Matrix</span><span></span></div>
+                <div class="srow h"><span></span><span>Spell</span><span class="num">Thr</span><span class="num">Weave</span><span class="num">Succ</span><span>Cast</span><span>Matrix</span><span></span></div>
                 ${grouped[disc][circle].map((s) => this._row(ctx, s))}
               </div>
             `)}
@@ -824,6 +837,7 @@ export class EdSpells extends LitElement {
         <span class="sname" title=${s.name}>${s.name}</span>
         <span class="num">${s.threadsToWeave}</span>
         <span class="num">${s.weavingDifficulty?.value ?? '—'}</span>
+        <span class="num">${s.learntSuccess ?? '—'}</span>
         <span class="mx">${this._castLabel(s.castingTarget)}</span>
         <button class="attn ${placed ? 'on' : ''}" ?disabled=${noFreeMatrix}
           title=${placed ? 'Release from matrix' : noFreeMatrix ? 'No open matrix' : 'Place in a matrix'}
@@ -978,6 +992,7 @@ export class EdSpells extends LitElement {
 
   _rollCast(plan) {
     if (this._prog.castDone) return; // already cast
+    if (this._prog.pendingPick) return; // must assign the last extra thread first
     if (this._prog.threadsWoven < plan.threadsToWeave) return; // required threads not forged
     const target = this._target ?? this._defaultTarget(plan);
     if (target == null || Number.isNaN(Number(target))) {
@@ -989,6 +1004,7 @@ export class EdSpells extends LitElement {
     this._castTarget = Number(target); // for the success-level count in _onRoll
     this._castName = plan.name;        // for the self-cast activation in _onRoll
     this._castFoldsSelf = plan.foldsOnSelf && this._subject === 'self';
+    this._castEffectKind = plan.effect.kind ?? null; // for auto-applied non-step effects in _onRoll
     const disc = this._casterDisc(plan.discipline);
     const sc = disc?.talents?.find((t) => t.name === 'Spellcasting');
     const who = this._subject === 'self' ? ' (on self)' : '';
@@ -1016,24 +1032,20 @@ export class EdSpells extends LitElement {
   }
 
   // The Effect step resolves the cast and un-greys Weave + Cast for the next one
-  // (owner rule). A step effect rolls the dice; a static/none effect just resets.
-  // An activated Desperate Spell's +6 to Effect is now `step` (owner update) —
-  // it rides as a step bonus on this roll (like Combat's damage pool), with
-  // legacy `result` still supported as flat mods.
+  // (owner rule). Only a step (instantaneous) effect rolls an Effect die; a
+  // static/none effect has no die to roll — its button is hidden and the effect
+  // auto-applies when the cast lands (see the `_onRoll` cast branch), so this
+  // handler is step-only. An activated Desperate Spell's +6 to Effect is now
+  // `step` (owner update) — it rides as a step bonus on this roll (like Combat's
+  // damage pool), with legacy `result` still supported as flat mods.
   _doEffect(plan) {
     if (!this._prog.castDone) return; // Effect waits for a completed cast
-    if (plan.effect.kind === 'step' && plan.effect.step != null) {
-      this._pendingStep = 'effect';
-      const stepBonus = this._charmStepBonus('Effect');
-      const mods = this._charmResultMods('Effect');
-      this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan) + stepBonus, null, {
-        ...(mods.length ? { mods } : {}),
-      });
-    } else {
-      const total = plan.effect.kind === 'static' ? plan.effect.value : null;
-      this._prog = { ...this._blankProg(),
-        effect: { total, outcome: { word: plan.effect.kind === 'static' ? 'Applied' : 'Done', ok: true } } };
-    }
+    this._pendingStep = 'effect';
+    const stepBonus = this._charmStepBonus('Effect');
+    const mods = this._charmResultMods('Effect');
+    this._dispatchRoll(`${plan.name} — Effect`, plan.effect.step + this._effectBonus(plan) + stepBonus, null, {
+      ...(mods.length ? { mods } : {}),
+    });
   }
 
   _castView(ctx) {
@@ -1078,15 +1090,17 @@ export class EdSpells extends LitElement {
 
   _castPanel(plan) {
     const target = this._target ?? this._defaultTarget(plan);
-    const forge = plan.threadsToWeave > 0;
+    const forge = plan.threadsToWeave > 0 || (plan.extraThreads?.length > 0);
     const prog = this._prog;
     const weaveMaxed = prog.threadsWoven >= this._weaveMax(plan);
-    // The cast is gated on the REQUIRED threads being forged (plan.threadsToWeave
-    // is already net of any Enhanced/Armoured matrix hold, so a 0-thread or
-    // matrix-held spell is met immediately). Effect waits for a completed cast.
+    // The cast is gated on a FORGED thread being in hand (plan.threadsToWeave is
+    // already net of any Enhanced/Armoured matrix hold). For a threaded spell that
+    // means the required threads are woven first. For a 0-thread spell the first
+    // (extra) weave itself satisfies the threshold — 1e owner rule: any forged
+    // thread, required or extra, is a pre-condition the cast carries/consumes,
+    // so the woven thread rides the cast and is spent on landing.
     const threadsMet = prog.threadsWoven >= plan.threadsToWeave;
     const effBonus = this._effectBonus(plan);
-    const effectLabel = plan.effect.kind === 'step' ? '⚄ Roll' : plan.effect.kind === 'static' ? `Apply +${plan.effect.value}` : 'Done';
     return html`
       <div class="casthead">
         <span class="nm">${plan.name}</span>
@@ -1120,37 +1134,43 @@ export class EdSpells extends LitElement {
 
       <div class="pipe">
         <div class="step ${forge ? '' : 'skip'}">
-          <span class="lab">Weave ${forge ? html`<span class="threads" title="Threads woven / required">${prog.threadsWoven}/${plan.threadsToWeave}</span>` : ''}</span>
+          <span class="lab">Weave ${forge ? html`<span class="threads" title=${plan.threadsToWeave > 0 ? 'Threads woven / required' : 'Threads woven / required (0)'}>${prog.threadsWoven}/${plan.threadsToWeave}</span>` : ''}</span>
           ${forge
             ? html`<button class="rollbtn" ?disabled=${weaveMaxed || prog.pendingPick} @click=${() => this._rollWeave(plan)}>⚄ Roll</button>
                    <span class="stepnote">Step ${plan.weavingStep ?? '—'} vs ${plan.weavingDifficulty ?? '—'}</span>
                    ${this._rollRes(prog.weave)}`
             : html`<span class="readout">—</span><span class="stepnote">No threads to forge</span>`}
         </div>
-        <div class="step ${!threadsMet ? 'skip' : ''}">
+        <div class="step ${!threadsMet || prog.pendingPick ? 'skip' : ''}">
           <span class="lab">Cast</span>
-          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
-          <span class="stepnote">${!threadsMet
-            ? 'Weave the thread first'
-            : (() => {
-                const armed = this.ctx?.castingArmed;
-                const base = plan.castingStep;
-                return armed && base != null
-                  ? `Step ${base} +${armed.step} = ${base + armed.step} vs ${target ?? 'TMD'}`
-                  : `Step ${base ?? '—'} vs ${target ?? 'TMD'}`;
-              })()}</span>
+          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet || prog.pendingPick} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
+          <span class="stepnote">${prog.pendingPick
+            ? 'Assign the extra thread first'
+            : !threadsMet
+              ? 'Weave the thread first'
+              : (() => {
+                  const armed = this.ctx?.castingArmed;
+                  const base = plan.castingStep;
+                  return armed && base != null
+                    ? `Step ${base} +${armed.step} = ${base + armed.step} vs ${target ?? 'TMD'}`
+                    : `Step ${base ?? '—'} vs ${target ?? 'TMD'}`;
+                })()}</span>
           ${threadsMet && this.ctx?.castingArmed
             ? html`<span class="armedchip" title="Armed — ${this.ctx.castingArmed.source} (${this.ctx.castingArmed.successes} success${this.ctx.castingArmed.successes > 1 ? 'es' : ''})">+${this.ctx.castingArmed.step} armed</span>`
             : ''}
           ${this._rollRes(prog.cast)}
         </div>
-        <div class="step ${!prog.castDone ? 'skip' : ''}">
+        <div class="step ${!prog.castDone && !prog.effect ? 'skip' : ''}">
           <span class="lab">Effect</span>
-          <button class="rollbtn" ?disabled=${!prog.castDone} @click=${() => this._doEffect(plan)}>${effectLabel}</button>
+          ${plan.effect.kind === 'step'
+            ? html`<button class="rollbtn" ?disabled=${!prog.castDone} @click=${() => this._doEffect(plan)}>⚄ Roll</button>`
+            : ''}
           <span class="stepnote">${plan.effect.kind === 'step'
             ? (effBonus > 0 ? `Step ${plan.effect.step} +${effBonus} = ${plan.effect.step + effBonus}` : `Step ${plan.effect.step ?? '—'}`)
             : plan.effect.kind === 'static' ? plan.effect.label : 'See description'}</span>
-          ${this._rollRes(prog.effect)}
+          ${prog.effect
+            ? (prog.effect.total != null ? this._rollRes(prog.effect) : html`<span class="rollres">${prog.effect.outcome?.word ?? ''}</span>`)
+            : ''}
         </div>
       </div>
 

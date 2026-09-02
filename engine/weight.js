@@ -48,13 +48,18 @@ const round2 = (n) => Math.round(n * 100) / 100;
  * a count of the items whose weight is unknowable (null / unrecorded) so the UI
  * can say so rather than silently under-report.
  *
- * @param {Array<{ref?: {weight?: *}}>} items  resolved owned items (all owned,
- *        equipped and stored alike — storage weight still rests on the back)
- * @returns {{carried: number, unweighed: number}}
+ * @param {Array<{name?: string, ref?: {weight?: *}}>} items  resolved owned items
+ *        (all owned, equipped and stored alike — storage weight still rests on
+ *        the back)
+ * @returns {{carried: number, unweighed: number, unweighedItems: Array<{name: string|null, qty: number}>}}
+ *          `unweighedItems` names each null-weight row (one entry per row, with
+ *          its quantity) so the UI can list which items lack a recorded weight —
+ *          judging "unweighed" is rule logic (weightPounds), never the UI's.
  */
 export function carriedWeight(items = []) {
   let carried = 0;
   let unweighed = 0;
+  const unweighedItems = [];
   for (const it of items ?? []) {
     // Quantity scales both the weight and the unknown-weight count: a stack of 3
     // unweighed items is 3 unknowns, not 1, so the UI never under-reports.
@@ -62,9 +67,10 @@ export function carriedWeight(items = []) {
     const w = weightPounds(it?.ref?.weight);
     if (w == null) {
       unweighed += qty;
+      unweighedItems.push({ name: it?.name ?? null, qty });
       continue;
     }
     carried += w * qty;
   }
-  return { carried: round2(carried), unweighed };
+  return { carried: round2(carried), unweighed, unweighedItems };
 }

@@ -1044,7 +1044,7 @@ export function deriveModel(character, rules, session = {}) {
   // the Defences exactly like the Knocked Down condition and surface in the
   // Active Effects panel — present only while the stage holds.
   const carryingCapacityResult = carryingCapacity(attrVal('Strength'), activeEffects, lookupChar);
-  const { carried, unweighed } = carriedWeight(items);
+  const { carried, unweighed, unweighedItems } = carriedWeight(items);
   const weightStanding = encumbranceStage(carried, carryingCapacityResult?.value ?? null);
   const encumbranceConditionEffects = encumbranceEffects(weightStanding.stage).map((e) => ({
     ...e,
@@ -1699,6 +1699,7 @@ export function deriveModel(character, rules, session = {}) {
     weight: {
       carried,
       unweighed,
+      unweighedItems,
       capacity: carryingCapacityResult?.value ?? null,
       stage: weightStanding.stage,
       label: weightStanding.label,

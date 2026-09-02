@@ -1,8 +1,8 @@
 {
   "schema": "ed-items/3",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "source": "custom",
-  "notes": "Player-created items fall back file, folded into rules/custom-items.json on dev by CI.",
+  "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
   "items": {
     "Beer Mug of Brawling": {
       "kind": "magic-item",
@@ -67,11 +67,14 @@
       "ref": {
         "cost": 100,
         "weight": {
-          "amount": 2,
+          "amount": 2.5,
           "unit": "lb"
         },
         "availability": "very rare",
         "description": "Hunted by Chakka at the Zeta Prime location and tailed by the party scoute"
+      },
+      "presentation": {
+        "shortEffect": "personally hunted"
       }
     }
   }
