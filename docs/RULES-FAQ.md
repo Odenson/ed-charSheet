@@ -421,3 +421,44 @@ Sources:
 - text-RB-players-guide.txt:11666 (p. 288 — Earth Staff Extra Thread: "Increase Weapon Damage (+2 Steps)" — explicit Steps wording)
 - text-RB-players-guide.txt:13892 (p. 338 — Astral Weapon Extra Thread: "Increase Effect (+2 Damage)" — no Step)
 - text-RB-companions-guide.txt:7968 (p. 214 — Lightning Mace Thread Rank Six: "+6 bonus to a Damage test")
+
+### Q009 — Wounds: rules on inflicting, tracking, penalties on actions, recovery, and death
+Keywords: wounds, wound threshold, wound penalty, cumulative, –1 per wound, recovery test, damage, blood wound, knockdown, unconsciousness, death rating, physician, treat wound, healing wound, single attack, armor, impairs, actions, tests, bloodied, badly wounded, critically wounded, wound levels, wound stacking, track wounds, recovery reduction · Resolved: 2026-09-02
+
+**What is a Wound?**
+A Wound is triggered when a *single attack* deals damage equal to or exceeding the character's Wound Threshold. It is not cumulative damage across attacks — only a single hit matters. ("Any single attack that inflicts a number of Damage Points at least equal to a character's Wound Threshold also inflicts a Wound." — p. 65)
+
+**Wounds reduce recovery.**
+"When a character makes a Recovery test, the test result is reduced by the number of Wounds he has. Regardless of modifiers, the minimum damage a character recovers from a Recovery test is 1." (p. 381)
+
+**Wound Penalties on all tests (cumulative –1 per Wound).**
+"For each Wound, a character suffers a cumulative –1 penalty to all tests. For example, if a character has 2 Wounds, he suffers a –2 penalty; if he has 4 Wounds, he suffers a –4 penalty. This penalty does not apply to Recovery tests — those are already affected as described above." (p. 381)
+
+**Knockdown from Wounds.**
+If the damage that causes the Wound exceeds the Wound Threshold by 5 or more, the character must make a Knockdown (Strength) test against DN equal to the excess. Failure = knocked down. (p. 380)
+
+**No named wound levels in 4E.**
+Earthdawn 4th Edition does not use named wound levels (bloodied / badly wounded / critically wounded / dead). It is a flat cumulative –1 per Wound, with no breakpoints or tiered effects. Death is checked against the Death Rating, not the number of Wounds.
+
+**Healing Wounds.**
+One Wound heals per day, under two conditions: (1) the character has zero Current Damage (including Strain, but not Blood Magic damage), and (2) the character uses a Recovery test after a full night's rest. (p. 382)
+
+**Treatment (Physician skill).**
+A physician can treat individual Wounds by spending time (half an hour per wound). Successful treatment does not heal the Wound, but removes its penalty to Recovery tests, thereby speeding recovery. (p. 253)
+
+**Blood Wounds.**
+Blood Wounds "are otherwise treated as normal Wounds, affecting the character's Action tests and ability to heal damage" (p. 240). They cannot be healed normally — they require special methods (healing potion with a Recovery test, year-and-a-day duration, etc.).
+
+**Stacking with damage?**
+Wounds and Damage Points are separate tracked quantities. Wounds do not "stack with" Damage — they are a *consequence* of Damage (single-attack ≥ Wound Threshold). Damage itself causes no direct penalties until it reaches the Unconsciousness Rating. Wounds then impose their cumulative –1 penalty and recovery reduction independently.
+
+Sources:
+- text-RB-players-guide.txt:3126–3128 (p. 65 — Wound Threshold definition)
+- text-RB-players-guide.txt:15404–15413 (p. 381 — Wounds: recovery reduction)
+- text-RB-players-guide.txt:15414–15419 (p. 381 — Wound Penalties: cumulative –1 per Wound)
+- text-RB-players-guide.txt:15330–15338 (p. 380 — Step 5: Check For Wounds in attack resolution)
+- text-RB-players-guide.txt:15339–15351 (p. 380 — Step 6: Knockdown from Wounds)
+- text-RB-players-guide.txt:15420–15429 (p. 382 — Healing Wounds)
+- text-RB-players-guide.txt:15355–15372 (pp. 380–381 — Unconsciousness and Death)
+- text-RB-players-guide.txt:8336–8351 (p. 253 — Physician: treating Wounds)
+- text-RB-players-guide.txt:9964–9975 (p. 240 — Blood Wounds treated as normal Wounds)
