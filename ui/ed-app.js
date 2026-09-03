@@ -208,6 +208,7 @@ export class EdApp extends LitElement {
     this._saving = false;
     this._saveError = null;
     this._saveOk = null;
+    this._saveOkTimer = null;
     this._notice = null;
     this._keyPrompt = false;
     this._confirmDiscard = false;
@@ -1427,6 +1428,8 @@ export class EdApp extends LitElement {
     try {
       const commit = await saveCustomItems(items, { endpoint: this._endpointFor('save-items', DEFAULT_ITEMS_ENDPOINT), saveKey: this._saveKey, deleteNames });
       this._saveOk = commit; // { sha, url }
+      clearTimeout(this._saveOkTimer);
+      this._saveOkTimer = setTimeout(() => { this._saveOk = null; }, 3500);
       await this._refreshCustomItems({ savedItems: items, deletedNames: deleteNames });
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
     } catch (e) {
@@ -1640,6 +1643,7 @@ export class EdApp extends LitElement {
     if (!silent) {
       this._saveError = null;
       this._saveOk = null;
+      clearTimeout(this._saveOkTimer);
     }
     try {
       let commit = await saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
@@ -1654,7 +1658,11 @@ export class EdApp extends LitElement {
         await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
       this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
-      if (!silent) this._saveOk = commit; // { sha, url }
+      if (!silent) {
+        this._saveOk = commit; // { sha, url }
+        clearTimeout(this._saveOkTimer);
+        this._saveOkTimer = setTimeout(() => { this._saveOk = null; }, 3500);
+      }
     } catch (e) {
       // A stale base — the character changed on the branch since this client
       // loaded (or last saved) it. Surface the conflict modal, never a toast:
@@ -1956,7 +1964,7 @@ export class EdApp extends LitElement {
           </div>`
         : ''}
       ${this._saveOk
-        ? html`<div class="toast ok" role="status" @click=${() => (this._saveOk = null)}>
+        ? html`<div class="toast ok" role="status" @click=${() => { clearTimeout(this._saveOkTimer); this._saveOk = null; }}>
             Saved to GitHub ✓ ${this._saveOk.url ? html`— <a href=${this._saveOk.url} target="_blank" rel="noopener">view commit</a>` : ''}
           </div>`
         : ''}

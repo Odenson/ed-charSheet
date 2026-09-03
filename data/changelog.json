@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.24.1",
+      "date": "2026-09-03",
+      "summary": "The \"Saved to GitHub\" confirmation toast now fades away by itself instead of lingering at the bottom of the screen until you click it.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "The \"Saved to GitHub ✓\" toast auto-fades after a few seconds like the other transient status messages. It used to stay pinned to the bottom of the screen until clicked or until the next save, no matter which tab you were on."
+        }
+      ]
+    },
+    {
       "version": "1.24.0",
       "date": "2026-09-02",
       "summary": "A backpack and a clearer Carried Weight banner on the Equipment tab, real weights for every thread item so encumbrance adds up, a fix that unblocks saving custom items, and spell cast-flow refinements.",
