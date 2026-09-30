@@ -2,7 +2,7 @@
 
 Answers to rules questions resolved against the local rulebook extracts
 (`rulebook extracts/` — gitignored FASA Earthdawn Fourth Edition text).
-Maintained by the **rule-agent** (`.opencode/agent/rule-agent.md`); questions
+Maintained by the **rule-agent** (`.claude/agents/rule-agent.md`; OpenCode copy in `.opencode/agent/`); questions
 should be delegated there rather than grepping the books ad hoc.
 
 ## House rules for this file
