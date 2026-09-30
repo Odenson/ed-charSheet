@@ -47,6 +47,8 @@ RULEBOOK-AUDIT / the rule-agent), visual styling.
 | **S3** | Doc drift / naming / housekeeping |
 
 Tier: **1** locked · **2** taxonomy ceremony · **3** free (per CLAUDE.md).
+Checklist result tags (in the `[ ]` boxes): `PASS` the documented rule holds · `FAIL` it does not (the line names the finding) · `PARTIAL` holds in some places only (the line says where) · `N/A` not applicable to this pass, covered elsewhere · `NOT AUDITED` no check was run · `INFO` a listing or inventory, no pass/fail.
+
 Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixed (sha)` · `wontfix`.
 
 ## Result at a glance
@@ -107,16 +109,16 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 ## Checklist A — Documented vocabulary ↔ data (data pass)
 
-- [x] Every `type` used is defined in §2 (14/14 documented; engine handling of `attribute-modifier` is out of this pass).
-- [x] Every `target` is defined in §3. All domains and structural names conform.
+- [PASS] Every `type` used is defined in §2 (14/14 documented; engine handling of `attribute-modifier` is out of this pass).
+- [PASS] Every `target` is defined in §3. All domains and structural names conform.
   - `test`-domain names outside the listed set are a doc-precision gap (T-035), not an undefined domain. `ability` names all resolve.
-- [x] Every `operation` is defined in §4. The `set`-as-base pattern is present as documented: 12 spell `set` with `ref` to Willpower Step, and no weapon `set`. `items.json` has one `set`: Astral-Sensitive Eye `grant-ability`.
-- [ ] Every `measure` is defined in §5. All values are in the doc. `attack-modifier`+`rating` (6) contradicts §2's "step or result" (T-016). Unticked.
-- [ ] Every `condition` / `scope` is defined in §6. `condition` is fully clean. `scope` is free text by design, but it drifts from the candidate tokens (`close combat` vs `close-combat`) and embeds costs and durations (T-034). Unticked.
-- [x] Every `stacking` / `duration` / `source` value is defined in §7–§9. 100% conformant.
-- [ ] No rules file uses a field name absent from §1. Unticked: `note` (4 effects) is undocumented, and `rounds` is documented only in §8 prose (T-033).
-- [ ] Every `rules/*.json` carries `schema` and `effectTaxonomy (v4)` matching the doc. Unticked: `custom-items.json` says v3 (T-032). All 10 other effect-bearing files are v4.
-- [x] Dead vocabulary listed. Summary:
+- [PASS] Every `operation` is defined in §4. The `set`-as-base pattern is present as documented: 12 spell `set` with `ref` to Willpower Step, and no weapon `set`. `items.json` has one `set`: Astral-Sensitive Eye `grant-ability`.
+- [FAIL] Every `measure` is defined in §5. All values are in the doc. `attack-modifier`+`rating` (6) contradicts §2's "step or result" (T-016).
+- [FAIL] Every `condition` / `scope` is defined in §6. `condition` is fully clean. `scope` is free text by design, but it drifts from the candidate tokens (`close combat` vs `close-combat`) and embeds costs and durations (T-034).
+- [PASS] Every `stacking` / `duration` / `source` value is defined in §7–§9. 100% conformant.
+- [FAIL] No rules file uses a field name absent from §1. Failed: `note` (4 effects) is undocumented, and `rounds` is documented only in §8 prose (T-033).
+- [FAIL] Every `rules/*.json` carries `schema` and `effectTaxonomy (v4)` matching the doc. Failed: `custom-items.json` says v3 (T-032). All 10 other effect-bearing files are v4.
+- [INFO] Dead vocabulary listed. Summary:
   - types: none dead.
   - operations: `multiply`, `divide`, `min`, `max`.
   - measures: `dice`, `yards`.
@@ -130,43 +132,43 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
   - attack appendage names: `horns`, `claws`, `bite`.
   - scope candidates: `ranged-combat`, `unarmed`.
   - `yards` being dead is notable because ~30 range/area notes carry yard values (T-020).
-- [ ] Display strings carrying rules meaning that should be structured effects. Unticked: T-034, T-019, T-020. The grandfathered `spells.js` duration parser (`engine/spells.js:208-216`) reads `spells.json` `duration` strings such as "Rank + 5 rounds"; 55 spells carry one. This is flagged as a known, grandfathered deviation, not a new finding.
+- [FAIL] Display strings carrying rules meaning that should be structured effects. Failed: T-034, T-019, T-020. The grandfathered `spells.js` duration parser (`engine/spells.js:208-216`) reads `spells.json` `duration` strings such as "Rank + 5 rounds"; 55 spells carry one. This is flagged as a known, grandfathered deviation, not a new finding.
 
 Checklist C items that are data-facing:
-- [ ] Store only inputs. Stored recomputable fields exist in Kolon's character file (T-026). Unticked.
-- [x] Homebrew uses the same effect vocabulary. It has no `effects` at all, so nothing diverges. Its ref grammar is a separate dialect (T-042).
-- [x] Thread-item effects and restriction vocabulary are consistent with the taxonomy docs. `stacking:replace` is used as designed; `source:"condition"` is the documented convention.
+- [FAIL] Store only inputs. Stored recomputable fields exist in Kolon's character file (T-026).
+- [PASS] Homebrew uses the same effect vocabulary. It has no `effects` at all, so nothing diverges. Its ref grammar is a separate dialect (T-042).
+- [PASS] Thread-item effects and restriction vocabulary are consistent with the taxonomy docs. `stacking:replace` is used as designed; `source:"condition"` is the documented convention.
 
 ---
 
 ## Checklist B — Documented vocabulary ↔ engine (engine pass)
 
-- [ ] Every documented `type` has an engine handler (or is marked reserved). **No**: `attribute-modifier`, `grant-attack`, `sense`, `enable-option` have none and are not marked reserved (T-002, T-022).
-- [ ] Every handler corresponds to a documented `type`. **Types yes; vocabulary no**: code branches on `test-modifier`+domain `ability`, scopes `sight`/`except-knockdown`/`missile`, `source:'Circle'`, `origin.kind:'homebrew'` (T-036).
-- [ ] `operation`/`measure`/`stacking` semantics match §4/§5/§7. **No**: `count` measure dropped (T-003), combat pools ignore `set`/`multiply` (T-021), stacking is per-origin not per-target (T-017).
-- [ ] Unknown/unsupported values fail visibly. **No**: every consumer skips silently; no rules lint; `validate-item.js` only guards custom items (T-023).
-- [ ] Each documented `type` has at least one test. **No**: `attribute-modifier` (fold), `grant-attack`, `sense`, `enable-option` none; `duration-modifier` only catalog-backed (T-046).
-- [ ] §11 open questions: resolved-but-listed reviewed. **Partial**: Q2 already struck; Q4 de facto partly locked; Q6 text stale; title says "v3 review" (T-037).
+- [FAIL] Every documented `type` has an engine handler (or is marked reserved). **No**: `attribute-modifier`, `grant-attack`, `sense`, `enable-option` have none and are not marked reserved (T-002, T-022).
+- [PARTIAL] Every handler corresponds to a documented `type`. **Types yes; vocabulary no**: code branches on `test-modifier`+domain `ability`, scopes `sight`/`except-knockdown`/`missile`, `source:'Circle'`, `origin.kind:'homebrew'` (T-036).
+- [FAIL] `operation`/`measure`/`stacking` semantics match §4/§5/§7. **No**: `count` measure dropped (T-003), combat pools ignore `set`/`multiply` (T-021), stacking is per-origin not per-target (T-017).
+- [FAIL] Unknown/unsupported values fail visibly. **No**: every consumer skips silently; no rules lint; `validate-item.js` only guards custom items (T-023).
+- [FAIL] Each documented `type` has at least one test. **No**: `attribute-modifier` (fold), `grant-attack`, `sense`, `enable-option` none; `duration-modifier` only catalog-backed (T-046).
+- [PARTIAL] §11 open questions: resolved-but-listed reviewed. **Partial**: Q2 already struck; Q4 de facto partly locked; Q6 text stale; title says "v3 review" (T-037).
 
 ### Checklist C, engine items
 
-- [x] Engine is pure and DOM-free. No `document`/`window`/`localStorage`/`fetch` in `engine/*.js`. Two impurities, not DOM: `potions.js:80,85` `Date.now()`; `dice.js:11,25,55` `Math.random` (injectable default). See T-027. `store-*.js`/`store.js` (app layer) legitimately use fetch/localStorage/document (`store-export.js:32-35`).
-- [~] Engine reads structured taxonomy, never regex-parses display strings. Engine: only `spells.js:208-216` (grandfathered). Non-grandfathered regex in the store layer: `store.js:97-100`, `:1126` (T-027). Full RegExp inventory is in T-027.
+- [PASS] Engine is pure and DOM-free. No `document`/`window`/`localStorage`/`fetch` in `engine/*.js`. Two impurities, not DOM: `potions.js:80,85` `Date.now()`; `dice.js:11,25,55` `Math.random` (injectable default). See T-027. `store-*.js`/`store.js` (app layer) legitimately use fetch/localStorage/document (`store-export.js:32-35`).
+- [PARTIAL] Engine reads structured taxonomy, never regex-parses display strings. Engine: only `spells.js:208-216` (grandfathered). Non-grandfathered regex in the store layer: `store.js:97-100`, `:1126` (T-027). Full RegExp inventory is in T-027.
 - Not in this pass: UI-computes-values (seen in passing: `ui/ed-combat.js:966`, `ui/ed-roll-modal.js:158`, `ui/ed-spells.js:968-982` multiply/sum effect values; hand to the UI pass).
 
 ---
 
 ## Checklist C — Architecture rules (Tier 1) ↔ code (UI pass; engine items are in Checklist B)
 
-- [ ] Engine pure / DOM-free: out of scope (engine auditor).
-- [ ] Engine reads structured taxonomy, never regex: out of scope for engine. UI-side regex over rule display strings found anyway (T-010, T-011, T-015).
-- [ ] UI never computes game values: FAILS. Step sums, success levels, karma clamps, coin split, lift and per-success multipliers are computed in ui/* (T-005, T-007, T-008, T-009, T-012, T-025, T-013, T-014).
-- [ ] Data down / events up: MOSTLY holds. Child views only dispatch CustomEvents and never write `model`. But no `dispatch()` exists and ed-app.js is the de facto store and rules layer (T-028).
-- [x] Store only inputs (§4.1): the overlay saves (`saveMetaEdits`, `saveItemEdits`, `saveKarmaEdits`, `saveAdvancementEdits` ...) write input shapes. `forSave()` (store.js:420) strips talent `tier`. One derived figure is persisted (`rituals[].legend`, T-029).
-- [ ] Derived values as placeholder pills: PARTIAL. Overview and Combat use a dashed `.pend` pill. Disciplines and Spells render a bare "—" for missing derived steps (T-030). No fabricated numbers found except the hard-coded 10 sp fee default (T-025) and the Lift fallback (T-012).
-- [ ] Homebrew uses the same taxonomy vocabulary: vocabulary matches the doc, but the builder's per-type measure defaults produce effects the engine ignores (T-006), and the builder duplicates the validator's constants (T-038).
-- [x] Homebrew rules modal (ed-homebrew.js) is display-only; it reads `rules/homebrew.json` notes and emits no effect vocabulary.
-- [ ] Thread-item / restriction vocabulary consistency: not audited in this pass.
+- [N/A] Engine pure / DOM-free: out of scope for the UI pass; covered in Checklist C above (engine pass).
+- [N/A] Engine reads structured taxonomy, never regex: engine side is covered in Checklist C above (engine pass). UI-side regex over rule display strings found anyway (T-010, T-011, T-015).
+- [FAIL] UI never computes game values: FAILS. Step sums, success levels, karma clamps, coin split, lift and per-success multipliers are computed in ui/* (T-005, T-007, T-008, T-009, T-012, T-025, T-013, T-014).
+- [PARTIAL] Data down / events up: MOSTLY holds. Child views only dispatch CustomEvents and never write `model`. But no `dispatch()` exists and ed-app.js is the de facto store and rules layer (T-028).
+- [PARTIAL] Store only inputs (§4.1): passes for the UI overlay saves, but fails overall (see also the data checklist and T-026). The overlay saves (`saveMetaEdits`, `saveItemEdits`, `saveKarmaEdits`, `saveAdvancementEdits` ...) write input shapes. `forSave()` (store.js:420) strips talent `tier`. One derived figure is persisted by the Karma ritual log (`rituals[].legend`, T-029).
+- [PARTIAL] Derived values as placeholder pills: PARTIAL. Overview and Combat use a dashed `.pend` pill. Disciplines and Spells render a bare "—" for missing derived steps (T-030). No fabricated numbers found except the hard-coded 10 sp fee default (T-025) and the Lift fallback (T-012).
+- [PARTIAL] Homebrew uses the same taxonomy vocabulary: vocabulary matches the doc, but the builder's per-type measure defaults produce effects the engine ignores (T-006), and the builder duplicates the validator's constants (T-038).
+- [PASS] Homebrew rules modal (ed-homebrew.js) is display-only; it reads `rules/homebrew.json` notes and emits no effect vocabulary.
+- [NOT AUDITED] Thread-item / restriction vocabulary consistency: not audited in the UI pass (the data pass covers it: see Checklist A, which marks it PASS).
 
 Other checks that passed, no finding:
 - index.html, app.js: relative paths only (`./vendor/...`, `./app.js`, `./favicon.svg`).
