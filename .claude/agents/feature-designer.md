@@ -20,8 +20,8 @@ output is `spec.md` in the feature folder.
 ## Input
 
 The orchestrator gives you a feature folder: `plans/<slug>/`. Read from it:
-`plan.md` (authoritative), `tickets.md`, `qa-log.md`, and `review.md` if
-present. Also read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs the plan
+`plan.md` (authoritative), `tickets.md`, `qa-log.md`, `rules.md` (the cited
+Earthdawn rulings), and `review.md` if present. Also read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs the plan
 touches, and use Grep/Glob/Bash (read-only) to ground the spec in the **actual
 codebase** — real files, types, functions, patterns. Do not invent APIs.
 
@@ -66,6 +66,12 @@ path in the real tree.>
 <Components, states, dispatch events, the user-visible result. Note theme
 (light + dark), modal Escape/Enter behavior, Overview viewport fit if relevant.>
 
+### Rules
+<A table of every Earthdawn rule the change implements: the exact values or
+formula, and the `rules.md` id + source. The tester takes expected values only
+from here. Do not state a rules value that `rules.md` does not support — emit
+`NEEDS_RULES` instead.>
+
 ### Edge cases & invariants
 <What must always hold; empty/error/boundary behavior the tester should pin.>
 
@@ -82,6 +88,17 @@ if the change is not user-visible.>
 <Explicitly not part of this change (mirror the plan's non-goals).>
 ```
 
+## Asking for a rules ruling
+
+If the spec needs an Earthdawn rule `rules.md` does not cover, do not guess:
+
+```
+NEEDS_RULES: <specific rules question>
+```
+
+One line per question; the orchestrator runs the rule-agent, appends the answer
+to `rules.md`, and re-invokes you.
+
 ## Asking the human
 
 If you hit a genuine technical decision you cannot resolve from the plan, Q&A
@@ -97,4 +114,4 @@ Write everything else you can, then stop.
 ## Output / report back
 
 Short report: that you wrote `spec.md`, the count of files it touches, and any
-`NEEDS_HUMAN:` lines. Do **not** write code or tests. Do **not** commit or push.
+`NEEDS_RULES:` / `NEEDS_HUMAN:` lines. Do **not** write code or tests. Do **not** commit or push.

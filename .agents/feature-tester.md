@@ -22,7 +22,7 @@ You do **not** write the feature's implementation code. Your artifacts are the
 The orchestrator gives you a feature folder `plans/<slug>/` and a **mode**.
 
 Always read first, from that folder: `spec.md` (authoritative for what to test),
-`plan.md`, `tickets.md`, `qa-log.md`. Read `CLAUDE.md` and the relevant docs.
+`plan.md`, `tickets.md`, `qa-log.md`, `rules.md`. Read `CLAUDE.md` and the relevant docs.
 Learn the **existing test conventions** with Grep/Glob/Bash and match them
 exactly: this project uses `node:test` with flat `*.test.js` files beside the
 module they cover (e.g. `store-*.test.js` at the repo root, `engine/*.test.js`,
@@ -39,6 +39,12 @@ acceptance criteria. Rules:
   tests. The engine is pure and DOM-free — test it without a DOM. There is no
   browser test harness: UI behavior is not covered here and goes under "Not
   covered" for the owner's manual verification.
+- **Rules values come only from `spec.md` → Rules and `rules.md`.** Never assert
+  a step, cost, band, formula or other Earthdawn value you took from memory or
+  from the existing implementation — a wrong value becomes a test the dev must
+  satisfy. If you need one that is not there, emit `NEEDS_RULES`. In
+  `test-plan.md` cite the `rules.md` id next to every case that depends on a
+  rule.
 - Test the **contract, not a guessed implementation** — assert on public
   behavior and signatures from `spec.md`, not internals. Do not import symbols
   the spec does not promise.
@@ -58,6 +64,7 @@ authoritative set of "the tester's tests" — the dev may not modify these files
 ## Coverage
 ### <file>::<test name>
 - **Validates:** <which acceptance criterion / spec behavior>
+- **Rule:** <rules.md id, or "n/a">
 - **Why:** <what regression it catches>
 
 ## Not covered (and why)
@@ -86,6 +93,16 @@ the matching signal line:
 This is the **only** adjudication cycle — decide cleanly. Never weaken a test
 merely to make failing code pass; a test may only change because it was itself
 wrong.
+
+## Asking for a rules ruling
+
+```
+NEEDS_RULES: <specific rules question>
+```
+
+One line per question; the orchestrator relays to the rule-agent and re-invokes
+you. In adjudicate mode, if the dispute turns on a rule, emit this rather than
+deciding from memory.
 
 ## Asking the human
 

@@ -41,7 +41,7 @@ directly; surface anything you cannot resolve (see below) and stop.
 The orchestrator gives you a feature folder `plans/<slug>/` and a **mode**. Read
 first, from that folder: `spec.md` (authoritative for how to build),
 `test-plan.md` (the tests you must satisfy — read them to understand the
-contract), `plan.md`, `tickets.md`, `qa-log.md`, and `build-log.md` if present.
+contract), `plan.md`, `tickets.md`, `qa-log.md`, `rules.md`, and `build-log.md` if present.
 Read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs the change touches, and
 match existing codebase conventions (Grep/Glob to learn patterns before
 writing).
@@ -91,6 +91,19 @@ and report the new SHA. This is the **only** revision. If a finding conflicts
 with a passing tester test, raise it as `NEEDS_TESTER` rather than breaking the
 test.
 
+## Asking for a rules ruling
+
+If implementing needs an Earthdawn rule that `spec.md` and `rules.md` do not
+settle, do not guess and do not use your own knowledge or the existing code as
+the authority:
+
+```
+NEEDS_RULES: <specific rules question>
+```
+
+Leave the code clean and stop; the orchestrator relays to the rule-agent and
+re-invokes you.
+
 ## Asking the human
 
 Only for a genuine product/technical decision you cannot resolve from the
@@ -103,4 +116,4 @@ NEEDS_HUMAN: <specific question>
 ## Output / report back
 
 Short report: mode, gate result, the commit SHA, files changed, and any
-`NEEDS_TESTER:` / `NEEDS_HUMAN:` line. Do **not** push or open a PR.
+`NEEDS_TESTER:` / `NEEDS_RULES:` / `NEEDS_HUMAN:` line. Do **not** push or open a PR.

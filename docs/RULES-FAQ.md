@@ -13,6 +13,9 @@ should be delegated there rather than grepping the books ad hoc.
 - **Update, don't duplicate** — extend an existing entry when a new question
   substantially overlaps it; append `(revised YYYY-MM-DD)` to its Resolved
   line.
+- Entries carry a `Context:` (the feature slug or `ad hoc`) and, where the
+  owner ruled on a gap or conflict, a `Decision:` line kept separate from the
+  book-derived answer. Format: `.agents/rule-agent.md`.
 - "Not covered in the local extracts" is a valid resolution and gets logged
   too, with the files searched.
 
@@ -422,7 +425,7 @@ Sources:
 - text-RB-players-guide.txt:13892 (p. 338 — Astral Weapon Extra Thread: "Increase Effect (+2 Damage)" — no Step)
 - text-RB-companions-guide.txt:7968 (p. 214 — Lightning Mace Thread Rank Six: "+6 bonus to a Damage test")
 
-### Q009 — Wounds: rules on inflicting, tracking, penalties on actions, recovery, and death
+### Q010 — Wounds: rules on inflicting, tracking, penalties on actions, recovery, and death
 Keywords: wounds, wound threshold, wound penalty, cumulative, –1 per wound, recovery test, damage, blood wound, knockdown, unconsciousness, death rating, physician, treat wound, healing wound, single attack, armor, impairs, actions, tests, bloodied, badly wounded, critically wounded, wound levels, wound stacking, track wounds, recovery reduction · Resolved: 2026-09-02
 
 **What is a Wound?**

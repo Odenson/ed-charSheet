@@ -25,14 +25,20 @@ generated for both tools; the `feature-*` agents are Claude-only.
 
 | Agent | Purpose | Claude Code | Can write |
 |---|---|---|---|
-| `rule-agent` | Answers Earthdawn rules questions only from the local, gitignored `rulebook extracts/`; checks `docs/RULES-FAQ.md` first and logs new answers there | Read, Grep, Glob, Edit; sonnet | `docs/RULES-FAQ.md` only |
+| `rule-agent` | Answers Earthdawn rules questions (single or batch) only from the local, gitignored `rulebook extracts/`; checks `docs/RULES-FAQ.md` first and logs new answers and owner decisions there | Read, Grep, Glob, Edit; sonnet | `docs/RULES-FAQ.md` only |
 | `design-agent` | Compares `plans/*.md`, recent git changes and `docs/REVIEW-FINDINGS.md` with the design docs; reports what shipped and proposes doc edits | Read, Grep, Glob, Bash; opus | nothing (proposes only; owner applies) |
 
 OpenCode copies express the same limits through `permission:` frontmatter
 (rule-agent `mode: all`, design-agent `mode: primary`).
 
-Invocation: CLAUDE.md routes rules questions to `rule-agent`. `design-agent` is
-run by `/build-feature` before shipping; otherwise manual.
+Invocation: CLAUDE.md routes rules questions to `rule-agent`. In the feature
+workflow it is used at **design time**: `/new-feature` batches every rules
+dependency to it before planning (results in `plans/<slug>/rules.md`), and either
+orchestrator runs it when a subagent emits `NEEDS_RULES`. It takes a batch plus
+caller context, resolves serially, returns a `Status:` per answer (`FAQ-HIT`,
+`ANSWERED`, `NOT-COVERED`, `CONFLICT`, `APP-DIFFERS`) and can record an owner
+`Decision:` on an FAQ entry. `design-agent` is run by `/build-feature` before
+shipping; otherwise manual.
 
 ### Feature-delivery agents (Claude Code only)
 
