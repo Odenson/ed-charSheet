@@ -385,7 +385,9 @@ runtime — the same "real saving from any device" outcome, but with the GitHub
 credential on the page. §7.5 was chosen instead precisely to keep that credential
 off the page.
 
-Sketch of the flow (all client-side; no backend of ours):
+Sketch of the flow (all client-side; no backend of ours). Paths below are the
+original single-file sketch (`data/character.json`); the shipped layout is one
+`data/characters/<id>.json` per character plus an index (see §7.5):
 
 1. **Auth (once).** Prefer GitHub's **OAuth device flow**: Save shows a code and
    `github.com/login/device` link; the player approves in their browser, and the

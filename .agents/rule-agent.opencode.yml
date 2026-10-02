@@ -1,0 +1,9 @@
+mode: all
+permission:
+  bash:
+    "*": "ask"
+    "grep *": "allow"
+    "rg *": "allow"
+    "ls *": "allow"
+    "wc *": "allow"
+  edit: allow

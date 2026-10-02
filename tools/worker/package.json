@@ -1,7 +1,7 @@
 {
   "name": "ed-charsheet-save-worker",
   "version": "0.1.0",
-  "description": "Serverless save endpoint (Cloudflare Worker) for EDCharSheet — commits data/character.json to the character-data branch",
+  "description": "Serverless save endpoint (Cloudflare Worker) for EDCharSheet — commits data/characters/<id>.json to the character-data branch",
   "type": "module",
   "private": true,
   "license": "GPL-3.0",

@@ -5,6 +5,8 @@
 !.claude/agents/
 # ...and the preview launch config (static dev server for the app)
 !.claude/launch.json
+# ...and shared project settings (the guardrail hook)
+!.claude/settings.json
 
 # Source spreadsheet (local only — source of truth for the importer)
 Chakka-v7.13.xlsx
