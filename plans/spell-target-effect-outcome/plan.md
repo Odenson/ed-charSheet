@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.25.0
 ---
 # Delivery Plan: Spell effect outcome on other targets (spell-target-effect-outcome)
 
