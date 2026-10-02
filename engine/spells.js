@@ -183,6 +183,57 @@ export function effectReadout(ctx, spell) {
   return { kind: 'none' };
 }
 
+/**
+ * Outcome of a cast on ANOTHER target, from the recorded cast (raw roll results).
+ * Pure; `spell` is a joined catalog spell or null; `opts` is reserved.
+ * See plans/spell-target-effect-outcome/spec.md for the exact contract.
+ */
+export function otherCastOutcome(spell, cast, opts) {
+  const T = cast.target;
+  const N = cast.levels;
+  const hit = N >= 1;
+  const name = spell?.name ?? cast.name;
+  const out = {
+    spell: name, hit, target: T, total: cast.total, levels: N,
+    extraSuccesses: Math.max(0, N - 1),
+    badge: hit ? 'Hit' : 'Miss',
+    headline: '', effect: null, picks: [], duration: null, text: '',
+  };
+  if (!hit) {
+    out.headline = out.text = `Miss vs ${T} \u2014 no effect`;
+    return out;
+  }
+  out.headline = `${N} success${N === 1 ? '' : 'es'} vs ${T}`;
+  if (!spell) {
+    out.text = `${cast.name} \u2014 ${out.headline}`;
+    return out;
+  }
+  const r = effectReadout({}, spell);
+  let effectPart;
+  if (r.kind === 'step') {
+    const total = cast.effectTotal ?? null;
+    out.effect = { kind: 'step', total, text: total == null ? null : `Effect ${total}` };
+    effectPart = total == null ? 'Effect \u2014' : out.effect.text;
+  } else if (r.kind === 'static') {
+    out.effect = { kind: 'static', value: r.value, label: r.label, text: `+${r.value} ${r.label}` };
+    effectPart = out.effect.text;
+  } else {
+    out.effect = { kind: 'none', text: 'No Effect roll' };
+    effectPart = out.effect.text;
+  }
+  const counts = new Map();
+  for (const l of cast.extraPicks ?? []) counts.set(l, (counts.get(l) ?? 0) + 1);
+  out.picks = [...counts].map(([label, count]) => ({ label, count }));
+  out.duration = spell.duration ? { label: spell.duration } : null;
+  const parts = [`${spell.name} \u2014 ${out.headline}`, effectPart];
+  if (out.picks.length) {
+    parts.push('Extra threads: ' + out.picks.map((p) => p.label + (p.count > 1 ? ` \u00d7${p.count}` : '')).join(', '));
+  }
+  if (out.duration) parts.push(`Duration ${out.duration.label}`);
+  out.text = parts.join(' \u00b7 ');
+  return out;
+}
+
 /** Does this spell fold onto the CASTER when self-cast? (§3.4 — a sustained
  *  effect whose subject can be this character.) Used to flag the fold (phase 6b). */
 export function isSustainedSelfEffect(spell) {

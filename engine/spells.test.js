@@ -33,6 +33,7 @@ import {
   patterncraftStep,
   canLearn,
   learnPlan,
+  otherCastOutcome,
 } from './spells.js';
 
 const spellsFile = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url)));
@@ -461,4 +462,139 @@ test('learnPlan composes difficulty/costs/prereqs; homebrew multipliers fold in'
   assert.equal(hb.suggestedSilver, 200);
   assert.equal(hb.canLearn.ok, true);   // waived cost never blocks
   assert.equal(learnPlan(ctx(base), model, 'Not A Spell'), null);
+});
+
+// ---- otherCastOutcome (spell-target-effect-outcome) ----
+
+const stepSpell = (extra = {}) => ({
+  name: 'Arrow of Night', duration: 'Rank minutes',
+  effects: [
+    { type: 'attack-modifier', target: { domain: 'attack', name: 'Damage' }, operation: 'set',
+      value: { ref: 'attribute|Willpower|Step' }, measure: 'step', duration: 'test', source: 'spell', summary: 'x' },
+  ],
+  ...extra,
+});
+const staticSpell = () => ({
+  name: 'Soul Armor', duration: 'Rank minutes',
+  effects: [{ type: 'armor-modifier', target: { domain: 'armor', name: 'Mystic' }, operation: 'add',
+    value: 3, measure: 'rating', duration: 'sustained', source: 'spell', summary: 'x' }],
+});
+const noneSpell = () => ({
+  name: 'Pain', duration: 'Rank rounds',
+  effects: [{ type: 'note', source: 'spell', gmDiscretion: true, summary: 'x' }],
+});
+const rec = (o = {}) => ({ seq: 1, name: 'Arrow of Night', target: 9, total: 9, levels: 1, extraPicks: [], effectTotal: null, ...o });
+
+test('otherCastOutcome: miss is one exact line, effect/picks/duration cleared, effectTotal ignored', () => {
+  const o = otherCastOutcome(stepSpell(), rec({ total: 6, levels: 0, effectTotal: 14, extraPicks: ['Foo'] }));
+  assert.equal(o.hit, false);
+  assert.equal(o.badge, 'Miss');
+  assert.equal(o.headline, 'Miss vs 9 \u2014 no effect');
+  assert.equal(o.text, 'Miss vs 9 \u2014 no effect');
+  assert.equal(o.effect, null);
+  assert.deepEqual(o.picks, []);
+  assert.equal(o.duration, null);
+  assert.equal(o.extraSuccesses, 0);
+  assert.equal(o.target, 9);
+  assert.equal(o.total, 6);
+  assert.equal(o.levels, 0);
+  assert.equal(o.spell, 'Arrow of Night');
+});
+
+test('otherCastOutcome: exactly one success (total == target)', () => {
+  const o = otherCastOutcome(stepSpell(), rec({ total: 9, levels: 1 }));
+  assert.equal(o.hit, true);
+  assert.equal(o.badge, 'Hit');
+  assert.equal(o.headline, '1 success vs 9');
+  assert.equal(o.extraSuccesses, 0);
+});
+
+test('otherCastOutcome: target+10 -> 3 levels, 2 extra successes, plural headline', () => {
+  const o = otherCastOutcome(stepSpell(), rec({ total: 19, levels: 3 }));
+  assert.equal(o.headline, '3 successes vs 9');
+  assert.equal(o.levels, 3);
+  assert.equal(o.extraSuccesses, 2);
+});
+
+test('otherCastOutcome: step effect pending then rolled', () => {
+  const p = otherCastOutcome(stepSpell(), rec({ effectTotal: null }));
+  assert.deepEqual(p.effect, { kind: 'step', total: null, text: null });
+  assert.equal(p.text, 'Arrow of Night \u2014 1 success vs 9 \u00b7 Effect \u2014 \u00b7 Duration Rank minutes');
+  const r = otherCastOutcome(stepSpell(), rec({ effectTotal: 14 }));
+  assert.deepEqual(r.effect, { kind: 'step', total: 14, text: 'Effect 14' });
+  assert.equal(r.text, 'Arrow of Night \u2014 1 success vs 9 \u00b7 Effect 14 \u00b7 Duration Rank minutes');
+});
+
+test('otherCastOutcome: effect total 0 is a rolled value, not pending', () => {
+  const o = otherCastOutcome(stepSpell(), rec({ effectTotal: 0 }));
+  assert.deepEqual(o.effect, { kind: 'step', total: 0, text: 'Effect 0' });
+});
+
+test('otherCastOutcome: static effect uses the readout wording', () => {
+  const sp = staticSpell();
+  const ro = effectReadout({}, sp);
+  const o = otherCastOutcome(sp, rec({ name: 'Soul Armor', total: 12, levels: 1, target: 9 }));
+  assert.equal(o.effect.kind, 'static');
+  assert.equal(o.effect.value, 3);
+  assert.equal(o.effect.label, ro.label);
+  assert.equal(o.effect.text, `+3 ${ro.label}`);
+  assert.equal(o.text, `Soul Armor \u2014 1 success vs 9 \u00b7 +3 ${ro.label} \u00b7 Duration Rank minutes`);
+});
+
+test('otherCastOutcome: no-effect spell', () => {
+  const o = otherCastOutcome(noneSpell(), rec({ name: 'Pain' }));
+  assert.deepEqual(o.effect, { kind: 'none', text: 'No Effect roll' });
+  assert.equal(o.text, 'Pain \u2014 1 success vs 9 \u00b7 No Effect roll \u00b7 Duration Rank rounds');
+});
+
+test('otherCastOutcome: stacked picks in first-seen order, full composed line', () => {
+  const o = otherCastOutcome(stepSpell(), rec({ total: 19, levels: 3, effectTotal: 14, extraPicks: ['Foo', 'Foo', 'Bar'] }));
+  assert.deepEqual(o.picks, [{ label: 'Foo', count: 2 }, { label: 'Bar', count: 1 }]);
+  assert.deepEqual(o.duration, { label: 'Rank minutes' });
+  assert.equal(o.text,
+    'Arrow of Night \u2014 3 successes vs 9 \u00b7 Effect 14 \u00b7 Extra threads: Foo \u00d72, Bar \u00b7 Duration Rank minutes');
+  assert.ok(!/round/i.test(o.text));
+  const o2 = otherCastOutcome(stepSpell(), rec({ extraPicks: ['A', 'B', 'A'] }));
+  assert.deepEqual(o2.picks, [{ label: 'A', count: 2 }, { label: 'B', count: 1 }]);
+});
+
+test('otherCastOutcome: spell with no duration omits duration', () => {
+  const o = otherCastOutcome(stepSpell({ duration: null }), rec({ effectTotal: 5 }));
+  assert.equal(o.duration, null);
+  assert.equal(o.text, 'Arrow of Night \u2014 1 success vs 9 \u00b7 Effect 5');
+  assert.equal(otherCastOutcome(stepSpell({ duration: '' }), rec()).duration, null);
+});
+
+test('otherCastOutcome: null spell gives text-only outcome from cast.name', () => {
+  const o = otherCastOutcome(null, rec({ name: 'Mystery', total: 14, levels: 2, extraPicks: ['X'], effectTotal: 7 }));
+  assert.equal(o.spell, 'Mystery');
+  assert.equal(o.badge, 'Hit');
+  assert.equal(o.headline, '2 successes vs 9');
+  assert.equal(o.text, 'Mystery \u2014 2 successes vs 9');
+  assert.equal(o.effect, null);
+  assert.deepEqual(o.picks, []);
+  assert.equal(o.duration, null);
+  const u = otherCastOutcome(undefined, rec({ name: 'Mystery', levels: 0 }));
+  assert.equal(u.text, 'Miss vs 9 \u2014 no effect');
+});
+
+test('otherCastOutcome: absent extraPicks tolerated, inputs not mutated', () => {
+  const c = rec({ extraPicks: undefined });
+  delete c.extraPicks;
+  assert.deepEqual(otherCastOutcome(stepSpell(), c).picks, []);
+  const sp = stepSpell();
+  const c2 = rec({ extraPicks: ['A', 'A'], effectTotal: 3 });
+  const spBefore = JSON.stringify(sp), cBefore = JSON.stringify(c2);
+  otherCastOutcome(sp, c2);
+  assert.equal(JSON.stringify(sp), spBefore);
+  assert.equal(JSON.stringify(c2), cBefore);
+});
+
+test('otherCastOutcome: works with a real joined catalog spell', () => {
+  const sp = spellsFile.spells['Arrow of Night'];
+  const o = otherCastOutcome(sp, rec({ name: sp.name, target: 9, total: 14, levels: 2, effectTotal: 11 }));
+  assert.equal(o.spell, sp.name);
+  assert.equal(o.headline, '2 successes vs 9');
+  assert.equal(o.effect.kind, effectReadout({}, sp).kind);
+  assert.ok(o.text.startsWith(`${sp.name} \u2014 2 successes vs 9`));
 });

@@ -478,7 +478,7 @@ and its runbook.
     ed-overview.js    # Overview tab (fit-to-viewport)
     ed-disciplines.js # Disciplines tab (incl. talents)
     ed-combat.js      # Combat tab (per-encounter scratchpad, roll log)
-    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow)
+    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, self-cast active effects / target effects)
     ed-equipment.js   # Equipment tab (items grouped by function)
     ed-notes.js       # Notes tab (running character log)
     ed-settings.js    # settings modal

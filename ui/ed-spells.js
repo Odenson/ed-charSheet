@@ -9,7 +9,7 @@
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
-  learnableSpells, learnPlan } from '../engine/spells.js';
+  learnableSpells, learnPlan, otherCastOutcome, joinSpell } from '../engine/spells.js';
 import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import { successCount } from '../engine/combat.js';
 import { loadRollLog } from '../store-rolllog.js';
@@ -35,6 +35,7 @@ export class EdSpells extends LitElement {
     _subject: { state: true },
     _castErr: { state: true },
     _prog: { state: true },
+    _otherCast: { state: true },
     _learn: { state: true },
     _rolls: { state: true },
   };
@@ -176,6 +177,9 @@ export class EdSpells extends LitElement {
     .pickchip { font-size: var(--fs-eyebrow); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 8px; }
     .succrow { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: var(--fs-fine); }
     .succn { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 9px; font-variant-numeric: tabular-nums; }
+    .terow { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; padding: 2px 2px; font-size: var(--fs-fine); }
+    .temuted { color: var(--muted); }
+    .tepend { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 8px; }
     .succn.miss { color: var(--danger); background: light-dark(#f6e4e0, #3a2320); }
     .succfx { color: var(--spell); }
     .succfx b { font-weight: 500; }
@@ -224,6 +228,10 @@ export class EdSpells extends LitElement {
     this._subject = 'self';
     this._castErr = '';
     this._prog = this._blankProg();
+    this._otherCast = null;   // latest cast on another target (raw inputs; outcome derived)
+    this._castOnOther = false;
+    this._castSeq = 0;
+    this._seqCounter = 0;
     this._pendingStep = null; // which cast step a pending roll belongs to
     this._maxThreads = 0;     // weave cap for the in-flight cast
     this._lastRollId = null;  // dedupe Karma re-rolls of the same roll
@@ -312,6 +320,9 @@ export class EdSpells extends LitElement {
       target: this._target,
       subject: this._subject,
       prog: this._cloneProg(this._prog),
+      otherCast: this._otherCast ? { ...this._otherCast, extraPicks: [...this._otherCast.extraPicks] } : null,
+      castOnOther: this._castOnOther,
+      castSeq: this._castSeq,
     });
   }
 
@@ -324,6 +335,10 @@ export class EdSpells extends LitElement {
     this._target = s.target;
     this._subject = s.subject;
     this._prog = this._cloneProg(s.prog);
+    this._otherCast = s.otherCast ? { ...s.otherCast, extraPicks: [...s.otherCast.extraPicks] } : null;
+    this._castOnOther = !!s.castOnOther;
+    this._castSeq = s.castSeq ?? 0;
+    this._seqCounter = Math.max(this._seqCounter, s.otherCast?.seq ?? 0, this._castSeq);
   }
 
   _resetWorkspace() {
@@ -333,6 +348,9 @@ export class EdSpells extends LitElement {
     this._target = null;
     this._subject = 'self';
     this._prog = this._blankProg();
+    this._otherCast = null;
+    this._castOnOther = false;
+    this._castSeq = 0;
   }
 
   // Fold a completed roll into the cast progress for the step that dispatched it.
@@ -398,6 +416,10 @@ export class EdSpells extends LitElement {
       // successes (levels − 1) activate the spell's Success Levels effect (§3.2 #3).
       const levels = successCount(total, this._castTarget);
       this._prog = { ...this._prog, castDone: true, cast: { ...res, levels } };
+      if (this._castOnOther) {
+        this._otherCast = { seq: this._castSeq, name: this._castName, target: this._castTarget, total, levels,
+          extraPicks: [...this._prog.extraPicks], effectTotal: null };
+      }
       // A successful self-cast of a sustained spell activates it (6b): ed-app
       // adds it to the session active-effect set (fold + round countdown).
       if (levels >= 1 && this._castFoldsSelf) {
@@ -420,6 +442,9 @@ export class EdSpells extends LitElement {
         };
       }
     } else if (step === 'effect') {
+      if (this._castOnOther && this._otherCast?.seq === this._castSeq) {
+        this._otherCast = { ...this._otherCast, effectTotal: res.total };
+      }
       // Effect landing un-greys Weave + Cast for the next cast (owner rule).
       this._prog = { ...this._blankProg(), effect: res };
     }
@@ -443,6 +468,35 @@ export class EdSpells extends LitElement {
           ? active.map((e) => this._activeRow(e))
           : html`<div class="aeempty">No active effects. A sustained spell cast on this character will appear here with its rounds remaining.</div>`}
       </div>`;
+  }
+
+  // Target effects: the latest cast on another target, laid out purely from the
+  // engine's otherCastOutcome (derived each render from the raw record).
+  _targetEffects() {
+    const rec = this._otherCast;
+    const sp = rec && this.ctx ? joinSpell(this.ctx, rec.name) : null;
+    const out = rec ? otherCastOutcome(sp, rec) : null;
+    let body;
+    if (!out) {
+      body = html`<div class="aeempty">No cast on another target yet.</div>`;
+    } else if (!out.hit) {
+      body = html`<div class="terow"><span>${out.spell}</span><span class="succn miss">${out.headline}</span></div>`;
+    } else if (!sp) {
+      body = html`<div class="aeempty">${out.text}</div>`;
+    } else {
+      const e = out.effect;
+      const showLine2 = e || out.picks.length;
+      body = html`
+        <div class="terow"><span>${out.spell}</span><span class="succn">${out.badge}</span><span class="temuted">${out.headline}</span></div>
+        ${showLine2 ? html`<div class="terow">
+          ${e ? (e.text == null ? html`<span class="tepend">Effect \u2014</span>` : html`<span class="pickchip">${e.text}</span>`) : ''}
+          ${out.picks.map((p) => html`<span class="pickchip">${p.label}${p.count > 1 ? ` \u00d7${p.count}` : ''}</span>`)}
+        </div>` : ''}
+        ${out.duration ? html`<div class="terow temuted">Duration ${out.duration.label}</div>` : ''}`;
+    }
+    return html`
+      <h4 class="circlelbl aehead">Target effects</h4>
+      <div class="aecard">${body}</div>`;
   }
 
   _activeRow(e) {
@@ -1004,6 +1058,8 @@ export class EdSpells extends LitElement {
     this._castTarget = Number(target); // for the success-level count in _onRoll
     this._castName = plan.name;        // for the self-cast activation in _onRoll
     this._castFoldsSelf = plan.foldsOnSelf && this._subject === 'self';
+    this._castOnOther = this._subject === 'other';
+    this._castSeq = ++this._seqCounter;
     this._castEffectKind = plan.effect.kind ?? null; // for auto-applied non-step effects in _onRoll
     const disc = this._casterDisc(plan.discipline);
     const sc = disc?.talents?.find((t) => t.name === 'Spellcasting');
@@ -1203,7 +1259,7 @@ export class EdSpells extends LitElement {
         ${plan.extraThreads?.length ? html`<span class="k">Extra</span><span class="full">${plan.extraThreads.map((x) => x.label).join('; ')}</span>` : ''}
       </div>
 
-      ${this._activeEffects()}
+      ${this._subject === 'other' ? this._targetEffects() : this._activeEffects()}
     `;
   }
 }
