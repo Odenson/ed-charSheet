@@ -15,11 +15,13 @@ Two tools are supported: **Claude Code** (`.claude/`) and **OpenCode**
 | Rules | [GUARDRAILS.md](GUARDRAILS.md) | read on demand | tiers, change protocol, PR checklist |
 | Skill | `.claude/skills/ed-change-guardrail/` | on trigger | process for classifying a change |
 | Hook | `.claude/settings.json` + `tools/guardrail-hook.mjs` | deterministic, on tool use | forces the skill before first protected edit |
-| Agents | `.agents/` (source) → `.claude/agents/`, `.opencode/agent/` | when delegated to | rules lookups, design-doc sync |
+| Agents | `.agents/` (source) → `.claude/agents/`, `.opencode/agent/` | when delegated to | rules lookups, design-doc sync, feature delivery |
+| Commands | `.claude/commands/` | when typed | `/new-feature`, `/build-feature` orchestrators (Claude Code only) |
 
 ## Agents
 
-Two agents, both defined once and generated for each tool.
+Defined once and generated per tool. `rule-agent` and `design-agent` are
+generated for both tools; the `feature-*` agents are Claude-only.
 
 | Agent | Purpose | Claude Code | Can write |
 |---|---|---|---|
@@ -29,8 +31,22 @@ Two agents, both defined once and generated for each tool.
 OpenCode copies express the same limits through `permission:` frontmatter
 (rule-agent `mode: all`, design-agent `mode: primary`).
 
-Invocation is manual. CLAUDE.md routes rules questions to `rule-agent`;
-nothing triggers `design-agent` automatically.
+Invocation: CLAUDE.md routes rules questions to `rule-agent`. `design-agent` is
+run by `/build-feature` before shipping; otherwise manual.
+
+### Feature-delivery agents (Claude Code only)
+
+Driven by the `/new-feature` and `/build-feature` commands, which are the only
+intended way to run them. Full flow, signals and folder layout:
+[FEATURE-WORKFLOW.md](FEATURE-WORKFLOW.md).
+
+| Agent | Purpose | Writes |
+|---|---|---|
+| `feature-planner` | tickets to ordered delivery plan; revises against review | `plans/<slug>/plan.md` |
+| `feature-plan-reviewer` | per-item plan review incl. guardrail tiers | `plans/<slug>/review.md` |
+| `feature-designer` | plan to short tech spec | `plans/<slug>/spec.md` |
+| `feature-tester` | tests first; adjudicates one dispute | `*.test.js`, `test-plan.md` |
+| `feature-dev` | builds to the tests, never edits them; commits | source, data, docs, commit |
 
 ### Single source and sync
 
@@ -40,6 +56,7 @@ Edit `.agents/`, never the generated files:
   differs per tool sits in `{{#claude}}…{{/claude}}` / `{{#opencode}}…{{/opencode}}` blocks.
 - `.agents/<name>.claude.yml` — Claude-only frontmatter (`tools`, `model`).
 - `.agents/<name>.opencode.yml` — OpenCode-only frontmatter (`mode`, `permission`).
+  Omit it to make the agent Claude-only (no OpenCode copy is generated).
 
 Regenerate with `node tools/sync-agents.mjs` (`--check` only reports).
 `tools/sync-agents.test.js` runs in `npm test` and fails if a generated file is
@@ -74,7 +91,7 @@ below.
 - Tests: `tools/guardrail-hook.test.js`.
 
 Limits: it enforces *that the prompt appears*, not that the classification is
-correct, and it does not see Bash-driven edits (`sed -i`, redirects). 
+correct, and it does not see Bash-driven edits (`sed -i`, redirects).
 
 ## Settings and permissions
 
@@ -83,7 +100,7 @@ correct, and it does not see Bash-driven edits (`sed -i`, redirects).
   tool allowlist; there is no shared permission baseline.
 - `.claude/launch.json` — preview dev-server config, committed.
 - `.gitignore` ignores `.claude/*` and re-includes `skills/`, `agents/`,
-  `launch.json` and `settings.json`.
+  `commands/`, `launch.json` and `settings.json`.
 
 ## Related automation (not AI)
 
@@ -101,10 +118,11 @@ other contributors need belongs in CLAUDE.md or these docs.
 
 ## Known gaps
 
-- No automatic trigger for `design-agent`; `plans/*.md` carry no status
-  frontmatter, so "implemented" must be inferred.
+- `plans/*.md` carry no status frontmatter, so "implemented" must be inferred
+  by `design-agent` for pre-workflow plans.
 - No agent or script validating Tier 2 taxonomy migrations or `rules/*.json`
   schema conformance.
-- No shared permission baseline; the commit/push policy exists only in personal
-  memory and `settings.local.json` allows `git commit`/`git push`.
+- No shared permission baseline; `settings.local.json` allows `git commit`/`git
+  push` outright, which is broader than the policy in CLAUDE.md (explicit
+  permission, except inside `/build-feature`).
 - The hook does not cover Bash-driven edits.

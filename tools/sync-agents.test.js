@@ -13,3 +13,9 @@ test('generated agent files match .agents/ source', () => {
       `${rel} is stale — run node tools/sync-agents.mjs`);
   }
 });
+
+test('agents without an .opencode.yml fragment are Claude-only', () => {
+  const keys = Object.keys(expected());
+  assert.ok(keys.includes('.claude/agents/feature-dev.md'));
+  assert.ok(!keys.some((k) => k.startsWith('.opencode/agent/feature-')));
+});

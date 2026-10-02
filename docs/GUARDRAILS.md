@@ -82,6 +82,20 @@ this checklist):
    can't complete all three, don't start.
 4. If it's **Tier 3**, proceed — but still keep the Tier 1 rules intact.
 
+### Feature workflow (`/new-feature`, `/build-feature`)
+
+The feature workflow ([FEATURE-WORKFLOW.md](FEATURE-WORKFLOW.md)) enforces this
+protocol at both ends:
+
+- **Planning** — each ticket is classified; every Tier-1 ticket needs explicit
+  owner sign-off recorded in `plans/<slug>/qa-log.md`, or it is `BLOCKED`.
+- **Building** — the Dev Lead refuses to build a Tier-1 item without that
+  recorded sign-off, and a Tier-2 item without all three migration steps.
+- **Git** — inside `/build-feature` only, agents may commit, push to `dev` and
+  open the `dev → main` PR for the feature being built (stage by explicit path;
+  never merge). Everywhere else, commit and push need the owner's explicit
+  permission.
+
 ### Before finishing
 
 Re-check the Tier 1 rules you could have affected:
