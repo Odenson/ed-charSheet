@@ -51,7 +51,13 @@ the tier protocol exactly.
 - **Change signal** — determine scope, in this order:
   1. If the user names a change, diff it: `git diff <base>..HEAD`, or
      `git log --oneline -N` for recent commits.
-  2. `plans/*.md` and `plans/<slug>/{plan,spec,build-log}.md` — the planning documents. Many carry a `> Status:` banner
+  2. `plans/*.md` and `plans/<slug>/{plan,spec,build-log}.md` — the planning documents.
+     **Read each plan's YAML frontmatter first** (`status:` draft|approved|building|
+     implemented|superseded, `shipped:` vX.Y.Z or `unreleased`, optional
+     `supersededBy:` / `deferred:`); it is authoritative and the prose banners
+     below it may be stale. Report any plan whose `shipped: unreleased` now
+     matches a `data/changelog.json` release (propose the version), and any
+     frontmatter that contradicts the code. Many carry a `> Status:` banner
      (e.g. "implemented (2026-08-21)") and a `## Log` of review passes. A plan
      marked implemented is a strong signal that code changed and the design
      docs may need a sync.

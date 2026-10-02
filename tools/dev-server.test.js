@@ -176,7 +176,7 @@ test('/save-items creates the catalog (header + item) and applies deletes', asyn
     const read = await srv.request('GET', '/data/custom-items.json');
     assert.equal(read.status, 200);
     assert.equal(read.body.schema, 'ed-items/3');
-    assert.equal(read.body.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v3)');
+    assert.equal(read.body.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v4)');
     assert.deepEqual(read.body.items.Lantern, LANTERN);
 
     const del = await srv.request('POST', '/save-items', { delete: ['Lantern'] });

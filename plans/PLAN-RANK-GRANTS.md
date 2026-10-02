@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.14.0
+---
 # Plan: fold rank grants into the derived talent/skill step
 
 Thread items and other sources can **grant ranks** in a talent or skill via the

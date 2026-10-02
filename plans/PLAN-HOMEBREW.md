@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.9.0
+---
 # Plan: Homebrew Rules
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.9.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 Homebrew Rules lets the rules files override the standard rulebooks with a list
 of data-only rules. Rule #1 covers the **Unconsciousness and Death rating

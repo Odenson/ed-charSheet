@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.24.0
+---
 # Plan: Open weaving to 0-thread spells + gate the Effect button
 
 Two small Spells-tab fixes that bring the implemented cast workspace into line

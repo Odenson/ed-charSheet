@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.23.0
+---
 # PLAN — Arrow of Night: uplift to a Shadow-Meld-style active effect
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.23.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 _Status: draft, for owner review._
 

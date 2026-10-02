@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.11.0
+---
 # Plan: Surface the Save affordance during play (dirty-state visibility)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.11.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 Make the Save icon (with its unsaved-changes dot) visible whenever the local
 browser copy is ahead of the GitHub version — **including during play, outside

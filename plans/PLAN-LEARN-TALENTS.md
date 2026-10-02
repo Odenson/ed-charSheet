@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.20.0
+---
 # Plan: Adding talents per Discipline (learn / fill Talent Option slots)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.20.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 This plan defines the **Add a talent** flow for the Disciplines tab — today the
 edit mode can only change **ranks** of talents that already exist on the

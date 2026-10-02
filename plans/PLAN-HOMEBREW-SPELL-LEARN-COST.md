@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.16.0
+---
 # Plan: Homebrew — learning a spell costs no Legend
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.16.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 A house rule that **negates the Legend cost of learning a spell**, so a magician
 learns spells for free (Legend-wise). It is a **plan only — no implementation

@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.23.0
+---
 # Plan: Structured Knack Restrictions + Discipline Enforcement
 
 Converts the free-text `restrictions` field on every knack in

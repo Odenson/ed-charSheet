@@ -297,6 +297,10 @@
         {
           "type": "changed",
           "text": "Item cost and weight are now read from structured rule data instead of being parsed out of their printed price/weight text, so values stay accurate as the catalogue grows. Custom items move to the ed-items/3 schema, and the effect taxonomy is now v4 (a new duration-modifier for spell durations). Under the hood, the engine no longer recovers rule structure by reading display strings — a rule the engine consumes is a typed field, locked in as an architecture rule."
+        },
+        {
+          "type": "added",
+          "text": "A New-day reset on the Overview Health panel and the Combat damage rail: it resets your recoveries to 0 and clears combat options, armed options and blood charms, first offering to spend any remaining recoveries on Damage (rolled) or Wounds (one each)."
         }
       ]
     },

@@ -22,7 +22,9 @@ every participant. The older flat `plans/PLAN-*.md` files are history.
 **Orchestrators** run in the main session and are the only participants who can
 ask the owner questions, **one at a time**. **Subagents** run non-interactively;
 when they need a human decision they end their report with `NEEDS_HUMAN: <q>`,
-and the orchestrator asks, appends to `qa-log.md` and re-spawns them.
+and the orchestrator asks, appends to `qa-log.md` and re-spawns them. When they
+need an Earthdawn rules ruling they end with `NEEDS_RULES: <q>` instead; the
+orchestrator gets it from `rule-agent` (subagents cannot spawn agents).
 
 ## Roster
 
@@ -36,7 +38,7 @@ and the orchestrator asks, appends to `qa-log.md` and re-spawns them.
 | `feature-tester` | `.agents/feature-tester.md` | `/build-feature` | test files, `test-plan.md` |
 | `feature-dev` | `.agents/feature-dev.md` | `/build-feature` | source, data, docs, changelog line, commit |
 | `design-agent` | `.agents/design-agent.md` | `/build-feature` | nothing (proposes doc edits; Dev Lead applies) |
-| `rule-agent` | `.agents/rule-agent.md` | Interrogator | `docs/RULES-FAQ.md` only |
+| `rule-agent` | `.agents/rule-agent.md` | Interrogator (rules sweep), either orchestrator on `NEEDS_RULES` | `docs/RULES-FAQ.md` only |
 
 The five `feature-*` subagents are Claude-only (no `.opencode.yml` fragment).
 Edit `.agents/`, then `node tools/sync-agents.mjs`.
@@ -46,14 +48,23 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 1. **Setup** — derive slug, create `plans/<slug>/`, read CLAUDE.md, GUARDRAILS.md
    and relevant docs, load the `ed-change-guardrail` skill.
 2. **Interrogation** — one question at a time, broad to narrow, logged to
-   `qa-log.md`. Earthdawn rules questions go to `rule-agent`. Each ticket gets a
-   tier; each **Tier-1** ticket needs explicit owner sign-off (quote the rule,
-   offer a Tier-3 alternative) or is marked `BLOCKED`. Ends with `tickets.md`.
+   `qa-log.md`. Earthdawn rules questions go to `rule-agent`, never to the owner
+   first. Each ticket gets a tier; each **Tier-1** ticket needs explicit owner
+   sign-off (quote the rule, offer a Tier-3 alternative) or is marked `BLOCKED`.
+   Ends with `tickets.md`.
+   **Rules grounding:** before tickets are final, the Interrogator lists every
+   Earthdawn rule the feature depends on (including values tests will assert),
+   batches them to `rule-agent`, and records the answers in `rules.md`.
+   `NOT-COVERED`, `CONFLICT` and `APP-DIFFERS` results go to the owner, and the
+   answer is recorded as a house rule or homebrew entry (`Decision:` on the FAQ
+   entry). Planning does not start with an unresolved rule.
 3. **Plan** — `feature-planner` (draft) writes `plan.md` with a guardrail
-   classification section and a tier on every item.
+   classification section, a rules-dependencies section, and a tier and rule
+   ids on every item.
 4. **Review** — `feature-plan-reviewer`, single pass, writes `review.md`. An
-   unsigned Tier-1 item, or a Tier-2 item missing a migration step, is a
-   **blocker**.
+   unsigned Tier-1 item, a Tier-2 item missing a migration step, or a rules
+   claim with no cited `rules.md` entry (or built on an undecided
+   `NOT-COVERED`/`CONFLICT`/`APP-DIFFERS`) is a **blocker**.
 5. **Revise** — `feature-planner` (revise) fixes each finding or records a
    dispute under `## Review responses`.
 6. **Report** — ticket list with tiers, blocked items, finding counts, open
@@ -63,9 +74,9 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 
 | Phase | Who | What |
 |---|---|---|
-| 0. Alignment | Dev Lead + owner | Read folder; **refuse any Tier-1 item without recorded sign-off**; clear open questions; note unrelated tree changes |
-| 1. Spec | `feature-designer` | `spec.md`: guardrail alignment, data, modules, UI/dispatch behavior, edge cases, testability, changelog line |
-| 2. Tests first | `feature-tester` (author) | `node:test` `*.test.js` files + `test-plan.md`; expected to fail. Dev Lead snapshots them |
+| 0. Alignment | Dev Lead + owner | Read folder; **refuse any Tier-1 item without recorded sign-off**; **verify `rules.md` covers every rule dependency, each undecided gap having an owner `Decision`**; clear open questions; note unrelated tree changes |
+| 1. Spec | `feature-designer` | `spec.md`: guardrail alignment, data, modules, UI/dispatch behavior, rules table (cited), edge cases, testability, changelog line |
+| 2. Tests first | `feature-tester` (author) | `node:test` `*.test.js` files + `test-plan.md`; expected rules values only from `rules.md`; expected to fail. Dev Lead snapshots them |
 | 3. Build | `feature-dev` (build) | Implement to spec; all tester tests plus `npm test` green; commit |
 | 3b. Adjudication | `feature-tester` (adjudicate) | Only on `NEEDS_TESTER`; one cycle |
 | 4. Review | Dev Lead (+ `feature-dev` revise, once) | Spec, golden rule, tiers, UI rules, quality, real gate status |
@@ -77,6 +88,7 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 | Signal | From | Orchestrator response |
 |---|---|---|
 | `NEEDS_HUMAN: <q>` | any subagent | Ask the owner, log in `qa-log.md`, re-spawn |
+| `NEEDS_RULES: <q>` | any subagent | Run `rule-agent` (slug as context), append the cited answer to `rules.md`, get an owner decision for `NOT-COVERED`/`CONFLICT`/`APP-DIFFERS`, re-spawn |
 | `NEEDS_TESTER: <test>::<case> — <problem>` | `feature-dev` | Phase 3b, one cycle |
 | `TESTER_UPDATED: <what/why>` | `feature-tester` | Re-snapshot tests; dev finishes |
 | `TESTER_REJECTED: <why>` | `feature-tester` | Dev makes the code satisfy the test |
@@ -94,7 +106,10 @@ PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
   revision. If still unresolved, stop and report.
 - **Test integrity.** `feature-dev` never edits, skips or weakens the tester's
   tests; the Dev Lead diffs against the snapshot before shipping.
-- **Git.** Only inside `/build-feature`: `feature-dev` commits, only the Dev Lead
+- **Git.** The shared permission baseline (`.claude/settings.json`) makes
+  `git commit`/`push` and `gh pr create` prompt, so even the pre-authorized
+  `/build-feature` run pauses for the owner's approval at those steps. Only
+  inside `/build-feature`: `feature-dev` commits, only the Dev Lead
   pushes to `dev` and opens the PR, stage by explicit path (never `git add -A`),
   scoped to the feature. PR-only to `main`; the owner approves and merges.
   `/new-feature` never commits.
@@ -103,12 +118,36 @@ PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
 - **Guardrails.** Subagents load `ed-change-guardrail` before touching a
   protected surface, so the first-edit hook does not stall a build.
 
+## Plan status
+
+Every plan — legacy `plans/PLAN-*.md` and workflow `plans/<slug>/plan.md` —
+starts with YAML frontmatter that is the authoritative status:
+
+```yaml
+---
+status: draft | approved | building | implemented | superseded
+shipped: v1.23.0 | unreleased      # required when implemented or superseded
+supersededBy: PLAN-OTHER           # required when superseded
+deferred: ["item left unbuilt"]    # optional
+---
+```
+
+Lifecycle for workflow plans: the planner writes `status: draft`;
+`/build-feature` sets `building` once alignment passes, then `implemented` with
+`shipped: unreleased` in the feature commit; at release, `design-agent` reports
+which `unreleased` plans now match a `data/changelog.json` release so the
+version can be filled in. `status` records what shipped; a plan whose design was
+later replaced is `superseded`. Prose banners inside a plan may be historical —
+the frontmatter wins. `tools/plans-status.test.js` (in `npm test`) enforces the
+fields and that `shipped` names a real changelog release.
+
 ## Feature folder
 
 | File | Written by | Phase |
 |---|---|---|
 | `tickets.md` | Interrogator | `/new-feature` 2 |
 | `qa-log.md` | any orchestrator (append-only) | throughout |
+| `rules.md` | Interrogator, Dev Lead (from `rule-agent` answers) | `/new-feature` 2; appended on `NEEDS_RULES` |
 | `plan.md` | `feature-planner` | `/new-feature` 3, 5 |
 | `review.md` | `feature-plan-reviewer` | `/new-feature` 4 |
 | `spec.md` | `feature-designer` | `/build-feature` 1 |

@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.8.0
+---
 # Plan: Damage & Healing (Overview)
 
 Status page for **running a character through combat**: track current damage on

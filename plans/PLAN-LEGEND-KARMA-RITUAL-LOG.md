@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.11.0
+---
 # Plan — Karma ledger (converted/spent), Legend-log spend rows, file cleanup
 
 Follow-on to the homebrew Karma economy

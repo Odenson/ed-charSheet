@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.23.0
+---
 # Plan: Adding a knack to a character (learn a new Knack)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.23.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 This plan defines the **Add a knack** flow — letting a player learn a knack from the catalog
 `rules/knacks.json` (145 catalogued), gated by the Companion's knack-acquisition rules, and

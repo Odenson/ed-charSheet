@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.15.0
+---
 # Plan: Structured `ref.cost` / `ref.weight` (kill the regex parsers)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.15.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 **Status:** Draft — awaiting owner sign-off (Tier 1 shape change, see Guardrail classification).
 **Owner:** Gary

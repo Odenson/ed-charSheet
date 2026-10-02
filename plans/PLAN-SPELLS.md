@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.15.0
+---
 # Plan: Spells tab — Grimoire management and in-combat casting
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.15.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 This plan defines a new **Spells tab** for the app: a place to list and manage a
 character's spells (a *Grimoire*) and to *cast* them in play. It is a **plan

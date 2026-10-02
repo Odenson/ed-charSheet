@@ -1,6 +1,10 @@
-// PreToolUse hook (Edit|Write|NotebookEdit). On the first edit to a protected
-// path in a session, denies once and asks for the ed-change-guardrail skill;
-// the retry passes. Later edits in the same session pass untouched.
+// PreToolUse hook (Edit|Write|NotebookEdit|Bash). On the first edit to a
+// protected path in a session, denies once and asks for the ed-change-guardrail
+// skill; the retry passes. Later edits in the same session pass untouched.
+// For Bash it is a heuristic: a command that both names a protected path and
+// looks like a write (sed -i, redirection, tee, mv/cp/rm, scripted file
+// writes, git checkout/restore/apply…). A false positive only costs the one
+// per-session prompt; a pure read never trips it.
 // Protected surfaces: docs/GUARDRAILS.md. Wired in .claude/settings.json.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,10 +24,35 @@ export function isProtected(filePath, cwd) {
   return PROTECTED.some((re) => re.test(rel));
 }
 
+// Protected-path mentions inside a shell command (relative or absolute).
+const CMD_PATHS = [
+  /(?:^|[\s'"=:(\/])ui\//,
+  /(?:^|[\s'"=:(\/])engine\//,
+  /(?:^|[\s'"=:(\/])rules\/[\w.-]+\.json/,
+  /data\/character[\w./-]*\.json/,
+  /docs\/EFFECT-TAXONOMY\.md/,
+];
+const WRITE_HINTS = [
+  /\bsed\s+(?:-[A-Za-z]*\s+)*-[A-Za-z]*i/,
+  /\bperl\s+-[A-Za-z]*i/,
+  /(?<![\d&])>>?(?!&)\s*(?!\/dev\/null)[^\s&|;]/,
+  /\btee\b/,
+  /\b(?:mv|cp|rm|touch|truncate|install|patch|dd)\b/,
+  /open\([^)]*['"][wa+]/,
+  /\b(?:writeFile|writeFileSync|appendFile|appendFileSync|write_text|write_bytes)\b/,
+  /\bgit\s+(?:checkout|restore|apply|stash|reset|rm|mv)\b/,
+];
+
+export function isProtectedBash(command) {
+  if (typeof command !== 'string') return false;
+  return CMD_PATHS.some((re) => re.test(command)) && WRITE_HINTS.some((re) => re.test(command));
+}
+
 export function decide(input, markerDir = os.tmpdir()) {
   const cwd = input.cwd || process.cwd();
   const target = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
-  if (!isProtected(target, cwd)) return null;
+  const hit = target != null ? isProtected(target, cwd) : isProtectedBash(input.tool_input?.command);
+  if (!hit) return null;
   const marker = path.join(markerDir, `ed-guardrail-${input.session_id || 'nosession'}`);
   if (fs.existsSync(marker)) return null;
   fs.writeFileSync(marker, new Date().toISOString());

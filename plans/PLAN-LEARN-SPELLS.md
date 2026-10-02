@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.16.0
+---
 # Plan: Learning new spells (Grimoire → Learn)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.16.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 This plan defines the **Learn a spell** flow for the Spells tab — the edit-mode
 modal the Spells work already stubs (PLAN-SPELLS §6: "Learning new spells will be

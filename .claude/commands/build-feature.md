@@ -45,16 +45,32 @@ Load the **ed-change-guardrail** skill. Read the whole feature folder
    item without a recorded owner sign-off** in `qa-log.md` / `tickets.md`; stop
    and ask the owner (quote the rule, say why the work appears to need it). A
    Tier-2 item must include all three migration steps or none. Record the outcome.
-2. **No outstanding technical questions.** If anything material is unresolved —
+2. **Rules coverage.** Read `rules.md`. Every Earthdawn rule the plan depends on
+   must have an entry with a source. Any entry that is `NOT-COVERED`, `CONFLICT`
+   or `APP-DIFFERS` must carry a recorded owner `Decision`. If a rule is missing
+   or undecided, **stop**: run the `rule-agent` (slug as context) for gaps, get
+   an owner decision where needed, and update `rules.md` and `qa-log.md` first.
+3. **No outstanding technical questions.** If anything material is unresolved —
    in `plan.md`'s open questions, in `review.md`, or that you spot — ask the user
    **one question at a time** and append each exchange to `qa-log.md` (format
    below, `asked by dev-lead`). Proceed only once the plan is aligned and
    question-free.
-3. **Clean tree.** Run `git status`. Unrelated uncommitted changes are fine but
+4. **Clean tree.** Run `git status`. Unrelated uncommitted changes are fine but
    must not be staged; note them in `build-log.md`.
 
 Start `build-log.md` (or append a new run section) recording the slug, the
-alignment outcome, and the date.
+alignment outcome, and the date. Set `status: building` in `plan.md`'s
+frontmatter once alignment passes (add the frontmatter if it is missing).
+
+## Handling `NEEDS_RULES` (any phase)
+
+A subagent that ends its report with `NEEDS_RULES: <question>` needs a rules
+ruling it cannot get itself. Run the `rule-agent` with the slug as context and
+the question(s), append each cited answer to `rules.md`, act on any `Status:`
+other than `FAQ-HIT` / `ANSWERED` as in Phase 0 (owner decision, recorded), then
+re-spawn the subagent. Apply this in every phase below alongside `NEEDS_HUMAN`.
+Rules should already be settled by `/new-feature`; a `NEEDS_RULES` at build time
+means the plan missed a dependency — note it in `build-log.md`.
 
 ## Phase 1 — Tech spec (feature-designer subagent)
 
@@ -102,7 +118,8 @@ This is the **only** adjudication cycle.
 
 Review the committed change as the tech lead. Read the diff (`git show` /
 `git diff`), `spec.md` and the tester's tests, and check: correctness against the
-spec and acceptance criteria; **golden rule** (data down / events up via
+spec and acceptance criteria; every rules value in code and tests matches
+`rules.md` and its cited source; **golden rule** (data down / events up via
 `dispatch`, UI computes no game values, engine pure and DOM-free and reading
 structured taxonomy, only inputs stored, derived values as placeholder pills);
 Tier-1/2 compliance against GUARDRAILS.md; theme, modal and viewport rules where
@@ -140,15 +157,18 @@ Record what was applied and what was deferred in `build-log.md`.
 3. **Finalize the commit** (amend or add a commit for the Phase 5 doc edits;
    stage by explicit path) with a Conventional-Commits message ending with the
    attribution trailer from your session's attribution instructions.
-4. **Push to `dev`** (never to `main`).
-5. **Open a PR `dev → main`** with `gh`. The body contains: a summary of the
+4. **Update plan status.** In `plan.md` frontmatter set `status: implemented` and
+   `shipped: unreleased` (the release version is filled in later), and stage it
+   in the feature commit.
+5. **Push to `dev`** (never to `main`).
+6. **Open a PR `dev → main`** with `gh`. The body contains: a summary of the
    feature, the tests added, the gate result, the **GUARDRAILS.md PR checklist
    filled in with results**, and — if the change touched `ui/` — a **manual UI
    verification checklist** for the owner (what to look at, light and dark mode,
    mobile fold, Overview fit). Add any deferred Tier-1/2 doc edits. End the body
    with the PR attribution line from your session's instructions. **Do not merge
    it.** Then bind it with the ccd_pr tools if available.
-6. **Report to the user:** the commit SHA, the PR URL, tests added, gate result,
+7. **Report to the user:** the commit SHA, the PR URL, tests added, gate result,
    decisions recorded, and the feature-folder artifacts (`spec.md`,
    `test-plan.md`, `build-log.md`, updated `qa-log.md`).
 

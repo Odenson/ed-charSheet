@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.11.0
+---
 # Plan: Homebrew rule — race-driven Karma economy (ED-classic buy-back)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.11.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 A homebrew rule that replaces the standard "free Karma Ritual" with the
 **ED-classic Karma economy**: you **buy Karma back with Legend** at a

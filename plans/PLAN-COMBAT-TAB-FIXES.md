@@ -1,4 +1,11 @@
+---
+status: implemented
+shipped: v1.11.0
+deferred: ["#1 ranged ammo tracking (Tier 1, not built)"]
+---
 # Plan: Combat Tab — bug fixes & feature follow-ups (v1.1)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.11.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative. Item #1 (ranged ammo tracking, Tier 1) remains deferred.
 
 Follow-up work on the Combat tab (`ui/ed-combat.js`, `engine/combat.js`,
 `rules/combat.json`) from owner testing, 2026-08-11. Each item below is analysed,

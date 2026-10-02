@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.13.0
+---
 # Plan: Buy & Sell (edit-mode trade on the Equipment tab)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.13.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 **Status:** Approved — owner sign-off complete (all WDYT resolved).
 **Owner:** Gary

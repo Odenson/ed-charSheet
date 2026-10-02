@@ -15,7 +15,7 @@ surface human questions (see below) and stop.
 ## Input
 
 The orchestrator gives you a feature folder: `plans/<slug>/`. Read from it:
-`plan.md`, `tickets.md`, `qa-log.md`. Also read `CLAUDE.md`,
+`plan.md`, `tickets.md`, `qa-log.md`, `rules.md`. Also read `CLAUDE.md`,
 `docs/GUARDRAILS.md`, `ARCHITECTURE.md` and the relevant docs. Use
 Grep/Glob/Bash (read-only) to verify the plan against the actual codebase —
 check that referenced files, patterns and APIs really exist and that the
@@ -34,6 +34,12 @@ approach fits.
   it is a blocker. Check the architecture golden rule: UI never computes game
   values, engine stays pure and DOM-free, only inputs are stored, derived
   values render as placeholder pills.
+- **Rules grounding** — every Earthdawn rule the plan relies on must trace to a
+  cited entry in `rules.md`. A rules claim with no entry, a citation that does
+  not support the claim, or an item built on a `NOT-COVERED` / `CONFLICT` /
+  `APP-DIFFERS` entry that has no recorded owner `Decision` is a **blocker**.
+  Do not verify rules from your own knowledge; if a claim needs checking, emit
+  `NEEDS_RULES`.
 - **Risk & testability** — are risks named, and can each item be verified with
   `node:test` unit tests? Is UI work that tests cannot cover called out for
   manual verification by the owner?
@@ -62,6 +68,15 @@ Write `plans/<slug>/review.md`:
 If the plan is sound, say so and produce an empty or near-empty findings list —
 do not invent problems.
 
+## Asking for a rules ruling
+
+```
+NEEDS_RULES: <specific rules question>
+```
+
+One line per question; the orchestrator relays it to the rule-agent and
+re-invokes you.
+
 ## Asking the human
 
 If a finding depends on information only the user has, do not assume. Add it as
@@ -73,5 +88,5 @@ NEEDS_HUMAN: <specific question>
 
 ## Output / report back
 
-Short report: finding count by severity and any `NEEDS_HUMAN:` lines. The
+Short report: finding count by severity and any `NEEDS_RULES:` / `NEEDS_HUMAN:` lines. The
 artifact is `review.md` on disk. Do not commit or push.

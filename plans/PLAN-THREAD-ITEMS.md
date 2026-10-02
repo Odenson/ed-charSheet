@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.7.0
+---
 # Plan: Thread Items
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.7.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 Status page for adding **thread items** — magic items a character connects to by
 weaving Legend-charged threads, unlocking rank-gated powers. This file is the

@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.13.0
+---
 # Plan: Homebrew rule — Additional-Discipline talents priced one tier higher
 
 > **Status: implemented on `dev` (2026-08-16).**

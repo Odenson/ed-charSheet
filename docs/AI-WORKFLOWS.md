@@ -25,14 +25,20 @@ generated for both tools; the `feature-*` agents are Claude-only.
 
 | Agent | Purpose | Claude Code | Can write |
 |---|---|---|---|
-| `rule-agent` | Answers Earthdawn rules questions only from the local, gitignored `rulebook extracts/`; checks `docs/RULES-FAQ.md` first and logs new answers there | Read, Grep, Glob, Edit; sonnet | `docs/RULES-FAQ.md` only |
+| `rule-agent` | Answers Earthdawn rules questions (single or batch) only from the local, gitignored `rulebook extracts/`; checks `docs/RULES-FAQ.md` first and logs new answers and owner decisions there | Read, Grep, Glob, Edit; sonnet | `docs/RULES-FAQ.md` only |
 | `design-agent` | Compares `plans/*.md`, recent git changes and `docs/REVIEW-FINDINGS.md` with the design docs; reports what shipped and proposes doc edits | Read, Grep, Glob, Bash; opus | nothing (proposes only; owner applies) |
 
 OpenCode copies express the same limits through `permission:` frontmatter
 (rule-agent `mode: all`, design-agent `mode: primary`).
 
-Invocation: CLAUDE.md routes rules questions to `rule-agent`. `design-agent` is
-run by `/build-feature` before shipping; otherwise manual.
+Invocation: CLAUDE.md routes rules questions to `rule-agent`. In the feature
+workflow it is used at **design time**: `/new-feature` batches every rules
+dependency to it before planning (results in `plans/<slug>/rules.md`), and either
+orchestrator runs it when a subagent emits `NEEDS_RULES`. It takes a batch plus
+caller context, resolves serially, returns a `Status:` per answer (`FAQ-HIT`,
+`ANSWERED`, `NOT-COVERED`, `CONFLICT`, `APP-DIFFERS`) and can record an owner
+`Decision:` on an FAQ entry. `design-agent` is run by `/build-feature` before
+shipping; otherwise manual.
 
 ### Feature-delivery agents (Claude Code only)
 
@@ -78,7 +84,7 @@ below.
 
 ## Hook: guardrail gate
 
-`PreToolUse` on `Edit|Write|NotebookEdit`, configured in the committed
+`PreToolUse` on `Edit|Write|NotebookEdit|Bash`, configured in the committed
 `.claude/settings.json`, implemented in `tools/guardrail-hook.mjs`.
 
 - Protected paths: `ui/`, `engine/`, `rules/*.json`, `data/character*.json`
@@ -90,14 +96,26 @@ below.
 - Hook errors never block an edit.
 - Tests: `tools/guardrail-hook.test.js`.
 
+Bash coverage is a heuristic: a command trips the gate when it both names a
+protected path and looks like a write (`sed -i`, redirection, `tee`, `mv`/`cp`/
+`rm`, scripted file writes, `git checkout`/`restore`/`apply`…). Reads never trip
+it; a false positive only costs the one per-session prompt.
+
 Limits: it enforces *that the prompt appears*, not that the classification is
-correct, and it does not see Bash-driven edits (`sed -i`, redirects).
+correct, and a write the heuristic cannot see (a path assembled at runtime, a
+script that edits protected files without naming them) is not caught.
 
 ## Settings and permissions
 
-- `.claude/settings.json` — shared, committed (hook only).
+- `.claude/settings.json` — shared, committed: the guardrail hook and a
+  permission baseline. `allow`: read-only git, `npm test`, the agent sync.
+  `ask`: `git commit`/`push`/`merge`/`pull`, `gh pr create`/`merge`, `rm -rf`.
+  `deny`: `git add -A`/`.`/`--all`, force-push, pushing to `main`,
+  `git reset --hard`, `git clean -f`. Deny and ask outrank a personal allow, so
+  a broad `git commit *` in `settings.local.json` no longer bypasses the prompt.
+  `tools/settings.test.js` guards the baseline.
 - `.claude/settings.local.json` — per-user, gitignored. Holds each person's
-  tool allowlist; there is no shared permission baseline.
+  extra tool allowlist on top of the shared baseline.
 - `.claude/launch.json` — preview dev-server config, committed.
 - `.gitignore` ignores `.claude/*` and re-includes `skills/`, `agents/`,
   `commands/`, `launch.json` and `settings.json`.
@@ -116,13 +134,22 @@ editing patterns, and working preferences such as "never commit or push without
 explicit permission". It is not shared with other contributors, so anything
 other contributors need belongs in CLAUDE.md or these docs.
 
+## Plan status
+
+Plans carry YAML status frontmatter (draft / approved / building / implemented /
+superseded, plus `shipped:`), enforced by `tools/plans-status.test.js`. The
+`/build-feature` workflow maintains it; `design-agent` reads it first and
+reconciles `shipped: unreleased` against the changelog. Details:
+[FEATURE-WORKFLOW.md](FEATURE-WORKFLOW.md#plan-status).
+
+## Tier-2 conformance
+
+`tools/rules-conformance.test.js` (in `npm test`) checks `rules/*.json` against
+`docs/EFFECT-TAXONOMY.md`: current-version `effectTaxonomy` refs, well-formed
+schema tags, and effect vocabulary parsed from the doc's tables. It is the
+mechanical half of the Tier-2 ceremony in [GUARDRAILS.md](GUARDRAILS.md).
+
 ## Known gaps
 
-- `plans/*.md` carry no status frontmatter, so "implemented" must be inferred
-  by `design-agent` for pre-workflow plans.
-- No agent or script validating Tier 2 taxonomy migrations or `rules/*.json`
-  schema conformance.
-- No shared permission baseline; `settings.local.json` allows `git commit`/`git
-  push` outright, which is broader than the policy in CLAUDE.md (explicit
-  permission, except inside `/build-feature`).
-- The hook does not cover Bash-driven edits.
+None open. Residual limits are noted under the hook (heuristic Bash coverage, no
+check that the tier classification is correct).
