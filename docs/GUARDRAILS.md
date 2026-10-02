@@ -87,7 +87,7 @@ this checklist):
    can't complete all three, don't start.
 4. If it's **Tier 3**, proceed — but still keep the Tier 1 rules intact.
 
-### Feature workflow (`/new-feature`, `/build-feature`)
+### Feature workflow (`/new-feature`, `/build-feature`, `/release-feature`)
 
 The feature workflow ([FEATURE-WORKFLOW.md](FEATURE-WORKFLOW.md)) enforces this
 protocol at both ends:
@@ -98,8 +98,10 @@ protocol at both ends:
   recorded sign-off, and a Tier-2 item without all three migration steps.
 - **Git** — inside `/build-feature` only, agents may commit, push to `dev` and
   open the `dev → main` PR for the feature being built (stage by explicit path;
-  never merge). Everywhere else, commit and push need the owner's explicit
-  permission.
+  never merge). Inside `/release-feature` only (owner-run, after testing), the
+  Release Manager may commit the changelog, push `dev`, open the release PR,
+  **squash-merge it** and sync `dev`. Everywhere else, commit and push need the
+  owner's explicit permission.
 
 ### Before finishing
 
