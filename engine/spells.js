@@ -15,6 +15,7 @@
 //     disciplines: [{ name, circle }],             // the caster's spellcasting Disciplines
 //     weavingStep: { [discipline]: number|null },  // derived Thread Weaving (X) step
 //     castingStep: number|null,                    // derived Spellcasting step
+//     castingRank: number|null,                    // Spellcasting talent rank (first caster discipline; null/0 -> no round count)
 //     attrStep:    { [Attribute]: number },        // derived attribute steps (for effect refs)
 //     karma:       { weaving: { [discipline]: bool }, casting: bool },
 //   }
@@ -185,8 +186,9 @@ export function effectReadout(ctx, spell) {
 
 /**
  * Outcome of a cast on ANOTHER target, from the recorded cast (raw roll results).
- * Pure; `spell` is a joined catalog spell or null; `opts` is reserved.
- * See plans/spell-target-effect-outcome/spec.md for the exact contract.
+ * Pure; `spell` is a joined catalog spell or null; `opts.rank` is the caster's
+ * Spellcasting rank (for the boosted duration; absent/0 -> the spell's duration text).
+ * See plans/spell-target-effect-outcome/spec.md and plans/spell-extra-weave-and-extra-cast/spec.md for the contract.
  */
 export function otherCastOutcome(spell, cast, opts) {
   const T = cast.target;
@@ -197,7 +199,7 @@ export function otherCastOutcome(spell, cast, opts) {
     spell: name, hit, target: T, total: cast.total, levels: N,
     extraSuccesses: Math.max(0, N - 1),
     badge: hit ? 'Hit' : 'Miss',
-    headline: '', effect: null, picks: [], duration: null, text: '',
+    headline: '', effect: null, picks: [], success: null, duration: null, text: '',
   };
   if (!hit) {
     out.headline = out.text = `Miss vs ${T} \u2014 no effect`;
@@ -221,17 +223,53 @@ export function otherCastOutcome(spell, cast, opts) {
     out.effect = { kind: 'none', text: 'No Effect roll' };
     effectPart = out.effect.text;
   }
-  const counts = new Map();
-  for (const l of cast.extraPicks ?? []) counts.set(l, (counts.get(l) ?? 0) + 1);
-  out.picks = [...counts].map(([label, count]) => ({ label, count }));
-  out.duration = spell.duration ? { label: spell.duration } : null;
+  const applied = appliedOptions(spell, cast.extraPicks, N);
+  out.picks = applied.picks;
+  out.success = applied.success;
+  out.duration = boostedDuration(spell, opts?.rank, castBoosts(spell, cast.extraPicks, N).durationRounds);
   const parts = [`${spell.name} \u2014 ${out.headline}`, effectPart];
   if (out.picks.length) {
     parts.push('Extra threads: ' + out.picks.map((p) => p.label + (p.count > 1 ? ` \u00d7${p.count}` : '')).join(', '));
   }
-  if (out.duration) parts.push(`Duration ${out.duration.label}`);
+  if (out.success) parts.push(`Success option: ${out.success.label}${out.success.mult > 1 ? ` \u00d7${out.success.mult}` : ''}`);
+  if (out.duration) parts.push(`Duration ${out.duration.text}`);
   out.text = parts.join(' \u00b7 ');
   return out;
+}
+
+/**
+ * The options a cast applied: extra-thread picks (label counts, first-seen order)
+ * and the Success Levels option with multiplier levels - 1 (null when none).
+ * Pure. A stale label is listed (count 1+) but adds no boost (castBoosts ignores it).
+ */
+export function appliedOptions(spell, extraPicks, successLevels) {
+  const counts = new Map();
+  for (const l of extraPicks ?? []) counts.set(l, (counts.get(l) ?? 0) + 1);
+  const picks = [...counts].map(([label, count]) => ({ label, count }));
+  const mult = Math.max(0, (successLevels ?? 0) - 1);
+  const label = spell?.successes?.[0]?.label;
+  const success = mult >= 1 && label ? { label, mult } : null;
+  return { picks, success };
+}
+
+/**
+ * The spell's duration with the cast's duration boost added. Returns null when
+ * the spell has no duration; `rounds`/`base` are null for non-round durations or
+ * a null/0 rank (then `text` is the spell's own duration string).
+ */
+export function boostedDuration(spell, rank, durationBoostRounds) {
+  if (!spell?.duration) return null;
+  const label = spell.duration;
+  const base = durationRounds(label, rank);
+  if (base == null) return { label, rounds: null, base: null, boost: durationBoostRounds || 0, text: label };
+  const boost = durationBoostRounds || 0;
+  const rounds = base + boost;
+  // Rank-scaled iff one more rank changes the parsed result (no new label regex).
+  const usesRank = base !== durationRounds(label, (rank ?? 0) + 1);
+  const lead = usesRank ? `Rank ${rank}` : String(base);
+  const detail = usesRank || boost > 0 ? `${lead}${boost > 0 ? ` + ${boost}` : ''}` : '';
+  const text = `${rounds} round${rounds === 1 ? '' : 's'}${detail ? ` (${detail})` : ''}`;
+  return { label, rounds, base, boost, text };
 }
 
 /** Does this spell fold onto the CASTER when self-cast? (§3.4 — a sustained
@@ -318,6 +356,7 @@ export function buildActiveSpell(spell, rank, ctx = {}) {
     effectLabel,
     roundsLeft: rounds,
     roundsTotal: rounds,
+    options: appliedOptions(spell, ctx.extraPicks, ctx.successLevels),
   };
 }
 
@@ -569,11 +608,13 @@ export function buildSpellsContext(character, spellsFile, derived) {
   // Spellcasting talent is shared; take the first caster Discipline that has it.
   let castStep = null;
   let castKarma = false;
+  let castingRank = null;
   for (const d of casterDiscs) {
     const sc = (d.talents ?? []).find((t) => t.name === 'Spellcasting');
     if (sc) {
       castStep = sc.step ?? null;
       castKarma = !!sc.karma;
+      castingRank = sc.rank ?? null;
       break;
     }
   }
@@ -586,6 +627,7 @@ export function buildSpellsContext(character, spellsFile, derived) {
     disciplines: casterDiscs.map((d) => ({ name: d.name, circle: d.circle })),
     weavingStep: weaving,
     castingStep: castStep,
+    castingRank,
     attrStep,
     karma: { weaving: weavingKarma, casting: castKarma },
   };

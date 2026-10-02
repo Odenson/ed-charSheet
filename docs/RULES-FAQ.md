@@ -523,3 +523,17 @@ Sources:
 - manual/text-player-guide-spell-concepts.txt:447–454 (p. 257)
 - manual/text-player-guide-spell-concepts.txt:924–929 (p. 269)
 - manual/text-player-guide-spell-concepts.txt:903–907 (p. 268 — Range self/touch)
+
+### Q016 — Extra (Additional) Threads: stacking, combining options, cap, "Rank" modifiers, and combining with Success Levels
+Keywords: extra threads, additional threads, additional thread limit table, stacking, same effect, different effects, Rank modifier, success levels together, enhanced matrix, Versatility · Resolved: 2026-10-02 · Context: spell-extra-weave-and-extra-cast
+
+Extra threads are declared up front, not earned: the caster decides whether to weave additional threads, how many, and what each does BEFORE any Thread Weaving test; all threads (base + additional) must be woven before casting. Each additional thread gets its own effect: the caster may pick a different option per thread or the same option for every thread (so stacking is allowed, e.g. two threads = +4 Damage Steps, or +10 yd range and +2 Steps). Cap: the Additional Thread Limit Table by Circle in the casting Discipline: Circles 1-4 = 1, 5-8 = 2, 9-12 = 3, 13-15 = 4. A human with Thread Weaving only via Versatility has no Circle and cannot weave additional threads. If an extra-thread option uses "Rank" as a modifier, each additional thread gives a bonus up to the caster's Spellcasting rank (Air Armor example: rank 5 = up to 5 extra targets). A zero-thread spell in an Enhanced Matrix may take extra threads, but the effect must be chosen when the spell is placed in the matrix. Spells with 0 base threads still have a Weaving difficulty for weaving extra threads. Success Levels (per extra Spellcasting success, see Q012) and Extra Threads are separate mechanisms in separate spell lines, each described in its own rules paragraph; nothing in the extracts forbids using both on one cast, and they naturally combine (threads are paid before casting, success levels come from the Spellcasting result). Note the book does not describe extra threads as "successes beyond required": normal thread-weaving rules apply, and the extracts do not say what an individual failed additional-thread test does beyond the general weaving rules.
+
+Sources:
+- manual/text-player-guide-spell-concepts.txt:392–415 (p. 256-257 — Additional Threads, limit table, Versatility)
+- manual/text-player-guide-spell-concepts.txt:984–1004 (pp. 270-271 — Extra Threads, Earth Darts example, Rank modifier)
+- manual/text-player-guide-spell-concepts.txt:1005–1009 (p. 271 — Air Armor example)
+- manual/text-player-guide-spell-concepts.txt:888–898 (p. 268 — 0-thread spells still have Weaving difficulty)
+- manual/text-player-guide-spell-concepts.txt:977–983 (p. 270 — Success Levels)
+
+Decision: 2026-10-02 — Owner ruling: the app keeps its weave-then-pick extra-thread flow (extra threads chosen after weaving), deliberately differing from the book's declare-up-front rule; and both Extra Thread options and Success Level options apply together to the same cast. (house rule)
