@@ -16,7 +16,7 @@ Two tools are supported: **Claude Code** (`.claude/`) and **OpenCode**
 | Skill | `.claude/skills/ed-change-guardrail/` | on trigger | process for classifying a change |
 | Hook | `.claude/settings.json` + `tools/guardrail-hook.mjs` | deterministic, on tool use | forces the skill before first protected edit |
 | Agents | `.agents/` (source) → `.claude/agents/`, `.opencode/agent/` | when delegated to | rules lookups, design-doc sync, feature delivery |
-| Commands | `.claude/commands/` | when typed | `/new-feature`, `/build-feature` orchestrators (Claude Code only) |
+| Commands | `.claude/commands/` | when typed | `/new-feature`, `/build-feature`, `/release-feature` orchestrators (Claude Code only) |
 
 ## Agents
 
@@ -133,6 +133,15 @@ Claude Code's per-user auto-memory (outside the repo) holds phase status,
 editing patterns, and working preferences such as "never commit or push without
 explicit permission". It is not shared with other contributors, so anything
 other contributors need belongs in CLAUDE.md or these docs.
+
+## Release workflow
+
+`/release-feature [slug]` (owner-run after testing) finalizes the changelog, opens
+the `dev → main` release PR, squash-merges it and syncs `dev`, with one
+confirmation and hard stops on a dirty/unsynced tree, red tests or red CI. It has
+no subagents; `tools/release.mjs` does the deterministic changelog and plan-status
+edits (`tools/release.test.js` guards it). Details:
+[FEATURE-WORKFLOW.md](FEATURE-WORKFLOW.md#flow-3--release-feature-slug-release).
 
 ## Plan status
 

@@ -1,7 +1,7 @@
-# Feature workflow — `/new-feature` and `/build-feature`
+# Feature workflow — `/new-feature`, `/build-feature`, `/release-feature`
 
-Two Claude Code slash commands deliver a feature in order: plan it, then build
-it. Adapted from the portable agent-workflow design to this repo's tiers,
+Three Claude Code slash commands deliver a feature in order: plan it, build it,
+then (after the owner has tested it) release it. Adapted from the portable agent-workflow design to this repo's tiers,
 `npm test` gate and `plans/` folder. The commands and subagent prompts are the
 source of truth for exact behavior; this doc is the map. Claude Code only — the
 orchestrators are not ported to OpenCode.
@@ -15,6 +15,7 @@ Governing rules: [GUARDRAILS.md](GUARDRAILS.md) (tiers, sign-off, PR checklist),
 |---|---|---|---|---|
 | 1 | `/new-feature [name]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md` |
 | 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, PR to `main` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, PR |
+| 3 | `/release-feature [slug]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR |
 
 All artifacts live in `plans/<slug>/` (kebab-case slug), the shared context for
 every participant. The older flat `plans/PLAN-*.md` files are history.
@@ -114,9 +115,33 @@ PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
   scoped to the feature. PR-only to `main`; the owner approves and merges.
   `/new-feature` never commits.
 - **Changelog.** User-visible features add one line to `data/changelog.json`
-  `unreleased.changes`; the release entry is cut by hand at promotion.
+  `unreleased.changes`; `/release-feature` turns them into the release entry.
 - **Guardrails.** Subagents load `ed-change-guardrail` before touching a
   protected surface, so the first-edit hook does not stall a build.
+
+## Flow 3 — `/release-feature [slug]` (release)
+
+Run by the product owner **after** they have finished testing. The slug is
+optional: **with a slug** that feature is the release headline (its plan must be
+`implemented` + `shipped: unreleased`); **without** one it is a full release.
+Either way everything unreleased on `dev` ships, because a squash of `dev`
+cannot carve out one feature. There are no subagents; file logic is in
+`tools/release.mjs` (tested by `tools/release.test.js`), the rest is git/gh.
+
+| Phase | What |
+|---|---|
+| 0. Preflight | **Hard stops:** not on `dev`, dirty or ahead/behind `origin/dev`, `dev` missing `origin/main`, `npm test` red, CI red on the `dev` head, nothing unreleased, named slug not implemented + unreleased. |
+| 1. Draft + one confirmation | Proposed version (patch if every change is `fixed`, else minor; never major unprompted), summary line, every change, plans to mark shipped, **warnings** (in-flight plans, unreleased lines with no plan, plans with no changelog line), and a reminder if `tools/worker/worker.js` changed (owner redeploys the Cloudflare worker). The owner confirms, edits the version or summary, or cancels. |
+| 2. Finalize | `release.mjs apply` moves `unreleased` to a new top release and marks plans `shipped: vX.Y.Z`; `npm test`; commit by explicit path; push `dev`. |
+| 3. Release PR | PR `dev → main` with the changelog as the body and the GUARDRAILS checklist; wait for checks; **squash-merge** with the changelog entry as the commit message. |
+| 4. Sync | Merge `origin/main` into `dev`, push, verify the trees match. |
+| 5. Report | Version, PR, merge commit, plans shipped, deploy run, worker reminder. |
+
+Running the command is the owner's authorization for exactly these git actions
+(changelog commit, push `dev`, release PR, squash-merge, sync). Never a direct push
+to `main`, never `git add -A`, never force. The shared permission baseline still
+prompts for push and merge; the owner approves those prompts. The only files it
+edits are `data/changelog.json` and plan `shipped:` lines.
 
 ## Plan status
 
@@ -134,9 +159,9 @@ deferred: ["item left unbuilt"]    # optional
 
 Lifecycle for workflow plans: the planner writes `status: draft`;
 `/build-feature` sets `building` once alignment passes, then `implemented` with
-`shipped: unreleased` in the feature commit; at release, `design-agent` reports
-which `unreleased` plans now match a `data/changelog.json` release so the
-version can be filled in. `status` records what shipped; a plan whose design was
+`shipped: unreleased` in the feature commit; at release, `/release-feature` sets
+`shipped: vX.Y.Z` on every plan that was `shipped: unreleased` (`design-agent` can
+still report stragglers). `status` records what shipped; a plan whose design was
 later replaced is `superseded`. Prose banners inside a plan may be historical —
 the frontmatter wins. `tools/plans-status.test.js` (in `npm test`) enforces the
 fields and that `shipped` names a real changelog release.

@@ -34,7 +34,9 @@ protected edit). The PR checklist is in GUARDRAILS.md.
 **Git.** Never commit or push without the owner's explicit permission, and never
 `git add -A`. The one exception is the `/build-feature` workflow, which may
 commit, push to `dev` and open (never merge) the `dev → main` PR for the feature
-it is building ([docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md)).
+it is building, and the owner-run `/release-feature` workflow, which may also
+squash-merge the release PR and sync `dev` after a single owner confirmation
+([docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md)).
 
 ---
 
@@ -45,7 +47,7 @@ it is building ([docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md)).
 | Architecture, layers, phases | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Protected surfaces, tiers, change protocol, PR checklist | [docs/GUARDRAILS.md](docs/GUARDRAILS.md) |
 | AI tooling map: agents, skill, hook, sync | [docs/AI-WORKFLOWS.md](docs/AI-WORKFLOWS.md) |
-| New-feature planning and build flow (`/new-feature`, `/build-feature`) | [docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md) |
+| Feature planning, build and release flow (`/new-feature`, `/build-feature`, `/release-feature`) | [docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md) |
 | UI/UX rules | [docs/UI-GUIDELINES.md](docs/UI-GUIDELINES.md) |
 | Standard modal implementation (focus contract, Escape/focus handling) | [docs/MODALS.md](docs/MODALS.md) — shared `ui/modal-controller.js` |
 | Effect vocabulary / schema of `effects` | [docs/EFFECT-TAXONOMY.md](docs/EFFECT-TAXONOMY.md) |

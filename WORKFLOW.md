@@ -107,6 +107,10 @@ Promotion is a **squash** pull request, so `main` gets exactly one commit per
 release. Because the individual dev commits are collapsed, the changelog is
 **authored, not generated** — finalize it as the first step of every release.
 
+> The steps below are automated by the owner-run `/release-feature [slug]`
+> command (see [docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md), Flow 3); this
+> section remains the manual procedure and the source of truth for what it does.
+
 **1. Finalize the changelog** (`data/changelog.json` — the in-app "What's new").
 Move everything under `unreleased.changes` into a **new `releases` entry** at the
 top, with a bumped [SemVer](https://semver.org) version, today's date, and a
