@@ -6,6 +6,8 @@
 //                               blocks hold tool-specific text
 //   .agents/<name>.claude.yml   extra Claude frontmatter (tools, model)
 //   .agents/<name>.opencode.yml extra OpenCode frontmatter (mode, permission)
+// A target is generated only if its .yml fragment exists, so an agent without
+// <name>.opencode.yml is Claude-only (e.g. the feature-workflow subagents).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,9 +34,11 @@ export function render(name, target, read = (f) => fs.readFileSync(path.join(src
 
 export function expected() {
   const out = {};
+  const has = (f) => fs.existsSync(path.join(srcDir, f));
   const names = fs.readdirSync(srcDir).filter((f) => f.endsWith('.md')).map((f) => f.slice(0, -3));
   for (const name of names) {
     for (const [t, { dir }] of Object.entries(targets)) {
+      if (!has(`${name}.${t}.yml`)) continue;
       out[path.join(dir, `${name}.md`)] = render(name, t);
     }
   }

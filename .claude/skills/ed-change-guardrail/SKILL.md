@@ -24,4 +24,4 @@ Related authority: [CLAUDE.md](../../../CLAUDE.md),
    surface to the owner (quote the rule, offer a Tier-3 alternative); Tier 2 →
    all three migration steps or none; Tier 3 → proceed.
 4. **Before finishing**, run GUARDRAILS.md's "Before finishing" re-check. For a
-   PR, paste its checklist into the description.
+   PR, paste its checklist into the description with results included.

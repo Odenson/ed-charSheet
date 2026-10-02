@@ -1,6 +1,6 @@
 ---
 description: >-
-  EDCharSheet design-sync agent. Reads planning documents (plans/*.md), recent
+  EDCharSheet design-sync agent. Reads planning documents (plans/*.md and plans/<slug>/), recent
   code changes (git diff/log), and findings (docs/REVIEW-FINDINGS.md), then
   reports what has functionally shipped and proposes concrete edits to keep the
   design docs (docs/UI-GUIDELINES.md, ARCHITECTURE.md, or a design ledger)
@@ -51,7 +51,7 @@ the tier protocol exactly.
 - **Change signal** — determine scope, in this order:
   1. If the user names a change, diff it: `git diff <base>..HEAD`, or
      `git log --oneline -N` for recent commits.
-  2. `plans/*.md` — the planning documents. Many carry a `> Status:` banner
+  2. `plans/*.md` and `plans/<slug>/{plan,spec,build-log}.md` — the planning documents. Many carry a `> Status:` banner
      (e.g. "implemented (2026-08-21)") and a `## Log` of review passes. A plan
      marked implemented is a strong signal that code changed and the design
      docs may need a sync.
