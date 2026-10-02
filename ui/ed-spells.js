@@ -424,22 +424,25 @@ export class EdSpells extends LitElement {
     } else if (step === 'cast') {
       // Success levels vs the target: 1 at the number, +1 per 5 over. Extra
       // successes (levels − 1) activate the spell's Success Levels effect (§3.2 #3).
+      // Picks were snapshotted when the cast began: a non-step cast resets _prog
+      // right away, and a Karma re-roll of the same cast must still carry them.
+      const picks = this._castPicks ?? this._prog.extraPicks;
       const levels = successCount(total, this._castTarget);
       this._prog = { ...this._prog, castDone: true, cast: { ...res, levels } };
       if (this._castOnOther) {
         this._otherCast = { seq: this._castSeq, name: this._castName, target: this._castTarget, total, levels,
-          extraPicks: [...this._prog.extraPicks], effectTotal: null };
+          extraPicks: [...picks], effectTotal: null };
       }
       // A successful self-cast of a sustained spell activates it (6b): ed-app
       // adds it to the session active-effect set (fold + round countdown).
       // A duration-less spell still activates when the cast applied options.
       const selfOptions = this._castSelf && (() => {
-        const o = appliedOptions(joinSpell(this.ctx, this._castName), this._prog.extraPicks, levels);
+        const o = appliedOptions(joinSpell(this.ctx, this._castName), picks, levels);
         return o.picks.length > 0 || !!o.success;
       })();
       if (levels >= 1 && (this._castFoldsSelf || selfOptions)) {
         this.dispatchEvent(new CustomEvent('ed-spell-activate', {
-          detail: { name: this._castName, extraPicks: [...this._prog.extraPicks], successLevels: levels },
+          detail: { name: this._castName, extraPicks: [...picks], successLevels: levels },
           bubbles: true, composed: true,
         }));
       }
@@ -1077,6 +1080,7 @@ export class EdSpells extends LitElement {
     this._pendingStep = 'cast';
     this._castTarget = Number(target); // for the success-level count in _onRoll
     this._castName = plan.name;        // for the self-cast activation in _onRoll
+    this._castPicks = [...this._prog.extraPicks]; // survives the post-cast prog reset (Karma re-roll)
     this._castSelf = this._subject === 'self';
     this._castFoldsSelf = plan.foldsOnSelf && this._castSelf;
     this._castOnOther = this._subject === 'other';
