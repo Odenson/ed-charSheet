@@ -74,8 +74,7 @@ below.
 - Tests: `tools/guardrail-hook.test.js`.
 
 Limits: it enforces *that the prompt appears*, not that the classification is
-correct, and it does not see Bash-driven edits (`sed -i`, redirects). It is not
-active in a session until Claude Code reloads its settings.
+correct, and it does not see Bash-driven edits (`sed -i`, redirects). 
 
 ## Settings and permissions
 
