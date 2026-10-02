@@ -465,3 +465,61 @@ Sources:
 - text-RB-players-guide.txt:15355–15372 (pp. 380–381 — Unconsciousness and Death)
 - text-RB-players-guide.txt:8336–8351 (p. 253 — Physician: treating Wounds)
 - text-RB-players-guide.txt:9964–9975 (p. 240 — Blood Wounds treated as normal Wounds)
+
+### Q011 — Spellcasting test difficulty when casting on another target (Mystic Defense or fixed?)
+Keywords: Casting Difficulty, Spellcasting test, target number, Mystic Defense, TMD, fixed difficulty, multiple targets, highest Mystic Defense, cover, disbelieve, dull-witted MD 2 · Resolved: 2026-10-02 · Context: spell-target-effect-outcome
+
+Spellcasting is a test against the spell's **Casting Difficulty**, "often" the target's Mystic Defense (abbreviated TMD) but sometimes a fixed value or another calculation; each spell's Casting line says which. Dull-witted creatures and most non-magical objects have MD 2; most living creatures base MD on Perception; magic items vary. Multiple-target spells use the highest Mystic Defense of all targets (designated when the test is made) unless the spell says otherwise. Targets get Cover bonuses to MD. A target who disbelieves a non-illusion has MD 2 for counting successes. Lowest Difficulty Number is always 2.
+
+Sources:
+- manual/text-player-guide-spell-concepts.txt:46–51 (p. 248)
+- manual/text-player-guide-spell-concepts.txt:416–431 (p. 257)
+- manual/text-player-guide-spell-concepts.txt:899–902 (p. 268 — Casting line: TMD, fixed, or other)
+- manual/text-player-guide-spell-concepts.txt:326–327 (p. 254 — Cover)
+- manual/text-player-guide-spell-concepts.txt:852–855 (p. 267 — disbelieving non-illusion)
+- manual/text-player-guide-game-concepts.txt:88–89 (p. 33 — min DN 2)
+
+### Q012 — Success levels / extra successes on a Spellcasting test
+Keywords: success level, extra success, five points over, additional successes, Success Levels line, Increase Duration · Resolved: 2026-10-02 · Context: spell-target-effect-outcome
+
+Equalling the Difficulty Number is one success; each full 5 points the result exceeds it adds one extra success. Each spell's "Success Levels" line gives what each extra success buys (extra Effect Steps, longer duration, more targets...), applied per extra success (e.g. "+2 Rounds" with two extras = +4 Rounds).
+
+Sources:
+- manual/text-player-guide-game-concepts.txt:107–115 (p. 34)
+- manual/text-player-guide-spell-concepts.txt:977–983 (p. 270)
+- manual/text-player-guide-spell-concepts.txt:432–436 (p. 257)
+
+### Q013 — What a failed Spellcasting test does (effect, threads, Karma)
+Keywords: spell fails, failed cast, threads lost, Karma, Spellcasting failure, matrix · Resolved: 2026-10-02 · Context: spell-target-effect-outcome
+
+Result below the Difficulty Number = "the spell fails"; effect is only determined after a successful cast. **Not covered:** the extracts do not say what happens to woven threads or the matrix on a failed cast, nor give a Spellcasting-specific Karma rule (the talent entry lists Strain 0 and no Karma line; the general Karma rule is "unless noted otherwise, +1 Karma die per Karma Point on a talent"). The only thread-loss rule: woven threads are lost if weaving breaks off for a round or more, or the spell is not cast in the round after weaving completes. Failed Thread Weaving tests only waste time. Needs an owner decision.
+
+Sources:
+- manual/text-player-guide-spell-concepts.txt:433–436 (p. 257)
+- manual/text-player-guide-spell-concepts.txt:135–141 (p. 250)
+- text-talents-players.txt:551–554 (Spellcasting talent)
+- manual/text-player-guide-game-concepts.txt:269–273 (Karma)
+- Searched: manual/text-player-guide-spell-concepts.txt, text-talents-players.txt, manual/text-player-guide-game-concepts.txt
+
+Decision: 2026-10-02 — Owner ruling: a missed cast on another target reports "Miss vs <target number> — no effect" and the outcome text makes no claim about woven threads or Karma; existing app thread behavior is unchanged and out of scope for the spell-target-effect-outcome feature. (house rule)
+
+### Q014 — Spell Effect test vs the target; armor/resistance
+Keywords: Effect test, Effect Step, WIL+5, Willforce, damage Step, Physical Armor, Mystic Armor, resisted by · Resolved: 2026-10-02 · Context: spell-target-effect-outcome
+
+After a successful cast, rolled-effect spells call for an Effect test, usually caster's Willpower Step plus the stated bonus (some use the target's Willpower; Willforce may substitute, chosen per Effect test). Damage spells often use the Effect Step as the Damage Step, and the Effect line names the armor that resists it, Physical or Mystic; so the target subtracts that armor type from the damage. Fixed-effect spells list their specifics instead. Non-damage Effect-test spells: their description defines what the result means (not generalised in the extracts). Disbelieved illusions have no effect; a non-illusion target who opens themselves up loses active defenses.
+
+Sources:
+- manual/text-player-guide-spell-concepts.txt:437–446 (p. 257)
+- manual/text-player-guide-spell-concepts.txt:930–937 (p. 269)
+- text-talents-players.txt:721–724 (Willforce)
+- manual/text-player-guide-spell-concepts.txt:848–855 (p. 267)
+
+### Q015 — Spell Duration: units, and self vs other target
+Keywords: duration, rounds, minutes, hours, Rank+, variable duration, combat spell, self range, touch · Resolved: 2026-10-02 · Context: spell-target-effect-outcome
+
+Duration is how long the effect lasts: rounds, minutes, hours or other increments; "Rank" means the casting magician's Spellcasting rank (Rank+10 minutes at rank 5 = 15 min). Most combat spells last less than a round (end once they affect the target). Variable durations are rolled with the listed Action Dice. Success levels may extend it. The extracts give no separate rule for self vs other targets; duration is stated per spell and measured the same way (Range "self" merely restricts targets to the caster).
+
+Sources:
+- manual/text-player-guide-spell-concepts.txt:447–454 (p. 257)
+- manual/text-player-guide-spell-concepts.txt:924–929 (p. 269)
+- manual/text-player-guide-spell-concepts.txt:903–907 (p. 268 — Range self/touch)
