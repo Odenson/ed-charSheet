@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.25.1
 ---
 # Delivery Plan: Apply weave-success and cast-success spell options together (spell-extra-weave-and-extra-cast)
 
