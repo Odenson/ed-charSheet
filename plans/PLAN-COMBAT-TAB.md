@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.11.0
+---
 # Plan: Combat Tab — non-spell combat simulation
 
 A new **sixth tab** that runs a character through **non-spell** combat: roll

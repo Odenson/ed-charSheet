@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.8.0
+---
 # Custom Items — write-back to `rules/`
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.8.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative. Owner Phases A–E (deploy, smoke, fold run) were confirmed completed by the owner on 2026-10-02.
 
 A feature-design + work-tracking plan for letting a player create items **not in
 the catalog** from the Equipment tab. Created items persist to the

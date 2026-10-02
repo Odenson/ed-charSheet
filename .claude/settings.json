@@ -1,8 +1,41 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git fetch*)",
+      "Bash(npm test*)",
+      "Bash(node tools/sync-agents.mjs*)"
+    ],
+    "ask": [
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git pull*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr merge*)",
+      "Bash(rm -rf *)"
+    ],
+    "deny": [
+      "Bash(git add -A)",
+      "Bash(git add -A *)",
+      "Bash(git add --all*)",
+      "Bash(git add .)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin HEAD:main*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|NotebookEdit",
+        "matcher": "Edit|Write|NotebookEdit|Bash",
         "hooks": [
           {
             "type": "command",

@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.23.0
+---
 # PLAN — Anticipate Spell as a knack-sourced armed combat option
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.23.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 _Status: draft, for owner review. Follow-on to PLAN-TALENT-COMBAT-OPTIONS.md (Anticipate
 Blow, Mystic Aim, True Shot)._

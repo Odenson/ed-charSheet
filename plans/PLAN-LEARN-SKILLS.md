@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.21.0
+---
 # Plan: Adding skills (learn a new Skill)
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.21.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 This plan defines the **Add a skill** flow for the Disciplines tab's Skills sub-tab — today edit mode can change **ranks** of skills that already exist on the character (`ui/ed-app.js` `_editSkillRank`, persisted via `saveAdvancementEdits`), but there is no way to *add* a new skill. This feature lets a player learn any skill from the catalog `rules/skills.json` at Rank 1, paying the Skill Training Table Legend cost for that skill's own tier plus an editable silver training fee **derived from `rules/legend.json`** (data, not code). **Plan only — no implementation yet**, for owner review; decisions locked (§5).
 

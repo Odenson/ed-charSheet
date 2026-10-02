@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.9.0
+---
 # Plan: Talent & Skill Rank Editing
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.9.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 Rank editing lets the player raise or lower a talent's and a skill's **rank** in
 edit mode. Increasing a rank **consumes** Legend (the next step's cost, from the

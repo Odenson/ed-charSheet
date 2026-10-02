@@ -34,10 +34,14 @@ rule that `rules.md` does not cover, emit `NEEDS_RULES` (see below).
 
 ## Draft mode — write plan.md
 
-Decompose the tickets into ordered implementation items. Each item is small
+Begin `plan.md` with the status frontmatter shown below (`status: draft`); in
+revise mode leave it untouched. Decompose the tickets into ordered implementation items. Each item is small
 enough to review and, later, to implement in one focused change.
 
 ```markdown
+---
+status: draft
+---
 # Delivery Plan: <name> (<slug>)
 
 ## Context & learnings

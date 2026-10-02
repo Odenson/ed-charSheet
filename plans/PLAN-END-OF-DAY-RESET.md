@@ -1,4 +1,10 @@
+---
+status: implemented
+shipped: v1.15.0
+---
 # Plan: end-of-day reset for recoveries, combat state, and damage/wounds
+
+> **Status (updated 2026-10-02):** implemented — shipped in v1.15.0. Any draft / approved / “ready” / “nothing implemented” wording below is historical and kept as written; the frontmatter above is authoritative.
 
 This plan covers a single, owner-reviewed function that resets a character to a new day state. It is intentionally a plan only; no implementation yet. **Reviewed 2026-08-17 — owner decisions A–K are recorded in the Owner decisions section below and are normative for this plan.**
 

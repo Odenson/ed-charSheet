@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.8.0
+---
 # Plan: Wounds & Knockdown + Active Effects + Recoveries Reset (Overview)
 
 Status page for the **wounds & knockdown slice**: a single hit at or above the

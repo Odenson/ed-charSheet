@@ -54,7 +54,12 @@ A change to the taxonomy's field names or controlled vocabularies must:
    `effectTaxonomy: "docs/EFFECT-TAXONOMY.md (vN)"` field in the affected files.
 
 All three happen together, or none do. A half-migrated repo is the failure mode
-this tier exists to prevent.
+this tier exists to prevent. `tools/rules-conformance.test.js` (in `npm test`)
+enforces it: every `rules/*.json` `effectTaxonomy` ref must name the doc's
+current version, schema tags must be well-formed, and every effect's `type`,
+`operation`, `measure`, `stacking`, `duration` and `source` must appear in the
+doc's own vocabulary tables. Code that stamps a version into new files (the save
+worker, the dev server) must follow the bump too.
 
 ### ✅ Tier 3 — Free. No special ceremony.
 

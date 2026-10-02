@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.10.0
+---
 # Plan: Notes Tab v2 — Notes, Roll Log, Legend Earned, History
 
 The Notes tab (currently a stub in `ui/ed-app.js`) becomes a real surface with

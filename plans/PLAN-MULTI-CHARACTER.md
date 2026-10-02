@@ -1,3 +1,8 @@
+---
+status: superseded
+shipped: v1.6.0
+supersededBy: PLAN-SAVE-CONCURRENCY
+---
 # Plan: Load a different character from the `character-data` branch
 
 A step-by-step plan for letting the app load any character stored on the

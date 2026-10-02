@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.14.0
+---
 # Plan: Talent-granted combat options (True Shot — extra Karma dice)
 
 > **Status: implemented on `dev` (2026-08-16).** All decisions D1–D11 landed;

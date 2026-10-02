@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.12.0
+---
 # Plan: Consumable Potions + Item Quantity (Equipment)
 
 Status page for the **potions** slice: drinking a potion consumes one dose of the

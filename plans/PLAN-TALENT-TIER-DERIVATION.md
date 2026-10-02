@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.17.0
+---
 # Plan: Talent tiers become derived — band of the learned Circle
 
 > **Status: implemented (2026-08-21).** Migration left lazy per owner — existing

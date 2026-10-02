@@ -59,7 +59,8 @@ Load the **ed-change-guardrail** skill. Read the whole feature folder
    must not be staged; note them in `build-log.md`.
 
 Start `build-log.md` (or append a new run section) recording the slug, the
-alignment outcome, and the date.
+alignment outcome, and the date. Set `status: building` in `plan.md`'s
+frontmatter once alignment passes (add the frontmatter if it is missing).
 
 ## Handling `NEEDS_RULES` (any phase)
 
@@ -156,15 +157,18 @@ Record what was applied and what was deferred in `build-log.md`.
 3. **Finalize the commit** (amend or add a commit for the Phase 5 doc edits;
    stage by explicit path) with a Conventional-Commits message ending with the
    attribution trailer from your session's attribution instructions.
-4. **Push to `dev`** (never to `main`).
-5. **Open a PR `dev → main`** with `gh`. The body contains: a summary of the
+4. **Update plan status.** In `plan.md` frontmatter set `status: implemented` and
+   `shipped: unreleased` (the release version is filled in later), and stage it
+   in the feature commit.
+5. **Push to `dev`** (never to `main`).
+6. **Open a PR `dev → main`** with `gh`. The body contains: a summary of the
    feature, the tests added, the gate result, the **GUARDRAILS.md PR checklist
    filled in with results**, and — if the change touched `ui/` — a **manual UI
    verification checklist** for the owner (what to look at, light and dark mode,
    mobile fold, Overview fit). Add any deferred Tier-1/2 doc edits. End the body
    with the PR attribution line from your session's instructions. **Do not merge
    it.** Then bind it with the ccd_pr tools if available.
-6. **Report to the user:** the commit SHA, the PR URL, tests added, gate result,
+7. **Report to the user:** the commit SHA, the PR URL, tests added, gate result,
    decisions recorded, and the feature-folder artifacts (`spec.md`,
    `test-plan.md`, `build-log.md`, updated `qa-log.md`).
 

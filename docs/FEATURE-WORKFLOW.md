@@ -106,7 +106,10 @@ PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
   revision. If still unresolved, stop and report.
 - **Test integrity.** `feature-dev` never edits, skips or weakens the tester's
   tests; the Dev Lead diffs against the snapshot before shipping.
-- **Git.** Only inside `/build-feature`: `feature-dev` commits, only the Dev Lead
+- **Git.** The shared permission baseline (`.claude/settings.json`) makes
+  `git commit`/`push` and `gh pr create` prompt, so even the pre-authorized
+  `/build-feature` run pauses for the owner's approval at those steps. Only
+  inside `/build-feature`: `feature-dev` commits, only the Dev Lead
   pushes to `dev` and opens the PR, stage by explicit path (never `git add -A`),
   scoped to the feature. PR-only to `main`; the owner approves and merges.
   `/new-feature` never commits.
@@ -114,6 +117,29 @@ PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
   `unreleased.changes`; the release entry is cut by hand at promotion.
 - **Guardrails.** Subagents load `ed-change-guardrail` before touching a
   protected surface, so the first-edit hook does not stall a build.
+
+## Plan status
+
+Every plan — legacy `plans/PLAN-*.md` and workflow `plans/<slug>/plan.md` —
+starts with YAML frontmatter that is the authoritative status:
+
+```yaml
+---
+status: draft | approved | building | implemented | superseded
+shipped: v1.23.0 | unreleased      # required when implemented or superseded
+supersededBy: PLAN-OTHER           # required when superseded
+deferred: ["item left unbuilt"]    # optional
+---
+```
+
+Lifecycle for workflow plans: the planner writes `status: draft`;
+`/build-feature` sets `building` once alignment passes, then `implemented` with
+`shipped: unreleased` in the feature commit; at release, `design-agent` reports
+which `unreleased` plans now match a `data/changelog.json` release so the
+version can be filled in. `status` records what shipped; a plan whose design was
+later replaced is `superseded`. Prose banners inside a plan may be historical —
+the frontmatter wins. `tools/plans-status.test.js` (in `npm test`) enforces the
+fields and that `shipped` names a real changelog release.
 
 ## Feature folder
 

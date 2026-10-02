@@ -1,3 +1,7 @@
+---
+status: implemented
+shipped: v1.11.0
+---
 # Plan: Per-character files + optimistic concurrency (no lost saves)
 
 Replace the single grouped store `data/characters.json` with **one file per

@@ -157,6 +157,9 @@ Summarize in chat:
 - reviewer findings accepted vs. disputed,
 - any remaining open questions.
 
+`plan.md` carries `status: draft` frontmatter (written by the planner); you leave
+it as `draft` — the owner moves it on by running `/build-feature`.
+
 Point them at `plans/<slug>/{tickets.md, rules.md, plan.md, qa-log.md, review.md}`, then
 send `plan.md` to the user with SendUserFile.
 
