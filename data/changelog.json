@@ -7,6 +7,10 @@
       {
         "type": "added",
         "text": "Spells tab: when Cast on is set to Other, a new Target effects card replaces Active effects and shows the outcome of your latest cast on another target — hit or miss against the target number, success levels, the Effect roll or static effect, extra-thread picks and duration."
+      },
+      {
+        "type": "fixed",
+        "text": "Spells tab: a Weave that failed but was rescued with a Karma re-roll now counts the thread and lets you pick the extra effect, instead of showing a success that never registered."
       }
     ]
   },

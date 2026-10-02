@@ -235,6 +235,7 @@ export class EdSpells extends LitElement {
     this._pendingStep = null; // which cast step a pending roll belongs to
     this._maxThreads = 0;     // weave cap for the in-flight cast
     this._lastRollId = null;  // dedupe Karma re-rolls of the same roll
+    this._weaveCountedId = null; // rollId of the weave roll that already forged a thread
     // Learn flow (PLAN-LEARN-SPELLS.md): null when closed, else the working
     // state of the Learn modal — { name, teacherOn, teacherRank, teacher, result, silver }.
     this._learn = null;
@@ -386,7 +387,13 @@ export class EdSpells extends LitElement {
     const firstOfRoll = detail.rollId !== this._lastRollId;
     this._lastRollId = detail.rollId;
     if (step === 'weave') {
-      if (!firstOfRoll) { this._prog = { ...this._prog, weave: res }; return; } // Karma re-roll
+      // A Karma re-roll of the SAME roll only refreshes the readout if that roll
+      // already forged a thread (never double-count). But if the first roll
+      // failed and the Karma re-roll succeeds, the thread must register now.
+      if (!firstOfRoll && (this._weaveCountedId === detail.rollId || !res.outcome?.ok)) {
+        this._prog = { ...this._prog, weave: res };
+        return;
+      }
       const isExtra = this._prog.threadsWoven >= (this._reqThreads ?? 0);
       if (isExtra) {
         // An extra thread only counts on a SUCCESSFUL weave, and then must be
@@ -394,6 +401,7 @@ export class EdSpells extends LitElement {
         // option auto-assigns; multiple options prompt a pick.
         if (!res.outcome?.ok) { this._prog = { ...this._prog, weave: res }; return; }
         const woven = Math.min(this._prog.threadsWoven + 1, this._maxThreads);
+        this._weaveCountedId = detail.rollId;
         const opts = this._weaveOptions ?? [];
         if (opts.length === 1) {
           this._prog = { ...this._prog, threadsWoven: woven, weave: res,
@@ -409,6 +417,7 @@ export class EdSpells extends LitElement {
         // so it never counts; only a successful weave advances the count.
         if (!res.outcome?.ok) { this._prog = { ...this._prog, weave: res }; return; }
         const woven = Math.min(this._prog.threadsWoven + 1, this._maxThreads);
+        this._weaveCountedId = detail.rollId;
         this._prog = { ...this._prog, threadsWoven: woven, weave: res };
       }
     } else if (step === 'cast') {
