@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.25.1",
+      "date": "2026-10-02",
+      "summary": "Spells: weave-success (extra thread) and cast-success options now both apply and show together, with boosted duration, on Target effects and Active effects; duration spells like Death’s Head now appear in Active effects.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "Spells: casting on another target now lists both the extra-thread and success-level options and the boosted duration, and active self-cast spells show the options that were applied. Self-cast spells with a duration but no stat effect (e.g. Death’s Head) now appear in Active effects."
+        }
+      ]
+    },
+    {
       "version": "1.25.0",
       "date": "2026-10-02",
       "summary": "The Spells tab now reports the outcome of your latest cast on another target, and a Weave rescued with a Karma re-roll finally counts.",

@@ -1,5 +1,7 @@
 # Tech Spec: Spell effect outcome on other targets (spell-target-effect-outcome)
 
+> Superseded in part by plans/spell-extra-weave-and-extra-cast/spec.md (2026-10-02): `otherCastOutcome` now takes `opts.rank`, returns `success`, and `duration` is `{label, rounds, base, boost, text}`; the "label only" duration rule (R5) is replaced.
+
 ## Overview
 Add a pure engine function `otherCastOutcome(spell, cast)` in `engine/spells.js` that turns the recorded result of a cast on another target into a structured outcome plus engine-composed strings. `ui/ed-spells.js` keeps the latest Other cast as session state (`_otherCast`, separate from `_prog`, persisted through the existing module-level `SCRATCH`), and when "Cast on" is Other renders a "Target effects" card in place of Active effects, purely from the engine result. Nothing is stored in character data or `rules/*.json`.
 

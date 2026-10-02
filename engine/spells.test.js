@@ -550,7 +550,7 @@ test('otherCastOutcome: no-effect spell', () => {
 test('otherCastOutcome: stacked picks in first-seen order, full composed line', () => {
   const o = otherCastOutcome(stepSpell(), rec({ total: 19, levels: 3, effectTotal: 14, extraPicks: ['Foo', 'Foo', 'Bar'] }));
   assert.deepEqual(o.picks, [{ label: 'Foo', count: 2 }, { label: 'Bar', count: 1 }]);
-  assert.deepEqual(o.duration, { label: 'Rank minutes' });
+  assert.equal(o.duration.label, 'Rank minutes'); // shape widened by spell-extra-weave-and-extra-cast
   assert.equal(o.text,
     'Arrow of Night \u2014 3 successes vs 9 \u00b7 Effect 14 \u00b7 Extra threads: Foo \u00d72, Bar \u00b7 Duration Rank minutes');
   assert.ok(!/round/i.test(o.text));
