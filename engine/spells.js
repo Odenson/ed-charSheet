@@ -278,6 +278,13 @@ export function isSustainedSelfEffect(spell) {
   return (spell.effects ?? []).some((e) => e.duration === 'sustained' && !e.gmDiscretion);
 }
 
+/** Does a successful self-cast get an Active effects row? Yes when it folds a
+ *  sustained effect, or the spell simply has a duration to track (a note-only
+ *  spell such as Death's Head still shows its countdown and applied options). */
+export function tracksOnSelf(spell) {
+  return isSustainedSelfEffect(spell) || !!spell.duration;
+}
+
 /** The sustained, foldable effects of a spell (the ones a self-cast applies to
  *  the caster). gmDiscretion effects (target debuffs) never fold onto the caster. */
 export function sustainedEffectsOf(spell) {
@@ -460,7 +467,7 @@ export function castPlan(ctx, spellName, castType) {
     range: spell.range ?? null,
     duration: spell.duration ?? null,
     area: spell.area ?? null,
-    foldsOnSelf: isSustainedSelfEffect(spell),
+    foldsOnSelf: tracksOnSelf(spell),
   };
 }
 

@@ -6,7 +6,7 @@
     "changes": [
       {
         "type": "fixed",
-        "text": "Spells: casting on another target now lists both the extra-thread and success-level options and the boosted duration, and active self-cast spells show the options that were applied."
+        "text": "Spells: casting on another target now lists both the extra-thread and success-level options and the boosted duration, and active self-cast spells show the options that were applied. Self-cast spells with a duration but no stat effect (e.g. Death’s Head) now appear in Active effects."
       }
     ]
   },

@@ -9,7 +9,7 @@
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
-  learnableSpells, learnPlan, otherCastOutcome, joinSpell } from '../engine/spells.js';
+  learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell } from '../engine/spells.js';
 import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import { successCount } from '../engine/combat.js';
 import { loadRollLog } from '../store-rolllog.js';
@@ -432,7 +432,12 @@ export class EdSpells extends LitElement {
       }
       // A successful self-cast of a sustained spell activates it (6b): ed-app
       // adds it to the session active-effect set (fold + round countdown).
-      if (levels >= 1 && this._castFoldsSelf) {
+      // A duration-less spell still activates when the cast applied options.
+      const selfOptions = this._castSelf && (() => {
+        const o = appliedOptions(joinSpell(this.ctx, this._castName), this._prog.extraPicks, levels);
+        return o.picks.length > 0 || !!o.success;
+      })();
+      if (levels >= 1 && (this._castFoldsSelf || selfOptions)) {
         this.dispatchEvent(new CustomEvent('ed-spell-activate', {
           detail: { name: this._castName, extraPicks: [...this._prog.extraPicks], successLevels: levels },
           bubbles: true, composed: true,
@@ -476,7 +481,7 @@ export class EdSpells extends LitElement {
       <div class="aecard">
         ${active.length
           ? active.map((e) => this._activeRow(e))
-          : html`<div class="aeempty">No active effects. A sustained spell cast on this character will appear here with its rounds remaining.</div>`}
+          : html`<div class="aeempty">No active effects. A spell with a duration cast on this character will appear here with its rounds remaining.</div>`}
       </div>`;
   }
 
@@ -1072,7 +1077,8 @@ export class EdSpells extends LitElement {
     this._pendingStep = 'cast';
     this._castTarget = Number(target); // for the success-level count in _onRoll
     this._castName = plan.name;        // for the self-cast activation in _onRoll
-    this._castFoldsSelf = plan.foldsOnSelf && this._subject === 'self';
+    this._castSelf = this._subject === 'self';
+    this._castFoldsSelf = plan.foldsOnSelf && this._castSelf;
     this._castOnOther = this._subject === 'other';
     this._castSeq = ++this._seqCounter;
     this._castEffectKind = plan.effect.kind ?? null; // for auto-applied non-step effects in _onRoll
