@@ -249,11 +249,3 @@ test('tracksOnSelf: Death’s Head (note-only, has duration) tracks; duration-le
   assert.equal(tracksOnSelf({ effects: [], duration: null }), false);
   assert.equal(tracksOnSelf({ effects: [{ duration: 'sustained' }], duration: null }), true);
 });
-
-test('buildActiveSpell: Death’s Head, +2 Damage Step pick, 3 successes, rank 5 -> 14 rounds + both chips', () => {
-  const dh = spellsFile.spells['Death’s Head'];
-  const a = buildActiveSpell(dh, 5, { extraPicks: ['Increase Effect (+2 Damage Step)'], successLevels: 3 });
-  assert.equal(a.roundsTotal, 14);
-  assert.deepEqual(a.options.picks, [{ label: 'Increase Effect (+2 Damage Step)', count: 1 }]);
-  assert.equal(a.options.success.mult, 2);
-});

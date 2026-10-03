@@ -330,6 +330,10 @@ export function durationRounds(duration, rank) {
  * whichever matches its measure. Safe for every spell today (one numeric
  * sustained effect, one measure); a future spell with both a step and a rating
  * sustained effect could mis-target (the plan documents this as a chosen limit).
+ *
+ * Standalone option effects: an extra-thread option's own sustained effect that
+ * does NOT match a numeric base effect (see `isStandaloneOptionEffect`) is folded
+ * as its own entry, value stacked per pick (Death's Head: +2 Frighten per thread).
  */
 export function buildActiveSpell(spell, rank, ctx = {}) {
   const { stepAdd, ratingAdd, durationRounds: durationBoost } = castBoosts(spell, ctx.extraPicks, ctx.successLevels);
@@ -347,6 +351,20 @@ export function buildActiveSpell(spell, rank, ctx = {}) {
     }
     return e;
   });
+
+  // Standalone option effects (not boosts of a base effect): one entry per
+  // identical type/target/measure, value stacked per pick.
+  const groups = new Map();
+  for (const label of ctx.extraPicks ?? []) {
+    for (const e of optionEffects(spell.extraThreads, label)) {
+      if (typeof e.value !== 'number' || !isStandaloneOptionEffect(spell, e)) continue;
+      const key = JSON.stringify([e.type, e.target?.domain, e.target?.name, e.measure]);
+      const g = groups.get(key);
+      if (g) g.value += e.value;
+      else groups.set(key, { ...e });
+    }
+  }
+  effects.push(...groups.values());
 
   const base = durationRounds(spell.duration, rank);
   const rounds = base == null ? null : base + durationBoost;
@@ -382,15 +400,32 @@ function durationMeasureRounds(value, measure) {
   return measure === 'minutes' ? n * 10 : measure === 'hours' ? n * 600 : n;
 }
 
+// An option effect that is sustained but is NOT a boost of a matching numeric
+// sustained base effect (same type/target/measure) stands alone: it is folded
+// onto the active record itself (e.g. Death's Head "+2 bonus to Frighten" on a
+// note-only base) and must not leak into the Effect-step/rating boosts.
+// Structured fields only; no label parsing.
+function isStandaloneOptionEffect(spell, e) {
+  if (!e || e.duration !== 'sustained') return false;
+  const same = (b) =>
+    typeof b.value === 'number' &&
+    b.type === e.type &&
+    b.target?.domain === e.target?.domain &&
+    b.target?.name === e.target?.name &&
+    b.measure === e.measure;
+  return !sustainedEffectsOf(spell ?? {}).some(same);
+}
+
 // Sum the machine-applicable boosts an option's structured `effects[]` confer
 // (taxonomy v4). No label parsing — the effects were structured at build time
 // (tools/archive/enrich-spell-options.mjs).
-function sumOptionBoosts(effects) {
+function sumOptionBoosts(effects, spell) {
   let stepAdd = 0;
   let ratingAdd = 0;
   let durationRounds = 0;
   for (const e of effects ?? []) {
     if (e.operation !== 'add') continue;
+    if (isStandaloneOptionEffect(spell, e)) continue;
     if (e.type === 'duration-modifier') durationRounds += durationMeasureRounds(e.value, e.measure);
     else if (e.measure === 'step') stepAdd += Number(e.value) || 0;
     else if (e.measure === 'rating') ratingAdd += Number(e.value) || 0;
@@ -413,9 +448,9 @@ function castBoosts(spell, extraPicks, successLevels) {
     total.ratingAdd += b.ratingAdd * mult;
     total.durationRounds += b.durationRounds * mult;
   };
-  for (const label of extraPicks ?? []) add(sumOptionBoosts(optionEffects(spell?.extraThreads, label)));
+  for (const label of extraPicks ?? []) add(sumOptionBoosts(optionEffects(spell?.extraThreads, label), spell));
   const extra = Math.max(0, (successLevels ?? 0) - 1);
-  if (extra > 0) add(sumOptionBoosts(spell?.successes?.[0]?.effects), extra);
+  if (extra > 0) add(sumOptionBoosts(spell?.successes?.[0]?.effects, spell), extra);
   return total;
 }
 

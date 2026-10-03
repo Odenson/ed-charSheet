@@ -537,3 +537,14 @@ Sources:
 - manual/text-player-guide-spell-concepts.txt:977–983 (p. 270 — Success Levels)
 
 Decision: 2026-10-02 — Owner ruling: the app keeps its weave-then-pick extra-thread flow (extra threads chosen after weaving), deliberately differing from the book's declare-up-front rule; and both Extra Thread options and Success Level options apply together to the same cast. (house rule)
+
+### Q017 — Death's Head (Nethermancer Circle 2): full stat block, success levels, extra threads, Frighten interaction
+Keywords: Death's Head, Nethermancer, Frighten, Simple action, gore-spattered skull, Increase Effect, +2 bonus to Frighten, Rank+5 rounds · Resolved: 2026-10-03 · Context: deaths-head-spell-fix
+
+Printed block (PG p. 323): Threads 0; Weaving 6 / 11; Casting TMD; Range Self; Duration Rank+5 rounds; Effect "Use Frighten as Simple Action". The caster touches his face and makes a Spellcasting test against his own Mystic Defense; if successful he may use Frighten as a Simple action for the spell's duration. Success Levels: Increase Duration (+2 rounds). Extra Threads: Increase Effect (+2 bonus to Frighten) — the only extra-thread option (no damage/range/target options). The Effect line is NOT "+N to Frighten"; the +2 bonus to Frighten tests appears only as the extra-thread option, and the book does not say per-thread beyond the general extra-thread rules (Q016). Frighten talent itself: Step Rank+WIL, Action Standard, Strain 0 (PG talent text); the spell changes its action to Simple. Other spells use the same "Increase Effect (+N bonus)" wording (e.g. text-RB-players-guide.txt:10143, 10186, 10233, 10293, 10359, 10475: "+2 bonus"/"+1 bonus"); Nightcaster-line Circle spells nearby use "Increase Effect (+1 additional Success to Frighten tests)" (line 12405). Most others use "+2 Effect Step".
+
+Sources:
+- text-RB-players-guide.txt:12137-12153 (p. 323 — Death's Head)
+- text-RB-players-guide.txt:5251-5260 (Frighten talent)
+- text-RB-players-guide.txt:12405 (Increase Effect, +1 additional Success to Frighten)
+- text-spell-table-all.txt:326

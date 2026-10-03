@@ -1300,35 +1300,20 @@
       ],
       "extraThreads": [
         {
-          "label": "Increase Effect (+2 Damage Step)",
+          "label": "Increase Effect (+2 bonus to Frighten)",
           "effects": [
             {
-              "type": "note",
+              "type": "test-modifier",
+              "target": {
+                "domain": "test",
+                "name": "Frighten"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "duration": "sustained",
               "source": "spell",
-              "gmDiscretion": false,
-              "summary": "Increase Effect (+2 Damage Step)"
-            }
-          ]
-        },
-        {
-          "label": "Increase Range (+10 yards)",
-          "effects": [
-            {
-              "type": "note",
-              "source": "spell",
-              "gmDiscretion": false,
-              "summary": "Increase Range (+10 yards)"
-            }
-          ]
-        },
-        {
-          "label": "Additional Target (+Rank)",
-          "effects": [
-            {
-              "type": "note",
-              "source": "spell",
-              "gmDiscretion": false,
-              "summary": "Additional Target (+Rank)"
+              "summary": "Increase Effect (+2 bonus to Frighten)"
             }
           ]
         }

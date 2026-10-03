@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.25.2",
+      "date": "2026-10-03",
+      "summary": "Death’s Head now matches the Player’s Guide: its single extra thread gives +2 to Frighten (applied while the spell is active) instead of damage, range and target options.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "Death’s Head: its extra thread now correctly gives +2 to Frighten (applied while the spell is active) instead of damage, range and target options."
+        }
+      ]
+    },
+    {
       "version": "1.25.1",
       "date": "2026-10-02",
       "summary": "Spells: weave-success (extra thread) and cast-success options now both apply and show together, with boosted duration, on Target effects and Active effects; duration spells like Death’s Head now appear in Active effects.",
