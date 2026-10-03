@@ -13,11 +13,16 @@ test('shared permission baseline: deny the dangerous git forms', () => {
     assert.ok(s.permissions.deny.includes(p), `deny is missing ${p}`);
 });
 
-test('shared permission baseline: commit and push ask first', () => {
+test('shared permission baseline: build-feature git is pre-allowed, nothing broader', () => {
+  for (const p of ['Bash(git add *)', 'Bash(git commit*)', 'Bash(git push origin dev*)'])
+    assert.ok(s.permissions.allow.includes(p), `allow is missing ${p}`);
+  // Ask outranks allow, so a broad ask would re-prompt the build; push is allowed to dev only.
   for (const p of ['Bash(git commit*)', 'Bash(git push*)'])
+    assert.ok(!s.permissions.ask.includes(p), `ask must not contain ${p}`);
+  assert.ok(!s.permissions.allow.some((p) => /git push/.test(p) && !/ dev/.test(p)),
+    'allow may grant git push to dev only');
+  for (const p of ['Bash(git merge*)', 'Bash(git pull*)', 'Bash(gh pr create*)', 'Bash(gh pr merge*)'])
     assert.ok(s.permissions.ask.includes(p), `ask is missing ${p}`);
-  assert.ok(!s.permissions.allow.some((p) => /git (commit|push|add)/.test(p)),
-    'allow must not grant commit/push/add');
 });
 
 test('guardrail hook stays wired', () => {

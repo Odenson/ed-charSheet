@@ -14,7 +14,7 @@ Governing rules: [GUARDRAILS.md](GUARDRAILS.md) (tiers, sign-off, PR checklist),
 | Order | Command | Orchestrator | Purpose | Produces |
 |---|---|---|---|---|
 | 1 | `/new-feature [name]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md` |
-| 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, PR to `main` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, PR |
+| 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, push to `dev` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, commit on `dev` |
 | 3 | `/release-feature [slug]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR |
 
 All artifacts live in `plans/<slug>/` (kebab-case slug), the shared context for
@@ -34,7 +34,7 @@ orchestrator gets it from `rule-agent` (subagents cannot spawn agents).
 | Interrogator | `.claude/commands/new-feature.md` | owner | `tickets.md`, `qa-log.md` |
 | `feature-planner` | `.agents/feature-planner.md` | `/new-feature` | `plan.md` |
 | `feature-plan-reviewer` | `.agents/feature-plan-reviewer.md` | `/new-feature` | `review.md` (no other files) |
-| Dev Lead | `.claude/commands/build-feature.md` | owner | `build-log.md`, `qa-log.md`, PR |
+| Dev Lead | `.claude/commands/build-feature.md` | owner | `build-log.md`, `qa-log.md` |
 | `feature-designer` | `.agents/feature-designer.md` | `/build-feature` | `spec.md` |
 | `feature-tester` | `.agents/feature-tester.md` | `/build-feature` | test files, `test-plan.md` |
 | `feature-dev` | `.agents/feature-dev.md` | `/build-feature` | source, data, docs, changelog line, commit |
@@ -71,7 +71,7 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 6. **Report** — ticket list with tiers, blocked items, finding counts, open
    questions; `plan.md` is sent to the owner.
 
-## Flow 2 — `/build-feature` (build and PR)
+## Flow 2 — `/build-feature` (build and push to `dev`)
 
 | Phase | Who | What |
 |---|---|---|
@@ -81,8 +81,8 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 | 3. Build | `feature-dev` (build) | Implement to spec; all tester tests plus `npm test` green; commit |
 | 3b. Adjudication | `feature-tester` (adjudicate) | Only on `NEEDS_TESTER`; one cycle |
 | 4. Review | Dev Lead (+ `feature-dev` revise, once) | Spec, golden rule, tiers, UI rules, quality, real gate status |
-| 5. Doc sync | `design-agent`, applied by Dev Lead | Doc edits go in the commit; Tier-1/2 doc edits only if signed off, else listed in the PR |
-| 6. Ship | Dev Lead | Test-snapshot diff, gate green, finalize commit, push `dev`, PR `dev → main`, **do not merge** |
+| 5. Doc sync | `design-agent`, applied by Dev Lead | Doc edits go in the commit; Tier-1/2 doc edits only if signed off, else listed in `build-log.md` |
+| 6. Ship | Dev Lead | Test-snapshot diff, gate green, finalize commit, push `dev`, owner handoff (checklists) in `build-log.md`. **No PR**; `/release-feature` opens it |
 
 ### Signals
 
@@ -98,8 +98,8 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 
 The gate is `npm test` (`node --test`; `pretest` runs `tools/check-imports.mjs`).
 There is no browser test harness and agents never open the preview: UI changes
-are verified by the owner, from the manual checklist the Dev Lead puts in the
-PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
+are verified by the owner on `dev`, from the manual checklist the Dev Lead puts in
+`build-log.md` and, in full, in the final message under "UI test requirements" (what to look at, light and dark mode, mobile fold, Overview viewport fit).
 
 ## Rules of the road
 
@@ -107,12 +107,12 @@ PR (what to look at, light and dark mode, mobile fold, Overview viewport fit).
   revision. If still unresolved, stop and report.
 - **Test integrity.** `feature-dev` never edits, skips or weakens the tester's
   tests; the Dev Lead diffs against the snapshot before shipping.
-- **Git.** The shared permission baseline (`.claude/settings.json`) makes
-  `git commit`/`push` and `gh pr create` prompt, so even the pre-authorized
-  `/build-feature` run pauses for the owner's approval at those steps. Only
-  inside `/build-feature`: `feature-dev` commits, only the Dev Lead
-  pushes to `dev` and opens the PR, stage by explicit path (never `git add -A`),
-  scoped to the feature. PR-only to `main`; the owner approves and merges.
+- **Git.** The shared permission baseline (`.claude/settings.json`) allows
+  `git add`, `git commit` and `git push origin dev`, so a `/build-feature` run
+  proceeds without prompts; `git merge`/`pull` and `gh pr create`/`merge` still
+  ask. Only inside `/build-feature`: `feature-dev` commits, only the Dev Lead
+  pushes to `dev`; stage by explicit path (never `git add -A`), scoped to the
+  feature. No PR at build time; the release PR is `/release-feature`'s.
   `/new-feature` never commits.
 - **Changelog.** User-visible features add one line to `data/changelog.json`
   `unreleased.changes`; `/release-feature` turns them into the release entry.

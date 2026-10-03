@@ -7,12 +7,14 @@
       "Bash(git show*)",
       "Bash(git fetch*)",
       "Bash(npm test*)",
+      "Bash(git add *)",
+      "Bash(git commit*)",
+      "Bash(git push origin dev*)",
+      "Bash(git push -u origin dev*)",
       "Bash(node tools/sync-agents.mjs*)",
       "Bash(node tools/release.mjs check*)"
     ],
     "ask": [
-      "Bash(git commit*)",
-      "Bash(git push*)",
       "Bash(git merge*)",
       "Bash(git pull*)",
       "Bash(gh pr create*)",
