@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.26.0
 ---
 # Delivery Plan: Taxonomy on action type (taxonomy-on-action-type)
 
