@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.25.2
 ---
 # Delivery Plan: Death's Head spell fix (deaths-head-spell-fix)
 
