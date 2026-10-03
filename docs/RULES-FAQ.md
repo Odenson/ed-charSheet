@@ -548,3 +548,24 @@ Sources:
 - text-RB-players-guide.txt:5251-5260 (Frighten talent)
 - text-RB-players-guide.txt:12405 (Increase Effect, +1 additional Success to Frighten)
 - text-spell-table-all.txt:326
+
+### Q018 — Action types (Standard/Simple/Free/Sustained/NA): definitions, per-round limits, hierarchy, and abilities that change another talent's action type
+Keywords: action type, Standard action, Simple action, Free action, Sustained action, NA, per round limit, change action, "as a Simple action instead of a Standard action", Death's Head, Beguiling Blade, Swift Link, Frighten · Resolved: 2026-10-03 · Context: taxonomy-on-action-type
+
+Five types (PG p. 122): Standard, Simple, Free, Sustained, NA. Standard: one per combat round (talents may explicitly allow several tests inside one use); covers most combat/Interaction talents and any magic use (weaving, casting); may instead be spent to move up to double Movement Rate. Simple: little effort, no normal limit (GM may cap), usually independent of other actions (speaking, moving, gesturing); each talent still once per round unless noted. Free: unlimited, usually part of/reaction to another action (enhancing damage, defensive); normally the only type usable off one's own turn; most usable multiple times per round. Sustained: takes more than one round, uses Standard actions over consecutive rounds/minutes/hours; only Sustained if a Standard action is needed several times before the talent takes effect. NA: always-on, no Action. Combat summary (p. 373): one Standard action and any number of Simple actions per round; Sustained over several turns; Free "when the ability allows it". Talents that do not need a Standard action are "often considered Simple Actions" (e.g. Anticipate Blow, Astral Sight, Battle Shout, Second Attack) (p. 375).
+Hierarchy: NO printed speed/substitution ordering between types (no statement that a Simple can be taken in place of a Standard or vice versa). The only substitutions are explicit per-ability changes, below. The talent's printed Action applies "every time it is used" (p. 122, line 4193).
+Frighten: Step Rank+WIL, Action Standard, Strain 0, Skill Use No (confirmed, see Q017).
+Death's Head (PG p. 323): "he may use the Frighten talent as a Simple action for the duration of the spell" -> applies to every use of Frighten while the spell lasts (Duration Rank+5 rounds); no per-use limit stated beyond the general once-per-round-per-talent rule (Q017).
+Other abilities changing a talent's action type (extracts): Beguiling Blade (Companion, Free-action talent): make Conceal Object tests "as a Simple action, instead of a Standard action" (companions-guide:1735-1741); Swift Link [Augment], Thought Link knack, Rank 11, Strain 2: uses Thought Link (incl. knacks) as a Simple action (deeper-secrets:13724-13728); dragon power Dispel Magic (Simple) works like the Dispel Magic talent "but does not require a Standard action" (gamemasters-guide:17099-17103; creature power, not PC). Threaded-item powers granting an ability at a set action type (grant, not a change): companions-guide:6895, 7006, 7047, 7122, 7126, 7483, 7666, 7767, 7804, 7816, 7822, 7866, 8984; gamemasters-guide:9447, 9479, 9705. Not exhaustively verified beyond regex searches for "as a Simple/Free action" phrasing.
+
+Sources:
+- text-RB-players-guide.txt:4188-4233 (pp. 122-123 — Action types)
+- text-RB-players-guide.txt:13988-14013 (p. 373 — Actions, Standard Actions)
+- text-RB-players-guide.txt:14029-14036 (p. 374 — Sustained)
+- text-RB-players-guide.txt:14057-14082 (p. 375 — Simple, Free)
+- text-RB-players-guide.txt:5251-5260 (Frighten); 12137-12153 (p. 323 — Death's Head)
+- text-RB-companions-guide.txt:1735-1741 (Beguiling Blade)
+- text-RB-deeper-secrets.txt:13724-13728 (Swift Link)
+- text-RB-gamemasters-guide.txt:17099-17103 (dragon Dispel Magic)
+
+Decision: 2026-10-03 — The books print no ordering between action types; for the app, when several active effects set different actions on the same talent, the fastest wins (Free > Simple > Standard). Only Free/Simple/Standard are valid values for the new `action-modifier` effect. (house rule)

@@ -40,6 +40,29 @@ test('Death’s Head data: exactly one extra thread, +2 sustained Frighten step 
   assert.ok(!e.condition || e.condition === 'always');
 });
 
+test('Death’s Head data: base effects hold the Frighten action-modifier (Simple), note and extra thread kept (taxonomy-on-action-type R3)', () => {
+  const am = dh.effects.filter((e) => e.type === 'action-modifier');
+  assert.equal(am.length, 1);
+  assert.deepEqual(am[0].target, { domain: 'ability', name: 'Frighten' });
+  assert.equal(am[0].operation, 'set');
+  assert.equal(am[0].measure, 'action');
+  assert.equal(am[0].value, 'Simple');
+  assert.equal(am[0].duration, 'sustained');
+  assert.ok(!am[0].gmDiscretion);
+  assert.ok(!am[0].condition || am[0].condition === 'always');
+  assert.ok(dh.effects.some((e) => e.type === 'note'), 'existing note is kept');
+  assert.equal(dh.extraThreads.length, 1);
+  assert.equal(dh.extraThreads[0].label, LABEL);
+});
+
+test('Death’s Head with the action-modifier: label and Frighten step bonus unchanged by picks', () => {
+  const a0 = buildActiveSpell(dh, 5, { extraPicks: [], successLevels: 0 });
+  assert.equal(a0.effectLabel, dh.summary);
+  assert.equal(sum(frighten(a0)), 0);
+  assert.ok(activeSpellEffects([a0]).some((e) => e.type === 'action-modifier' && e.value === 'Simple'));
+  assert.equal(sum(frighten(buildActiveSpell(dh, 5, { extraPicks: [LABEL], successLevels: 0 }))), 2);
+});
+
 test('Death’s Head data: success level is only +2 rounds; block matches book (R1, R3)', () => {
   assert.equal(dh.successes.length, 1);
   assert.equal(dh.successes[0].label, 'Increase Duration (+2 rounds)');

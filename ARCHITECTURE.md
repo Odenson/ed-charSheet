@@ -226,6 +226,10 @@ The engine's modifier model is the taxonomy `effects` array (§4.2): it gathers
 active effects and folds them onto base values by `operation`/`measure`. Only
 **always-on, non-`gmDiscretion`** effects auto-apply; situational and triggered
 ones are surfaced for the player/GM, never silently baked into a static rating.
+Non-numeric effects resolve by their own rule rather than summing: `action-modifier`
+(taxonomy v5) `set`s a talent's or skill's action, fastest wins
+(`engine/ability-actions.js`); the effective `action` plus `actionBase` /
+`actionSources` are derived per derive, never stored.
 
 A small expression evaluator is still expected **later**, but with a narrowed
 near-term job: resolving `{ "ref": … }`-valued effects (e.g. a talent step that
@@ -261,7 +265,8 @@ option, and what result properties to write.
 > *"If I add a new talent, how it can be used and what dice are associated."*
 > A talent's action references its linked attribute + rank from `talents.json`;
 > the executor derives the step, rolls, and records the result. Adding a talent
-> needs no new action code — only its data entry.
+> needs no new action code — only its data entry. The printed action type may be
+> overridden by an active `action-modifier` effect (§5.1).
 
 ### 5.5 Reading rules — structured taxonomy, never regex (LOCKED)
 
@@ -518,6 +523,7 @@ and its runbook.
     potions.js               # potion/consumable effects
     formula.js               # rule-expression evaluator (§4.2)
     ability-ranks.js         # ability rank resolution
+    ability-actions.js       # action-modifier resolver (effective talent/skill action, fastest wins)
     knack-options.js         # knack availability / restrictions
     skill-options.js         # skill option resolution
     talent-options.js        # talent combat/option resolution

@@ -44,7 +44,7 @@ quote the specific rule and say why the task appears to need it.
 ### 🔄 Tier 2 — Change only with ceremony.
 
 The **effect taxonomy** ([EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md)) is
-explicitly `v4, under review` — it is *meant* to evolve, but never silently.
+explicitly `v5, under review` — it is *meant* to evolve, but never silently.
 A change to the taxonomy's field names or controlled vocabularies must:
 
 1. Update the doc **and bump its version** (`v1` → `v2`).

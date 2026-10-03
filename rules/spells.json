@@ -1,6 +1,6 @@
 {
   "schema": "ed-spells/1",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v5)",
   "source": "Earthdawn 4E Player's Guide + Deeper Secrets — Nethermancer spells. Mechanics + terse original-wording effect lines distilled from the rulebook; descriptions are player-facing paraphrases (copyright-safe, never verbatim prose). taxonomy effects[] are hand-enriched per docs/EFFECT-TAXONOMY.md (§3.4 sustained vs instantaneous).",
   "notes": [
     "123 Nethermancer spells, Circles 1-15. Mechanics (threads/weaving/casting/range/duration/area/effect) + Success Levels/Extra Threads for all; taxonomy effects[] enriched incrementally (combat/numeric spells first), rituals/summons carry a note effect.",
@@ -1323,6 +1323,19 @@
           "type": "note",
           "source": "spell",
           "gmDiscretion": true,
+          "summary": "Use Frighten as Simple Action"
+        },
+        {
+          "type": "action-modifier",
+          "target": {
+            "domain": "ability",
+            "name": "Frighten"
+          },
+          "operation": "set",
+          "value": "Simple",
+          "measure": "action",
+          "duration": "sustained",
+          "source": "spell",
           "summary": "Use Frighten as Simple Action"
         }
       ],
