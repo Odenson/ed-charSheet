@@ -96,9 +96,8 @@ protocol at both ends:
   owner sign-off recorded in `plans/<slug>/qa-log.md`, or it is `BLOCKED`.
 - **Building** — the Dev Lead refuses to build a Tier-1 item without that
   recorded sign-off, and a Tier-2 item without all three migration steps.
-- **Git** — inside `/build-feature` only, agents may commit, push to `dev` and
-  open the `dev → main` PR for the feature being built (stage by explicit path;
-  never merge). Inside `/release-feature` only (owner-run, after testing), the
+- **Git** — inside `/build-feature` only, agents may commit and push to `dev`
+  for the feature being built (stage by explicit path; no PR is opened). Inside `/release-feature` only (owner-run, after testing), the
   Release Manager may commit the changelog, push `dev`, open the release PR,
   **squash-merge it** and sync `dev`. Everywhere else, commit and push need the
   owner's explicit permission.

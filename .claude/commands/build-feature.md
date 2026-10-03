@@ -1,5 +1,5 @@
 ---
-description: Build a planned feature end-to-end as the Dev Lead — align to the docs and guardrails, spec, test-first, implement, review, then push to dev and open a PR to main for your approval.
+description: Build a planned feature end-to-end as the Dev Lead — align to the docs and guardrails, spec, test-first, implement, review, then commit and push to dev for owner testing. No PR; /release-feature ships it.
 argument-hint: [feature slug]
 ---
 
@@ -20,13 +20,15 @@ ship.** Follow the phases in order. Do not skip ahead. Flow reference:
 
 ## Git authority
 
-For this workflow only, committing, pushing to `dev` and opening the
-`dev → main` PR are **pre-authorized**. The human approval gate is the **PR on
-`main`**, which you must **not** merge. Never push to `main` directly. This
-authority covers **only** the feature being built — stage files by explicit path,
-never `git add -A` or `git add .`, and do not sweep unrelated working-tree
-changes into the commit. Outside this workflow the usual rule stands: no commit
-or push without the user's explicit permission.
+For this workflow only, committing and pushing to `dev` are **pre-authorized**
+(the shared `.claude/settings.json` allows `git add`, `git commit` and
+`git push origin dev` so the build does not stall on prompts). **No PR is opened**:
+the owner tests the build on `dev`, then runs `/release-feature`, which owns the
+`dev → main` PR and merge. Never push to `main` directly, never open or merge a
+PR here. This authority covers **only** the feature being built — stage files by
+explicit path, never `git add -A` or `git add .`, and do not sweep unrelated
+working-tree changes into the commit. Outside this workflow the usual rule
+stands: no commit or push without the user's explicit permission.
 
 ## Inputs
 
@@ -141,7 +143,7 @@ proposed edits yourself, with these limits:
 
 - Edits to a **Tier-1 or Tier-2** doc/surface only if the sign-off for that
   change is already recorded. Otherwise do not apply; list them for the owner in
-  the PR description.
+  `build-log.md` and the final report.
 - Everything else: apply and include it in the feature commit.
 
 Record what was applied and what was deferred in `build-log.md`.
@@ -154,23 +156,30 @@ Record what was applied and what was deferred in `build-log.md`.
    resolve it with the tester/user. The committed tests must be the tester's.
 2. **Confirm the gate is green** one final time (`npm test`). On any failure,
    **stop and report** — do not push.
+   Also `git fetch` and confirm local `dev` is not behind `origin/dev`; if it is,
+   stop and report (do not merge or pull).
 3. **Finalize the commit** (amend or add a commit for the Phase 5 doc edits;
    stage by explicit path) with a Conventional-Commits message ending with the
    attribution trailer from your session's attribution instructions.
 4. **Update plan status.** In `plan.md` frontmatter set `status: implemented` and
    `shipped: unreleased` (the release version is filled in later), and stage it
    in the feature commit.
-5. **Push to `dev`** (never to `main`).
-6. **Open a PR `dev → main`** with `gh`. The body contains: a summary of the
-   feature, the tests added, the gate result, the **GUARDRAILS.md PR checklist
-   filled in with results**, and — if the change touched `ui/` — a **manual UI
-   verification checklist** for the owner (what to look at, light and dark mode,
-   mobile fold, Overview fit). Add any deferred Tier-1/2 doc edits. End the body
-   with the PR attribution line from your session's instructions. **Do not merge
-   it.** Then bind it with the ccd_pr tools if available.
-7. **Report to the user:** the commit SHA, the PR URL, tests added, gate result,
-   decisions recorded, and the feature-folder artifacts (`spec.md`,
-   `test-plan.md`, `build-log.md`, updated `qa-log.md`).
+5. **Push to `dev`** (never to `main`): `git push origin dev`. No PR.
+6. **Write the owner handoff into `build-log.md`:** the **GUARDRAILS.md PR
+   checklist filled in with results**, any deferred Tier-1/2 doc edits, and — if
+   the change touched `ui/` — a **manual UI verification checklist** (what to
+   look at, light and dark mode, mobile fold, Overview fit). If this changes
+   the file after the push, commit it by explicit path and push again.
+7. **Report to the user.** The final message must contain, in full and inline
+   (never just a pointer to `build-log.md`): a **"UI test requirements"** section
+   — the numbered manual checklist the owner runs on `dev`, written as concrete
+   steps (where to click, what to see), covering each changed view or flow, light
+   and dark mode, mobile fold, Overview viewport fit, and the edge cases from
+   `spec.md`. If the change touched no `ui/` file, say so under that heading
+   ("No UI changes — nothing to test manually"). Then: the commit SHA, tests
+   added, gate result, decisions recorded, deferred doc edits, and the
+   feature-folder artifacts (`spec.md`, `test-plan.md`, `build-log.md`, updated
+   `qa-log.md`). Tell the owner to test on `dev` and run `/release-feature` when satisfied.
 
 ## qa-log.md format
 
@@ -190,5 +199,5 @@ Append one block per exchange, newest at the bottom:
   it was itself wrong.
 - No Tier-1 build without recorded owner sign-off. No Tier-2 without all three
   migration steps.
-- PR-only to `main`; never merge the approval PR yourself.
+- Push to `dev` only; never push to `main`, never open or merge a PR.
 - The UI is verified by the owner, not by agents: do not open the preview.

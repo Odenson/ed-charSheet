@@ -108,11 +108,13 @@ script that edits protected files without naming them) is not caught.
 ## Settings and permissions
 
 - `.claude/settings.json` — shared, committed: the guardrail hook and a
-  permission baseline. `allow`: read-only git, `npm test`, the agent sync.
-  `ask`: `git commit`/`push`/`merge`/`pull`, `gh pr create`/`merge`, `rm -rf`.
+  permission baseline. `allow`: read-only git, `npm test`, the agent sync, and
+  the git `/build-feature` needs (`git add`, `git commit`, `git push origin dev`)
+  so a build never stalls on prompts. `ask`: `git merge`/`pull`,
+  `gh pr create`/`merge`, `rm -rf`; the shared allow covers a push to `dev` only.
   `deny`: `git add -A`/`.`/`--all`, force-push, pushing to `main`,
   `git reset --hard`, `git clean -f`. Deny and ask outrank a personal allow, so
-  a broad `git commit *` in `settings.local.json` no longer bypasses the prompt.
+  a broad allow in `settings.local.json` cannot bypass them.
   `tools/settings.test.js` guards the baseline.
 - `.claude/settings.local.json` — per-user, gitignored. Holds each person's
   extra tool allowlist on top of the shared baseline.

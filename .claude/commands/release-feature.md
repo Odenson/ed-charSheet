@@ -30,8 +30,8 @@ Running this command is the owner's authorization, for **this workflow only**, t
 commit the changelog on `dev`, push `dev`, open the `dev → main` release PR,
 **squash-merge it**, and merge `origin/main` back into `dev`. Never push to `main`
 directly; never use `git add -A` / `git add .` (stage by explicit path); never
-force-push. The shared permission baseline still prompts for push / merge — the
-owner approves those prompts. Outside this workflow the usual rule stands.
+force-push. The shared permission baseline allows the push to `dev` but still prompts for
+`git merge`, `gh pr create` and `gh pr merge` — the owner approves those prompts. Outside this workflow the usual rule stands.
 
 ## Phase 0 — Preflight (stop on any failure)
 
@@ -86,7 +86,8 @@ fails:
    Body: the summary, the changes grouped by type (Added / Improved / Changed /
    Fixed), the plans marked shipped, the `npm test` result, and the PR checklist
    from [docs/GUARDRAILS.md](../../docs/GUARDRAILS.md) with results (note that the
-   features were each verified by the owner in their own PRs). End with the PR
+   features were each tested by the owner on `dev`; per-feature checklists and
+   deferred doc edits are in each `plans/<slug>/build-log.md`). End with the PR
    attribution line from your session's instructions.
 2. Wait for the PR checks to finish (`gh pr checks <n>`; poll sparingly). If any
    fails, **stop and report** — do not merge.
