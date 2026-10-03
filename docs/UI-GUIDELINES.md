@@ -56,7 +56,7 @@ Six tabs, each a distinct lens on the character:
 |-----|----------|
 | Overview | At-a-glance: hero portrait + header, attributes, defences, armour, movement, health, combat |
 | Disciplines | Per-discipline detail with a toggle between the character's disciplines (talents live here — there is no separate Talents tab) |
-| Combat | Per-encounter scratchpad: equipped weapon + attack talent, attack/damage/strain stat-lines with a target-# field, collapsible combat-option / situational / blood-charm chip sections, a damage-taken rail, and the device-local roll log |
+| Combat | Per-encounter scratchpad: a floating header line (Defence, Armour, Initiative with roll, Available Karma); the equipped weapon + attack talent card (attack/damage/strain stat-lines, target-# field) beside a Damage taken card; a segmented control over combat-option / situational / blood-charm chips (active-count badges, session-remembered selection); a Potions card; and the device-local roll log as a full-width table |
 | Spells | Grimoire + spell matrices by circle, the Weave/Cast/Effect cast flow, self-cast active effects, and target effects (cast on Other) — spellcasters only |
 | Equipment | Weapons, armour, thread items, kit |
 | Notes | Running character history / log over time |
@@ -66,6 +66,10 @@ Six tabs, each a distinct lens on the character:
 tab bar on one row; the bar wraps to stacked rows on mobile). Reordered
 2026-08-11 by owner request to sit directly after Disciplines (Overview ·
 Disciplines · Combat · Spells · Equipment · Notes).*
+
+*Combat tab layout redesigned 2026-10-04 by owner sign-off
+([new-combat-ui plan](../plans/new-combat-ui/plan.md) — header line, side-by-side
+Attack and Damage taken cards, tabbed combat modifiers, log as a table).*
 
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,
