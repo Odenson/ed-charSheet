@@ -8,6 +8,7 @@
 
 import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
+import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle, tierForCircle } from './engine/legend-spent.js';
 import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
@@ -1595,6 +1596,18 @@ export function deriveModel(character, rules, session = {}) {
   };
   for (const d of disciplines) for (const t of d.talents ?? []) applyTestMods(t);
   for (const sk of skills) applyTestMods(sk);
+
+  // Action-modifier effects (taxonomy v5): derived per derive, never persisted.
+  // Written only on a changed ability, so unaffected abilities gain no keys.
+  const applyActionMod = (ability) => {
+    const r = resolveAbilityAction(ability.name, ability.action, activeEffects);
+    if (!r) return;
+    ability.action = r.action;
+    ability.actionBase = r.actionBase;
+    ability.actionSources = r.actionSources;
+  };
+  for (const d of disciplines) for (const t of d.talents ?? []) applyActionMod(t);
+  for (const sk of skills) applyActionMod(sk);
 
   // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
   // for the Active-effects card. buildSpellsContext stays session-free (pure).

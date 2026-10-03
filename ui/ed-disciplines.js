@@ -8,10 +8,20 @@
 // modal. A terse Effect column summarises what the talent does (hidden on mobile,
 // where the detail is a tap away). All talent wording is our own generic
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { ModalController } from './modal-controller.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
+
+// Hover text for an ability whose action an effect changed (taxonomy v5
+// action-modifier). Pure formatting of the engine's pre-resolved fields: the
+// engine decides which source applied; nothing is compared here.
+function actionHoverText(a) {
+  return [
+    `${a.actionBase} → ${a.action}`,
+    ...(a.actionSources ?? []).map((s) => `${s.action}: ${s.name} (${s.applied ? 'applied' : 'overridden'})`),
+  ].join('\n');
+}
 
 export class EdDisciplines extends LitElement {
   static properties = {
@@ -121,6 +131,7 @@ export class EdDisciplines extends LitElement {
     .trow.h { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .sd { font-size: var(--fs-small); color: var(--muted); }
+    .action.changed { color: var(--accent); }
     .eff { font-size: var(--fs-small); color: light-dark(#3a4250, #cbd3de); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tname { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
     .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -213,6 +224,7 @@ export class EdDisciplines extends LitElement {
     .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
     .mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .chip { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
+    .chip.changed { color: var(--accent); }
     .chip.effc { color: var(--accent); background: var(--accent-bg); border-color: transparent; }
     .mtext { font-size: var(--fs-body); line-height: 1.5; margin: 6px 0; }
     .mnote { font-size: var(--fs-small); color: var(--karma); background: var(--karma-bg); border-radius: 6px; padding: 6px 9px; margin-top: 8px; }
@@ -271,7 +283,7 @@ export class EdDisciplines extends LitElement {
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
         ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
         <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}</span>
-        <span class="action sd">${t.action ?? ''}</span>
+        <span class=${t.actionBase != null ? 'action sd changed' : 'action sd'} title=${t.actionBase != null ? actionHoverText(t) : nothing}>${t.action ?? ''}</span>
         <button
           class="roll"
           ?disabled=${t.step == null}
@@ -353,7 +365,7 @@ export class EdDisciplines extends LitElement {
     const chips = [
       t.brief ? { c: 'effc', v: t.brief } : null,
       { v: t.required ? 'Required' : 'Optional' },
-      t.action ? { v: `${t.action} action` } : null,
+      t.action ? (t.actionBase != null ? { v: `${t.action} action`, c: 'changed', title: actionHoverText(t) } : { v: `${t.action} action` }) : null,
       t.attribute ? { v: t.attribute } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
       dt.tier ? { v: dt.tier } : null,
@@ -367,7 +379,7 @@ export class EdDisciplines extends LitElement {
             <span class="mtitle"><span class="tinfo ${t.required ? 'req' : 'opt'}" aria-hidden="true">i</span>${t.name}</span>
             <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
-          <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
+          <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}" title=${c.title ?? nothing}>${c.v}</span>`)}</div>
           ${dt.summary
             ? html`<div class="mtext">${dt.summary}</div>`
             : html`<div class="mtext" style="color: var(--muted)">Full details coming.</div>`}
@@ -399,7 +411,7 @@ export class EdDisciplines extends LitElement {
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
         ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}${this._modChip(s)}</span>`}
         <span class="sd">${s.step != null ? html`${s.step} · ${s.dice}` : '—'}</span>
-        <span class="action sd">${s.action ?? ''}</span>
+        <span class=${s.actionBase != null ? 'action sd changed' : 'action sd'} title=${s.actionBase != null ? actionHoverText(s) : nothing}>${s.action ?? ''}</span>
         <button
           class="roll"
           ?disabled=${s.step == null}
@@ -588,7 +600,7 @@ export class EdDisciplines extends LitElement {
     const chips = [
       { v: `Rank ${s.rank}` },
       s.tier ? { v: s.tier } : null,
-      s.action ? { v: `${s.action} action` } : null,
+      s.action ? (s.actionBase != null ? { v: `${s.action} action`, c: 'changed', title: actionHoverText(s) } : { v: `${s.action} action` }) : null,
       s.attribute ? { v: s.attribute } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
     ].filter(Boolean);
@@ -599,7 +611,7 @@ export class EdDisciplines extends LitElement {
             <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${s.name}</span>
             <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
           </div>
-          <div class="mchips">${chips.map((c) => html`<span class="chip">${c.v}</span>`)}</div>
+          <div class="mchips">${chips.map((c) => html`<span class=${c.c ? `chip ${c.c}` : 'chip'} title=${c.title ?? nothing}>${c.v}</span>`)}</div>
           ${dt.summary
             ? html`<div class="mtext">${dt.summary}</div>`
             : html`<div class="mtext" style="color: var(--muted)">Skill description not yet recorded.</div>`}

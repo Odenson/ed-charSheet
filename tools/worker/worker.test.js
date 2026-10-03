@@ -654,6 +654,7 @@ test('missing catalog (404) → creates a fresh ed-items/3 file', async () => {
     assert.equal(sent.sha, undefined, 'no sha on a create');
     const written = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
     assert.equal(written.schema, 'ed-items/3');
+    assert.equal(written.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v5)');
     assert.deepEqual(written.items, { Lantern: ITEM });
   } finally {
     mock.restore();

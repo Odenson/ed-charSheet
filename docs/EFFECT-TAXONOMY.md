@@ -1,4 +1,4 @@
-# Effect Taxonomy — v4
+# Effect Taxonomy — v5
 
 A controlled vocabulary for **effects**: the structured, machine-applicable
 modifiers and grants that races, talents, skills, items, spells, and conditions
@@ -11,9 +11,15 @@ the `Target | Characteristic | Property` addressing model, the operation words
 (`ADD, MINUS, MULTIPLY, DIVIDE, DEFAULT, MIN, MAX, REF`), and the trigger
 comparisons (`GE, GR, LS, LE, EQ, NE`). One language, end to end.
 
-> Status: **v4, under review.** Field names and vocabularies may change. When they
+> Status: **v5, under review.** Field names and vocabularies may change. When they
 > do, bump the version and migrate the data files that reference it
 > (`rules/*.json` `schema` fields).
+>
+> **v5 (2026-10-03):** added the `action-modifier` type (§2) and the `action`
+> measure (§5, values in §5.1), so an effect can change which action (Free /
+> Simple / Standard) a talent or skill uses, e.g. Death's Head making Frighten a
+> Simple action. Additive and backward-compatible — existing effects are
+> unchanged; every `rules/*.json` `effectTaxonomy` reference bumped v4 → v5.
 >
 > **v4 (2026-08-19):** added the `duration-modifier` type (§2) and the time
 > measures `rounds` / `minutes` / `hours` (§5), so a spell's "Increase Duration"
@@ -55,7 +61,7 @@ required; the rest are used as each `type` needs.
 | `type` | always | Engine dispatch key — the *kind* of effect | §2 |
 | `target` | modifiers & grants | What is affected, as a path | §3 |
 | `operation` | modifiers | How the value combines | §4 |
-| `value` | modifiers | Magnitude — a number, or `{ "ref": "<target-path>" }` | — |
+| `value` | modifiers | Magnitude — a number, or `{ "ref": "<target-path>" }`; for `action-modifier` a controlled word (§5.1) | — |
 | `measure` | modifiers | What the value counts in (prevents step/result/rating confusion) | §5 |
 | `condition` | optional (default `always`) | When it applies | §6 |
 | `scope` | optional | Narrowing qualifier (enum-or-text) | §6 |
@@ -81,6 +87,7 @@ Small on purpose. Each maps to one way the engine applies the effect.
 | `attack-modifier` | adjusts an **attack's** step or result (weapon / natural-attack damage step, to-hit step) | `attack` |
 | `test-modifier` | adjusts a specific test (roll) | `test` |
 | `duration-modifier` | extends/reduces an active effect's remaining duration | — |
+| `action-modifier` | sets which action a talent or skill uses | `ability` |
 | `grant-ability` | gives a talent / skill / knack | `ability` |
 | `grant-attack` | gives a natural attack | `attack` |
 | `sense` | gives a sensory capability | `sense` |
@@ -112,6 +119,16 @@ which the engine normalises to rounds (1 minute = 10 rounds, 1 hour = 600). Its
 home is a spell's "Increase Duration" Success-Levels / Extra-Thread option: on a
 success it extends the cast's remaining rounds (with `perSuccess` for the
 per-extra-success case). It never touches a derived stat — only the countdown.
+
+`action-modifier` (v5) changes which **action** an ability uses. `operation` is
+always `set`, `measure` is `action`, `target` is `{ "domain": "ability", "name":
+<talent or skill> }` and `value` is one of the controlled words in §5.1. It
+**overrides** the printed action (it is not "must be faster than"): a value slower
+than the printed action still applies, so a Simple effect on a Free talent shows
+Free → Simple. When several active effects set different actions on one ability,
+the **fastest wins** (Free > Simple > Standard) — an owner house rule, as the books
+print no ordering between action types. An effect whose value equals the printed
+action is not a change. It is a non-numeric effect: never summed, never stacked. Other printed users, not yet migrated: Beguiling Blade (Conceal Object as Simple), Swift Link (Thought Link as Simple); see RULES-FAQ Q018.
 
 > `enable-option` **unlocks a global option** — its `target.name` must match an
 > option's `name` in `rules/combat.json` (e.g. `Tail Attack`), and it is always
@@ -195,6 +212,8 @@ Mirrors the spreadsheet's reserved words.
 | `max` | MAX | take the higher of target, value |
 | `ref` | REF | `value` is pulled from another target-path, e.g. `"value": { "ref": "attribute|Strength|Step" }` |
 
+> `set` with `measure: action` carries a word value (§5.1), not a number.
+
 ### 4.1 Damage base — the `set`-as-base pattern (v3)
 
 A Damage (or Effect) test resolves as **base + modifiers**, and `operation: set`
@@ -263,6 +282,11 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 | `minutes` | duration in minutes (1 minute = 10 rounds) | Increase Duration +2 minutes |
 | `hours` | duration in hours (1 hour = 600 rounds) | +2 hours |
 | `count` | discrete count | +1 recovery test/day |
+| `action` | an action type (word value, not a number) | set Frighten to Simple |
+
+### 5.1 Action values
+
+The only valid values for the action measure, fastest first: `Free` · `Simple` · `Standard`. The printed action types `Sustained` and `NA` are deliberately not valid effect values.
 
 ---
 
@@ -322,6 +346,8 @@ rule is unchanged.)
 | `highest` | only the largest applies |
 | `replace` | this effect overrides others on the target |
 | `unique` | only one instance regardless of source |
+
+`action-modifier` (§2) ignores `stacking`: multiple active effects on one ability resolve fastest-wins (Free > Simple > Standard).
 
 ---
 
@@ -399,6 +425,13 @@ lives, but may be stated explicitly.
   "operation": "add", "value": 8, "measure": "step",
   "condition": "always", "source": "spell",
   "summary": "Spirit Bolt damage: Willpower step + 8." }
+
+// Death's Head — Frighten becomes a Simple action while the spell is sustained
+{ "type": "action-modifier",
+  "target": { "domain": "ability", "name": "Frighten" },
+  "operation": "set", "value": "Simple", "measure": "action",
+  "duration": "sustained", "source": "spell",
+  "summary": "Use Frighten as Simple Action" }
 ```
 
 ---

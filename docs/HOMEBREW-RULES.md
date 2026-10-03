@@ -20,7 +20,7 @@ or editing a rule. The active build plan lives in
 |---|---|---|
 | Rules file | `rules/homebrew.json` | `ed-homebrew/3` |
 | Loading | `store.js` `loadCharacter` — optional (`loadJSONOptional`, knacks/thread-items precedent) | — |
-| Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v4 |
+| Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v5 |
 | Build plan | `plans/PLAN-HOMEBREW.md` | — |
 
 The file is **optional**: if it's absent the app behaves exactly as before.
@@ -33,7 +33,7 @@ Top-level shape:
 {
   "schema": "ed-homebrew/3",                 // Tier-1: don't rename fields
   "source": "… provenance note …",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v4)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v5)",
   "note": "… file-level note (optional, documentation only) …",
   "rules": [ /* §2 */ ]
 }

@@ -67,7 +67,7 @@ const CHARACTERS_DIR = 'data/characters';
 const ITEMS_STORE = 'data/custom-items.json';
 const FRESH_CATALOG = {
   schema: 'ed-items/3',
-  effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v4)',
+  effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v5)',
   source: 'custom',
   notes: 'Player-created items, folded into rules/custom-items.json on dev by CI.',
   items: {},

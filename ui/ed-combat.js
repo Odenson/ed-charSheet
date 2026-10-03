@@ -19,7 +19,7 @@
 // (owner decision). The Combat log is a view of the device-local Log
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
@@ -170,6 +170,7 @@ export class EdCombat extends LitElement {
     .artbox svg { width: 30px; height: 30px; opacity: 0.6; }
     .artbox .cap { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; }
 
+    option.chg, select.chg { color: var(--accent); }
     select { font: inherit; font-size: var(--fs-body); width: 100%; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-chip); color: inherit; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
 
@@ -552,6 +553,7 @@ export class EdCombat extends LitElement {
           step: t.step,
           karma: t.karma ?? null,
           action: t.action ?? null,
+          actionBase: t.actionBase, // set only when an effect changed the action (accent colour)
           // Rank-grant data (PLAN-RANK-GRANTS.md): the step audit itemises the
           // pre-grant base and the folded grant source instead of hiding it.
           stepBase: t.stepBase,
@@ -574,6 +576,7 @@ export class EdCombat extends LitElement {
         step: s.step,
         karma: null,
         action: s.action ?? null,
+        actionBase: s.actionBase,
         stepBase: s.stepBase,
         rankBonus: s.rankBonus,
         grantSources: s.grantSources ?? [],
@@ -1455,9 +1458,9 @@ export class EdCombat extends LitElement {
                   <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._artOk = true; }}>
                     ${this._weapons().map((x) => html`<option value=${x.name}>${x.name}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
                   </select>
-                  <select aria-label="Attack talent or skill" .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
+                  <select aria-label="Attack talent or skill" class=${talent?.actionBase != null ? 'chg' : nothing} .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
                     ${this._attackOptions().length
-                      ? this._attackOptions().map((o) => html`<option value=${o.id}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
+                      ? this._attackOptions().map((o) => html`<option value=${o.id} class=${o.actionBase != null ? 'chg' : nothing}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
                       : html`<option value="">${w.category == null ? 'No talents or skills' : 'No matching talent/skill'}</option>`}
                   </select>
                 </div>

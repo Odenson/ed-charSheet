@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.26.0",
+      "date": "2026-10-03",
+      "summary": "Effects can now change a talent or skill’s action type: Death’s Head makes Frighten a Simple action, shown in the accent colour with a hover explaining why (effect taxonomy v5).",
+      "changes": [
+        {
+          "type": "added",
+          "text": "A talent or skill whose action is changed by an effect (for example Death’s Head making Frighten a Simple action) now shows the new action in the accent colour, with a hover listing the sources."
+        }
+      ]
+    },
+    {
       "version": "1.25.2",
       "date": "2026-10-03",
       "summary": "Death’s Head now matches the Player’s Guide: its single extra thread gives +2 to Frighten (applied while the spell is active) instead of damage, range and target options.",

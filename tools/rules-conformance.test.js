@@ -33,6 +33,27 @@ function proseVocab(n) {
   return new Set([...section(n).matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
 }
 
+// §5.1 action values: backticked words in the prose (case-sensitive; `Sustained`
+// and `NA` are listed there only as explicitly invalid). Valid ones are Free, Simple, Standard.
+function actionVocab() {
+  const m = doc.match(/^### 5\.1 [^\n]*\n([\s\S]*?)(?=^#{2,3} |(?![\s\S]))/m);
+  assert.ok(m, 'taxonomy doc has no "### 5.1" subsection');
+  const words = [...m[1].matchAll(/`([A-Za-z]+)`/g)].map((x) => x[1]);
+  return words.filter((w) => !['Sustained', 'NA'].includes(w));
+}
+const ACTION = actionVocab();
+
+// Violations of the action-modifier shape (taxonomy v5, §2/§5/§5.1).
+function actionModifierProblems(e) {
+  const p = [];
+  if (e.operation !== 'set') p.push(`operation must be "set", got "${e.operation}"`);
+  if (e.measure !== 'action') p.push(`measure must be "action", got "${e.measure}"`);
+  if (e.target?.domain !== 'ability') p.push(`target.domain must be "ability", got "${e.target?.domain}"`);
+  else if (typeof e.target?.name !== 'string' || !e.target.name) p.push('target.name must be a non-empty string');
+  if (typeof e.value !== 'string' || !ACTION.includes(e.value)) p.push(`value must be one of ${ACTION.join('/')}, got ${JSON.stringify(e.value)}`);
+  return p;
+}
+
 const VOCAB = {
   type: tableVocab(2),
   operation: tableVocab(4),
@@ -87,6 +108,8 @@ test('every effect uses the documented vocabulary', () => {
     for (const [e, where] of walk(load(f))) {
       scanned++;
       if (!VOCAB.type.has(e.type)) bad.push(`rules/${f}${where}: type "${e.type}"`);
+      if (e.type === 'action-modifier')
+        for (const pr of actionModifierProblems(e)) bad.push(`rules/${f}${where}: ${pr}`);
       for (const field of ['operation', 'measure', 'stacking', 'duration', 'source']) {
         if (e[field] != null && !VOCAB[field].has(e[field]))
           bad.push(`rules/${f}${where}: ${field} "${e[field]}"`);
@@ -95,4 +118,50 @@ test('every effect uses the documented vocabulary', () => {
   }
   assert.ok(scanned > 0, 'no effects scanned — the walker is broken');
   assert.deepEqual(bad.slice(0, 20), [], `${bad.length} vocabulary violations (first 20 shown)`);
+});
+
+// ---- taxonomy v5: action-modifier (taxonomy-on-action-type) ----
+
+test('taxonomy doc is v5 and every rules ref that carries one names v5', () => {
+  assert.equal(docVersion, 'v5');
+  for (const f of files) {
+    const d = load(f);
+    if (d.effectTaxonomy != null) assert.equal(d.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v5)', `rules/${f}`);
+  }
+});
+
+test('doc defines type action-modifier and measure action', () => {
+  assert.ok(VOCAB.type.has('action-modifier'));
+  assert.ok(VOCAB.measure.has('action'));
+});
+
+test('§5.1 ACTION is exactly Free, Simple, Standard and does not pollute the measure vocab', () => {
+  assert.deepEqual(ACTION, ['Free', 'Simple', 'Standard']);
+  for (const w of [...ACTION, 'Sustained', 'NA']) assert.ok(!VOCAB.measure.has(w), `measure vocab contains ${w}`);
+});
+
+test('Death’s Head carries a valid action-modifier in rules/spells.json', () => {
+  const dh = load('spells.json').spells['Death’s Head'];
+  const mods = (dh.effects ?? []).filter((e) => e.type === 'action-modifier');
+  assert.equal(mods.length, 1);
+  assert.deepEqual(actionModifierProblems(mods[0]), []);
+});
+
+const validAction = { type: 'action-modifier', target: { domain: 'ability', name: 'Frighten' }, operation: 'set', measure: 'action', value: 'Simple' };
+
+test('actionModifierProblems accepts a valid Simple effect', () => {
+  assert.deepEqual(actionModifierProblems(validAction), []);
+});
+
+test('actionModifierProblems rejects invalid values: Sustained, NA, Instant, number, missing', () => {
+  for (const value of ['Sustained', 'NA', 'Instant', 2, undefined]) {
+    assert.ok(actionModifierProblems({ ...validAction, value }).length > 0, `value ${String(value)}`);
+  }
+});
+
+test('actionModifierProblems rejects operation add, wrong measure and wrong domain', () => {
+  assert.ok(actionModifierProblems({ ...validAction, operation: 'add' }).length > 0);
+  assert.ok(actionModifierProblems({ ...validAction, measure: 'step' }).length > 0);
+  assert.ok(actionModifierProblems({ ...validAction, target: { domain: 'test', name: 'Frighten' } }).length > 0);
+  assert.ok(actionModifierProblems({ ...validAction, target: { domain: 'ability', name: '' } }).length > 0);
 });
