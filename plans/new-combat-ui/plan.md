@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.27.0
 ---
 # Delivery Plan: New-Combat-UI (new-combat-ui)
 

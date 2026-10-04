@@ -3,11 +3,20 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      { "type": "changed", "text": "Combat tab redesigned: a header line with Defence, Armour, Initiative and Available Karma, side-by-side Attack and Damage taken cards, tabbed combat modifiers (Combat options / Situational / Blood charms, each with an active count), and the combat log as a table." }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.27.0",
+      "date": "2026-10-04",
+      "summary": "The Combat tab has a new layout: a header line with Defence, Armour, Initiative and Available Karma, side-by-side Attack and Damage taken cards, tabbed combat modifiers, and the combat log as a table that now shows Karma and modifiers in Detail.",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Combat tab redesigned: a header line with Defence, Armour, Initiative and Available Karma, side-by-side Attack and Damage taken cards, tabbed combat modifiers (Combat options / Situational / Blood charms, each with an active count), and the combat log as a table."
+        }
+      ]
+    },
     {
       "version": "1.26.0",
       "date": "2026-10-03",
