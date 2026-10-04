@@ -48,6 +48,7 @@ export class EdRollModal extends LitElement {
     .sub { font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); }
     .x { background: none; border: none; color: light-dark(#5a6472, #93a0b3); cursor: pointer; font-size: var(--fs-value); line-height: 1; padding: 2px; }
     .grp { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid light-dark(#e2e5ea, #2c313b); }
+    .glbl .bdie { font-weight: 500; color: var(--text, inherit); }
     .glbl { width: 34px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); flex: none; }
     .chain { display: flex; align-items: center; gap: 4px; flex: 1; flex-wrap: wrap; }
     .die { width: 32px; height: 32px; border: 1px solid light-dark(#c9ccd3, #3a4150); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 500; font-size: var(--fs-value); background: light-dark(#f1f2f5, #1b1f27); }
@@ -187,6 +188,11 @@ export class EdRollModal extends LitElement {
   _canSpendKarma() {
     const a = this.karma?.available;
     return typeof a === 'number' && Number.isFinite(a) && a > 0;
+  }
+
+  // The Bonus Dice notation for the group label ("D4", "D4+D6"), from the effect values.
+  _bonusDiceText() {
+    return (this.bonusDice ?? []).map((b) => b.value).filter(Boolean).join('+');
   }
 
   // Roll the Bonus Dice group (null when the roll has none). Rolled whenever the
@@ -505,7 +511,7 @@ export class EdRollModal extends LitElement {
               : ''}
             ${this._bonusResult
               ? html`<div class="grp">
-                  <span class="glbl" title=${(this.bonusDice ?? []).map((b) => b.label).filter(Boolean).join(', ') || 'Bonus Dice'}>Bonus</span>
+                  <span class="glbl" title=${(this.bonusDice ?? []).map((b) => b.label).filter(Boolean).join(', ') || 'Bonus Dice'}>Bonus${this._bonusDiceText() ? html`<br><b class="bdie">${this._bonusDiceText()}</b>` : ''}</span>
                   <span class="chain">
                     ${this._bonusResult.dice.map(
                       (d) => html`${d.rolls.map(
