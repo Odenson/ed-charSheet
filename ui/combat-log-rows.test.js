@@ -55,15 +55,15 @@ test('action row missing label defaults to Action', () => {
 test('roll row with full data', () => {
   const c = logRowCells({
     kind: 'roll', label: 'Attack', step: 7, total: 14, difficulty: 9,
-    outcome: { word: 'Hit', ok: true }, mods: [{ label: 'Aggressive' }, { label: 'Aimed' }],
+    outcome: { word: 'Hit', ok: true }, mods: [{ label: 'Knocked Down', value: -3 }, { label: 'Aimed', value: 2 }], karma: { step: 4, dice: [3], total: 4 },
   });
   assert.equal(c.glyph, '⚔');
   assert.equal(c.roll, 'Attack');
   assert.equal(c.step, '7');
   assert.equal(c.total, '14');
-  assert.equal(c.vs, 'D9');
+  assert.equal(c.vs, '9');
   assert.deepEqual(c.outcome, { word: 'Hit', ok: true });
-  assert.equal(c.detail, 'Aggressive, Aimed');
+  assert.equal(c.detail, 'Karma +4 · Knocked Down −3 · Aimed +2');
 });
 
 test('roll row without difficulty, outcome or mods', () => {
@@ -75,7 +75,14 @@ test('roll row without difficulty, outcome or mods', () => {
 });
 
 test('roll row difficulty 0 still shows (!= null)', () => {
-  assert.equal(logRowCells({ label: 'R', difficulty: 0 }).vs, 'D0');
+  assert.equal(logRowCells({ label: 'R', difficulty: 0 }).vs, '0');
+});
+
+test('detail: modifier without a value shows its label alone; karma alone; zero karma shown', () => {
+  assert.equal(logRowCells({ label: 'R', mods: [{ label: 'Aimed' }] }).detail, 'Aimed');
+  assert.equal(logRowCells({ label: 'R', karma: { total: 5 } }).detail, 'Karma +5');
+  assert.equal(logRowCells({ label: 'R', karma: { total: 0 } }).detail, 'Karma +0');
+  assert.equal(logRowCells({ label: 'R', karma: null, mods: [] }).detail, '');
 });
 
 test('roll row missing step, total and label never fabricates numbers', () => {

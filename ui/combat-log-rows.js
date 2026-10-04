@@ -4,6 +4,14 @@
 
 const DASH = '—';
 
+// Signed flat modifier, e.g. "Knocked Down −3"; a modifier with no numeric value
+// shows its label alone.
+function modText(m) {
+  const v = Number(m?.value);
+  if (m?.value == null || !Number.isFinite(v)) return m?.label ?? '';
+  return `${m.label} ${v < 0 ? '−' : '+'}${Math.abs(v)}`;
+}
+
 export function logRowCells(entry) {
   const r = entry ?? {};
   if (r.kind === 'system' || r.kind === 'log' || r.kind === 'advancement') {
@@ -22,8 +30,13 @@ export function logRowCells(entry) {
     roll: r.label ?? 'Roll',
     step: r.step != null ? String(r.step) : DASH,
     total: r.total != null ? String(r.total) : DASH,
-    vs: r.difficulty != null ? `D${r.difficulty}` : DASH,
+    vs: r.difficulty != null ? String(r.difficulty) : DASH,
     outcome: r.outcome ? { word: r.outcome.word, ok: !!r.outcome.ok } : null,
-    detail: (r.mods ?? []).map((m) => m.label).join(', '),
+    // Detail: Karma die spent, then the roll-time flat modifiers — data the entry
+    // already stores, nothing derived.
+    detail: [
+      r.karma?.total != null ? `Karma +${r.karma.total}` : '',
+      ...(r.mods ?? []).map(modText),
+    ].filter(Boolean).join(' · '),
   };
 }
