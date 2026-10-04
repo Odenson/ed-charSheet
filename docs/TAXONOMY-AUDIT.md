@@ -6,7 +6,7 @@ documented architecture. Same spirit as [RULEBOOK-AUDIT.md](RULEBOOK-AUDIT.md):
 record a discrepancy here *before* fixing it, and cite the finding id (`T-nnn`)
 in the fixing commit.
 
-> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 50 findings, none fully closed.** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
+> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 4 fixed (T-001, T-002, T-003, T-018).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
 
 ## Scope & authority
 
@@ -53,15 +53,15 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 ## Result at a glance
 
-47 findings — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo. Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
+47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 4 fixed (T-001, T-002, T-003, T-018), 3 narrowed, 47 open including the 4 added by the re-validation. S1 fixed ×3 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
 
 ## Summary table
 
 | Id | Title | Sev | Tier | Area | Status |
 |---|---|---|---|---|---|
-| T-001 | Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names | S1 | 3 | data | fixed (uncommitted) |
-| T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | fixed (uncommitted) |
-| T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | fixed (uncommitted); Bone Charm half split out as T-051 |
+| T-001 | Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names | S1 | 3 | data | fixed (a968c33) |
+| T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | fixed (2c27128) |
+| T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | fixed (cf3c05f); Bone Charm half split out as T-051 |
 | T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | open |
 | T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | open |
 | T-006 | Custom-item builder emits characteristic-modifier effects with a measure the engine ignores | S1 | 3 | ui | open |
@@ -76,7 +76,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-015 | store.js folds taxonomy fields to decide a thread weapon's Damage step | S2 | 1 | ui | open |
 | T-016 | `attack-modifier` with `measure: "rating"` is outside the documented contract | S2 | 2 | data | open |
 | T-017 | `stacking` semantics in code differ from §7 (per-origin progression, origin-less exempt) | S2 | 2 | engine | open |
-| T-018 | Obsidiman Skin armor value disagrees with its own summary | S2 | 3 | data | fixed (uncommitted) |
+| T-018 | Obsidiman Skin armor value disagrees with its own summary | S2 | 3 | data | fixed (17b960e) |
 | T-019 | Per-success talent/skill effects kept as `note` while the same shape is structured elsewhere | S2 | 3 | data | open |
 | T-020 | Spell Success-Level/Extra-Thread options: v4 migration is partial | S2 | 3 | data | open |
 | T-021 | Combat pools ignore `operation` (only `subtract` is special) and do not implement the §4.1 `set`-first contract | S2 | 3 | engine | open |
@@ -106,6 +106,10 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-045 | `validate-item.js` header cites taxonomy v3 but implements v4 vocabulary | S3 | 3 | engine | open |
 | T-046 | Test coverage gaps against the documented vocabulary | S3 | 3 | engine | open (narrowed) |
 | T-047 | Restriction gate: empty `discipline: []` blocks a knack forever; undocumented edge behaviours | S3 | 3 | engine | open |
+| T-048 | Custom-item validator and builder do not know taxonomy v5/v6; `dice` measure accepted with a numeric value | S3 | 3 | engine | open |
+| T-049 | `foldPool` silently drops dice effects that are unparseable or use `subtract` | S2 | 3 | engine | open |
+| T-050 | Spell dice readout filters on raw effect fields in `buildCastPlan` | S3 | 3 | engine | open |
+| T-051 | Bone Charm's Recovery effect disagrees with the rulebook; its Death/Unconsciousness −1 is unsupported | S2 | 3 | data | open (owner decision) |
 
 ## Checklist A — Documented vocabulary ↔ data (data pass)
 
@@ -178,11 +182,11 @@ Other checks that passed, no finding:
 
 ## Findings
 
-Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1/2 remedies need owner sign-off.
+Ordered by severity, then tier. Each finding's own `Status` line is current: T-001, T-002, T-003 and T-018 are `fixed` (commit shas in the summary table); the others are `open`. T-048 to T-051 were added in the 2026-10-04 re-validation (see *New findings*). Tier 1/2 remedies need owner sign-off.
 
 ### T-001 — Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names
 - Source pass id: T-D01
-- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (data fix as proposed; no character file stored a plural name)
+- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (`a968c33`; data fix as proposed, no character file stored a plural name)
 - Area: data
 - Documented: CLAUDE.md / ARCHITECTURE §4.1 treats `rules/talents.json` names as the identifiers that disciplines, characters and knacks share. `rules/disciplines.json` line 3: "Talent names normalized to match rules/talents.json and data/character.json (e.g. rulebook 'Missile Weapons' -> 'Missile Weapon')".
 - Observed:
@@ -205,7 +209,7 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 ### T-002 — `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied
 - Source pass id: T-E01
-- Severity: S1  Tier: 3 (fix = new handler; data/vocab unchanged)  Status: fixed 2026-10-05 (see the Re-validation table)
+- Severity: S1  Tier: 3 (fix = new handler; data/vocab unchanged)  Status: fixed 2026-10-05 (`2c27128`; see the Re-validation table)
 - Area: engine
 - Documented: §2 "`attribute-modifier` | adjusts one of the six attributes"; §5 `value` "+2 Strength value"; §6 auto-apply "folds in **only** effects that are `condition: "always"` and not `gmDiscretion`".
 - Observed: `attributeValue()` is `base + points + increases` and `deriveModel` builds attributes from it alone; no code path reads `attribute-modifier`. The effect still travels in `model.activeEffects`, so the Active Effects panel advertises it.
@@ -215,13 +219,14 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 ### T-003 — `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard
 - Source pass id: T-E02
-- Severity: S1  Tier: 3 (code) / doc clarification  Status: open
+- Severity: S1  Tier: 3 (code) / doc clarification  Status: fixed 2026-10-05 (`cf3c05f`; owner chose option B, `rating` is the one characteristic measure; Bone Charm split out as T-051)
 - Area: engine
 - Documented: §3 `RecoveryTests` is a `characteristic`; §5 `count` "discrete count | +1 recovery test/day".
 - Observed: every static characteristic matcher requires `(e.measure ?? 'rating') === 'rating'`. The shipped `+1 Recovery test` effects are authored with `measure:"count"` (the doc's own example), so they never fold. Executed: `recoveryTests(14, [+1 count effect])` returns 3, same as base 3.
 - Evidence: `engine/characteristics.js:323-330,377-381`; wired at `store.js:1082`. Data: `rules/disciplines.json` Warrior circle 7 `effects[0]` (RecoveryTests add 1, `measure:"count"`); `rules/items.json` Bone Charm `effects[0]` (same, `condition:"always"`). Test `characteristics.test.js:213` only checks the no-effect case.
 - Impact: Recoveries/day under-counted for a Warrior at Circle 7 and for anyone wearing a Bone Charm (Recovery pool, buttons, end-of-day reset).
 - Proposed remedy: accept `count` for `RecoveryTests` (and document which measure each `characteristic` name takes in §3/§5), or migrate the two data effects to `rating` (Tier 3 data) and state the rule. Add a test with a `count` effect.
+- Resolution 2026-10-05 (`cf3c05f`): option B. `count` has no engine meaning and `RecoveryTests` is a characteristic like Death Rating, so it takes `rating`. Warrior Circle 7 migrated (bonus confirmed by the rule-agent, RULES-FAQ Q023); a +1 RecoveryTests effect now raises the daily count; §5 of the taxonomy marks `count` reserved and says characteristics take `rating`. The Bone Charm effect was **not** migrated: the book gives it +1 to Recovery test *results*, not per day (T-051).
 
 ### T-004 — Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools
 - Source pass id: T-E03
@@ -369,7 +374,7 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 ### T-018 — Obsidiman Skin armor value disagrees with its own summary
 - Source pass id: T-D02
-- Severity: S2  Tier: 3  Status: open
+- Severity: S2  Tier: 3  Status: fixed 2026-10-05 (`17b960e`)
 - Area: data
 - Documented: EFFECT-TAXONOMY §1 `summary`: "Concise original-wording description". `value` is the machine quantity and `summary` is its display.
 - Observed: `Obsidiman Skin` has `armor-modifier` Physical `add 2` with summary "Physical Armor 3". This is the only mismatch out of 945 effects in a mechanical value-vs-summary-digits check. Every other armor item agrees with its summary.
@@ -737,9 +742,9 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 
 | Id | Verdict | Evidence now |
 |---|---|---|
-| T-001 | fixed 2026-10-05 | Knack `parents` and `restrictions.ability` names normalised to `Melee Weapon` / `Missile Weapon` / `Throwing Weapon`; the 3 plural stub talents deleted; `store-knack.test.js` fixtures moved to singular; `knacks-catalog.test.js` gained a guard against the stubs and a check that the weapon parents are talents disciplines teach |
-| T-002 | fixed 2026-10-05 | New `foldAttribute` in `engine/characteristics.js` folds always-on `attribute-modifier` effects (`measure` value, default, or step; Step floored at 0). `store.js` now assembles `activeEffects` before the attributes and `attrVal` reads the folded Value, so carrying capacity, defences, Mystic Armor, talent steps and `attribute\|…\|Step` refs all see it. Tests: `engine/characteristics.test.js`, new `store-attribute-modifier.test.js`. The mixed `measure` (races/Bracers `value`, Beer Mug `step`) is now honoured both ways |
-| T-003 | fixed 2026-10-05 (Warrior); Bone Charm split to T-051 | Owner chose option B (`rating` is the one measure for characteristics). Warrior Circle 7 effect migrated `count` → `rating`; rule-agent confirmed the bonus (RULES-FAQ Q023: Warrior Circle 7 "gains an additional Recovery test"). Tests added in `engine/characteristics.test.js`. EFFECT-TAXONOMY §5 marks `count` reserved and states characteristics take `rating`. **Bone Charm deliberately not migrated**: the book says its bonus is +1 to Recovery test *results*, not +1 per day, so migrating would have made it wrong in a new way |
+| T-001 | fixed 2026-10-05 (`a968c33`) | Knack `parents` and `restrictions.ability` names normalised to `Melee Weapon` / `Missile Weapon` / `Throwing Weapon`; the 3 plural stub talents deleted; `store-knack.test.js` fixtures moved to singular; `knacks-catalog.test.js` gained a guard against the stubs and a check that the weapon parents are talents disciplines teach |
+| T-002 | fixed 2026-10-05 (`2c27128`) | New `foldAttribute` in `engine/characteristics.js` folds always-on `attribute-modifier` effects (`measure` value, default, or step; Step floored at 0). `store.js` now assembles `activeEffects` before the attributes and `attrVal` reads the folded Value, so carrying capacity, defences, Mystic Armor, talent steps and `attribute\|…\|Step` refs all see it. Tests: `engine/characteristics.test.js`, new `store-attribute-modifier.test.js`. The mixed `measure` (races/Bracers `value`, Beer Mug `step`) is now honoured both ways |
+| T-003 | fixed 2026-10-05 (`cf3c05f`; Warrior), Bone Charm split to T-051 | Owner chose option B (`rating` is the one measure for characteristics). Warrior Circle 7 effect migrated `count` → `rating`; rule-agent confirmed the bonus (RULES-FAQ Q023: Warrior Circle 7 "gains an additional Recovery test"). Tests added in `engine/characteristics.test.js`. EFFECT-TAXONOMY §5 marks `count` reserved and states characteristics take `rating`. **Bone Charm deliberately not migrated**: the book says its bonus is +1 to Recovery test *results*, not +1 per day, so migrating would have made it wrong in a new way |
 | T-004 | still open | `foldPool` handles `dice`, `result`, `step` only; `rating` skipped. Aspect of the Fog Ghost / Casual Murderer still `attack-modifier` + `rating` |
 | T-005 | still open | `ed-spells.js` rebuilds `total` as `result.total + karmaResult.total` (cast and learn paths); roll-logged detail still carries no grand total and no mods |
 | T-006 | still open | Builder `TYPE_META` still one `rating` measure for all characteristic targets; validator has no measure/target cross-check |
@@ -752,7 +757,7 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 | T-015 | still open | store.js thread-weapon `damageStep = e.value` loop unchanged |
 | T-016 | still open | Same 6 `attack-modifier` + `rating` effects in the two Aspect spells |
 | T-017 | still open | `collapseStacking` unchanged (per-origin, origin-less exempt) |
-| T-018 | fixed 2026-10-05 (value now 3) | Rule-agent (RULES-FAQ Q022): the Armor Table gives Obsidiman Skin Physical 3 / Mystic 1 (PG p. 435). The `summary` is right; `value: 2` is wrong. Fix is a one-number data change to `3`, Tier 3 |
+| T-018 | fixed 2026-10-05 (`17b960e`; value now 3) | Rule-agent (RULES-FAQ Q022): the Armor Table gives Obsidiman Skin Physical 3 / Mystic 1 (PG p. 435). The `summary` is right; `value: 2` is wrong. Fix is a one-number data change to `3`, Tier 3 |
 | T-019 | still open | 17 `note` + `on-success` + `perSuccess` effects |
 | T-020 | still open | `yards` / `count` measures still unused for range, area and targets |
 | T-021 | still open | `opValue` in `combat.js` still only special-cases `subtract` |
@@ -1128,3 +1133,7 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 | 2026-09-30 | Scaffold created. |
 | 2026-09-30 | Audit pass complete: 3 parallel read-only passes merged; 47 findings logged, none fixed. |
 | 2026-10-04 | Re-validation against `6ea5d12` (taxonomy v6): 0 closed (T-018, T-001, T-002 and T-003 fixed 2026-10-05), 3 narrowed (T-031, T-032, T-046), 4 new (T-048 to T-051). Test suite 942/0. |
+| 2026-10-05 | T-018 fixed (`17b960e`): Obsidiman Skin Physical armor 3. |
+| 2026-10-05 | T-001 fixed (`a968c33`): knack parents use singular weapon talent names; plural stubs removed. |
+| 2026-10-05 | T-002 fixed (`2c27128`): `attribute-modifier` folds into attributes; Overview pill. |
+| 2026-10-05 | T-003 fixed (`cf3c05f`): Warrior Circle 7 Recovery bonus uses `rating`; Bone Charm split out as T-051 (open, owner decision). |
