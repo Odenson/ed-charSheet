@@ -56,7 +56,7 @@ Six tabs, each a distinct lens on the character:
 |-----|----------|
 | Overview | At-a-glance: hero portrait + header, attributes, defences, armour, movement, health, combat |
 | Disciplines | Per-discipline detail with a toggle between the character's disciplines (talents live here — there is no separate Talents tab) |
-| Combat | Per-encounter scratchpad: a floating header line (Defence, Armour, Initiative with roll, Available Karma); the equipped weapon + attack talent card (attack/damage/strain stat-lines, target-# field) beside a Damage taken card; a segmented control over combat-option / situational / blood-charm chips (active-count badges, session-remembered selection); a Potions card; and the device-local roll log as a full-width table |
+| Combat | Per-encounter scratchpad: a floating header line (Defence, Armour, Initiative with roll, Available Karma); the equipped weapon + attack talent card (attack/damage/strain stat-lines, target-# field) beside a Damage taken card (incl. the Knocked Down Stand-up control); a segmented control over combat-option / situational / blood-charm chips (active-count badges, session-remembered selection); a Potions card; and the device-local roll log as a full-width table |
 | Spells | Grimoire + spell matrices by circle, the Weave/Cast/Effect cast flow, self-cast active effects, and target effects (cast on Other) — spellcasters only |
 | Equipment | Weapons, armour, thread items, kit |
 | Notes | Running character history / log over time |
