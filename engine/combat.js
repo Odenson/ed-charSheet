@@ -39,6 +39,7 @@
 const isFiniteNum = (n) => typeof n === 'number' && Number.isFinite(n);
 
 import { collapseStacking } from './characteristics.js';
+import { parseDice } from './dice.js';
 
 /**
  * Which attack talents/skills can wield a weapon of a given category. Melee →
@@ -106,6 +107,7 @@ export function tickArmedTalents(armed) {
 
 /** The signed value an effect contributes (operation subtract negates). */
 const opValue = (e) => (e.operation === 'subtract' ? -(e.value ?? 0) : e.value ?? 0);
+// (A `measure:"dice"` value is a string, so opValue is never used for it.)
 
 /** Does a test/attack-modifier apply to the test kind being assembled?
  *  ctx: { testKind: 'attack' | 'damage', sightBased?: boolean, activeTalent?: string }
@@ -158,6 +160,7 @@ function foldPool(baseStep, effects, ctx) {
   let step = isFiniteNum(baseStep) ? baseStep : null;
   const resultMods = [];
   const stepMods = [];
+  const bonusDice = [];
   let strain = 0;
   for (const e of effects ?? []) {
     if (!e || typeof e !== 'object') continue;
@@ -172,14 +175,18 @@ function foldPool(baseStep, effects, ctx) {
     if (!appliesToTest(e, ctx)) continue;
     const v = opValue(e);
     const label = e.label ?? e.summary ?? `${e.target.name} ${e.target.domain}`;
-    if (e.measure === 'result') {
+    if (e.measure === 'dice') {
+      // Taxonomy v6: a dice string is a separate Bonus Die group, never a step.
+      const list = parseDice(e.value);
+      if (list && e.operation !== 'subtract') bonusDice.push({ label, value: e.value, dice: list });
+    } else if (e.measure === 'result') {
       resultMods.push({ label, value: v });
     } else if (e.measure === 'step' && step != null) {
       step += v;
       stepMods.push({ label, value: v });
     }
   }
-  return { step, resultMods, strain, stepMods };
+  return { step, resultMods, strain, stepMods, bonusDice };
 }
 
 /**
@@ -207,15 +214,16 @@ export function attackPool({ talentStep, effects, opts = {}, activeTalent }) {
  *   attack roll (see `attackSuccessLevels`) — added on top of the folded step.
  *   `activeTalent` is forwarded so an `Effect` test-modifier still knows which
  *   talent armed the spell (future-proof; Effect itself is talent-agnostic).
- * @returns {{step:number|null, resultMods:Array}}
+ * @returns {{step:number|null, resultMods:Array, bonusDice:Array<{label:string,value:string,dice:Array}>}}
+ *   `bonusDice` are taxonomy-v6 dice effects (Night's Edge's D4): rolled as their own group, never a step.
  */
 export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps = 0, activeTalent }) {
   const base = isFiniteNum(weaponDamageStep) && isFiniteNum(strengthStep) ? weaponDamageStep + strengthStep : null;
-  const { step, resultMods } = foldPool(base, effects, { testKind: 'damage', activeTalent });
+  const { step, resultMods, bonusDice } = foldPool(base, effects, { testKind: 'damage', activeTalent });
   // Success-level bonus rides on the base step, never fabricates one (null stays
   // null → placeholder pill).
   const withBonus = step != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? step + bonusSteps : step;
-  return { step: withBonus, resultMods };
+  return { step: withBonus, resultMods, bonusDice };
 }
 
 /**
@@ -239,7 +247,7 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
 export function auditPool(baseParts = [], effects = [], ctx = {}, bonusSteps = 0, extraMods = []) {
   const baseSum = baseParts.reduce((s, p) => s + (isFiniteNum(p.value) ? p.value : 0), 0);
   const hasBase = baseParts.some((p) => isFiniteNum(p.value));
-  const { step, resultMods, stepMods } = foldPool(hasBase ? baseSum : null, effects, ctx);
+  const { step, resultMods, stepMods, bonusDice } = foldPool(hasBase ? baseSum : null, effects, ctx);
   // `extraMods` are pre-resolved test-modifiers already folded onto the ability
   // itself (a sustained spell's +N step, a thread bonus) — measure-tagged rollMods,
   // NOT part of the combat-option effect list. The base above is the pre-modifier
@@ -264,6 +272,7 @@ export function auditPool(baseParts = [], effects = [], ctx = {}, bonusSteps = 0
   ];
   if (isFiniteNum(bonusSteps) && bonusSteps > 0) parts.push({ label: 'Attack success levels', value: bonusSteps, kind: 'step' });
   for (const m of resultMods) parts.push({ ...m, kind: 'result' });
+  for (const b of bonusDice) parts.push({ label: b.label, value: b.value, kind: 'dice' });
   for (const p of extraResult) parts.push({ ...p, kind: 'result' });
   return { step: withBonus, parts };
 }
@@ -311,9 +320,10 @@ function weaponPoolEffects(effects, name) {
  * ability's own step, so they never route here.
  * @param {object[]} [activeEffects] `model.activeEffects` (origin-tagged)
  * @param {string|null} [weaponCategory] the selected weapon's category
+ * @param {{name:string, category:string, index:number}|null} [weapon] the selected weapon and its occurrence index among equipped same-name items (object-bearing effects, taxonomy v6)
  * @returns {Array<{name:string, effects:object[]}>} bundles named by the spell
  */
-export function activeSpellBundlesFor(activeEffects, weaponCategory) {
+export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = null) {
   const cat = weaponCategory ?? null;
   const bySpell = new Map();
   for (const e of activeEffects ?? []) {
@@ -322,7 +332,15 @@ export function activeSpellBundlesFor(activeEffects, weaponCategory) {
     if (!e.target || e.target.domain !== 'attack') continue;
     if (e.target.name !== 'Damage' && e.target.name !== 'Attack') continue;
     if ((e.condition ?? 'always') !== 'always' || e.gmDiscretion) continue;
-    if (e.scope && e.scope !== cat) continue;
+    if (e.object) {
+      // Taxonomy v6: `object.kind` replaces `scope`; the effect rides only the
+      // weapon chosen at cast (name + occurrence index among equipped items).
+      if (!weapon) continue;
+      const kind = e.object.kind;
+      const kindOk = kind === 'weapon' || (kind === 'melee-weapon' && weapon.category === 'melee') || (kind === 'missile-weapon' && weapon.category === 'missile');
+      if (!kindOk) continue;
+      if (!e.chosen || e.chosen.name !== weapon.name || (e.chosen.index ?? 0) !== (weapon.index ?? 0)) continue;
+    } else if (e.scope && e.scope !== cat) continue;
     const name = e.origin.name;
     if (!bySpell.has(name)) bySpell.set(name, { name, effects: [] });
     bySpell.get(name).effects.push(e);

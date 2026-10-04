@@ -27,13 +27,16 @@ dev → main"), automated. Flow reference:
 ## Git authority
 
 Running this command is the owner's authorization, for **this workflow only**, to:
-commit the changelog on `dev`, push `dev`, open the `dev → main` release PR,
+commit the changelog and the token-usage report on `dev`, push `dev`, open the `dev → main` release PR,
 **squash-merge it**, and merge `origin/main` back into `dev`. Never push to `main`
 directly; never use `git add -A` / `git add .` (stage by explicit path); never
 force-push. The shared permission baseline allows the push to `dev` but still prompts for
 `git merge`, `gh pr create` and `gh pr merge` — the owner approves those prompts. Outside this workflow the usual rule stands.
 
 ## Phase 0 — Preflight (stop on any failure)
+
+Before anything else record the start time for the token report:
+`date -u +%Y-%m-%dT%H:%M:%SZ` (keep it as `<since>`).
 
 Run these and **stop and report** (do not continue, do not "fix" silently) if any
 fails:
@@ -104,9 +107,21 @@ Verify `git status -sb` shows `dev` level with `origin/dev` and
 the documented recovery is `git merge -s ours origin/main` on `dev` (WORKFLOW.md),
 only with the owner's say-so.
 
-## Phase 5 — Report
+## Phase 5 — Token report and final report
 
-Tell the owner: the version, the PR URL and merge commit, the plans now marked
+1. Run the report. With a slug it goes in that feature's folder; without one, in
+   `plans/releases/v<X.Y.Z>/`:
+
+   ```bash
+   node tools/token-report.mjs --workflow release-feature --since <since> --dir plans/<slug>   # or plans/releases/v<X.Y.Z>
+   ```
+2. Commit `token-usage.md` and `token-usage.json` by explicit path
+   (`docs(release): token usage report v<X.Y.Z>`, with the attribution trailer) and
+   `git push origin dev`. This is the only commit after the sync; `dev` ends one
+   docs commit ahead of `main`, which the next release folds in.
+3. Report.
+
+Tell the owner (include the token total and estimated cost from step 1): the version, the PR URL and merge commit, the plans now marked
 `shipped: v<X.Y.Z>`, any warnings they accepted, whether `dev` and `main` are in
 sync, and the production deploy run (`gh run list --branch main --limit 1`). Repeat
 the worker-redeploy reminder if it applied.
@@ -116,5 +131,5 @@ the worker-redeploy reminder if it applied.
 - One confirmation (Phase 1), then run through; stop immediately on any failed
   preflight, red gate, red CI or merge conflict.
 - Never merge with failing checks; never push to `main`; never force-push.
-- Only the changelog and plan `shipped:` lines are edited — no application code.
+- Only the changelog, plan `shipped:` lines and the token-usage report files are written — no application code.
 - Do not open the preview or test the UI: the owner has already verified it.

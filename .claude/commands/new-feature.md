@@ -21,6 +21,8 @@ Rules and flow reference: [docs/FEATURE-WORKFLOW.md](../../docs/FEATURE-WORKFLOW
 
 ## Setup
 
+0. Record the start time for the token report: `date -u +%Y-%m-%dT%H:%M:%SZ`
+   (keep it as `<since>`).
 1. Derive a `<slug>` from the feature name: lowercase, kebab-case, no spaces
    (e.g. "Bulk item export" → `bulk-item-export`).
 2. Create the folder `plans/<slug>/` if it does not exist.
@@ -160,10 +162,21 @@ Summarize in chat:
 `plan.md` carries `status: draft` frontmatter (written by the planner); you leave
 it as `draft` — the owner moves it on by running `/build-feature`.
 
-Point them at `plans/<slug>/{tickets.md, rules.md, plan.md, qa-log.md, review.md}`, then
-send `plan.md` to the user with SendUserFile.
+**Token report.** Run, with the `<since>` from Setup (it totals the main session
+and every subagent transcript since then):
 
-Do **not** commit or push anything. Leave the files on the working tree.
+```bash
+node tools/token-report.mjs --workflow new-feature --since <since> --dir plans/<slug>
+```
+
+It writes `plans/<slug>/token-usage.{md,json}`; add its one-line result (tokens
+and estimated cost) to the summary. The figures are an estimate; see
+[docs/FEATURE-WORKFLOW.md](../../docs/FEATURE-WORKFLOW.md) "Token usage report".
+
+Point them at `plans/<slug>/{tickets.md, rules.md, plan.md, qa-log.md, review.md,
+token-usage.md}`, then send `plan.md` to the user with SendUserFile.
+
+Do **not** commit or push anything. Leave the files (including `token-usage.*`) on the working tree.
 
 ## qa-log.md format
 

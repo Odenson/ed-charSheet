@@ -19,7 +19,7 @@ for the `rules/thread-items.json` catalog.
 |---|---|---|
 | Catalogue | `rules/thread-items.json` | `ed-thread-items/2` |
 | Character ownership | `data/characters/<id>.json` → character `items[]` | `ed-character/1` |
-| Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v5 |
+| Effect vocabulary | `docs/EFFECT-TAXONOMY.md` | v6 |
 | Legend cost tables | `rules/legend.json` → `costs.talentRank` | — |
 
 The top-level shape of `rules/thread-items.json` is:
@@ -27,7 +27,7 @@ The top-level shape of `rules/thread-items.json` is:
 ```jsonc
 {
   "schema": "ed-thread-items/2",                 // Tier-1: don't rename fields
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v5)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v6)",
   "source": "Earthdawn 4E Gamemaster's Guide …", // provenance note
   "notes": { /* field-by-field commentary */ },
   "tiers": { "Novice": {"rankLimit": 4, "mysticDefenseRange": [8,12]}, /* … */ },
@@ -61,7 +61,7 @@ The engine never reads them.
 | `kind` | yes | yes (UI) | `"thread-item"` — drives the ✦ star, the Thread Items section, and the picker label. |
 | `tier` | yes | **yes (audit)** | `Novice` / `Journeyman` / `Warden` / `Master`. Selects the Legend-cost *column* (§5). |
 | `maximumThreads` | no | no | Max characters who can weave a thread to the item (GMG p.202). Display-only. |
-| `mysticDefense` | no | no | The item's MD — the DN for Item History tests to learn its Key Knowledges. Display-only. |
+| `mysticDefense` | no | no | The item's MD — the DN for Item History tests to learn its Key Knowledges. Display-only, except that it is also the default target number in the cast modal of an object-bearing spell such as Night's Edge (editable, else 2; `equippedWeapons[].mysticDefense`). |
 | `legendary` | no | no | `true` flags a legendary item (same shape, usually more ranks/deeds). Display-only. |
 | `rankLimit` | no | no | Entry-level override of the tier's typical max ranks. Display-only. |
 | `base` | yes | **yes** | `{ "effects": [] }` — the item's state with **no thread woven**. Most items are mundane until threaded; `[]` means "nothing until threaded". |
@@ -110,7 +110,7 @@ the UI renders. It emits **two** things with different fates:
    `base.effects` **plus** the effects of every rank `≤ threadRank`,
    concatenated. For Bracers at rank 3 that's ranks 1–3's effects (rank 4–6
    remain locked).
-2. **`thread` block** — **display-only, never engine-read**:
+2. **`thread` block** — **display-only, never engine-read, with one exception** (`store.js` copies `thread.mysticDefense` onto `equippedWeapons[].mysticDefense`, and `engine/spells.js` `weaponMysticDefense` reads it as the default target number in the cast modal of an object-bearing spell: RULES-FAQ Q021, R6; editable, else 2):
    `{ tier, maximumThreads, mysticDefense, legendary, threadRank, threadRanks }`.
    The UI reads these for the tile sub-line, the rank select, and the modal's
    reference zone (tier / MD / max-threads chips + the per-rank list).

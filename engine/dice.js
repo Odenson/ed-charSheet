@@ -63,3 +63,34 @@ export function rollKarmaDice(stepRow, count, rng = Math.random) {
   }
   return { step: stepRow?.step ?? null, dice: stepRow?.dice ?? '', groups, total };
 }
+
+/**
+ * Parse a taxonomy v6 dice string ("D4", "2D6", "D4+D6") into
+ * [{count, sides}]. Returns null for anything that is not a valid dice string.
+ */
+export function parseDice(str) {
+  if (typeof str !== 'string') return null;
+  if (!/^(\d*D(4|6|8|10|12|20))(\+\d*D(4|6|8|10|12|20))*$/.test(str)) return null;
+  return str.split('+').map((part) => {
+    const [c, s] = part.split('D');
+    return { count: c === '' ? 1 : Number(c), sides: Number(s) };
+  });
+}
+
+/**
+ * Roll a parsed dice list as ONE separate group of exploding Bonus Dice (each
+ * physical die explodes independently via `rollDie`). Returns
+ * { dice:[{sides, rolls[]}], total } with one `dice` entry per physical die.
+ */
+export function rollDiceList(list, rng = Math.random) {
+  const dice = [];
+  let total = 0;
+  for (const { count, sides } of list ?? []) {
+    for (let i = 0; i < count; i++) {
+      const rolls = rollDie(sides, rng);
+      total += rolls.reduce((a, b) => a + b, 0);
+      dice.push({ sides, rolls });
+    }
+  }
+  return { dice, total };
+}

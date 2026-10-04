@@ -7,6 +7,14 @@
   },
   "releases": [
     {
+      "version": "1.28.0",
+      "date": "2026-10-04",
+      "summary": "Night's Edge now works end to end: pick an equipped weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration, backed by taxonomy v6 (dice values and an object selector).",
+      "changes": [
+        "Night's Edge now works end to end: pick a weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration."
+      ]
+    },
+    {
       "version": "1.27.0",
       "date": "2026-10-04",
       "summary": "The Combat tab has a new layout: a header line with Defence, Armour, Initiative and Available Karma, side-by-side Attack and Damage taken cards, tabbed combat modifiers, and the combat log as a table that now shows Karma and modifiers in Detail.",

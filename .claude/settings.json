@@ -12,7 +12,8 @@
       "Bash(git push origin dev*)",
       "Bash(git push -u origin dev*)",
       "Bash(node tools/sync-agents.mjs*)",
-      "Bash(node tools/release.mjs check*)"
+      "Bash(node tools/release.mjs check*)",
+      "Bash(node tools/token-report.mjs*)"
     ],
     "ask": [
       "Bash(git merge*)",

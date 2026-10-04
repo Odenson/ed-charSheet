@@ -13,9 +13,9 @@ Governing rules: [GUARDRAILS.md](GUARDRAILS.md) (tiers, sign-off, PR checklist),
 
 | Order | Command | Orchestrator | Purpose | Produces |
 |---|---|---|---|---|
-| 1 | `/new-feature [name]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md` |
-| 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, push to `dev` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, commit on `dev` |
-| 3 | `/release-feature [slug]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR |
+| 1 | `/new-feature [name]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md`, `token-usage.md` |
+| 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, push to `dev` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, commit on `dev`, `token-usage.md` |
+| 3 | `/release-feature [slug]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR, `token-usage.md` |
 
 All artifacts live in `plans/<slug>/` (kebab-case slug), the shared context for
 every participant. The older flat `plans/PLAN-*.md` files are history.
@@ -141,7 +141,36 @@ Running the command is the owner's authorization for exactly these git actions
 (changelog commit, push `dev`, release PR, squash-merge, sync). Never a direct push
 to `main`, never `git add -A`, never force. The shared permission baseline still
 prompts for push and merge; the owner approves those prompts. The only files it
-edits are `data/changelog.json` and plan `shipped:` lines.
+edits are `data/changelog.json`, plan `shipped:` lines and the token-usage report.
+
+## Token usage report
+
+Each workflow ends by running `tools/token-report.mjs` with the start time it
+recorded in its first step. The tool reads the Claude Code session transcript
+(the most recently written one, or `--session <id>`) and the subagent transcripts
+beside it, totals every assistant message at or after the start time, and records
+one run in the feature folder:
+
+| File | Content |
+|---|---|
+| `token-usage.json` | one record per workflow run (the source; re-running the same window replaces it) |
+| `token-usage.md` | rendered: **total per workflow**, then per run a **by-model (mode)** table and a **by-participant** table (orchestrator and each subagent type, with spawn counts); columns Input, Output, Cache read, Cache write, Total tokens, Est. cost |
+
+Where it lands: `/new-feature` and `/build-feature` write `plans/<slug>/` (the
+build commits and pushes it as a follow-up to `dev`; `/new-feature` leaves it on
+the tree with the other plan files). `/release-feature` writes `plans/<slug>/`
+when given a slug, else `plans/releases/vX.Y.Z/`, and commits and pushes it to
+`dev` as the last step. Runs accumulate in the same files, so a feature's folder
+shows plan, build and release cost together.
+
+Cost is an **estimate**: tokens per message times the list prices in
+`tools/token-pricing.json` (per model; cache writes at 5m/1h rates; fast mode
+doubled where it applies). Update that file when rates change; an unlisted model is
+counted but not priced and the cost is then flagged as a lower bound. Output
+tokens are the larger of the recorded count and a size estimate of what was
+written, because transcripts under-record them; hidden thinking is not visible, so
+output is a lower bound. A subscription plan bills differently from the API list
+price. Tests: `tools/token-report.test.js`.
 
 ## Plan status
 
@@ -178,6 +207,7 @@ fields and that `shipped` names a real changelog release.
 | `spec.md` | `feature-designer` | `/build-feature` 1 |
 | `test-plan.md` | `feature-tester` | `/build-feature` 2, 3b |
 | `build-log.md` | Dev Lead, `feature-dev` | `/build-feature` 0–6 |
+| `token-usage.md` / `.json` | `tools/token-report.mjs`, run by each orchestrator | end of every workflow |
 
 `qa-log.md` entry format:
 

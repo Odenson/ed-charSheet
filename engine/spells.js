@@ -223,6 +223,14 @@ export function otherCastOutcome(spell, cast, opts) {
     out.effect = { kind: 'none', text: 'No Effect roll' };
     effectPart = out.effect.text;
   }
+  const diceFx = (spell.effects ?? []).filter((e) => e.measure === 'dice' && e.duration === 'sustained' && !e.gmDiscretion && typeof e.value === 'string');
+  if (diceFx.length) {
+    const txt = diceFx.map((e) => `+${e.value}${e.target?.name ? ` ${e.target.name}` : ''}`).join(', ');
+    out.dice = diceFx.map((e) => ({ value: e.value, label: e.target?.name ?? null, object: e.object ?? null }));
+    effectPart = effectPart + ` \u00b7 ${txt}`;
+    // The target-side rider (e.g. -2 Mystic Defense) is a gmDiscretion note: show it, never fold it.
+    out.notes = (spell.effects ?? []).filter((e) => e.type === 'note' && e.gmDiscretion && e.summary).map((e) => e.summary);
+  }
   const applied = appliedOptions(spell, cast.extraPicks, N);
   out.picks = applied.picks;
   out.success = applied.success;
@@ -369,16 +377,29 @@ export function buildActiveSpell(spell, rank, ctx = {}) {
   const base = durationRounds(spell.duration, rank);
   const rounds = base == null ? null : base + durationBoost;
 
+  const diceFx = effects.filter((e) => e.measure === 'dice' && typeof e.value === 'string');
   const stat = effects.find((e) => typeof e.value === 'number');
   const subject = effectSubject(stat);
-  const effectLabel = stat
-    ? `+${stat.value}${subject ? ` ${subject}` : ''}`
-    : (spell.summary ?? '');
+  let effectLabel;
+  if (diceFx.length) {
+    // Dice effect present: label from it ("+D4 Damage"), standalone step appended.
+    effectLabel = diceFx.map((e) => `+${e.value}${e.target?.name ? ` ${e.target.name}` : ''}`).join(', ');
+    const stepFx = effects.filter((e) => e.measure === 'step' && typeof e.value === 'number');
+    for (const e of stepFx) effectLabel += `, +${e.value} ${e.target?.name ? `${e.target.name} ` : ''}Step`;
+  } else {
+    effectLabel = stat
+      ? `+${stat.value}${subject ? ` ${subject}` : ''}`
+      : (spell.summary ?? '');
+  }
+  const chosen = ctx.object && ctx.object.name != null
+    ? { name: ctx.object.name, index: ctx.object.index ?? 0 }
+    : null;
   return {
     name: spell.name,
     discipline: spell.discipline,
     effects,
     effectLabel,
+    ...(chosen ? { chosen } : {}),
     roundsLeft: rounds,
     roundsTotal: rounds,
     options: appliedOptions(spell, ctx.extraPicks, ctx.successLevels),
@@ -467,8 +488,92 @@ export function effectStepBonus(spell, extraPicks, successLevels) {
  *  tagged with their origin (mirrors the knockdown condition tag). */
 export function activeSpellEffects(active) {
   return (active ?? []).flatMap((s) =>
-    (s.effects ?? []).map((e) => ({ ...e, origin: { kind: 'spell', name: s.name } })),
+    (s.effects ?? []).map((e) => {
+      const tagged = { ...e, origin: { kind: 'spell', name: s.name } };
+      // Object-bearing effects also carry the weapon chosen at cast (session-only).
+      if (e.object && s.chosen) tagged.chosen = { name: s.chosen.name, index: s.chosen.index };
+      return tagged;
+    }),
   );
+}
+
+// --- object selector (taxonomy v6 §1.1): cast-time weapon choice ------------
+
+/** The `object` of a spell's sustained effects ({kind, require}), or null when the
+ *  spell needs no chosen object. Tells the UI whether a picker is needed. */
+export function spellObjectRequirement(spell) {
+  const e = sustainedEffectsOf(spell ?? {}).find((x) => x.object);
+  return e ? e.object : null;
+}
+
+/** 0-based occurrence of `weapon` among equipped items of the same name, by
+ *  position. (Unequipping an earlier same-name item shifts indices: accepted.) */
+export function weaponOccurrence(equippedWeapons, weapon) {
+  let n = 0;
+  for (const w of equippedWeapons ?? []) {
+    if (w === weapon) return n;
+    if (w?.name === weapon?.name) n++;
+  }
+  // Not found by identity: fall back to the count of same-name items (end of list).
+  return Math.max(0, n);
+}
+
+// Does a weapon satisfy an object kind? weapon = any; melee/missile by category.
+export function weaponMatchesKind(kind, weapon) {
+  if (kind === 'weapon') return !!weapon;
+  if (kind === 'melee-weapon') return weapon?.category === 'melee';
+  if (kind === 'missile-weapon') return weapon?.category === 'missile';
+  return false;
+}
+
+const ORD = { 2: '2nd', 3: '3rd' };
+
+/** Weapons a spell's `object` can be attached to, for the cast modal:
+ *  { choices:[{name,index,label}], empty, reason }. Never empty for a spell without `object`. */
+export function castWeaponChoices(ctx) {
+  const req = spellObjectRequirement(ctx?.spell);
+  if (!req) return { choices: [], empty: false, reason: null };
+  const list = (ctx.equippedWeapons ?? []).filter((w) => weaponMatchesKind(req.kind, w));
+  const total = new Map();
+  for (const w of list) total.set(w.name, (total.get(w.name) ?? 0) + 1);
+  const seen = new Map();
+  const choices = list.map((w) => {
+    const index = seen.get(w.name) ?? 0;
+    seen.set(w.name, index + 1);
+    const dup = total.get(w.name) > 1;
+    const label = dup && index > 0 ? `${w.name} (${ORD[index + 1] ?? `${index + 1}th`})` : w.name;
+    return { name: w.name, index, label };
+  });
+  return choices.length
+    ? { choices, empty: false, reason: null }
+    : { choices: [], empty: true, reason: 'No equipped weapon' };
+}
+
+/** Default cast target number for a weapon (R6): its thread Mystic Defense if a
+ *  number, else 2; null when no weapon. */
+export function weaponMysticDefense(weapon) {
+  if (!weapon) return null;
+  return typeof weapon.mysticDefense === 'number' ? weapon.mysticDefense : 2;
+}
+
+/** The cast modal's number after a weapon change: keep the user's value once
+ *  touched, else re-prefill from the weapon (null with no weapon). */
+export function nextCastNumber({ current, touched, weapon }) {
+  if (touched) return current ?? null;
+  return weaponMysticDefense(weapon);
+}
+
+/** Roll Log entry for "Cast on nothing" (wasted threads and spell; no roll). */
+export function wastedCastLogEntry({ spellName, rollId, at }) {
+  return {
+    label: `Cast \u2014 ${spellName} (wasted: no equipped weapon)`,
+    total: null,
+    step: null,
+    dice: [],
+    outcome: { word: 'Wasted', ok: false },
+    rollId,
+    at,
+  };
 }
 
 /**

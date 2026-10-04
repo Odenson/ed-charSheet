@@ -1410,6 +1410,9 @@ export function deriveModel(character, rules, session = {}) {
           // always-on woven test modifiers into the roll pool (engine/combat.js
           // `collectCombatEffects` collapses them per target).
           effects: it.effects ?? [],
+          // Thread weapons' Mystic Defense (display-only elsewhere); also the
+          // default cast target number for an object-bearing spell (R6).
+          mysticDefense: it.thread?.mysticDefense ?? null,
         };
       }),
     // Item-scoped combat-option bundles from equipped thread items that are NOT
