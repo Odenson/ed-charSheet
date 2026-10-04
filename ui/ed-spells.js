@@ -9,7 +9,9 @@
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
-  learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell } from '../engine/spells.js';
+  learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell,
+  spellObjectRequirement, castWeaponChoices, weaponMysticDefense, nextCastNumber } from '../engine/spells.js';
+import { ModalController } from './modal-controller.js';
 import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import { successCount } from '../engine/combat.js';
 import { loadRollLog } from '../store-rolllog.js';
@@ -36,6 +38,7 @@ export class EdSpells extends LitElement {
     _castErr: { state: true },
     _prog: { state: true },
     _otherCast: { state: true },
+    _castModal: { state: true },
     _learn: { state: true },
     _rolls: { state: true },
   };
@@ -99,7 +102,12 @@ export class EdSpells extends LitElement {
     .grid .k { color: var(--muted); font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.03em; align-self: center; }
     .grid .full { grid-column: 2 / -1; }
     .sub { grid-column: 1 / -1; height: 1px; background: var(--border); margin: 4px 0; }
-    .actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    button.btn.primary { border-color: var(--spell); background: var(--spell-bg); color: var(--spell); font-weight: 500; }
+    button.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+    .cmwpn { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-body); }
+    .cmnum { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--fs-body); }
+    .cmnum .tgt { width: 64px; }
     button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
 
     /* cast workspace */
@@ -243,6 +251,14 @@ export class EdSpells extends LitElement {
     this._pendingLearn = null; // 'teacher' | 'patterncraft' | null — which learn roll to fold next
     this._learnRollDiff = null;    // difficulty for the pending Patterncraft success-count
     this._rolls = [];              // device-local Log view (newest first) — see _loadRolls
+    // Cast modal for an object-bearing self-cast (Night's Edge): transient view
+    // state only — { plan, choices, empty, pick, number, touched }. Never persisted.
+    this._castModal = null;
+    this._castObject = null;       // {name, index} chosen at cast, snapshotted for the activation
+    this._castModalCtl = new ModalController(this, {
+      onClose: () => { this._castModal = null; },
+      initialFocus: '.btn.primary',
+    });
   }
 
   // Per-cast progress: threads woven so far, the greying flags, and each step's
@@ -442,7 +458,8 @@ export class EdSpells extends LitElement {
       })();
       if (levels >= 1 && (this._castFoldsSelf || selfOptions)) {
         this.dispatchEvent(new CustomEvent('ed-spell-activate', {
-          detail: { name: this._castName, extraPicks: [...picks], successLevels: levels },
+          detail: { name: this._castName, extraPicks: [...picks], successLevels: levels,
+            ...(this._castObject ? { object: { ...this._castObject } } : {}) },
           bubbles: true, composed: true,
         }));
       }
@@ -503,14 +520,16 @@ export class EdSpells extends LitElement {
       body = html`<div class="aeempty">${out.text}</div>`;
     } else {
       const e = out.effect;
-      const showLine2 = e || out.picks.length || out.success;
+      const showLine2 = e || out.picks.length || out.success || out.dice?.length;
       body = html`
         <div class="terow"><span>${out.spell}</span><span class="succn">${out.badge}</span><span class="temuted">${out.headline}</span></div>
         ${showLine2 ? html`<div class="terow">
           ${e ? (e.text == null ? html`<span class="tepend">Effect \u2014</span>` : html`<span class="pickchip">${e.text}</span>`) : ''}
+          ${(out.dice ?? []).map((d) => html`<span class="pickchip">+${d.value}${d.label ? ` ${d.label}` : ''}</span>`)}
           ${out.picks.map((p) => html`<span class="pickchip">${p.label}${p.count > 1 ? ` \u00d7${p.count}` : ''}</span>`)}
           ${out.success ? html`<span class="pickchip">${out.success.label}${out.success.mult > 1 ? ` \u00d7${out.success.mult}` : ''}</span>` : ''}
         </div>` : ''}
+        ${(out.notes ?? []).map((n) => html`<div class="terow temuted">${n}</div>`)}
         ${out.duration ? html`<div class="terow temuted">Duration ${out.duration.text}</div>` : ''}`;
     }
     return html`
@@ -527,7 +546,7 @@ export class EdSpells extends LitElement {
       <div class="aerow">
         <span class="aemark">✦</span>
         <div class="aemid">
-          <span class="aename">${e.name}${e.effectLabel ? html` <span class="aefx">· ${e.effectLabel}</span>` : ''}</span>
+          <span class="aename">${e.name}${e.chosen?.name ? ` — ${e.chosen.name}` : ''}${e.effectLabel ? html` <span class="aefx">· ${e.effectLabel}</span>` : ''}</span>
           <div class="aebar"><i style="width:${pct}%; background:${low ? 'var(--amber)' : 'var(--karma)'}"></i></div>
           ${(e.options?.picks?.length || e.options?.success) ? html`<div class="aeopts">
             ${(e.options.picks ?? []).map((p) => html`<span class="pickchip">${p.label}${p.count > 1 ? ` \u00d7${p.count}` : ''}</span>`)}
@@ -1067,11 +1086,79 @@ export class EdSpells extends LitElement {
     return sum;
   }
 
-  _rollCast(plan) {
+  // Does pressing Cast on this plan open the weapon + number modal? Only a
+  // self-cast of a spell whose sustained effect carries an `object` selector.
+  _needsCastModal(plan) {
+    return this._subject === 'self' && !!spellObjectRequirement(joinSpell(this.ctx, plan.name));
+  }
+
+  // Open the cast modal (weapon list + editable target number, or the
+  // "No equipped weapon" body). Transient state only; the trigger is the Cast button.
+  _openCastModal(plan, event) {
+    const spell = joinSpell(this.ctx, plan.name);
+    const equippedWeapons = this.model?.combat?.equippedWeapons ?? [];
+    const { choices, empty } = castWeaponChoices({ spell, equippedWeapons });
+    const weapons = choices.map((c) => equippedWeapons.filter((w) => w.name === c.name)[c.index]);
+    const number = empty ? null : nextCastNumber({ current: null, touched: false, weapon: weapons[0] });
+    this._castModal = { plan, choices, weapons, empty, pick: 0, number: number == null ? '' : String(number), touched: false };
+    this._castModalCtl.opened(event?.currentTarget);
+  }
+
+  _castModalPick(i) {
+    const m = this._castModal;
+    if (!m) return;
+    const n = nextCastNumber({ current: m.number === '' ? null : Number(m.number), touched: m.touched, weapon: m.weapons[i] });
+    this._castModal = { ...m, pick: i, number: n == null ? '' : String(n) };
+  }
+
+  _castModalNumber(v) {
+    const m = this._castModal;
+    if (m) this._castModal = { ...m, number: v, touched: true };
+  }
+
+  // A positive integer, else null (disables Confirm).
+  _castModalValue() {
+    const t = String(this._castModal?.number ?? '').trim();
+    return /^\d+$/.test(t) && Number(t) > 0 ? Number(t) : null;
+  }
+
+  _castModalConfirm() {
+    const m = this._castModal;
+    if (!m) return;
+    if (m.empty) { this._castOnNothing(m.plan); return; }
+    const target = this._castModalValue();
+    const c = m.choices[m.pick];
+    if (target == null || !c) return;
+    const { plan } = m;
+    // Hand off to the roll modal: close WITHOUT returning focus to Cast.
+    this._castModalCtl.close({ restoreFocus: false });
+    this._rollCast(plan, { target, object: { name: c.name, index: c.index } });
+  }
+
+  // "Cast on nothing": no equipped weapon. Wastes the woven threads and the spell
+  // like a completed non-step cast — no roll, no activation — and logs a wasted row.
+  // An armed Anticipate Spell bonus is untouched (it only applies inside a cast roll).
+  _castOnNothing(plan) {
+    this._castModalCtl.close(); // no roll modal follows, so focus returns to Cast
+    const wasted = { word: 'Wasted', ok: false };
+    this._castErr = '';
+    this._pendingStep = null;
+    this._castSeq = ++this._seqCounter;
+    this._prog = {
+      ...this._blankProg(),
+      cast: { total: null, levels: 0, outcome: wasted },
+      effect: { total: null, outcome: wasted },
+    };
+    this.dispatchEvent(new CustomEvent('ed-spell-wasted', { detail: { name: plan.name }, bubbles: true, composed: true }));
+    this._loadRolls();
+  }
+
+  _rollCast(plan, opts = {}) {
     if (this._prog.castDone) return; // already cast
     if (this._prog.pendingPick) return; // must assign the last extra thread first
     if (this._prog.threadsWoven < plan.threadsToWeave) return; // required threads not forged
-    const target = this._target ?? this._defaultTarget(plan);
+    if (opts.target == null && this._needsCastModal(plan)) { this._openCastModal(plan, opts.event); return; }
+    const target = opts.target ?? this._target ?? this._defaultTarget(plan);
     if (target == null || Number.isNaN(Number(target))) {
       this._castErr = 'Enter a target number first';
       return;
@@ -1080,6 +1167,7 @@ export class EdSpells extends LitElement {
     this._pendingStep = 'cast';
     this._castTarget = Number(target); // for the success-level count in _onRoll
     this._castName = plan.name;        // for the self-cast activation in _onRoll
+    this._castObject = opts.object ?? null; // weapon chosen in the cast modal (snapshot for Karma re-roll)
     this._castPicks = [...this._prog.extraPicks]; // survives the post-cast prog reset (Karma re-roll)
     this._castSelf = this._subject === 'self';
     this._castFoldsSelf = plan.foldsOnSelf && this._castSelf;
@@ -1169,6 +1257,42 @@ export class EdSpells extends LitElement {
     return html`<span class="rollres">rolled ${res.total}</span>`;
   }
 
+  // The cast modal for an object-bearing self-cast. Presentational: it shows the
+  // engine's weapon choices and an editable target number, and routes Confirm /
+  // Cast on nothing / close through the view handlers. Enter confirms (the primary
+  // button has initial focus; Enter inside the number field also confirms).
+  _castModalTpl() {
+    const m = this._castModal;
+    const valid = m.empty || this._castModalValue() != null;
+    return html`
+      <div class="overlay" @click=${() => this._castModalCtl.close()}>
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Cast ${m.plan.name}" @click=${(e) => e.stopPropagation()}>
+          <div class="mhead">
+            <span class="nm">Cast ${m.plan.name}</span>
+            <button class="mclose" aria-label="Close" @click=${() => this._castModalCtl.close()}>✕</button>
+          </div>
+          ${m.empty
+            ? html`<p class="msum">No equipped weapon</p>
+                <p class="temuted">Casting now wastes the woven threads and the spell.</p>`
+            : html`<div class="pickrow">
+                <div class="plbl">Choose the weapon</div>
+                <div class="pickopts">
+                  ${m.choices.map((c, i) => html`<label class="cmwpn"><input type="radio" name="cmw" .checked=${m.pick === i} @change=${() => this._castModalPick(i)}> ${c.label}</label>`)}
+                </div>
+                <label class="cmnum">Target number
+                  <input class="tgt" type="number" min="1" step="1" .value=${m.number} aria-label="Target number"
+                    @input=${(e) => this._castModalNumber(e.target.value)}
+                    @keydown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); this._castModalConfirm(); } }}>
+                </label>
+              </div>`}
+          <div class="actions">
+            <button class="btn" @click=${() => this._castModalCtl.close()}>Close</button>
+            <button class="btn primary" ?disabled=${!valid} @click=${() => this._castModalConfirm()}>${m.empty ? 'Cast on nothing' : 'Confirm'}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
   _castPanel(plan) {
     const target = this._target ?? this._defaultTarget(plan);
     const forge = plan.threadsToWeave > 0 || (plan.extraThreads?.length > 0);
@@ -1182,7 +1306,11 @@ export class EdSpells extends LitElement {
     // so the woven thread rides the cast and is spent on landing.
     const threadsMet = prog.threadsWoven >= plan.threadsToWeave;
     const effBonus = this._effectBonus(plan);
+    // Object-bearing self-cast (Night's Edge): the cast modal owns the target number,
+    // so the persistent "vs" box is not used for it.
+    const objectSelf = this._needsCastModal(plan);
     return html`
+      ${this._castModal ? this._castModalTpl() : ''}
       <div class="casthead">
         <span class="nm">${plan.name}</span>
         <span class="cr" style="font-size:var(--fs-small);background:var(--spell-bg);color:var(--spell);border-radius:999px;padding:1px 9px;">Circle ${plan.circle} · ${this._castType}</span>
@@ -1206,10 +1334,12 @@ export class EdSpells extends LitElement {
           <button class=${this._subject === 'self' ? 'on' : ''} @click=${() => (this._subject = 'self')}>This character</button>
           <button class=${this._subject === 'other' ? 'on' : ''} @click=${() => (this._subject = 'other')}>Other</button>
         </span>
-        <span>vs</span>
+        ${objectSelf
+          ? html`<span class="temuted">Target number set when you cast</span>`
+          : html`<span>vs</span>
         <input class="tgt" type="number" min="1" .value=${target ?? ''} placeholder="TMD"
           aria-label="Target number" @input=${(e) => { this._target = e.target.value === '' ? null : Number(e.target.value); this._castErr = ''; }}>
-        <span>${/Mystic Defense/i.test(plan.castingTarget || '') ? "target’s Mystic Defense" : plan.castingTarget}</span>
+        <span>${/Mystic Defense/i.test(plan.castingTarget || '') ? "target’s Mystic Defense" : plan.castingTarget}</span>`}
       </div>
       ${this._castErr ? html`<p class="err">${this._castErr}</p>` : ''}
 
@@ -1224,7 +1354,7 @@ export class EdSpells extends LitElement {
         </div>
         <div class="step ${!threadsMet || prog.pendingPick ? 'skip' : ''}">
           <span class="lab">Cast</span>
-          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet || prog.pendingPick} @click=${() => this._rollCast(plan)}>⚄ Roll</button>
+          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet || prog.pendingPick} @click=${(e) => this._rollCast(plan, { event: e })}>⚄ Roll</button>
           <span class="stepnote">${prog.pendingPick
             ? 'Assign the extra thread first'
             : !threadsMet
@@ -1232,14 +1362,17 @@ export class EdSpells extends LitElement {
               : (() => {
                   const armed = this.ctx?.castingArmed;
                   const base = plan.castingStep;
+                  const vs = objectSelf ? (this._castObject ? this._castTarget : 'set at cast') : (target ?? 'TMD');
                   return armed && base != null
-                    ? `Step ${base} +${armed.step} = ${base + armed.step} vs ${target ?? 'TMD'}`
-                    : `Step ${base ?? '—'} vs ${target ?? 'TMD'}`;
+                    ? `Step ${base} +${armed.step} = ${base + armed.step} vs ${vs}`
+                    : `Step ${base ?? '—'} vs ${vs}`;
                 })()}</span>
           ${threadsMet && this.ctx?.castingArmed
             ? html`<span class="armedchip" title="Armed — ${this.ctx.castingArmed.source} (${this.ctx.castingArmed.successes} success${this.ctx.castingArmed.successes > 1 ? 'es' : ''})">+${this.ctx.castingArmed.step} armed</span>`
             : ''}
-          ${this._rollRes(prog.cast)}
+          ${prog.cast?.outcome?.word === 'Wasted' && prog.cast.total == null
+            ? html`<span class="rollres">Wasted</span>`
+            : this._rollRes(prog.cast)}
         </div>
         <div class="step ${!prog.castDone && !prog.effect ? 'skip' : ''}">
           <span class="lab">Effect</span>

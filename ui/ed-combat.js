@@ -20,6 +20,7 @@
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css, nothing } from 'lit';
+import { weaponOccurrence } from '../engine/spells.js';
 import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
@@ -466,14 +467,20 @@ export class EdCombat extends LitElement {
   // Blow). Picking a real weapon filters the list to that weapon's category.
   _weapons() {
     const equipped = this.model?.combat?.equippedWeapons ?? [];
+    // Each weapon carries its occurrence `index` among equipped same-name items
+    // (engine `weaponOccurrence`) and a unique `key` (the name for the first,
+    // `name#N` for later duplicates), so a spell's chosen {name, index} can match.
     return [
-      { name: 'None', category: null, damageStep: null, shortRange: null, longRange: null, image: null },
-      ...equipped,
+      { name: 'None', key: 'None', index: 0, category: null, damageStep: null, shortRange: null, longRange: null, image: null },
+      ...equipped.map((w) => {
+        const index = weaponOccurrence(equipped, w);
+        return { ...w, index, key: index > 0 ? `${w.name}#${index}` : w.name };
+      }),
     ];
   }
   _selWeapon() {
     const list = this._weapons();
-    const found = this._weapon ? list.find((w) => w.name === this._weapon) : null;
+    const found = this._weapon ? list.find((w) => w.key === this._weapon) : null;
     return found ?? list[0];
   }
 
@@ -631,7 +638,12 @@ export class EdCombat extends LitElement {
   // only supplies the tagged active effects and the selected weapon's category
   // (the "selection" — mirroring _armedForPick's scopes).
   _activeSpellBundles() {
-    return activeSpellBundlesFor(this.model?.activeEffects ?? [], this._selWeapon()?.category ?? null);
+    const w = this._selWeapon();
+    return activeSpellBundlesFor(
+      this.model?.activeEffects ?? [],
+      w?.category ?? null,
+      w && w.category != null ? { name: w.name, category: w.category, index: w.index ?? 0 } : null,
+    );
   }
   // The session-armed talents (model.armedTalents) whose weapon scope matches the
   // current pick: an armed Mystic Aim (`appliesTo` missile/throwing) folds into a
@@ -824,7 +836,8 @@ export class EdCombat extends LitElement {
       dp.step,
       this._karmaCtx(this.model?.combat?.damageKarma),
       undefined,
-      { mods: dp.resultMods },
+      // Bonus Dice (Night's Edge's D4): their own exploding group, not part of the step.
+      { mods: dp.resultMods, bonusDice: dp.bonusDice },
     );
   }
   // The most recent Initiative roll's total from the device-local Log (newest
@@ -1400,8 +1413,8 @@ export class EdCombat extends LitElement {
               ${this._artBox()}
               <div class="attackrows">
                 <div class="row2">
-                  <select aria-label="Weapon" .value=${w.name} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._artOk = true; }}>
-                    ${this._weapons().map((x) => html`<option value=${x.name}>${x.name}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
+                  <select aria-label="Weapon" .value=${w.key} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._artOk = true; }}>
+                    ${this._weapons().map((x) => html`<option value=${x.key}>${x.name}${x.index > 0 ? ` (${x.index + 1})` : ''}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
                   </select>
                   <select aria-label="Attack talent or skill" class=${talent?.actionBase != null ? 'chg' : nothing} .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
                     ${this._attackOptions().length
@@ -1419,7 +1432,7 @@ export class EdCombat extends LitElement {
                 <div class="statline">
                   <button class="info" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>ⓘ</button>
                   <span class="k">Damage</span>
-                  <span class="v">${this._stepVal(dp.step)}${range}</span>
+                  <span class="v">${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}</span>
                   ${this._damageBonusBadge()}
                   ${this._showManualSuccesses()
                     ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
@@ -1498,6 +1511,7 @@ export class EdCombat extends LitElement {
     );
   }
   _auditRow(p) {
+    if (p.kind === 'dice') return html`<div class="arow"><span class="al">${p.label}</span><span class="av">+${p.value}</span></div>`;
     const signed = p.kind === 'base' ? `${p.value}` : `${p.value >= 0 ? '+' : ''}${p.value}`;
     return html`<div class="arow"><span class="al">${p.label}</span><span class="av ${p.value < 0 ? 'neg' : ''}">${signed}</span></div>`;
   }
@@ -1505,7 +1519,8 @@ export class EdCombat extends LitElement {
     const which = this._stepAudit;
     const audit = which === 'damage' ? this._damageAudit() : this._attackAudit();
     const title = which === 'damage' ? 'Damage step' : 'Attack step';
-    const stepParts = audit.parts.filter((p) => p.kind !== 'result');
+    const stepParts = audit.parts.filter((p) => p.kind !== 'result' && p.kind !== 'dice');
+    const diceParts = audit.parts.filter((p) => p.kind === 'dice');
     const resultParts = audit.parts.filter((p) => p.kind === 'result');
     return html`
       <div class="overlay" @click=${() => (this._stepAudit = null)}>
@@ -1517,6 +1532,9 @@ export class EdCombat extends LitElement {
           <div class="audit">
             ${stepParts.length ? stepParts.map((p) => this._auditRow(p)) : html`<div class="aempty">No base step yet — pick a ${which === 'damage' ? 'weapon' : 'talent or skill'}.</div>`}
             <div class="arow total"><span class="al">Step</span><span class="av">${audit.step == null ? this._pend() : audit.step}</span></div>
+            ${diceParts.length
+              ? html`<div class="asec">Bonus dice (rolled separately, not the Step):</div>${diceParts.map((p) => this._auditRow(p))}`
+              : ''}
             ${resultParts.length
               ? html`<div class="asec">Applied to the roll total (not the Step):</div>${resultParts.map((p) => this._auditRow(p))}`
               : ''}

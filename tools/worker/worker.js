@@ -284,7 +284,7 @@ async function readItemsFile(repo, itemsPath, branch, gh) {
       sha: undefined,
       file: {
         schema: 'ed-items/3',
-        effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v5)',
+        effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v6)',
         source: 'custom',
         notes: 'Player-created items, folded into rules/custom-items.json on dev by CI.',
         items: {},

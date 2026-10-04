@@ -229,7 +229,12 @@ ones are surfaced for the player/GM, never silently baked into a static rating.
 Non-numeric effects resolve by their own rule rather than summing: `action-modifier`
 (taxonomy v5) `set`s a talent's or skill's action, fastest wins
 (`engine/ability-actions.js`); the effective `action` plus `actionBase` /
-`actionSources` are derived per derive, never stored.
+`actionSources` are derived per derive, never stored. Dice-valued effects
+(taxonomy v6, `measure: "dice"`, e.g. Night's Edge's D4) never change a step:
+`engine/combat.js` collects them as `bonusDice` on the roll pool and
+`engine/dice.js` `rollDiceList` rolls them as their own exploding group. An effect
+with an `object` selector folds only onto the object chosen at activation
+(`chosen: {name, index}`, session-only on the active-spell record).
 
 A small expression evaluator is still expected **later**, but with a narrowed
 near-term job: resolving `{ "ref": … }`-valued effects (e.g. a talent step that
@@ -482,13 +487,13 @@ and its runbook.
     ed-app.js         # root: loads the model, renders the tab shell, routes tabs
     ed-overview.js    # Overview tab (fit-to-viewport)
     ed-disciplines.js # Disciplines tab (incl. talents)
-    ed-combat.js      # Combat tab (per-encounter scratchpad, roll log)
-    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, self-cast active effects / target effects)
+    ed-combat.js      # Combat tab (per-encounter scratchpad, roll log; Damage pool shows active-spell Bonus Dice, e.g. "Step N + D4")
+    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, self-cast active effects / target effects; weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
     ed-equipment.js   # Equipment tab (items grouped by function)
     ed-notes.js       # Notes tab (running character log)
     ed-settings.js    # settings modal
     ed-homebrew.js    # homebrew rules loader/manager
-    ed-roll-modal.js  # step dice-roll modal
+    ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group)
     ed-trade-modal.js # buy/sell / wealth transaction modal
     ed-edit-meta.js   # meta edit modal
     ed-add-legend.js  # add Legend Points modal
@@ -512,7 +517,7 @@ and its runbook.
   engine/                    # pure, DOM-free, independently testable
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
-    dice.js                  # step + dice + exploding roller
+    dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     health.js                # health ratings (Unconscious/Death/wound/recovery)

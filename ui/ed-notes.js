@@ -554,6 +554,7 @@ export class EdNotes extends LitElement {
             ? html`<span class="chip ${r.outcome.ok ? 'ok' : 'no'}">${r.outcome.ok ? '✓' : '✗'} ${r.outcome.word}</span>`
             : ''}
           ${r.karma ? html`<span class="chip karma" title="Karma die">✦ ${r.karma.total}</span>` : ''}
+          ${r.bonusResult?.total != null ? html`<span class="chip" title="Bonus die">Bonus ${r.bonusResult.total}</span>` : ''}
           ${mods.map((m) => html`<span class="chip mod" title=${m.label}>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}</span>`)}
           ${r.at ? html`<span class="ttime">${this._rel(r.at)}</span>` : ''}
         </div>

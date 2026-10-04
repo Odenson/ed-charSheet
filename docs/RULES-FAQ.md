@@ -569,3 +569,51 @@ Sources:
 - text-RB-gamemasters-guide.txt:17099-17103 (dragon Dispel Magic)
 
 Decision: 2026-10-03 — The books print no ordering between action types; for the app, when several active effects set different actions on the same talent, the fastest wins (Free > Simple > Standard). Only Free/Simple/Standard are valid values for the new `action-modifier` effect. (house rule)
+
+### Q019 — Night's Edge (Nethermancer Circle 2): full stat block, D4 bonus die scope, weapon ownership/type, Mystic Defense penalty
+Keywords: Night's Edge, Nights Edge, Night's Blade, nethermancer, second circle, D4 bonus die, cold damage, weapon enchant, Mystic Defense penalty, -2 Mystic Defense, touch, Rank+5 rounds, Step 3 · Resolved: 2026-10-04 · Context: spell-nights-edge
+
+Stat block (PG p. 324): Threads 0; Weaving Difficulty 6 / 11; Casting TMD (target's Mystic Defense); Range Touch; Duration Rank+5 rounds; Effect line "Adds Step 3/D4 cold damage to weapon/Physical and reduces target's Mystic Defense by 2." Element tag Water-Cold. Success Levels: Increase Duration (+2 rounds). Extra Threads: Increase Effect (+2 Damage Step), Increase Range (+10 yards), Additional Target (+Rank).
+Description: the magician exhales into a clenched fist and makes a Spellcasting test against the target's Mystic Defense; on success freezing fog envelops the weapon. "The wielder adds a D4 Bonus Die to the weapon's Damage test and any target that takes damage from the weapon suffers a -2 penalty to their Mystic Defense until the end of the next round." Works on weapons of any material.
+Scope: the text says the D4 Bonus Die is added to "the weapon's Damage test" and runs for Rank+5 rounds; it does NOT say "first only" nor "every", so per-hit repetition is implied by the duration but not stated. Ownership of the weapon and melee vs missile are NOT stated (only "weapon", touch range, "wielder"; "any material"). Compare Arrow of Night, which is explicitly missile-only (Q008). Treat as owner decision.
+Mystic Defense penalty: applies to "any target that takes damage from the weapon" (no limit by which defense/armor was used; Physical vs Mystic not distinguished), -2 until the end of the next round. Effect line's "/Physical" means the extra damage is Physical (reduced by Physical Armor is not stated). Deeper Secrets knack Night's Blade (Circle 2 knack; Patterncraft rank 5, Nethermancer Circle 5, Strain 1): glyph transfers to the weapon, penalty becomes -4 Mystic Defense until end of next round.
+
+Sources:
+- text-spell-players.txt:2745-2764
+- manual/text-player-guide-nethermancer-spells.txt:255-270 (p. 324)
+- text-spell-table-all.txt:327
+- text-RB-deeper-secrets.txt:17260-17269 (Night's Blade knack)
+
+### Q020 — Does a Bonus Die (e.g. Night's Edge D4) explode on max roll, and is it rolled separately from step dice / Karma die?
+Keywords: Bonus Die, bonus dice, explode, explosion, exploding, maximum roll, reroll, D4 bonus die, Night's Edge, Karma die, Damage test, step dice · Resolved: 2026-10-04 · Context: spell-nights-edge
+
+Yes to explosion: the core rule is that rolling the maximum on ANY die gives an extra die of the same type (a "bonus die"), added to the total, and this repeats as long as the maximum keeps coming up. So a D4 Bonus Die from a spell, being a die rolled on the test, follows the same logic: a 4 earns another D4, and so on. The book states this only generically; no text specifically says "the spell's Bonus Die explodes" (inference, moderate confidence).
+Separate die: the spell text says the wielder "adds a D4 Bonus Die to the weapon's Damage test", i.e. an additional die on top of the Damage test (Strength + weapon Damage Step dice). The PG says Bonus Dice apply to all tests including Damage tests, and Karma dice are likewise added as their own die (Karma is not re-rolled on the Damage test unless a talent allows it). Nothing says the D4 merges with the step dice; it is an additional die. Also, the PG's Fiery Weapon-style wording ("D6 Bonus Die to the fiery weapon's Damage test", PG line 10168) uses the same phrasing.
+Note the term overload: the PG's "Bonus Dice" heading (p. 32) defines explosion rerolls as bonus dice; spells then use "Bonus Die" for an added die. The extracts do not explicitly reconcile the two uses. Treat explosion of spell-added dice as the natural reading; owner may confirm.
+
+Sources:
+- text-RB-players-guide.txt:847-858 (p. 32, Bonus Dice: max roll -> roll another die of same type, repeats)
+- text-RB-players-guide.txt:14230-14232 (Bonus Dice apply to all tests including Damage tests; Karma die may be added to damage test)
+- text-RB-players-guide.txt:4130-4145 (p. 121, Karma Die added to test result; multiple Karma Dice possible on one test)
+- text-RB-players-guide.txt:12164 (Night's Edge text), 10168 (Fiery weapon wording)
+
+### Q021 — Spellcasting difficulty when the target is willing or is the caster (TMD spells, e.g. Touch weapon enchant)
+Keywords: willing target, self target, caster as target, own weapon, ally, Mystic Defense, TMD, Casting Difficulty, lower Mystic Defense, forgo defense, Touch range, Night's Edge · Resolved: 2026-10-04 · Context: spell-nights-edge
+
+NOT COVERED as a special case. The extracts contain no rule letting a willing target (or the caster) lower, drop or waive Mystic Defense, and no rule setting a different difficulty for self-targeted TMD spells. The only general rule is that Casting is the target's Mystic Defense "for many spells", a fixed value, or another calculation, per spell. Range "Touch" explicitly "could be the caster", and "self" range spells only work on the caster, but no difficulty exception is attached to either. Targets using "willing" are mentioned only in individual spell descriptions (binding, Battle Fury, etc.), each with its own Casting line; none waives the test. The Spellcasting test is still made ("a successful Spellcasting test means the caster has touched the target"). Read literally, a TMD spell on oneself or an ally is tested against that person's normal Mystic Defense (minimum 2), but the book never states this for willing targets. Mystic Defense of an object (e.g. an unenchanted non-magical weapon) is 2; whether a weapon-targeted vs wielder-targeted Night's Edge uses the weapon's or the wielder's MD is not stated. Combat options "raising or lowering defense ratings" are mentioned only generically (line 13933) with no willing-target lowering rule. Needs an owner decision.
+Files searched: text-RB-players-guide.txt, manual/text-player-guide-spell-concepts.txt.
+
+Sources:
+- text-RB-players-guide.txt:10004-10007 (Casting line: TMD, fixed, or other)
+- text-RB-players-guide.txt:10008-10014 (Range: self = caster only; Touch "could be the caster"; Spellcasting success = touched)
+- manual/text-player-guide-spell-concepts.txt:416-431 (p. 257 — DN usually target's MD; dull-witted/non-magical objects MD 2; magic items by potency)
+- text-RB-players-guide.txt:13930-13933 (combat options raising/lowering defense, generic only)
+
+Follow-up (2026-10-04, Mystic Defense of weapons): the extracts give no stat for a weapon's Mystic Defense. Only general text: "Dull-witted creatures and most inanimate non-magical objects have a Mystic Defense of 2. Magical items generally have a Mystic Defense based on the potency of the object" (no table or formula for potency). Other texts refer to "the weapon's Mystic Defense" without a number.
+Follow-up sources:
+- text-RB-players-guide.txt:9538-9541 (p. 257 — non-magical objects MD 2; magical items by potency); same text manual/text-player-guide-spell-concepts.txt:423-425
+- text-RB-players-guide.txt:13390-13391 (a spell test "against the weapon's Mystic Defense", no value given)
+- text-RB-companions-guide.txt:2687-2689 (Weapon Breaker: "the weapon's Mystic Defense", no value given)
+
+Decision: 2026-10-04 — owner: (1) Night's Edge is cast on the weapon, so its Spellcasting difficulty is the weapon's Mystic Defense. (house rule)
+Decision: 2026-10-04 — owner: (2) A willing target may lower their own Mystic Defense to 2 for a spell cast on them. Rules classification only; not applied by any feature yet. (house rule)

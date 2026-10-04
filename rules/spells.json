@@ -1,6 +1,6 @@
 {
   "schema": "ed-spells/1",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v5)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v6)",
   "source": "Earthdawn 4E Player's Guide + Deeper Secrets — Nethermancer spells. Mechanics + terse original-wording effect lines distilled from the rulebook; descriptions are player-facing paraphrases (copyright-safe, never verbatim prose). taxonomy effects[] are hand-enriched per docs/EFFECT-TAXONOMY.md (§3.4 sustained vs instantaneous).",
   "notes": [
     "123 Nethermancer spells, Circles 1-15. Mechanics (threads/weaving/casting/range/duration/area/effect) + Success Levels/Extra Threads for all; taxonomy effects[] enriched incrementally (combat/numeric spells first), rituals/summons carry a note effect.",
@@ -1355,17 +1355,96 @@
       "range": "Touch",
       "duration": "Rank+5 rounds",
       "area": null,
-      "successes": [],
-      "extraThreads": [],
-      "effects": [
+      "successes": [
         {
-          "type": "note",
-          "source": "spell",
-          "gmDiscretion": true,
-          "summary": "Adds Step 3/D4 cold damage to weapon/Physical and reduces target’s"
+          "label": "Increase Duration (+2 rounds)",
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "rounds",
+              "source": "spell",
+              "summary": "Increase Duration (+2 rounds)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
         }
       ],
-      "summary": "Adds Step 3/D4 cold damage to weapon/Physical and reduces target’s"
+      "extraThreads": [
+        {
+          "label": "Increase Effect (+2 Damage Step)",
+          "effects": [
+            {
+              "type": "attack-modifier",
+              "target": {
+                "domain": "attack",
+                "name": "Damage"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Damage Step)",
+              "duration": "sustained",
+              "object": {
+                "kind": "weapon",
+                "require": "equipped"
+              }
+            }
+          ]
+        },
+        {
+          "label": "Increase Range (+10 yards)",
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Increase Range (+10 yards)"
+            }
+          ]
+        },
+        {
+          "label": "Additional Target (+Rank)",
+          "effects": [
+            {
+              "type": "note",
+              "source": "spell",
+              "gmDiscretion": false,
+              "summary": "Additional Target (+Rank)"
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "operation": "add",
+          "value": "D4",
+          "measure": "dice",
+          "duration": "sustained",
+          "condition": "always",
+          "source": "spell",
+          "object": {
+            "kind": "weapon",
+            "require": "equipped"
+          },
+          "summary": "+D4 Bonus Die to the chosen weapon's Damage tests while active."
+        },
+        {
+          "type": "note",
+          "gmDiscretion": true,
+          "source": "spell",
+          "summary": "Target damaged by the weapon suffers -2 Mystic Defense until the end of the next round."
+        }
+      ],
+      "summary": "Adds a D4 Bonus Die to a chosen weapon's Damage tests; a target damaged by it suffers -2 Mystic Defense until the end of the next round."
     },
     "Shadow’s Whisper": {
       "name": "Shadow’s Whisper",

@@ -161,14 +161,18 @@ export class ModalController {
 
   /**
    * Close the modal through the controller: restore focus to the trigger (ring
-   * suppressed for pointer opens), then run the host's close side effect. Route
+   * suppressed for pointer opens; skipped with `{ restoreFocus: false }` for a hand-off to
+   * another modal), then run the host's close side effect. Route
    * EVERY close here — Escape (automatic), the ✕ button, and the backdrop click —
    * so focus is always restored.
    */
-  close() {
+  close({ restoreFocus = true } = {}) {
     if (!this._open) return;
     this._open = false;
-    this._restoreFocus();
+    // `restoreFocus: false` is for a hand-off: the next modal (e.g. the roll
+    // modal after the cast modal's Confirm) takes focus and returns it itself.
+    if (restoreFocus) this._restoreFocus();
+    else this._trigger = null;
     this._onClose?.();
   }
 

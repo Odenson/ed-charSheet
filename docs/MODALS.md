@@ -94,6 +94,8 @@ _openModal(entry, event) {
 | `dialogSelector` | `'[role="dialog"]'` | The dialog element inside the host's `renderRoot`. |
 | `initialFocus` | first focusable | Selector (within the dialog) to focus on open — set this to the primary button when Enter should confirm. |
 
+`ctl.close({ restoreFocus: false })` closes without returning focus to the trigger. Use it only for a hand-off to another modal that takes focus and returns it itself: the Spells tab's cast modal (weapon + target number for an object-bearing self-cast such as Night's Edge) does this on Confirm because the roll modal opens next. "Cast on nothing" (no equipped weapon) opens no further modal, so it closes normally and restores focus to Cast, as do Escape, ✕, backdrop and Close.
+
 ## Separate-component modals
 
 Some modals are their own element (`ed-confirm`, `ed-conflict`, `ed-roll-modal`),

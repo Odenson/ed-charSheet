@@ -1,4 +1,4 @@
-# Effect Taxonomy — v5
+# Effect Taxonomy — v6
 
 A controlled vocabulary for **effects**: the structured, machine-applicable
 modifiers and grants that races, talents, skills, items, spells, and conditions
@@ -11,9 +11,15 @@ the `Target | Characteristic | Property` addressing model, the operation words
 (`ADD, MINUS, MULTIPLY, DIVIDE, DEFAULT, MIN, MAX, REF`), and the trigger
 comparisons (`GE, GR, LS, LE, EQ, NE`). One language, end to end.
 
-> Status: **v5, under review.** Field names and vocabularies may change. When they
+> Status: **v6, under review.** Field names and vocabularies may change. When they
 > do, bump the version and migrate the data files that reference it
 > (`rules/*.json` `schema` fields).
+>
+> **v6 (2026-10-04):** `measure: "dice"` now has a defined value grammar (a dice
+> string such as `D4`, `2D6`, `D4+D6`; see §5.2) and effects gain an optional
+> `object` selector (§1.1) that ties an effect to something chosen at activation
+> (e.g. Night's Edge's chosen weapon). Additive and backward-compatible; every
+> `rules/*.json` `effectTaxonomy` reference bumped v5 → v6.
 >
 > **v5 (2026-10-03):** added the `action-modifier` type (§2) and the `action`
 > measure (§5, values in §5.1), so an effect can change which action (Free /
@@ -44,7 +50,7 @@ required; the rest are used as each `type` needs.
   "type":        "defense-modifier",              // §2  what kind of effect (engine dispatch key)
   "target":      { "domain": "defense", "name": "Physical" }, // §3  what it affects
   "operation":   "add",                            // §4  how the value combines
-  "value":       2,                                // the magnitude (number, or a { "ref": … })
+  "value":       2,                                // the magnitude (number, { "ref": … }, a §5.1 word, or a §5.2 dice string)
   "measure":     "rating",                         // §5  what the value counts in
   "condition":   "always",                         // §6  when it applies
   "scope":       null,                             // §6  optional qualifier
@@ -61,16 +67,32 @@ required; the rest are used as each `type` needs.
 | `type` | always | Engine dispatch key — the *kind* of effect | §2 |
 | `target` | modifiers & grants | What is affected, as a path | §3 |
 | `operation` | modifiers | How the value combines | §4 |
-| `value` | modifiers | Magnitude — a number, or `{ "ref": "<target-path>" }`; for `action-modifier` a controlled word (§5.1) | — |
+| `value` | modifiers | Magnitude — a number, or `{ "ref": "<target-path>" }`; for `action-modifier` a controlled word (§5.1); for `measure: "dice"` a dice string (§5.2) | — |
 | `measure` | modifiers | What the value counts in (prevents step/result/rating confusion) | §5 |
 | `condition` | optional (default `always`) | When it applies | §6 |
 | `scope` | optional | Narrowing qualifier (enum-or-text) | §6 |
+| `object` | optional | What the effect is attached to, chosen at activation | §1.1 |
 | `perSuccess` | optional (default `false`) | `value` applies per success on the triggering test (e.g. +2 PD per success) | boolean |
 | `stacking` | optional (default `cumulative`) | How multiples on the same target combine | §7 |
 | `duration` | optional (default `permanent`) | How long it lasts | §8 |
 | `source` | usually engine-set | Provenance, for tracking & display | §9 |
 | `gmDiscretion` | optional (default `false`) | Marks a non-automatable judgement call | boolean |
 | `summary` | yes | Concise original-wording description; **never** verbatim rulebook text | — |
+
+### 1.1 `object` — what an effect attaches to (v6)
+
+```jsonc
+"object": { "kind": "weapon", "require": "equipped" }
+```
+
+- `kind`: `weapon` · `melee-weapon` · `missile-weapon` · `character` · `item`.
+- `require` (optional): `equipped` gates the effect so it folds only while the
+  chosen item is equipped.
+- The specific object is **chosen at activation** (e.g. when a spell is cast) and
+  kept only in the session-only active record (`chosen: {name, index}`); it is
+  never persisted. When `object` is present, `object.kind` replaces `scope` for
+  matching; without `object`, `scope` is unchanged.
+- Only `weapon` + `require: "equipped"` is used by data today.
 
 ---
 
@@ -84,7 +106,7 @@ Small on purpose. Each maps to one way the engine applies the effect.
 | `defense-modifier` | adjusts a defense | `defense` |
 | `characteristic-modifier` | adjusts a **derived** characteristic | `characteristic` |
 | `armor-modifier` | adjusts armor | `armor` |
-| `attack-modifier` | adjusts an **attack's** step or result (weapon / natural-attack damage step, to-hit step) | `attack` |
+| `attack-modifier` | adjusts an **attack's** step or result, or adds Bonus Dice (`measure: "dice"`, §5.2) (weapon / natural-attack damage step, to-hit step) | `attack` |
 | `test-modifier` | adjusts a specific test (roll) | `test` |
 | `duration-modifier` | extends/reduces an active effect's remaining duration | — |
 | `action-modifier` | sets which action a talent or skill uses | `ability` |
@@ -275,7 +297,7 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 | `result` | a test's final total (flat) | Gahad's +1 to the roll |
 | `rating` | a static stat (defense / armor / threshold / movement) | +2 Physical Defense |
 | `rank` | talent / skill rank | starts at rank 0 |
-| `dice` | explicit dice | +1D6 |
+| `dice` | explicit dice (a dice string, §5.2) | +D4 Bonus Die |
 | `points` | karma / legend pool | +5 Legend |
 | `yards` | distance | range |
 | `rounds` | duration in combat rounds (1 round = 1 Initiative roll) | +2 rounds |
@@ -287,6 +309,15 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 ### 5.1 Action values
 
 The only valid values for the action measure, fastest first: `Free` · `Simple` · `Standard`. The printed action types `Sustained` and `NA` are deliberately not valid effect values.
+
+### 5.2 Dice values (v6)
+
+A `measure: "dice"` value is a **string**, never a number:
+`^(\d*D(4|6|8|10|12|20))(\+\d*D(4|6|8|10|12|20))*$`. The leading count is
+optional (`D4`, `2D6`, `D4+D6`); die sizes match `engine/dice.js`; `+` is the only
+joiner. A dice string on any other measure, or a number on `dice`, is invalid.
+A dice effect never changes a `step`: it is rolled as its own group of Bonus
+Dice alongside the step dice.
 
 ---
 
@@ -432,6 +463,14 @@ lives, but may be stated explicitly.
   "operation": "set", "value": "Simple", "measure": "action",
   "duration": "sustained", "source": "spell",
   "summary": "Use Frighten as Simple Action" }
+
+// Night's Edge — a D4 Bonus Die on the chosen, equipped weapon's Damage tests
+{ "type": "attack-modifier",
+  "target": { "domain": "attack", "name": "Damage" },
+  "operation": "add", "value": "D4", "measure": "dice",
+  "duration": "sustained", "source": "spell",
+  "object": { "kind": "weapon", "require": "equipped" },
+  "summary": "+D4 Bonus Die to the chosen weapon's Damage tests." }
 ```
 
 ---

@@ -1,7 +1,7 @@
 // ui/ed-roll-modal.js — modal showing a step dice roll: the dice used, each
 // die's result, exploding dice chained as the same die again, and the total.
 import { LitElement, html, css } from 'lit';
-import { rollStep, rollKarmaDice } from '../engine/dice.js';
+import { rollStep, rollKarmaDice, rollDiceList } from '../engine/dice.js';
 import { knockdownOutcome } from '../engine/health.js';
 import { successCount } from '../engine/combat.js';
 
@@ -16,7 +16,9 @@ export class EdRollModal extends LitElement {
     mods: { attribute: false }, // [{ label, value }] | null — roll-time modifiers
     strain: { attribute: false }, // number | 0 — Strain charged at commit for a set-dice/aim roll; 0 otherwise (already paid)
     aim: { attribute: false }, // { vs:'Mystic'|'Physical'|'Social', strain } | null — aim roll: enter the target's defence, roll vs it, resolve Hit/Miss (Mystic Aim)
+    bonusDice: { attribute: false }, // [{ label, dice:[{count,sides}] }] | null — Bonus Dice (taxonomy v6, e.g. Night's Edge D4): their own exploding group, rolled with the step
     _result: { state: true },
+    _bonusResult: { state: true }, // { dice:[{sides,rolls[]}], total } | null — the rolled Bonus Dice group
     _karmaResult: { state: true },
     _karmaOn: { state: true },
     _committed: { state: true }, // set-dice: has the initial batch been rolled/charged?
@@ -187,8 +189,16 @@ export class EdRollModal extends LitElement {
     return typeof a === 'number' && Number.isFinite(a) && a > 0;
   }
 
+  // Roll the Bonus Dice group (null when the roll has none). Rolled whenever the
+  // step dice are rolled; a Karma toggle leaves it alone.
+  _rollBonus() {
+    const list = (this.bonusDice ?? []).flatMap((b) => b.dice ?? []);
+    return list.length ? rollDiceList(list) : null;
+  }
+
   _roll() {
     this._result = rollStep(this.stepRow);
+    this._bonusResult = this._rollBonus();
     // Re-roll the Karma die too if it's currently spent.
     this._karmaResult = this._karmaOn && this.karma?.stepRow ? rollStep(this.karma.stepRow) : null;
     // A Knockdown test resolves itself: the moment the dice land, the outcome
@@ -229,6 +239,7 @@ export class EdRollModal extends LitElement {
     if (this._committed) return;
     const c = this._diceCount;
     this._result = rollStep(this.stepRow);
+    this._bonusResult = this._rollBonus();
     this._karmaResult = this.karma?.stepRow ? rollKarmaDice(this.karma.stepRow, c) : null;
     this._diceUsed = c;
     this._committed = true;
@@ -266,6 +277,7 @@ export class EdRollModal extends LitElement {
   _commitAim() {
     if (this._aimRolled || this._aimTargetNum() == null) return;
     this._result = rollStep(this.stepRow);
+    this._bonusResult = this._rollBonus();
     this._aimRolled = true;
     // Charge the aim's Strain once, at the roll (not at option-select) — Escape
     // before this costs nothing.
@@ -288,6 +300,7 @@ export class EdRollModal extends LitElement {
           rollId: this.rollId,
           result: this._result,
           karmaResult: this._karmaResult,
+          bonusResult: this._bonusResult ?? undefined,
           outcome: this._outcome(),
           // Aim rolls carry their in-modal target so the log (and the Combat tab's
           // arm check) records the difficulty; other rolls carry it on the config.
@@ -336,7 +349,7 @@ export class EdRollModal extends LitElement {
     const r = this._result;
     if (!r) return 0;
     const modSum = (this.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
-    return r.total + (this._karmaResult?.total ?? 0) + modSum;
+    return r.total + (this._karmaResult?.total ?? 0) + (this._bonusResult?.total ?? 0) + modSum;
   }
 
   // The comparison against a difficulty, when one is set. For a Knockdown test
@@ -488,6 +501,21 @@ export class EdRollModal extends LitElement {
                       )}
                   </span>
                   <span class="gsub">${this._karmaResult.total}</span>
+                </div>`
+              : ''}
+            ${this._bonusResult
+              ? html`<div class="grp">
+                  <span class="glbl" title=${(this.bonusDice ?? []).map((b) => b.label).filter(Boolean).join(', ') || 'Bonus Dice'}>Bonus</span>
+                  <span class="chain">
+                    ${this._bonusResult.dice.map(
+                      (d) => html`${d.rolls.map(
+                        (v, i) => html`<span class="die ${v === d.sides ? 'max' : ''}">${v}</span>${i < d.rolls.length - 1
+                            ? html`<span class="arrow" aria-hidden="true">↦</span>`
+                            : ''}`,
+                      )}${d.rolls.length > 1 ? html`<span class="boom">exploded</span>` : ''}`,
+                    )}
+                  </span>
+                  <span class="gsub">${this._bonusResult.total}</span>
                 </div>`
               : ''}
             ${(this.mods ?? []).length

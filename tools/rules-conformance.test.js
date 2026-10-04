@@ -120,14 +120,89 @@ test('every effect uses the documented vocabulary', () => {
   assert.deepEqual(bad.slice(0, 20), [], `${bad.length} vocabulary violations (first 20 shown)`);
 });
 
-// ---- taxonomy v5: action-modifier (taxonomy-on-action-type) ----
+// ---- taxonomy v6: dice values + `object` selector (spell-nights-edge I1) ----
+// (v5 added action-modifier; its tests below are unchanged.)
 
-test('taxonomy doc is v5 and every rules ref that carries one names v5', () => {
-  assert.equal(docVersion, 'v5');
+test('taxonomy doc is v6 and every rules ref that carries one names v6', () => {
+  assert.equal(docVersion, 'v6');
   for (const f of files) {
     const d = load(f);
-    if (d.effectTaxonomy != null) assert.equal(d.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v5)', `rules/${f}`);
+    if (d.effectTaxonomy != null) assert.equal(d.effectTaxonomy, 'docs/EFFECT-TAXONOMY.md (v6)', `rules/${f}`);
   }
+});
+
+// Grammar from the spec: optional leading count, die sizes matching engine/dice.js, `+` joins only.
+const DICE_RE = /^(\d*D(4|6|8|10|12|20))(\+\d*D(4|6|8|10|12|20))*$/;
+const OBJECT_KINDS = ['weapon', 'melee-weapon', 'missile-weapon', 'character', 'item'];
+
+// Violations of the optional `object` selector (taxonomy v6 §1).
+function validateObject(o) {
+  const p = [];
+  if (o == null || typeof o !== 'object' || Array.isArray(o)) return ['object must be an object'];
+  if (!OBJECT_KINDS.includes(o.kind)) p.push(`object.kind "${o.kind}" is not one of ${OBJECT_KINDS.join('/')}`);
+  if (o.require !== undefined && o.require !== 'equipped') p.push(`object.require must be "equipped" or absent, got ${JSON.stringify(o.require)}`);
+  return p;
+}
+
+// Violations of a `measure:"dice"` value, and of dice strings on other measures.
+function validateDiceValue(e) {
+  const p = [];
+  if (e.measure === 'dice') {
+    if (typeof e.value !== 'string' || !DICE_RE.test(e.value)) p.push(`measure "dice" needs a dice string, got ${JSON.stringify(e.value)}`);
+  } else if (typeof e.value === 'string' && DICE_RE.test(e.value)) {
+    p.push(`dice string ${JSON.stringify(e.value)} on measure "${e.measure}"`);
+  }
+  return p;
+}
+
+test('v6 doc defines the dice grammar and the object field', () => {
+  assert.ok(VOCAB.measure.has('dice'));
+  assert.match(doc, /`object`/);
+  for (const kind of OBJECT_KINDS) assert.ok(doc.includes(`\`${kind}\``), `doc names object kind ${kind}`);
+  assert.match(doc, /D4\+D6/, 'doc shows the joined-dice example');
+  assert.match(doc, /Night.s Edge/, 'doc carries the Night\u2019s Edge worked example');
+});
+
+test('every effect in rules/*.json has a valid object and dice value', () => {
+  const bad = [];
+  let objects = 0;
+  for (const f of files) {
+    for (const [e, where] of walk(load(f))) {
+      if (e.object !== undefined) { objects++; for (const pr of validateObject(e.object)) bad.push(`rules/${f}${where}: ${pr}`); }
+      for (const pr of validateDiceValue(e)) bad.push(`rules/${f}${where}: ${pr}`);
+    }
+  }
+  assert.ok(objects > 0, 'no object-bearing effect scanned (Night\u2019s Edge should carry one)');
+  assert.deepEqual(bad.slice(0, 20), []);
+});
+
+test('validateObject accepts weapon/equipped and every documented kind', () => {
+  assert.deepEqual(validateObject({ kind: 'weapon', require: 'equipped' }), []);
+  for (const kind of OBJECT_KINDS) assert.deepEqual(validateObject({ kind }), [], kind);
+});
+
+test('validateObject rejects a malformed kind, require, or shape', () => {
+  assert.ok(validateObject({ kind: 'sword' }).length > 0);
+  assert.ok(validateObject({}).length > 0);
+  assert.ok(validateObject({ kind: 'weapon', require: 'worn' }).length > 0);
+  assert.ok(validateObject('weapon').length > 0);
+  assert.ok(validateObject(null).length > 0);
+});
+
+test('validateDiceValue accepts D4, 2D6, D4+D6 on measure dice', () => {
+  for (const value of ['D4', '2D6', 'D4+D6', '3D20', '2D8+D10+D12']) {
+    assert.deepEqual(validateDiceValue({ measure: 'dice', value }), [], value);
+  }
+});
+
+test('validateDiceValue rejects malformed dice strings, numbers on dice, and dice strings on other measures', () => {
+  for (const value of ['D7', 'banana', '', 'D4+', 'D4 + D6', '4', 'd4', undefined, null]) {
+    assert.ok(validateDiceValue({ measure: 'dice', value }).length > 0, `value ${JSON.stringify(value)}`);
+  }
+  assert.ok(validateDiceValue({ measure: 'dice', value: 4 }).length > 0, 'numeric value on dice measure');
+  assert.ok(validateDiceValue({ measure: 'step', value: 'D4' }).length > 0, 'dice string on step measure');
+  assert.ok(validateDiceValue({ measure: 'rating', value: '2D6' }).length > 0);
+  assert.deepEqual(validateDiceValue({ measure: 'step', value: 3 }), []);
 });
 
 test('doc defines type action-modifier and measure action', () => {

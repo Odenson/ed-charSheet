@@ -36,6 +36,8 @@ export function logRowCells(entry) {
     // already stores, nothing derived.
     detail: [
       r.karma?.total != null ? `Karma +${r.karma.total}` : '',
+      // Bonus Dice (e.g. Night's Edge's D4) are their own group, absent on older entries.
+      r.bonusResult?.total != null && Number.isFinite(Number(r.bonusResult.total)) ? `Bonus die +${r.bonusResult.total}` : '',
       ...(r.mods ?? []).map(modText),
     ].filter(Boolean).join(' · '),
   };

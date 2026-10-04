@@ -2,7 +2,7 @@
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
-import { buildActiveSpell, tickActiveSpells } from '../engine/spells.js';
+import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
 import { successCount, tickArmedTalents } from '../engine/combat.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
@@ -276,14 +276,14 @@ export class EdApp extends LitElement {
     // device-local (decision #2) and never rides the overlay or an export.
     this.addEventListener('ed-roll-logged', (e) => {
       if (!this._roll || !this._characterId) return;
-      const { rollId, result, karmaResult, outcome } = e.detail ?? {};
+      const { rollId, result, karmaResult, bonusResult, outcome } = e.detail ?? {};
       const r = result;
       if (!r || !rollId) return;
       // The full displayed number the modal showed: dice + Karma die + roll-time
       // mods — so the log matches what the player saw, and the recorded
       // `mods`/`karma` sub-objects explain a total that isn't the raw dice sum
       // without double-counting on render (decision #8).
-      const total = r.total + (karmaResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
+      const total = r.total + (karmaResult?.total ?? 0) + (bonusResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
       // An aim roll's difficulty is entered in the modal, so it rides the logged
       // event (`e.detail.difficulty`); ordinary rolls carry it on the roll config.
       const difficulty = this._roll.difficulty?.value ?? e.detail.difficulty ?? null;
@@ -300,6 +300,8 @@ export class EdApp extends LitElement {
           difficulty,
           outcome: outcome ?? null,
           karma: karmaResult ? { step: karmaResult.step, dice: karmaResult.dice, total: karmaResult.total } : null,
+          // Bonus Dice (taxonomy v6): a separate group; absent on rolls without one.
+          ...(bonusResult ? { bonusResult: { dice: bonusResult.dice, total: bonusResult.total } } : {}),
           mods: this._roll.mods ?? [],
         },
         this._characterId,
@@ -392,6 +394,13 @@ export class EdApp extends LitElement {
     // session active-effect set so its effects fold into derived values and count
     // down per Initiative roll. Session-only, never persisted (like knockdown).
     this.addEventListener('ed-spell-activate', (e) => this._activateSpell(e.detail));
+    // "Cast on nothing" (an object-bearing spell with no equipped weapon): no roll
+    // happened, so the Roll Log gets a roll-less "wasted" row from the pure helper.
+    this.addEventListener('ed-spell-wasted', (e) => {
+      const name = e.detail?.name;
+      if (!name || !this._characterId) return;
+      saveRollLog(wastedCastLogEntry({ spellName: name, rollId: uid(), at: new Date().toISOString() }), this._characterId);
+    });
     this.addEventListener('ed-edit-health', (e) => this._editHealth(e.detail));
     this.addEventListener('ed-day-reset', (e) => this._openDayReset(e.detail));
     // A view ended (or restarted) the Knocked Down condition — "Stand up" in
@@ -705,6 +714,8 @@ export class EdApp extends LitElement {
     const entry = buildActiveSpell(spell, this._spellcastingRank(), {
       extraPicks: detail?.extraPicks ?? [],
       successLevels: detail?.successLevels ?? 0,
+      // The weapon chosen in the cast modal ({name, index}); session-only, on the record.
+      object: detail?.object ?? null,
     });
     this._activeSpells = [...(this._activeSpells ?? []).filter((s) => s.name !== name), entry];
     this._model = this._derive();
@@ -1505,7 +1516,7 @@ export class EdApp extends LitElement {
   // body). A recovery roll made while a step-boost is armed rolls at the bumped
   // step (Booster/Healing +8) — the dice and the log then show the boosted step.
   // The +N comes from the armed potion's catalog data, never a view literal.
-  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim, arms }) {
+  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim, arms, bonusDice }) {
     let rollStep = step;
     const recBonus = armedRecoveryBonus(this._pendingUse);
     if (apply?.action === 'recovery-heal' && recBonus.stepBonus) rollStep += recBonus.stepBonus;
@@ -1534,6 +1545,8 @@ export class EdApp extends LitElement {
       label,
       stepRow,
       karma: karmaCtx,
+      // Bonus Dice group (taxonomy v6) — null for ordinary rolls.
+      bonusDice: bonusDice?.length ? bonusDice : null,
       apply: apply ?? null,
       difficulty: difficulty ?? null,
       // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
@@ -1904,6 +1917,7 @@ export class EdApp extends LitElement {
             .label=${this._roll.label}
             .stepRow=${this._roll.stepRow}
             .karma=${this._roll.karma}
+            .bonusDice=${this._roll.bonusDice}
             .apply=${this._roll.apply}
             .difficulty=${this._roll.difficulty}
             .mods=${this._roll.mods}

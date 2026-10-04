@@ -29,6 +29,7 @@ test('empty effect list: unchanged step, no mods, no strain', () => {
   assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [] }), {
     step: STR + WEAPON,
     resultMods: [],
+    bonusDice: [],
   });
 });
 
@@ -65,6 +66,7 @@ test('Aggressive Attack: +3 attack step, +3 damage step, defense mods excluded, 
   assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
     step: STR + WEAPON + 3,
     resultMods: [],
+    bonusDice: [],
   });
 });
 
@@ -79,6 +81,7 @@ test('Defensive Stance: −3 attack AND damage (except-knockdown scope), defense
   assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
     step: STR + WEAPON - 3,
     resultMods: [],
+    bonusDice: [],
   });
 });
 
@@ -121,6 +124,7 @@ test('note-only riders fold nothing: Full Cover, Surprised, Stun, Knockdown, Jum
     assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
       step: STR + WEAPON,
       resultMods: [],
+      bonusDice: [],
     }, name);
   }
 });

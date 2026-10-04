@@ -3,7 +3,9 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": []
+    "changes": [
+      "Night's Edge now works end to end: pick a weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration."
+    ]
   },
   "releases": [
     {
