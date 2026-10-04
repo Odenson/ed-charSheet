@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.28.0
 ---
 # Delivery Plan: Night's Edge (spell-nights-edge)
 
