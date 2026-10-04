@@ -402,7 +402,8 @@ function spellAttackBundles(activeEffects, weaponCategory, weapon, admitConditio
 }
 
 /**
- * Always-on attack/damage bonuses from equipped NON-weapon items (a thread item
+ * Always-on attack/damage bonuses (`attack-modifier` or `test-modifier` on the
+ * Attack/Damage test) from equipped NON-weapon items (a thread item
  * such as Bracers of Obsidiman Strength, or a custom magic item). A weapon's own
  * effects reach the pools through `selectedWeaponEffects`, so the caller passes only
  * the names of the equipped items that are not weapons. Effects are collapsed per
@@ -421,7 +422,12 @@ export function activeItemBundlesFor(activeEffects, weaponCategory, itemNames = 
   for (const e of activeEffects ?? []) {
     const o = e?.origin;
     if ((o?.kind !== 'item' && o?.kind !== 'thread') || !names.has(o.name)) continue;
-    if (e.type !== 'attack-modifier' || e.target?.domain !== 'attack') continue;
+    // An item may express an Attack/Damage bonus either as an `attack-modifier`
+    // ({attack, Attack|Damage}) or as a `test-modifier` ({test, Attack|Damage}); the
+    // pools fold both the same way.
+    const isAttackMod = e.type === 'attack-modifier' && e.target?.domain === 'attack';
+    const isTestMod = e.type === 'test-modifier' && e.target?.domain === 'test';
+    if (!isAttackMod && !isTestMod) continue;
     if (e.target.name !== 'Damage' && e.target.name !== 'Attack') continue;
     if ((e.condition ?? 'always') !== 'always' || e.gmDiscretion || e.object) continue;
     if (e.scope && !scopeMatchesCategory(e.scope, cat)) continue;

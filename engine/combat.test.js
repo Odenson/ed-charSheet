@@ -720,3 +720,16 @@ test('catalog guard: every shipped Attack/Damage modifier can be folded by the p
   }
   assert.deepEqual(bad, [], 'these would be reported as "Not applied" in the combat log');
 });
+
+test('activeItemBundlesFor: a worn item test-modifier on the Attack/Damage test folds too (Beer Mug)', () => {
+  const tm = (name) => ({ type: 'test-modifier', target: { domain: 'test', name }, operation: 'add', value: 1, measure: 'step', condition: 'always', source: 'item', summary: `+1 ${name}`, origin: { kind: 'item', name: 'Beer Mug of Brawling' } });
+  const fx = [tm('Attack'), tm('Damage'), { ...tm('Initiative'), summary: 'not a combat pool' }, { ...tm('Action'), summary: 'not Attack/Damage' }];
+  for (const cat of ['unarmed', 'melee', null]) {
+    const bundles = activeItemBundlesFor(fx, cat, ['Beer Mug of Brawling']);
+    assert.equal(bundles[0].effects.length, 2, `${cat}: only Attack and Damage`);
+    const { attackEffects, damageEffects } = collectCombatEffects({ activeItemBundles: bundles, rules: { options: [], situations: [] } });
+    assert.equal(attackPool({ talentStep: 9, effects: attackEffects }).step, 10, `${cat} attack`);
+    assert.equal(damagePool({ weaponDamageStep: 5, strengthStep: 6, effects: damageEffects }).step, 12, `${cat} damage`);
+  }
+  assert.deepEqual(activeItemBundlesFor([{ ...tm('Attack'), condition: 'situational' }], 'melee', ['Beer Mug of Brawling']), []);
+});
