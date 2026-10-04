@@ -617,3 +617,16 @@ Follow-up sources:
 
 Decision: 2026-10-04 — owner: (1) Night's Edge is cast on the weapon, so its Spellcasting difficulty is the weapon's Mystic Defense. (house rule)
 Decision: 2026-10-04 — owner: (2) A willing target may lower their own Mystic Defense to 2 for a spell cast on them. Rules classification only; not applied by any feature yet. (house rule)
+
+### Q022 — Obsidiman racial Natural Armor (Physical/Mystic) and the "Obsidiman Skin" armor item
+Keywords: obsidiman, obsidimen, natural armor, racial ability, obsidiman skin, living armor, physical armor 3, mystic armor, armor table, Wound Threshold · Resolved: 2026-10-04 · Context: TAXONOMY-AUDIT T-018
+
+Racial Natural Armor: obsidiman skin has Physical Armor Rating 3; no Mystic Armor is stated for the racial ability. Obsidimen can wear only other "living" armor, whose protection adds to Natural Armor. Separately, obsidimen get +3 Wound Threshold. The racial value is 3, not 2.
+Armor item "Obsidiman Skin" (made from a slain obsidiman) is a distinct, purchasable armor on the Armor Table: Physical 3, Mystic 1, Initiative Penalty 0, cost 100, weight 20, Rare. Its text says obsidimen attack anyone wearing it on sight and dwarfs/trolls worsen Attitude by two degrees. The text does not say whether it counts as "living" armor for obsidimen. A items.json entry with Physical add 2 contradicts the book on both the racial ability (3) and the item (3); Mystic 1 matches the item only.
+
+Sources:
+- text-RB-players-guide.txt:1453-1459 (obsidiman racial abilities: Wound Threshold +3, Natural Armor Physical 3)
+- text-RB-players-guide.txt:15622-15627 (Obsidiman Skin armor description)
+- text-RB-players-guide.txt:16484-16500 (p. 435 — Armor Table: Obsidiman Skin 3 / 1 / 0 / 100 / 20 / Rare)
+- player-tables-narrative.txt:1031 (same stats in prose)
+- text-race-players.txt:35 (same racial text)

@@ -6,7 +6,7 @@ documented architecture. Same spirit as [RULEBOOK-AUDIT.md](RULEBOOK-AUDIT.md):
 record a discrepancy here *before* fixing it, and cite the finding id (`T-nnn`)
 in the fixing commit.
 
-> Status: **audit pass complete (2026-09-30) — findings logged, none fixed.** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
+> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 50 findings, none fully closed.** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
 
 ## Scope & authority
 
@@ -76,7 +76,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-015 | store.js folds taxonomy fields to decide a thread weapon's Damage step | S2 | 1 | ui | open |
 | T-016 | `attack-modifier` with `measure: "rating"` is outside the documented contract | S2 | 2 | data | open |
 | T-017 | `stacking` semantics in code differ from §7 (per-origin progression, origin-less exempt) | S2 | 2 | engine | open |
-| T-018 | Obsidiman Skin armor value disagrees with its own summary | S2 | 3 | data | open |
+| T-018 | Obsidiman Skin armor value disagrees with its own summary | S2 | 3 | data | fixed (uncommitted) |
 | T-019 | Per-success talent/skill effects kept as `note` while the same shape is structured elsewhere | S2 | 3 | data | open |
 | T-020 | Spell Success-Level/Extra-Thread options: v4 migration is partial | S2 | 3 | data | open |
 | T-021 | Combat pools ignore `operation` (only `subtract` is special) and do not implement the §4.1 `set`-first contract | S2 | 3 | engine | open |
@@ -89,8 +89,8 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-028 | No `dispatch` exists; ed-app.js acts as store and rules layer | S3 | 1 | ui | open |
 | T-029 | Karma ritual log stores a derived total (`legend`) in character data | S3 | 1 | ui | open |
 | T-030 | Derived-value placeholders: bare "—" instead of the dashed pill in Disciplines and Spells | S3 | 1 | ui | open |
-| T-031 | Only 2 of ~20 modals use the shared modal controller; the rest hand-roll Escape handling | S3 | 1 | ui | open |
-| T-032 | `custom-items.json` (and its emitters) still reference taxonomy v3; the v4 migration was half-done | S3 | 2 | data | open |
+| T-031 | Only 3 of ~20 modals use the shared modal controller; the rest hand-roll Escape handling | S3 | 1 | ui | open (narrowed) |
+| T-032 | `custom-items.json` (and its emitters) still reference taxonomy v3; the v4 migration was half-done | S3 | 2 | data | open (narrowed) |
 | T-033 | Undocumented effect fields and ref property (`note`, `rounds` in the table, `Max`) | S3 | 2 | data | open |
 | T-034 | `scope` carries structured rules meaning as prose (costs, durations, prerequisites) | S3 | 2 | data | open |
 | T-035 | `test`-domain target names fall outside the §3 list; one sense is spelled three ways | S3 | 2 | data | open |
@@ -104,7 +104,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-043 | Kolon's item names include near-duplicates of catalog entries that contribute nothing | S3 | 3 | data | open |
 | T-044 | Documented `operation:"ref"` and ref-valued effects have no general evaluator | S3 | 3 | engine | open |
 | T-045 | `validate-item.js` header cites taxonomy v3 but implements v4 vocabulary | S3 | 3 | engine | open |
-| T-046 | Test coverage gaps against the documented vocabulary | S3 | 3 | engine | open |
+| T-046 | Test coverage gaps against the documented vocabulary | S3 | 3 | engine | open (narrowed) |
 | T-047 | Restriction gate: empty `discipline: []` blocks a knack forever; undocumented edge behaviours | S3 | 3 | engine | open |
 
 ## Checklist A — Documented vocabulary ↔ data (data pass)
@@ -376,6 +376,7 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 - Evidence: rules/items.json:414 (`.items.Obsidiman Skin.effects[0]`). Mystic `add 1`, summary "Mystic Armor 1" is consistent.
 - Impact: either the armor contribution is 1 under-counted or the summary is wrong. I have not established which is correct from the rulebook.
 - Proposed remedy: have the rule-agent confirm Obsidiman Skin's Physical Armor, then fix `value` or `summary`.
+- Update 2026-10-04: rule-agent confirmed (RULES-FAQ Q022, `text-RB-players-guide.txt` Armor Table): Physical 3, Mystic 1. `value` set to 3 in `rules/items.json` on 2026-10-05; summary unchanged.
 
 ### T-019 — Per-success talent/skill effects kept as `note` while the same shape is structured elsewhere
 - Source pass id: T-D10
@@ -726,6 +727,81 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 ---
 
+## Re-validation — 2026-10-04 (dev at `6ea5d12`, taxonomy v6)
+
+Re-check of every finding against current code and data after releases v1.25.0 to v1.28.0 (Spells target effects, `action-modifier` v5, Combat tab redesign, Night's Edge with `dice` measure and `object` selector, v6). Method: scripted re-inventory of `rules/*.json` effects (949, was 945), targeted reads/greps of the cited lines, `node --test` (942 pass, 0 fail; was 725). The `character-data` branch was re-read for T-026, T-032 and T-043. No audit pass was re-run end to end, and the new UI code in `ed-spells.js` / `ed-combat.js` was spot-checked, not line-audited.
+
+**Result: 1 finding fixed (T-018), 3 narrowed, 43 still open exactly as logged; 3 new findings (T-048 to T-050).** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
+
+### Verdicts
+
+| Id | Verdict | Evidence now |
+|---|---|---|
+| T-001 | still open | Knack `parents` still plural (`Melee Weapons` ×15, `Missile Weapons` ×3, `Throwing Weapons` ×5, counts include the stubs) and the 6 stub talents remain |
+| T-002 | still open, scope grew | No `attribute-modifier` fold in `engine/`. The measure is also inconsistent in data: races and Bracers use `value`, custom-items Beer Mug uses `step`, builder default is `value` |
+| T-003 | still open | `recoveryTests` still goes through `healthRating` with the rating-only guard; both `measure:"count"` effects (Warrior circle 7, Bone Charm) unchanged |
+| T-004 | still open | `foldPool` handles `dice`, `result`, `step` only; `rating` skipped. Aspect of the Fog Ghost / Casual Murderer still `attack-modifier` + `rating` |
+| T-005 | still open | `ed-spells.js` rebuilds `total` as `result.total + karmaResult.total` (cast and learn paths); roll-logged detail still carries no grand total and no mods |
+| T-006 | still open | Builder `TYPE_META` still one `rating` measure for all characteristic targets; validator has no measure/target cross-check |
+| T-007, T-008, T-009 | still open | `_charmStepBonus`, `plan.castingStep + armed.step`, `perSucc` in the badge and `_aimSummary`, `_spellRatingMods` all present |
+| T-010 | still open | `castingTarget.match(/\d+/)` and `/Mystic Defense/i` still in `ed-spells.js` |
+| T-011 | still open | `/^Attack/.test(r.label)` still in `ed-combat.js` `_onRollLogged` |
+| T-012 | still open | `cc?.lift ?? capacity * 2 - 1` unchanged |
+| T-013 | still open | `allSilverAlloc` still in `ed-trade-modal.js` |
+| T-014 | still open | karma clamp / ritual affordability still in `ed-app.js` and `ed-overview.js` |
+| T-015 | still open | store.js thread-weapon `damageStep = e.value` loop unchanged |
+| T-016 | still open | Same 6 `attack-modifier` + `rating` effects in the two Aspect spells |
+| T-017 | still open | `collapseStacking` unchanged (per-origin, origin-less exempt) |
+| T-018 | fixed 2026-10-05 (value now 3) | Rule-agent (RULES-FAQ Q022): the Armor Table gives Obsidiman Skin Physical 3 / Mystic 1 (PG p. 435). The `summary` is right; `value: 2` is wrong. Fix is a one-number data change to `3`, Tier 3 |
+| T-019 | still open | 17 `note` + `on-success` + `perSuccess` effects |
+| T-020 | still open | `yards` / `count` measures still unused for range, area and targets |
+| T-021 | still open | `opValue` in `combat.js` still only special-cases `subtract` |
+| T-022, T-023, T-044 | still open | No handler for `grant-attack`, `sense`, `enable-option`, `ref` operation; still no lint or warning. `foldPool` also drops unparseable `dice` silently (see T-048) |
+| T-024 | still open | `ref.damageStep` and the `attack-modifier` effect remain two sources |
+| T-025 | still open | Fee fallback `: 10` (`ed-disciplines.js`), tier mapping in `ed-app.js` / `ed-disciplines.js`, `roll.vs ?? 'Mystic'` ×3, 10 copper in trade modal |
+| T-026 | still open | `kolon.json` on `character-data` still stores `karma.available` 35 and `karma.legend` 980 |
+| T-027 | still open | `Date.now()` in `potions.js`; store.js name regexes; ARCHITECTURE §5.5 still lists four functions, only `durationRounds` exists |
+| T-028, T-029 | still open | No `dispatch`; ritual event still stores `legend: points * cost` |
+| T-030 | still open | Bare "—" still used for missing derived values across Spells and Disciplines |
+| T-031 | **narrowed** | `ed-spells.js` now adopts `modal-controller` (3 of ~20: `ed-app`, `ed-disciplines`, `ed-spells`). 20 other files still hand-roll `document.addEventListener('keydown')` |
+| T-032 | **narrowed** | Fixed: all `rules/*.json` including `custom-items.json`, `tools/worker/worker.js`, `tools/dev-server.mjs` now say v6. Still v3: `character-data` `data/custom-items.json`, test fixtures (`validate-item.test.js`, `store-custom-items.test.js`, `fold-custom-items.test.js`, `worker.test.js`), comments (`validate-item.js`, `health.js`, `encumbrance.js`) |
+| T-033 to T-037 | still open | Taxonomy doc not changed for effect-level `note` / `rounds` / `Max`, scope tokens, §3 `test` names, §11 (still titled "Open questions (v3 review)"). v5/v6 notes were additive only |
+| T-038 | still open | Validator tables still not exported (`validateItem`, `MAX_SHORT_EFFECT`, `EFFECT_TYPES` only); builder keeps its own |
+| T-039 | still open | 17 negative `add` effects, all in `combat.json` |
+| T-040 | still open | Same four stale version strings |
+| T-041, T-042 | still open | Homebrew docs unchanged for the two extra `set` targets and the ref dialect |
+| T-043 | still open | Kolon: 31 of 48 items not in any catalog; the five alias names are still there |
+| T-045 | still open | Header still says v3; validator also lacks v5/v6 vocabulary (T-048) |
+| T-046 | **narrowed** | New tests cover `dice` (`dice-bonus.test.js`, `combat-bonus-dice.test.js`) and `action-modifier` (`ability-actions.test.js`). Still no tests for `attribute-modifier` fold, `grant-attack`, `sense`, `enable-option`, `count`, `yards`, `divide`/`max`/`ref`, object triggers |
+| T-047 | still open | `discipline: []` still returns false in `passesDisciplineGate` |
+
+### Checklist and appendix status
+
+Appendices A to C and Checklists A to C describe the v4 vocabulary (14 types, 945 effects) and were not regenerated. Known deltas to v6: types now 15 (`action-modifier`, 1 effect); measures `action` (1) and `dice` (1) are no longer dead / absent; `object` field (2 effects) is documented in §1.1; `attack-modifier` count 101, `duration-modifier` 56, `test-modifier` 49. Regenerate them only if the audit is re-run as a whole.
+
+## New findings (2026-10-04)
+
+### T-048 — Custom-item validator and builder do not know taxonomy v5/v6; `dice` measure accepted with a numeric value
+- Severity: S3  Tier: 3  Status: open
+- Area: engine / ui
+- Observed: `EFFECT_TYPES` in `engine/validate-item.js` omits `action-modifier`; `MEASURES` omits `action`; the optional-field check does not know `object`. The validator does accept `measure: "dice"`, but `hasValue` requires a number (or `{ref}`) while the engine only rolls a dice string (`combat.js` `parseDice`), so the combination is accepted and then ignored. The builder (`TYPE_META`, `MEASURES`) mirrors the older set.
+- Impact: v5/v6 effects cannot be authored as custom items (fails closed, not wrong output); a numeric `dice` effect is saved and silently does nothing. Same drift class as T-038 and T-045.
+- Proposed remedy: export the validator tables, add the v5/v6 vocabulary, and reject `dice` with a non-string value. Tier 3.
+
+### T-049 — `foldPool` silently drops dice effects that are unparseable or use `subtract`
+- Severity: S2  Tier: 3  Status: open
+- Area: engine
+- Observed: in `engine/combat.js` the `measure:"dice"` branch pushes a bonus die only `if (list && e.operation !== 'subtract')`. A malformed dice string or a subtracted die produces no bonus and no trace. The v6 §5.2 grammar says nothing about `subtract`.
+- Impact: latent (the only shipped dice effect, Night's Edge `D4` with `add`, works). A homebrew or future spell with a typo vanishes. Another instance of T-023.
+- Proposed remedy: document add-only in §5.2 and warn visibly (or reject in the validator and a rules lint) on unparseable dice.
+
+### T-050 — Spell dice readout filters on raw effect fields in `buildCastPlan`
+- Severity: S3  Tier: 3  Status: open
+- Area: engine
+- Observed: `engine/spells.js` builds `out.dice` by filtering `spell.effects` on `measure === 'dice'`, `duration === 'sustained'`, `!gmDiscretion` and `typeof value === 'string'`, separately from the `foldPool` path that actually rolls the die. Two filters, one rule.
+- Impact: latent. The readout can promise a die the pool does not roll (or the reverse) if one filter changes.
+- Proposed remedy: derive the readout from the same collected bundle the pool uses.
+
 ## Accepted / deliberate deviations
 
 _None recorded. Owner to mark any finding `accepted` with a reason._
@@ -1042,3 +1118,4 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 |---|---|
 | 2026-09-30 | Scaffold created. |
 | 2026-09-30 | Audit pass complete: 3 parallel read-only passes merged; 47 findings logged, none fixed. |
+| 2026-10-04 | Re-validation against `6ea5d12` (taxonomy v6): 0 closed (T-018 fixed 2026-10-05), 3 narrowed (T-031, T-032, T-046), 3 new (T-048 to T-050). Test suite 942/0. |

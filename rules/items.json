@@ -431,7 +431,7 @@
             "name": "Physical"
           },
           "operation": "add",
-          "value": 2,
+          "value": 3,
           "measure": "rating",
           "condition": "always",
           "source": "item",
