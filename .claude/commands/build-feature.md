@@ -38,6 +38,9 @@ stands: no commit or push without the user's explicit permission.
 
 ## Phase 0 — Alignment gate (you, with the user)
 
+First record the start time for the token report: `date -u +%Y-%m-%dT%H:%M:%SZ`
+(keep it as `<since>`).
+
 Load the **ed-change-guardrail** skill. Read the whole feature folder
 (`plan.md`, `tickets.md`, `qa-log.md`, `review.md`, and any `spec.md` /
 `test-plan.md` / `build-log.md` from a prior run), plus `CLAUDE.md`,
@@ -170,7 +173,19 @@ Record what was applied and what was deferred in `build-log.md`.
    the change touched `ui/` — a **manual UI verification checklist** (what to
    look at, light and dark mode, mobile fold, Overview fit). If this changes
    the file after the push, commit it by explicit path and push again.
-7. **Report to the user.** The final message must contain, in full and inline
+7. **Token report.** Run, then commit the two files by explicit path and push
+   `dev` again (same follow-up as the `build-log.md` handoff):
+
+   ```bash
+   node tools/token-report.mjs --workflow build-feature --since <since> --dir plans/<slug>
+   git add plans/<slug>/token-usage.md plans/<slug>/token-usage.json
+   git commit -m "docs(<slug>): token usage report" -m "<attribution trailer>"
+   git push origin dev
+   ```
+
+   It totals the main session and every subagent transcript since `<since>`
+   (an earlier `/new-feature` run in the same folder keeps its own section).
+8. **Report to the user.** The final message must contain, in full and inline
    (never just a pointer to `build-log.md`): a **"UI test requirements"** section
    — the numbered manual checklist the owner runs on `dev`, written as concrete
    steps (where to click, what to see), covering each changed view or flow, light
@@ -179,7 +194,9 @@ Record what was applied and what was deferred in `build-log.md`.
    ("No UI changes — nothing to test manually"). Then: the commit SHA, tests
    added, gate result, decisions recorded, deferred doc edits, and the
    feature-folder artifacts (`spec.md`, `test-plan.md`, `build-log.md`, updated
-   `qa-log.md`). Tell the owner to test on `dev` and run `/release-feature` when satisfied.
+   `qa-log.md`). Include the token line from step 7 (total tokens and estimated cost, with the
+per-participant breakdown pointer to `token-usage.md`). Tell the owner to test on
+`dev` and run `/release-feature` when satisfied.
 
 ## qa-log.md format
 

@@ -1,0 +1,16 @@
+{
+  "schema": "ed-token-pricing/1",
+  "asOf": "2026-09-25",
+  "note": "USD per million tokens, Anthropic first-party API list prices. Estimates only: subscription plans, discounts and Priority Tier are not modelled. Longest model-id prefix wins. cacheWrite5m = 1.25x input, cacheWrite1h = 2x input. fastMultiplier applies when a message's usage.speed is 'fast'. Update from https://platform.claude.com/docs/en/about-claude/pricing when rates change.",
+  "models": {
+    "claude-fable-5-1":  { "input": 10, "output": 50, "cacheRead": 0.25, "cacheWrite5m": 12.5, "cacheWrite1h": 20 },
+    "claude-fable-5":    { "input": 10, "output": 50, "cacheRead": 0.25, "cacheWrite5m": 12.5, "cacheWrite1h": 20 },
+    "claude-opus-5-5":   { "input": 4,  "output": 20, "cacheRead": 0.2,  "cacheWrite5m": 5,    "cacheWrite1h": 8,  "fastMultiplier": 2 },
+    "claude-opus-5":     { "input": 5,  "output": 25, "cacheRead": 0.5,  "cacheWrite5m": 6.25, "cacheWrite1h": 10, "fastMultiplier": 2 },
+    "claude-opus-4":     { "input": 5,  "output": 25, "cacheRead": 0.5,  "cacheWrite5m": 6.25, "cacheWrite1h": 10, "fastMultiplier": 2 },
+    "claude-sonnet-5-5": { "input": 2,  "output": 10, "cacheRead": 0.2,  "cacheWrite5m": 2.5,  "cacheWrite1h": 4 },
+    "claude-sonnet-5":   { "input": 2,  "output": 10, "cacheRead": 0.2,  "cacheWrite5m": 2.5,  "cacheWrite1h": 4 },
+    "claude-sonnet-4":   { "input": 3,  "output": 15, "cacheRead": 0.3,  "cacheWrite5m": 3.75, "cacheWrite1h": 6 },
+    "claude-haiku-4":    { "input": 1,  "output": 5,  "cacheRead": 0.1,  "cacheWrite5m": 1.25, "cacheWrite1h": 2 }
+  }
+}

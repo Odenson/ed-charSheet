@@ -34,7 +34,7 @@ protected edit). The PR checklist is in GUARDRAILS.md.
 **Git.** Never commit or push without the owner's explicit permission, and never
 `git add -A`. The one exception is the `/build-feature` workflow, which may
 commit and push to `dev` (no PR) for the feature it is building, and the owner-run `/release-feature` workflow, which may also
-squash-merge the release PR and sync `dev` after a single owner confirmation
+squash-merge the release PR and sync `dev` after a single owner confirmation, then commit the workflow's token-usage report
 ([docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md)).
 
 ---
