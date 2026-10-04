@@ -501,6 +501,8 @@ and its runbook.
     ed-changelog.js   # changelog badge/modal
     modal-controller.js    # shared modal focus/Escape contract (docs/MODALS.md)
     item-equip-state.js    # input-time equip rules (one armour worn)
+    combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)
+    combat-log-rows.js     # Combat-log row to table-cell mapping (pure)
     custom-item-state.js   # custom-item builder state
     custom-item-builder.js # custom-item builder view
     legend-spent-view.js   # Legend-spent audit view

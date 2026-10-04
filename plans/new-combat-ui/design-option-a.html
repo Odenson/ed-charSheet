@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Combat tab — Option A prototype (design only)</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --fs-eyebrow:.62rem;--fs-fine:.68rem;--fs-small:.74rem;--fs-body:.82rem;--fs-value:.95rem;--fs-title:1.1rem;--fs-hero:1.6rem;
+}
+body{margin:0;background:light-dark(#f4f5f7,#12151b);min-height:100vh}
+.app{display:block;max-width:60rem;margin:0 auto;padding:1rem 1rem 1.5rem;color:light-dark(#111418,#f0f3f7);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.tabbar{display:flex;align-items:center;gap:2px;border-bottom:1px solid light-dark(#e2e5ea,#2c313b);margin-bottom:.9rem;flex-wrap:wrap}
+.tab{display:flex;align-items:center;gap:6px;padding:7px 13px;font-size:var(--fs-body);font-family:inherit;color:light-dark(#5a6472,#93a0b3);background:none;border:none;border-bottom:2px solid transparent;cursor:default}
+.tab[aria-selected=true]{color:light-dark(#111418,#f0f3f7);border-bottom-color:light-dark(#7a3e12,#d9944e)}
+
+#ed{
+  --bg-card:light-dark(#f1f2f5,#1b1f27);--bg-chip:light-dark(#f7f8fa,#1b1f27);--card:light-dark(#ffffff,#232833);
+  --border:light-dark(#e2e5ea,#2c313b);--muted:light-dark(#5a6472,#93a0b3);--fg:light-dark(#111418,#f0f3f7);
+  --accent:light-dark(#7a3e12,#d9944e);--accent-bg:light-dark(#f6e9dc,#3a2a17);
+  --karma:light-dark(#3d6b4a,#82c39a);--karma-bg:light-dark(#e7f0ea,#223029);
+  --danger:light-dark(#c0392b,#e06557);--danger-bg:light-dark(#fbe9e7,#3a1f1c);
+  --blood:light-dark(#a1352b,#e0736a);--blood-bg:light-dark(#f8e7e4,#3a201d);
+  position:relative;font-size:var(--fs-body);
+}
+#ed *{box-sizing:border-box}
+#ed button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0;background:none;border:none}
+#ed button:disabled{opacity:.4;cursor:default}
+.col{display:flex;flex-direction:column;gap:14px}
+.blk{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 6px}
+.k{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.v{font-weight:500;font-variant-numeric:tabular-nums}
+.hint{font-size:var(--fs-fine);color:var(--muted)}
+
+/* floating header line */
+.float{display:flex;gap:22px;flex-wrap:wrap;align-items:center;padding:0 2px}
+.float .item{display:inline-flex;align-items:baseline;gap:7px;font-size:var(--fs-small);font-variant-numeric:tabular-nums}
+.float .item.ctl{align-items:center}
+.float .item b{font-weight:500;font-size:var(--fs-body)}
+.kchip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-fine);color:var(--muted);background:var(--bg-chip);border:1px solid var(--border);border-radius:999px;padding:3px 10px;margin-left:auto}
+.kchip b{color:var(--karma);font-weight:500}
+.cond{color:var(--danger)}.cond.up{color:var(--karma)}
+.delt{margin-left:3px;font-size:var(--fs-eyebrow);font-weight:500;line-height:1;padding:1px 4px;border-radius:999px;background:var(--danger-bg);color:var(--danger);vertical-align:1px;white-space:nowrap}
+.delt.up{background:var(--karma-bg);color:var(--karma)}
+.initres{color:var(--accent);font-weight:500;font-variant-numeric:tabular-nums}
+
+.roll{width:22px;height:22px;border-radius:50%;border:1px solid var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent)!important;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-small);flex:none;line-height:1}
+.roll.dmg{border-color:var(--danger)!important;background:var(--danger-bg)!important;color:var(--danger)!important}
+.roll.reset{border-color:var(--karma)!important;background:var(--karma-bg)!important;color:var(--karma)!important}
+.info{width:18px;height:18px;border-radius:50%;border:1px solid var(--border)!important;color:var(--muted)!important;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-fine);flex:none;line-height:1}
+.info:hover{border-color:var(--accent)!important;color:var(--accent)!important}
+
+/* attack block */
+.top2{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;align-items:stretch}
+.attacktop{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:stretch}
+.attackrows{min-width:0;display:flex;flex-direction:column}
+.artbox{position:relative;aspect-ratio:1;height:100%;min-height:96px;border:1px dashed var(--border);border-radius:8px;background:var(--bg-card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--muted)}
+.artbox svg{width:30px;height:30px;opacity:.6}
+.artbox .cap{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.05em}
+select{font:inherit;font-size:var(--fs-body);width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg-chip);color:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.statline{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--fs-body);border-top:1px solid var(--border)}
+.statline .k{width:54px}
+.statline .val{flex:1;font-weight:500;font-variant-numeric:tabular-nums;min-width:0}
+.vs{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-fine);color:var(--muted)}
+.vs input{width:46px;font:inherit;font-size:var(--fs-body);font-weight:500;text-align:right;color:var(--fg);background:var(--bg-chip);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+.vs input:focus{outline:none;border-color:var(--accent)}
+.strain-k{margin-left:14px;font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.strain{font-weight:500;font-variant-numeric:tabular-nums;color:var(--danger);flex:none;min-width:14px;text-align:right}
+.dmgbonus{font-size:var(--fs-eyebrow);font-weight:500;color:var(--karma);background:var(--bg-chip);border:1px solid var(--karma);border-radius:999px;padding:0 6px;margin-left:4px}
+
+/* damage taken */
+.dtcol{display:flex;flex-direction:column}
+.dtcol .cur{display:flex;align-items:center;gap:6px}
+.dtcol .lab{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+.dtcol .curdmg{font-size:var(--fs-value);font-weight:500;font-variant-numeric:tabular-nums}
+.dtcol .thr{font-size:var(--fs-fine);color:var(--muted);margin-top:6px;line-height:1.5}
+.dtcol .thr.rec{margin-top:3px}.dtcol .thr.rec b{color:var(--fg);font-weight:500}
+.dtbtns{display:flex;gap:6px;margin-top:auto;padding-top:9px;align-items:center}
+.status{font-size:var(--fs-eyebrow);font-weight:500;padding:1px 9px;border-radius:999px;background:var(--bg-chip);color:var(--muted);border:1px solid var(--border);white-space:nowrap}
+.status.warn{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.boostpill{font-size:var(--fs-eyebrow);font-weight:500;color:var(--karma);border:1px solid var(--karma);border-radius:999px;padding:0 6px}
+.standrow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:var(--fs-fine);color:var(--danger);padding:4px 8px;margin-bottom:6px;background:var(--danger-bg);border-radius:6px}
+.stand{font-size:var(--fs-eyebrow);font-weight:500;padding:2px 9px;border-radius:999px;border:1px solid var(--accent)!important;color:var(--accent)!important}
+.stand:hover{background:var(--accent-bg)!important}
+
+/* modifiers */
+.mods{padding:0 2px}
+.seg{display:inline-flex;background:var(--bg-card);border-radius:999px;padding:3px;gap:2px;margin-bottom:8px}
+.seg button{padding:4px 14px;border-radius:999px;font-size:var(--fs-small);color:var(--muted);border:1px solid transparent!important}
+.seg button[aria-pressed=true]{background:var(--bg-chip)!important;color:var(--fg);border-color:var(--border)!important}
+.seg i{font-style:normal;color:var(--accent);margin-left:5px;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-small);padding:3px 9px;border-radius:999px;border:1px solid var(--border)!important;background:var(--bg-chip)!important}
+.chip:hover{border-color:var(--accent)!important}
+.chip[aria-pressed=true]{border-color:var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent);font-weight:500}
+.chip.charm[aria-pressed=true]{border-color:var(--blood)!important;background:var(--blood-bg)!important;color:var(--blood)}
+.badge{font-size:var(--fs-eyebrow);padding:0 4px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;font-weight:400}
+.chip[aria-pressed=true] .badge{border-color:currentColor}
+.badge.pos{color:var(--karma)}.badge.neg{color:var(--danger)}.badge.strain{color:var(--danger)}
+
+/* potions */
+.potpick{display:flex;gap:8px;align-items:center;margin-top:4px}
+.potpick select{font-size:var(--fs-small);border-radius:7px;padding:5px 7px;background:var(--card);flex:1;min-width:0}
+.drink{font-size:var(--fs-fine);font-weight:500;border:1px solid var(--accent)!important;background:var(--accent)!important;color:#fff!important;padding:5px 12px;border-radius:999px;flex:0 0 auto}
+.emptyhint{font-size:var(--fs-fine);color:var(--muted);padding:2px 0}
+.potpend{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;background:var(--accent-bg);border:1px dashed var(--accent);margin-top:6px}
+.potpend .ptxt{flex:1;font-size:var(--fs-fine)}.potpend .ptxt b{color:var(--accent);font-weight:500}
+.pclear{color:var(--muted)!important;font-size:var(--fs-body);line-height:1}
+
+/* log table */
+.clear{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;padding:1px 8px;border-radius:999px;border:1px solid var(--border)!important;color:var(--muted)!important}
+.clear:hover:not(:disabled){color:var(--danger)!important;border-color:var(--danger)!important}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-small)}
+th{font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)}
+td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);line-height:1.35}
+td b{color:var(--fg);font-weight:500}
+tr:last-child td{border-bottom:none}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+.glyph{color:var(--accent);font-size:var(--fs-fine);text-align:center}
+.hit{color:var(--karma);font-weight:500}.miss{color:var(--danger);font-weight:500}
+.logempty{text-align:center;padding:14px;font-size:var(--fs-small);color:var(--muted)}
+
+/* modals */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:2100;padding:1rem}
+.modal{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:12px;width:26rem;max-width:100%;padding:1rem 1.25rem 1.25rem}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:var(--fs-value);font-weight:500;margin-bottom:.75rem}
+.mclose{color:var(--muted)!important;font-size:var(--fs-title);line-height:1}
+.mpara{font-size:var(--fs-small);line-height:1.5;margin:0}
+.mpara.hint{font-size:var(--fs-fine);color:var(--muted);margin-top:8px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--fs-body);margin-top:10px}
+.hrow input{font:inherit;font-size:var(--fs-body);color:var(--fg);background:var(--bg-chip);border:1px solid var(--border);border-radius:6px;padding:6px 8px;width:6rem;text-align:right}
+.hfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.hbtn{font-size:var(--fs-body);font-weight:500;padding:6px 14px;border-radius:6px;border:1px solid var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent)!important}
+.hbtn.plain{border-color:var(--border)!important;background:var(--bg-chip)!important;color:var(--fg)!important;font-weight:400}
+.warnt{font-size:var(--fs-small);color:var(--danger);margin-top:8px}
+.arow{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:var(--fs-body)}
+.arow .av{font-weight:500;font-variant-numeric:tabular-nums}.arow .av.neg{color:var(--danger)}
+.arow.total{border-top:1px solid var(--border);margin-top:3px;padding-top:6px}
+
+@media (max-width:720px){.top2{grid-template-columns:1fr}.attacktop{grid-template-columns:1fr}.artbox{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="tabbar" role="tablist">
+    <button class="tab">Overview</button><button class="tab">Disciplines</button><button class="tab" aria-selected="true">Combat</button><button class="tab">Spells</button><button class="tab">Equipment</button><button class="tab">Notes</button>
+  </div>
+  <div id="ed"></div>
+</div>
+<script>
+(function(){
+var MISSING='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>';
+var WEAPONS=[{n:'Broadsword',d:9},{n:'Dagger',d:5,r:'3 / 6 yd'}];
+var TALENTS=[{n:'Melee Weapons',s:11},{n:'Unarmed Combat',s:9}];
+var MODS={
+ opt:[{id:'aggr',n:'Aggressive attack',atk:3,pd:-3,strain:1},{id:'aim',n:'Aim',atk:2},{id:'def',n:'Defensive stance',atk:-3,pd:3},{id:'tail',n:'Tail attack',dmg:2,strain:1},{id:'call',n:'Called shot',atk:-3,dmg:2},{id:'ts',n:'True Shot',atk:2,karma:1}],
+ sit:[{id:'harr',n:'Harried',atk:-2},{id:'surp',n:'Surprised',pd:-3},{id:'dark',n:'Darkness',atk:-2},{id:'cov',n:'Cover',pd:2}],
+ ch:[{id:'thorn',n:'Thorn Cut',dmg:2,blood:1},{id:'song',n:'Bloodsong',atk:1}]};
+var TABS=[['opt','Combat options'],['sit','Situational'],['ch','Blood charms']];
+var POTS={heal:{n:'Healing Potion',boost:2},anti:{n:'Antidote'}};
+var s={w:0,t:0,target:'',succ:'0',lastBonus:0,dmg:12,wounds:1,rec:1,recMax:3,kd:false,karma:6,tab:'opt',on:{aim:1,aggr:1},pot:{heal:2,anti:1},potSel:'heal',pending:null,log:[],init:null,modal:null,take:0};
+var WT=12,UNC=32,DEATH=40,STR=5,BASE={pd:9};
+function all(){return MODS.opt.concat(MODS.sit,MODS.ch)}
+function active(){return all().filter(function(m){return s.on[m.id]})}
+function sum(k){return active().reduce(function(a,m){return a+(m[k]||0)},0)}
+function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function rollStep(n){return Math.max(1,rnd(Math.round(n*.45)+1,Math.round(n*.9)+4))}
+function atkStep(){return TALENTS[s.t].s+sum('atk')}
+function bonus(){return s.target!==''?s.lastBonus:(parseInt(s.succ)||0)}
+function dmgStep(){return STR+WEAPONS[s.w].d+sum('dmg')+bonus()}
+function status(){if(s.dmg>=DEATH)return['Dead',1];if(s.dmg>=UNC)return['Unconscious',1];if(s.kd)return['Knocked down',1];if(s.wounds>0)return['Wounded',1];return['Healthy',0]}
+function names(){return active().map(function(m){return m.n}).join(', ')}
+function addLog(g,l,t,o,m,c){s.log.unshift({g:g,l:l,t:t,o:o,m:m||'',c:c||''})}
+function pdRating(){var d=sum('pd'),v=BASE.pd+d;return '<span class="v'+(d?(d<0?' cond':' cond up'):'')+'">'+v+'</span>'+(d?'<span class="delt'+(d>0?' up':'')+'">'+(d>0?'+':'')+d+'</span>':'')}
+function render(){
+ var st=status(),L=s.log,boost=s.pending?s.pending.boost:0,strain=sum('strain');
+ var cnt=function(g){return MODS[g].filter(function(m){return s.on[m.id]}).length};
+ var segs=TABS.map(function(t){var c=cnt(t[0]);return '<button aria-pressed="'+(s.tab===t[0])+'" data-a="tab" data-v="'+t[0]+'">'+t[1]+(c?'<i>'+c+'</i>':'')+'</button>'}).join('');
+ var chips=MODS[s.tab].map(function(m){var b=[];if(m.atk)b.push(['atk '+(m.atk>0?'+':'')+m.atk,m.atk>0?'pos':'neg']);if(m.dmg)b.push(['dmg +'+m.dmg,'pos']);if(m.pd)b.push(['PD '+(m.pd>0?'+':'')+m.pd,m.pd>0?'pos':'neg']);if(m.strain)b.push([m.strain+' Strain','strain']);if(m.karma)b.push([m.karma+' Karma','']);if(m.blood)b.push([m.blood+' Blood','neg']);
+  return '<button class="chip'+(s.tab==='ch'?' charm':'')+'" aria-pressed="'+!!s.on[m.id]+'" data-a="mod" data-v="'+m.id+'">'+m.n+b.map(function(x){return '<span class="badge '+x[1]+'">'+x[0]+'</span>'}).join('')+'</button>'}).join('');
+ var wOpts=WEAPONS.map(function(w,i){return '<option value="'+i+'"'+(i===s.w?' selected':'')+'>'+w.n+' · dmg '+w.d+'</option>'}).join('');
+ var tOpts=TALENTS.map(function(t,i){return '<option value="'+i+'"'+(i===s.t?' selected':'')+'>'+t.n+' · Talent · '+t.s+'</option>'}).join('');
+ var pk=Object.keys(POTS).filter(function(k){return s.pot[k]>0});
+ var pOpts=pk.map(function(k){return '<option value="'+k+'"'+(k===s.potSel?' selected':'')+'>'+POTS[k].n+' ×'+s.pot[k]+'</option>'}).join('');
+ var rows=L.length?L.map(function(r){var o=r.c==='ka'?'<span class="hit">'+r.o+'</span>':r.c==='dg'?'<span class="miss">'+r.o+'</span>':(r.o||'—');return '<tr><td class="glyph" style="width:28px">'+r.g+'</td><td><b>'+r.l+'</b></td><td class="r">'+(r.t==null?'—':'<b>'+r.t+'</b>')+'</td><td>'+o+'</td><td>'+r.m+'</td></tr>'}).join(''):'<tr><td colspan="5" class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Log).</td></tr>';
+ var ranged=WEAPONS[s.w].r?'<span class="hint" style="margin-left:6px;font-weight:400">'+WEAPONS[s.w].r+'</span>':'';
+ var succ=s.target===''?'<span class="vs" title="No target was set — enter the GM-adjudicated successes">succ <input data-a="succ" type="number" min="0" value="'+s.succ+'" aria-label="Successes"></span>':'';
+ var h='<div class="col">'
+ +'<div class="float">'
+ +'<span class="item"><span class="k">Defence</span>PD '+pdRating()+' · MD <b>8</b> · SD <b>7</b></span>'
+ +'<span class="item"><span class="k">Armour</span>Phys <b>5</b> · Myst <b>3</b></span>'
+ +'<span class="item ctl"><span class="k">Initiative</span><b>9</b><button class="roll" data-a="init" title="Roll initiative" aria-label="Roll initiative">⚄</button>'+(s.init!=null?'<span class="initres" title="Last Initiative roll result">'+s.init+'</span>':'')+'</span>'
+ +'<span class="kchip">Available Karma <b>'+s.karma+'</b></span>'
+ +'</div>'
+ +'<div class="top2">'
+ +'<div class="blk"><div class="h"><span>Your attack</span></div><div class="attacktop"><div class="artbox">'+MISSING+'<span class="cap">no image</span></div><div class="attackrows">'
+ +'<div class="row2"><select data-a="weapon" aria-label="Weapon">'+wOpts+'</select><select data-a="talent" aria-label="Attack talent or skill">'+tOpts+'</select></div>'
+ +'<div class="statline"><button class="info" data-a="audit" data-v="atk" aria-label="Attack step breakdown">ⓘ</button><span class="k">Attack</span><span class="val">'+atkStep()+'</span><span class="vs">vs <input data-a="target" type="number" placeholder="#" value="'+s.target+'" aria-label="Target number"></span><button class="roll" data-a="atk" title="Roll attack" aria-label="Roll attack">⚄</button></div>'
+ +'<div class="statline"><button class="info" data-a="audit" data-v="dmg" aria-label="Damage step breakdown">ⓘ</button><span class="k">Damage</span><span class="val">'+dmgStep()+ranged+(s.target!==''&&s.lastBonus?'<span class="dmgbonus" title="Success levels on the attack">+'+s.lastBonus+'</span>':'')+'</span>'+succ+'<button class="roll" data-a="dmgroll" title="Roll damage" aria-label="Roll damage">⚄</button><span class="strain-k">Strain</span><span class="strain">'+strain+'</span></div>'
+ +'</div></div></div>'
+ +'<div class="blk dtcol"><div class="h"><span>Damage taken</span><span class="status'+(st[1]?' warn':'')+'">'+st[0]+'</span></div>'
+ +(s.kd?'<div class="standrow"><span>Knocked Down — −3 to every test while prone.</span><button class="stand" data-a="stand">Stand up</button></div>':'')
+ +'<div class="cur"><span class="lab">Current</span><span class="curdmg">'+s.dmg+'</span><span class="lab" style="margin-left:6px">Wounds</span><span class="curdmg cond">'+s.wounds+'</span></div>'
+ +'<div class="thr">'+UNC+' unconscious<br>'+DEATH+' death</div>'
+ +'<div class="thr rec">Recoveries <b>'+s.rec+' / '+s.recMax+'</b> used</div>'
+ +'<div class="dtbtns"><button class="roll dmg" data-a="takeopen" title="Take damage" aria-label="Take damage">✗</button><button class="roll" data-a="recover" '+(s.rec>=s.recMax?'disabled ':'')+'title="Recovery test'+(boost?' (+'+boost+' step armed)':'')+'" aria-label="Recovery test">⚄</button>'+(boost?'<span class="boostpill">+'+boost+'</span>':'')+'<button class="roll reset" data-a="day" style="margin-left:auto" title="Start a new day" aria-label="Reset the day">☼</button></div></div>'
+ +'</div>'
+ +'<div class="top2" style="align-items:start">'
+ +'<div class="mods"><div class="h"><span>Combat modifiers</span></div><div class="seg">'+segs+'</div><div class="chips">'+chips+'</div></div>'
+ +'<div class="blk"><div class="h"><span>Potions</span></div>'
+ +(pk.length?'<div class="potpick"><select data-a="potsel" aria-label="Choose a potion to drink">'+pOpts+'</select><button class="drink" data-a="drinkopen">Drink</button></div>':'<div class="emptyhint">— no potions owned —</div>')
+ +(s.pending?'<div class="potpend"><span class="ptxt"><b>'+s.pending.name+'</b> — next Recovery +'+s.pending.boost+' steps</span><button class="pclear" data-a="clearpend" aria-label="Clear pending">✕</button></div>':'')
+ +'</div></div>'
+ +'<div><div class="h" style="padding:0 2px"><span>Combat log</span><button class="clear" data-a="clearopen"'+(L.length?'':' disabled')+'>clear</button></div><table><thead><tr><th style="width:28px"></th><th>Roll</th><th class="r">Total</th><th>Outcome</th><th>Modifiers</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+ +'</div>'+modal();
+ root.innerHTML=h;
+}
+function modal(){
+ var m=s.modal;if(!m)return'';var b='';
+ if(m.t==='audit'){var A=m.v==='atk',p=[];
+  if(A){p.push([TALENTS[s.t].n+' step',TALENTS[s.t].s,1]);active().forEach(function(x){if(x.atk)p.push([x.n,x.atk])})}
+  else{p.push(['Strength step',STR,1]);p.push([WEAPONS[s.w].n+' Damage Step',WEAPONS[s.w].d,1]);active().forEach(function(x){if(x.dmg)p.push([x.n,x.dmg])});if(bonus())p.push(['Attack success levels',bonus()])}
+  b='<div class="mhead"><span>'+(A?'Attack':'Damage')+' breakdown</span><button class="mclose" data-a="close" aria-label="Close">✕</button></div>'+p.map(function(x){return '<div class="arow"><span>'+x[0]+'</span><span class="av '+(x[1]<0?'neg':'')+'">'+(x[2]?x[1]:(x[1]>=0?'+':'')+x[1])+'</span></div>'}).join('')+'<div class="arow total"><span>Step</span><span class="av">'+(A?atkStep():dmgStep())+'</span></div><div class="hint" style="margin-top:10px">Escape closes</div>';
+ }else if(m.t==='take'){
+  b='<div class="mhead"><span>Take damage</span><button class="mclose" data-a="close" aria-label="Close">✕</button></div><p class="mpara">Current damage <b>'+s.dmg+'</b> — Unconscious '+UNC+' · Death '+DEATH+'</p><div class="hrow"><span>Take damage</span><input id="takein" type="number" min="0" value="0" aria-label="Damage to take"></div><p class="mpara hint">A hit at or above the Wound Threshold '+WT+' records one Wound; a hit five or more over it triggers a Knockdown test. Healing is done through a Recovery test.</p><div class="hfoot"><span class="hint" style="margin-right:auto;align-self:center">Enter applies · Escape closes</span><button class="hbtn" data-a="takeapply">Apply</button></div>';
+ }else if(m.t==='drink'){var po=POTS[s.potSel],blk=po.boost&&s.pending;
+  b='<div class="mhead"><span>Drink '+po.n+'?</span><button class="mclose" data-a="close" aria-label="Close">✕</button></div><p class="mpara">Consumes one dose of '+po.n+' (×'+s.pot[s.potSel]+' → ×'+(s.pot[s.potSel]-1)+').</p>'+(blk?'<div class="warnt">A Recovery boost is already pending — use or clear it first. Potions don’t stack.</div>':'')+'<div class="hfoot"><button class="hbtn plain" data-a="close">Cancel</button><button class="hbtn" data-a="drink"'+(blk?' disabled':'')+'>Drink</button></div>';
+ }else if(m.t==='clear'){
+  b='<div class="mhead"><span>Clear the Combat log?</span><button class="mclose" data-a="close" aria-label="Close">✕</button></div><p class="mpara">This clears the Log for this character in this browser — it also clears the Notes-tab Log. It can’t be undone.</p><div class="hfoot"><button class="hbtn plain" data-a="close">Cancel</button><button class="hbtn" data-a="clear">Clear</button></div>';
+ }
+ return '<div class="overlay" data-a="ovl"><div class="modal" role="dialog" aria-modal="true">'+b+'</div></div>';
+}
+function act(a,v){
+ switch(a){
+  case 'tab':s.tab=v;break;
+  case 'mod':s.on[v]=s.on[v]?0:1;break;
+  case 'init':s.init=rollStep(9)+2;addLog('⚄','Initiative',s.init,'',names());break;
+  case 'atk':var kc=sum('karma'),kn='';if(kc){if(s.karma>=kc){s.karma-=kc;kn=kc+' Karma spent'}else kn='no Karma left'}
+   var tot=rollStep(atkStep()),ch=sum('strain');if(ch)s.dmg+=ch;var out='',cls='';
+   if(s.target!==''){var T=parseInt(s.target)||0;if(tot>=T){var ex=Math.floor((tot-T)/5);s.lastBonus=ex;out='Hit'+(ex?' +'+ex:'');cls='ka'}else{s.lastBonus=0;out='Miss';cls='dg'}}
+   addLog('⚄','Attack',tot,out,[names(),ch?ch+' Strain':'',kn].filter(Boolean).join(' · '),cls);break;
+  case 'dmgroll':var dt=rollStep(dmgStep()),bl=sum('blood');if(bl)s.dmg+=bl;addLog('⚄','Damage',dt,'',[names(),bonus()?'+'+bonus()+' success levels':'',bl?bl+' blood damage':''].filter(Boolean).join(' · '));break;
+  case 'takeopen':s.modal={t:'take'};break;
+  case 'takeapply':var n=Math.max(0,parseInt(root.querySelector('#takein').value)||0),note=[];s.dmg+=n;if(n>=WT){s.wounds++;note.push('Wound')}if(n>=WT+5){s.kd=true;note.push('Knocked down')}addLog('✗','Took damage',null,n+' damage',note.join(', '),'dg');s.modal=null;break;
+  case 'recover':if(s.rec<s.recMax){var hl=rnd(4,10)+(s.pending?s.pending.boost*2:0),bf=s.dmg;s.dmg=Math.max(0,s.dmg-hl);s.rec++;addLog('⚄','Recovery test',hl,'Healed '+(bf-s.dmg),s.pending?s.pending.name+' +'+s.pending.boost+' steps':'','ka');s.pending=null}break;
+  case 'stand':s.kd=false;addLog('↑','Stand up',null,'','');break;
+  case 'day':s.dmg=0;s.wounds=0;s.rec=0;s.kd=false;s.on={};s.pending=null;s.lastBonus=0;addLog('✦','New day',null,'Reset','Recoveries restored, combat state cleared','ka');break;
+  case 'drinkopen':s.modal={t:'drink'};break;
+  case 'drink':var p=POTS[s.potSel];s.pot[s.potSel]--;if(p.boost)s.pending={name:p.n,boost:p.boost};addLog('✦',p.n,null,'Drunk',p.boost?'Next Recovery +'+p.boost+' steps':'');s.modal=null;if(!s.pot[s.potSel]){var nx=Object.keys(POTS).filter(function(k){return s.pot[k]>0})[0];if(nx)s.potSel=nx}break;
+  case 'clearpend':s.pending=null;break;
+  case 'clearopen':s.modal={t:'clear'};break;
+  case 'clear':s.log=[];s.modal=null;break;
+  case 'audit':s.modal={t:'audit',v:v};break;
+  case 'close':s.modal=null;break;
+ }
+ render();
+}
+var root=document.getElementById('ed');
+root.addEventListener('click',function(e){
+ var el=e.target.closest('[data-a]');if(!el||el.tagName==='SELECT'||el.tagName==='INPUT')return;
+ var a=el.getAttribute('data-a');
+ if(a==='ovl'){if(e.target===el)act('close');return}
+ act(a,el.getAttribute('data-v'));
+});
+root.addEventListener('input',function(e){var a=e.target.getAttribute('data-a');if(a==='target')s.target=e.target.value;if(a==='succ')s.succ=e.target.value});
+root.addEventListener('change',function(e){var a=e.target.getAttribute('data-a'),v=e.target.value;
+ if(a==='weapon'){s.w=+v;s.lastBonus=0}else if(a==='talent'){s.t=+v;s.lastBonus=0}else if(a==='potsel'){s.potSel=v}else if(a!=='target'&&a!=='succ')return;
+ render()});
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'&&s.modal){s.modal=null;render()}
+ if(e.key==='Enter'&&s.modal&&s.modal.t==='take')act('takeapply');
+});
+render();
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,8 @@ shipped: v1.11.0
 ---
 # Plan: Combat Tab — non-spell combat simulation
 
+> **Superseded layout (2026-10-04):** the Combat tab layout described below was replaced by the redesign in [new-combat-ui](new-combat-ui/plan.md); the current layout is in [UI-GUIDELINES §4](../docs/UI-GUIDELINES.md). This document is kept as history.
+
 A new **sixth tab** that runs a character through **non-spell** combat: roll
 Initiative, pick a **weapon + attack talent**, layer **combat options** and
 **situational (environmental) effects** and **equipped-magic-item** contributions,

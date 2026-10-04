@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.27.0",
+      "date": "2026-10-04",
+      "summary": "The Combat tab has a new layout: a header line with Defence, Armour, Initiative and Available Karma, side-by-side Attack and Damage taken cards, tabbed combat modifiers, and the combat log as a table that now shows Karma and modifiers in Detail.",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Combat tab redesigned: a header line with Defence, Armour, Initiative and Available Karma, side-by-side Attack and Damage taken cards, tabbed combat modifiers (Combat options / Situational / Blood charms, each with an active count), and the combat log as a table."
+        }
+      ]
+    },
+    {
       "version": "1.26.0",
       "date": "2026-10-03",
       "summary": "Effects can now change a talent or skill’s action type: Death’s Head makes Frighten a Simple action, shown in the accent colour with a hover explaining why (effect taxonomy v5).",

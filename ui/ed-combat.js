@@ -26,6 +26,8 @@ import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { itemImageUrl } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
+import { MOD_TABS, modTabCounts, normalizeModTab } from './combat-mods-state.js';
+import { logRowCells } from './combat-log-rows.js';
 import './ed-confirm.js';
 
 // Per-character combat-tab scratchpad, kept in module memory so the player's
@@ -40,25 +42,15 @@ const SCRATCH = new Map();
 export function clearCombatScratch(id, mountedEl = null) {
   if (!id) return;
   // Decision D: the cache keeps the day-scoped fields clear while preserving the
-  // picks (weapon / talent / collapsed) so an unmounted Combat tab restores them.
+  // picks (weapon / talent) so an unmounted Combat tab restores them.
   const cached = SCRATCH.get(id);
-  if (cached) SCRATCH.set(id, { ...cached, opts: [], sits: [], charmsOn: [], target: '' });
+  if (cached) SCRATCH.set(id, { ...cached, opts: [], sits: [], charmsOn: [], target: '', modTab: 'opts' });
   // The mounted Combat tab lives under ed-app's shadow root, so callers pass the
   // current element explicitly when available.
   if (mountedEl?.characterId === id && typeof mountedEl._clearDayState === 'function') {
     mountedEl._clearDayState();
   }
 }
-
-// Collapsible chip sections default to EXPANDED on desktop, and to collapsed on
-// narrow (mobile) screens — the same 720px breakpoint as the .top layout grid.
-// Only the initial default is viewport-driven; the player's taps win afterwards,
-// and the per-character scratchpad preserves them across tab switches.
-const MOBILE_QUERY = '(max-width: 720px)';
-const defaultCollapsed = () =>
-  typeof matchMedia !== 'undefined' && matchMedia(MOBILE_QUERY).matches
-    ? ['dab', 'opts', 'sits', 'charms']
-    : [];
 
 const MISSING_IMAGE = html`
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -88,7 +80,7 @@ export class EdCombat extends LitElement {
     _sits: { state: true },
     _charmsOn: { state: true },
     _target: { state: true },
-    _collapsed: { state: true },
+    _modTab: { state: true },
     _damageModal: { state: true },
     // The step-audit modal: which pool's breakdown to show ('attack' | 'damage'
     // | null). And the manually-entered success count used to buff the Damage
@@ -121,42 +113,33 @@ export class EdCombat extends LitElement {
       --blood-bg: light-dark(#f8e7e4, #3a201d);
       display: block;
     }
-    /* Attack and Damage-taken share the top row so they stretch to the SAME
-       height; Defence/Potions and Combat Modifiers stack under Attack, and the
-       Combat log spans down the right column beside them. */
-    .top {
-      display: grid;
-      grid-template-columns: 1fr 240px;
-      grid-template-areas:
-        "atk  dmg"
-        "dab  log"
-        "mods log";
-      gap: 10px;
-      align-items: stretch;
-    }
+    /* Rows (Option A): Attack | Damage taken share one row and stretch to the same
+       height; Modifiers | Potions share the next; the log is a flat full-width table. */
+    .col { display: flex; flex-direction: column; gap: 14px; }
+    .top2 { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 10px; align-items: stretch; }
+    .modsrow { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 10px; align-items: start; }
+    .top2 > *, .modsrow > * { min-width: 0; } /* let grid children shrink instead of overflow */
+
+    /* Floating header line: Defence, Armour, Initiative, Karma. */
+    .float { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; padding: 0 2px; }
+    .float .item { display: inline-flex; align-items: baseline; gap: 7px; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+    .float .item.ctl { align-items: center; }
+    .float .item b { font-weight: 500; font-size: var(--fs-body); }
+    .float .item .k { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: none; }
+    .float .item .sep { color: var(--muted); font-weight: 400; margin: 0 5px; }
+    .float .item .dval { font-weight: 500; font-size: var(--fs-body); }
+    .float .initres { color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .kchip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; margin-left: auto; }
+    .kchip b { color: var(--karma); font-weight: 500; }
+
     @media (max-width: 720px) {
-      .top { grid-template-columns: 1fr; grid-template-areas: "atk" "dmg" "dab" "mods" "log"; }
-      /* Stacked on mobile: the log is its own row again, capped so it never runs long. */
-      .logblk .log { max-height: 320px; flex: none; }
+      .top2, .modsrow { grid-template-columns: 1fr; }
+      .artbox { height: 96px; width: 96px; min-height: 0; aspect-ratio: auto; }
+      .kchip { margin-left: 0; }
     }
-    .top > * { min-width: 0; } /* let grid children shrink instead of overflow */
-    .top > .atkblk { grid-area: atk; }
-    .top > .dtcol { grid-area: dmg; }
-    .top > .dabpair { grid-area: dab; }
-    .top > .mods { grid-area: mods; }
-    /* The log spans the dab+mods rows and STRETCHES to fill them, so its bottom
-       lines up with the Combat Modifiers card. min-height:0 keeps its content from
-       inflating the grid rows; the inner .log scrolls instead. */
-    .top > .logblk { grid-area: log; min-height: 0; }
-    .logblk { display: flex; flex-direction: column; }
 
     .blk { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
     .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
-    .h .r { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: var(--fs-small); display: inline-flex; align-items: center; gap: 6px; }
-    .h .r b { color: var(--fg); font-weight: 500; }
-    /* The last Initiative roll result, shown just right of the die. */
-    .h .r b.initres { color: var(--accent); font-variant-numeric: tabular-nums; }
-
     /* Weapon image: a square as tall as the pickers + statlines. Grid (not flex)
        so the auto column derives its width from the stretched height. The img is
        absolutely positioned — its intrinsic size can never feed the grid's
@@ -191,13 +174,13 @@ export class EdCombat extends LitElement {
     .strain-k { margin-left: 14px; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: none; }
     .strain { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--danger); flex: none; min-width: 14px; text-align: right; }
 
-    /* Collapsible chip sections. */
-    .sec { margin-top: 8px; }
-    .sechead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font-weight: 500; font-size: var(--fs-eyebrow); line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
-    .sechead .chev { font-size: var(--fs-fine); }
-    .sechead .cnt { color: var(--accent); }
-    .sec.collapsed .secbody { display: none; }
-    .secbody { margin-top: 6px; }
+    /* Combat modifiers: card-less block with a segmented control. */
+    .mods { padding: 0 2px; }
+    .mods .eyebrow { font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+    .seg { display: inline-flex; flex-wrap: wrap; background: var(--bg-card); border-radius: 12px; padding: 3px; gap: 2px; margin-bottom: 8px; max-width: 100%; }
+    .seg button { font: inherit; font-size: var(--fs-small); padding: 4px 14px; border-radius: 999px; color: var(--muted); border: 1px solid transparent; background: none; cursor: pointer; }
+    .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--fg); border-color: var(--border); }
+    .seg i { font-style: normal; color: var(--accent); margin-left: 5px; font-weight: 500; }
     .chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .chip { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: var(--fs-small); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-chip); color: inherit; cursor: pointer; user-select: none; }
     .chip:hover { border-color: var(--accent); }
@@ -225,25 +208,8 @@ export class EdCombat extends LitElement {
     .stand { flex: none; font: inherit; font-size: var(--fs-eyebrow); font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
 
-    /* Defence & Armour block: derived readouts only — a value the engine hasn't
-       produced yet renders as a placeholder pill, never a fabricated number
-       (UI-GUIDELINES §5). Collapsible like the chip sections; defaults to
-       collapsed on narrow screens (owner decision), expanded on desktop. */
-    .dabhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; cursor: pointer; font-weight: 500; font-size: var(--fs-eyebrow); line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); user-select: none; background: none; border: none; padding: 0; }
-    .dabhead .chev { font-size: var(--fs-fine); }
-    .dabrow { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: var(--fs-small); padding: 2px 0; font-variant-numeric: tabular-nums; }
-    .dabrow .k { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 52px; flex: none; }
-    .dabrow .v { font-weight: 500; }
-    .dabrow .v .sep { color: var(--muted); font-weight: 400; margin: 0 5px; }
-    .dablk.collapsed .dabbody { display: none; }
-    .dabbody { margin-top: 4px; }
-    .mods { display: flex; flex-direction: column; }
-
-    /* Defence & Armour and Potions share one row, side by side; they fold to two
-       stacked cards on narrow screens (same 720px breakpoint as .top). */
-    .dabpair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
-    @media (max-width: 720px) { .dabpair { grid-template-columns: 1fr; } }
-    .dabpair > .blk { height: 100%; box-sizing: border-box; }
+    /* Derived readouts (header line) render a placeholder pill until computed
+       (UI-GUIDELINES §5); never a fabricated number. */
     .potpick { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
     select.pot { font: inherit; font-size: var(--fs-small); color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 5px 7px; flex: 1; min-width: 0; }
     .drink { font: inherit; font-size: var(--fs-fine); font-weight: 500; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 999px; cursor: pointer; flex: 0 0 auto; }
@@ -272,7 +238,7 @@ export class EdCombat extends LitElement {
     .dtcol .thr { font-size: var(--fs-fine); color: var(--muted); margin-top: 6px; line-height: 1.5; }
     .dtcol .thr.rec { margin-top: 3px; }
     .dtcol .thr.rec b { color: var(--fg); font-weight: 500; }
-    .dtcol .dtbtns { display: flex; gap: 6px; margin-top: auto; padding-top: 9px; }
+    .dtcol .dtbtns { display: flex; gap: 6px; margin-top: auto; padding-top: 9px; align-items: center; }
     .status { font-size: var(--fs-eyebrow); font-weight: 500; padding: 1px 9px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); white-space: nowrap; border: 1px solid var(--border); }
     .status.warn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
 
@@ -280,16 +246,36 @@ export class EdCombat extends LitElement {
     .clear { font: inherit; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; }
     .clear:hover { color: var(--danger); border-color: var(--danger); }
     .clear:disabled { opacity: 0.4; cursor: default; }
-    .log { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: auto; }
-    .logrow { display: flex; gap: 7px; align-items: baseline; font-size: var(--fs-small); padding: 4px 0; border-top: 1px solid var(--border); }
-    .logrow:first-child { border-top: none; }
-    .logrow .lt { flex: none; width: 14px; text-align: center; color: var(--accent); font-size: var(--fs-fine); }
-    .logrow .lx { min-width: 0; color: var(--muted); line-height: 1.35; }
-    .logrow .lx b { color: var(--fg); font-weight: 500; }
-    .logrow .lx .hit { color: var(--karma); font-weight: 500; }
-    .logrow .lx .miss { color: var(--danger); font-weight: 500; }
-    .logrow .lx .mods { color: var(--muted); }
-    .logempty { font-size: var(--fs-small); color: var(--muted); line-height: 1.4; }
+    .logwrap { overflow-x: hidden; }
+    table.log { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+    .log th { font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+    .log td { padding: 5px 8px; border-bottom: 1px solid var(--border); color: var(--muted); line-height: 1.35; }
+    .log td.roll-c { color: var(--fg); font-weight: 500; }
+    .log tr:last-child td { border-bottom: none; }
+    .log .r { text-align: right; font-variant-numeric: tabular-nums; }
+    .log td.tot { color: var(--fg); font-weight: 500; }
+    .log .glyph { color: var(--accent); font-size: var(--fs-fine); text-align: center; width: 28px; }
+    .log .hit { color: var(--karma); font-weight: 500; }
+    .log .miss { color: var(--danger); font-weight: 500; }
+    .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .logempty { text-align: center; padding: 14px; font-size: var(--fs-small); color: var(--muted); line-height: 1.4; }
+    @media (max-width: 720px) {
+      .logwrap { max-height: 320px; overflow: auto; }
+      .log thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .log, .log tbody { display: block; }
+      .log tr { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto auto auto; grid-template-areas: "g ro st to vs ou" ". de de de de de"; gap: 0 8px; align-items: baseline; padding: 5px 4px; border-bottom: 1px solid var(--border); }
+      .log tr:last-child { border-bottom: none; }
+      .log td { display: block; padding: 0; border: none; min-width: 0; }
+      .log td.glyph { grid-area: g; width: auto; }
+      .log td.roll-c { grid-area: ro; }
+      .log td.st { grid-area: st; }
+      .log td.tot { grid-area: to; }
+      .log td.vsc { grid-area: vs; }
+      .log td.ou { grid-area: ou; }
+      .log td.de { grid-area: de; }
+      .log td.de:empty { display: none; }
+      .log tr.emptyrow { display: block; }
+    }
 
     /* Take-damage modal (UI-GUIDELINES §7 — Escape closes, Enter confirms). */
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
@@ -327,7 +313,7 @@ export class EdCombat extends LitElement {
     this._sits = [];
     this._charmsOn = [];
     this._target = '';
-    this._collapsed = defaultCollapsed();
+    this._modTab = 'opts';
     this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
@@ -420,7 +406,7 @@ export class EdCombat extends LitElement {
       sits: [...(this._sits ?? [])],
       charmsOn: [...(this._charmsOn ?? [])],
       target: this._target,
-      collapsed: [...(this._collapsed ?? [])],
+      modTab: this._modTab,
     });
   }
   _restoreScratch() {
@@ -432,7 +418,7 @@ export class EdCombat extends LitElement {
     this._sits = [...s.sits];
     this._charmsOn = [...s.charmsOn];
     this._target = s.target;
-    this._collapsed = [...s.collapsed];
+    this._modTab = normalizeModTab(s.modTab);
   }
 
   _resetSession() {
@@ -442,7 +428,7 @@ export class EdCombat extends LitElement {
     this._sits = [];
     this._charmsOn = [];
     this._target = '';
-    this._collapsed = defaultCollapsed();
+    this._modTab = 'opts';
     this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
@@ -456,6 +442,7 @@ export class EdCombat extends LitElement {
     this._sits = [];
     this._charmsOn = [];
     this._target = '';
+    this._modTab = 'opts';
     this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
@@ -1007,23 +994,6 @@ export class EdCombat extends LitElement {
     return (this.model?.items ?? []).filter((it) => it.equipped && it.kind === 'blood-charm');
   }
 
-  // Sections (collapsible, with live active-count headers).
-  _sec(title, id, count, body) {
-    const collapsed = (this._collapsed ?? []).includes(id);
-    return html`
-      <div class="sec ${collapsed ? 'collapsed' : ''}">
-        <button class="sechead" aria-expanded=${!collapsed} @click=${() => this._toggleSec(id)}>
-          <span>${title}${count ? html`<span class="cnt"> · ${count} on</span>` : ''}</span>
-          <span class="chev" aria-hidden="true">${collapsed ? '▸' : '▾'}</span>
-        </button>
-        <div class="secbody">${body}</div>
-      </div>`;
-  }
-  _toggleSec(id) {
-    const c = this._collapsed ?? [];
-    this._collapsed = c.includes(id) ? c.filter((x) => x !== id) : [...c, id];
-  }
-
   // Live folded Defence/Armour figure (Overview-style, mirroring ed-overview's
   // `_char`): the derived rating + toggled session mods folded by the pure engine
   // (foldCombatRatings), tinted with a signed delta badge while mods are active.
@@ -1038,24 +1008,6 @@ export class EdCombat extends LitElement {
     return html`<span class="dval cond" title=${title}>${r.value}${badge ? html`<span class="delt" title=${`Toggled: ${origins}`}>${badge}</span>` : ''}</span>`;
   }
 
-  _optSection() {
-    const opts = this._allOptions();
-    // "N on" counts what's actually active: a toggled option, or an arms option
-    // that is armed in session (from any surface) — matching the pill highlight.
-    const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
-    const active = opts.filter((o) => (o.arms ? armedNames.has(o.name) : (this._opts ?? []).includes(o.name))).length;
-    return this._sec('Combat options', 'opts', active, this._chips(opts, this._opts, 'opts'));
-  }
-  _sitSection() {
-    const sits = this._situations();
-    const locked = sits.filter((s) => s.locked).length;
-    return this._sec(
-      'Situational',
-      'sits',
-      (this._sits ?? []).length + locked,
-      html`${this._standUpLine()}${this._chips(sits, this._sits, 'sits', 'sit')}`,
-    );
-  }
   // Knocked Down is a live condition already folded into the sheet — the Combat
   // tab can end it just like the Overview's active-effect row (both dispatch the
   // same ed-edit-knockdown session event; the engine re-derives the standing).
@@ -1077,22 +1029,12 @@ export class EdCombat extends LitElement {
       <button class="stand" title="End the Knocked Down condition" @click=${this._standUp}>Stand up</button>
     </div>`;
   }
-  _charmSection() {
-    const charms = this._charmItems();
-    const active = this._activeCharmNames();
-    const body = charms.length
-      ? this._chips(charms, active, 'charms', 'charm')
-      : html`<div class="empty">No blood charms equipped. Combat-relevant magic implants appear here when worn.</div>`;
-    return this._sec('Blood charms', 'charms', active.length, body);
-  }
-
-  // Defence & Armour block (owner-agreed Combat-UI change): the derived Defence
-  // ratings and Armour values used in combat sit between the attack card and the
-  // Combat Modifiers group. Purely informational (defence isn't rolled; armour is
-  // a damage soak) — derived readouts only, placeholder pills until computed.
+  // Header line (Option A, plans/new-combat-ui): Defence, Armour, Initiative and the
+  // Available Karma pill as plain text above the cards. Defence/Armour are purely
+  // informational (defence isn't rolled; armour is a damage soak) — derived
+  // readouts only, placeholder pills until computed.
   // Toggled session mods fold into the shown figures as Overview-style delta
   // badges (foldCombatRatings) — never dispatched into the derived Defence (B7).
-  // Collapsible; defaults collapsed on narrow screens.
   // Active self-cast spells (PLAN-SPELLS 6b) fold into the DERIVED defence/armour
   // by the engine, so their contribution is already inside the base value. To
   // surface it as a signed badge (like a toggled mod) without double-counting, we
@@ -1113,7 +1055,7 @@ export class EdCombat extends LitElement {
     return { def, arm };
   }
 
-  _defArmourSection() {
+  _headerLine() {
     const c = this.model?.characteristics ?? {};
     const { defenseMods, armorMods } = this._poolEffects();
     const { def: spellDef, arm: spellArm } = this._spellRatingMods();
@@ -1130,22 +1072,22 @@ export class EdCombat extends LitElement {
       [...defenseMods, ...spellDef],
       [...armorMods, ...spellArm],
     );
-    const collapsed = (this._collapsed ?? []).includes('dab');
+    const init = this.model?.characteristics?.initiative;
+    const karma = this.model?.characteristics?.karma?.available;
     return html`
-      <div class="blk dablk ${collapsed ? 'collapsed' : ''}">
-        <button class="dabhead" aria-expanded=${!collapsed} @click=${() => this._toggleSec('dab')}>
-          <span>Defence &amp; Armour</span>
-          <span class="chev" aria-hidden="true">${collapsed ? '▸' : '▾'}</span>
-        </button>
-        <div class="dabbody">
-          <div class="dabrow"><span class="k">Defence</span><span class="v">PD ${this._combatRating(r.defence.Physical)}<span class="sep">·</span>MD ${this._combatRating(r.defence.Mystic)}<span class="sep">·</span>SD ${this._combatRating(r.defence.Social)}</span></div>
-          <div class="dabrow"><span class="k">Armour</span><span class="v">Phys ${this._combatRating(r.armour.Physical)}<span class="sep">·</span>Myst ${this._combatRating(r.armour.Mystic)}</span></div>
-        </div>
+      <div class="float">
+        <span class="item"><span class="k">Defence</span>PD ${this._combatRating(r.defence.Physical)}<span class="sep">·</span>MD ${this._combatRating(r.defence.Mystic)}<span class="sep">·</span>SD ${this._combatRating(r.defence.Social)}</span>
+        <span class="item"><span class="k">Armour</span>Phys ${this._combatRating(r.armour.Physical)}<span class="sep">·</span>Myst ${this._combatRating(r.armour.Mystic)}</span>
+        <span class="item ctl"><span class="k">Initiative</span><b>${init?.value ?? this._pend()}</b>
+          <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+          ${this._lastInitTotal() != null ? html`<b class="initres" title="Last Initiative roll result">${this._lastInitTotal()}</b>` : ''}
+        </span>
+        ${karma != null ? html`<span class="kchip">Available Karma <b>${karma}</b></span>` : ''}
       </div>
     `;
   }
 
-  // The Potions card — sits beside Defence & Armour. Lists EVERY owned potion
+  // The Potions card — sits beside the Combat modifiers. Lists EVERY owned potion
   // (equipped or stored, from ed-app's arming.potions) with its ×N, and a Drink
   // button that arms a confirm then dispatches ed-use-potion. The armed one-shot
   // benefit renders as a dashed pill here too (session-only).
@@ -1156,9 +1098,9 @@ export class EdCombat extends LitElement {
       : potions[0]?.name ?? '';
     const p = this.arming?.pending ?? null;
     return html`
-      <div class="blk dablk">
-        <div class="dabhead" style="cursor: default"><span>Potions</span></div>
-        <div class="dabbody">
+      <div class="blk">
+        <div class="h"><span>Potions</span></div>
+        <div>
           ${potions.length
             ? html`<div class="potpick">
                 <select class="pot" aria-label="Choose a potion to drink" @change=${(e) => (this._potionSel = e.target.value)}>
@@ -1249,16 +1191,35 @@ export class EdCombat extends LitElement {
     ></ed-confirm>`;
   }
 
-  // Combat Modifiers group (owner-agreed Combat-UI change): the three collapsible
-  // chip sections — Combat options, Situational, Blood charms — share one bordered
-  // card, each keeping its own header, active count, and live chips.
-  _modsGroup() {
+  // Combat modifiers (Option A): a card-less block — eyebrow, a segmented control
+  // (Combat options / Situational / Blood charms, each with a live active-count)
+  // and the selected segment's chips. Selecting a segment only sets session
+  // scratchpad state (_modTab); it never alters a chip. Counts: ui/combat-mods-state.js.
+  _modsBlock() {
+    const options = this._allOptions();
+    const sits = this._situations();
+    const charms = this._charmItems();
+    const charmNames = this._activeCharmNames();
+    const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
+    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: this._sits, charmNames });
+    const tab = normalizeModTab(this._modTab);
+    let panel;
+    if (tab === 'sits') {
+      panel = sits.length ? this._chips(sits, this._sits, 'sits', 'sit') : html`<div class="empty">No situations apply right now.</div>`;
+    } else if (tab === 'charms') {
+      panel = charms.length
+        ? this._chips(charms, charmNames, 'charms', 'charm')
+        : html`<div class="empty">No blood charms equipped. Combat-relevant magic implants appear here when worn.</div>`;
+    } else {
+      panel = options.length ? this._chips(options, this._opts, 'opts') : html`<div class="empty">No combat options apply to this pick.</div>`;
+    }
     return html`
-      <div class="blk mods">
-        <div class="h"><span>Combat Modifiers</span></div>
-        ${this._optSection()}
-        ${this._sitSection()}
-        ${this._charmSection()}
+      <div class="mods">
+        <div class="eyebrow">Combat modifiers</div>
+        <div class="seg">
+          ${MOD_TABS.map((t) => html`<button aria-pressed=${tab === t.id} @click=${() => (this._modTab = t.id)}>${t.label}${counts[t.id] > 0 ? html`<i>${counts[t.id]}</i>` : ''}</button>`)}
+        </div>
+        ${panel}
       </div>
     `;
   }
@@ -1318,6 +1279,7 @@ export class EdCombat extends LitElement {
         <div class="cur"><span class="lab">Current</span>${this._curDmg()}<span class="lab">Wounds</span>${this._curWounds()}</div>
         <div class="thr">${this._rating(u)} unconscious<br />${this._rating(d)} death</div>
         <div class="thr rec">Recoveries <b>${h.recoveriesUsed ?? 0} / ${maxRec ?? this._rating(maxRec)}</b> used</div>
+        ${this._standUpLine()}
         <div class="dtbtns">
           <button class="roll dmg" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✗</button>
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
@@ -1376,47 +1338,35 @@ export class EdCombat extends LitElement {
     this._confirmClear = false;
     if (this.characterId) { clearRollLog(this.characterId); this._loadRolls(); }
   }
-  _logRow(r) {
-    if (r.kind === 'system' || r.kind === 'log' || r.kind === 'advancement') {
-      return html`<div class="logrow">
-        <span class="lt" aria-hidden="true">✦</span>
-        <span class="lx"><b>${r.label ?? 'System'}</b>${r.detail ? html` — ${r.detail}` : ''}${r.legendCost != null ? html` · ${r.legendCost} Legend` : ''}${r.silverFee != null && r.silverFee > 0 ? html` · ${r.silverFee} sp` : ''}${r.coinDelta ? html` · ${r.coinDelta}` : ''}</span>
-      </div>`;
-    }
-    // Non-roll entries (e.g. Stand up) render as a plain action line — no
-    // fabricated step or total (UI-GUIDELINES §5).
-    if (r.kind === 'action') {
-      return html`<div class="logrow">
-        <span class="lt" aria-hidden="true">↑</span>
-        <span class="lx"><b>${r.label ?? 'Action'}</b></span>
-      </div>`;
-    }
-    const mods = r.mods ?? [];
-    const glyph = /attack|damage/i.test(r.label ?? '') ? '⚔' : '⚄';
-    const outcome = r.outcome
-      ? html` — <span class="${r.outcome.ok ? 'hit' : 'miss'}">${r.outcome.word}</span>`
-      : '';
-    const modsText = mods.length
-      ? html` · <span class="mods">${mods.map((m) => m.label).join(', ')}</span>`
-      : '';
-    return html`<div class="logrow">
-      <span class="lt" aria-hidden="true">${glyph}</span>
-      <span class="lx">
-        <b>${r.label ?? 'Roll'}</b> Step ${r.step ?? '—'} → <b>${r.total ?? '—'}</b>
-        ${r.difficulty != null ? html` vs D${r.difficulty}` : ''}
-        ${outcome}${modsText}
-      </span>
-    </div>`;
-  }
-  _logBlock() {
+  _logTable() {
+    const rows = this._rolls.map((r) => logRowCells(r));
     return html`
-      <div class="blk logblk">
+      <div class="logblk">
         <div class="h"><span>Combat log</span>
           <button class="clear" @click=${() => (this._confirmClear = true)} ?disabled=${!this._rolls.length}>clear</button>
         </div>
-        ${this._rolls.length
-          ? html`<div class="log">${this._rolls.map((r) => this._logRow(r))}</div>`
-          : html`<div class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Log).</div>`}
+        <div class="logwrap">
+          <table class="log">
+            <thead><tr>
+              <th scope="col"><span class="vh">Type</span></th>
+              <th scope="col">Roll</th><th scope="col" class="r">Step</th><th scope="col" class="r">Total</th>
+              <th scope="col">vs</th><th scope="col">Outcome</th><th scope="col">Detail</th>
+            </tr></thead>
+            <tbody>
+              ${rows.length
+                ? rows.map((c) => html`<tr>
+                    <td class="glyph" aria-hidden="true">${c.glyph}</td>
+                    <td class="roll-c">${c.roll}</td>
+                    <td class="r st">${c.step}</td>
+                    <td class="r tot">${c.total}</td>
+                    <td class="vsc">${c.vs}</td>
+                    <td class="ou">${c.outcome ? html`<span class=${c.outcome.ok ? 'hit' : 'miss'}>${c.outcome.word}</span>` : '—'}</td>
+                    <td class="de">${c.detail}</td>
+                  </tr>`)
+                : html`<tr class="emptyrow"><td colspan="7" class="logempty">No rolls yet — roll to begin. This log lives in this browser only (the Notes Log).</td></tr>`}
+            </tbody>
+          </table>
+        </div>
       </div>`;
   }
 
@@ -1436,20 +1386,15 @@ export class EdCombat extends LitElement {
     const dp = this._damagePool();
     const w = this._selWeapon();
     const talent = this._selTalent();
-    const init = this.model?.characteristics?.initiative;
     const range = w?.category !== 'melee' && w?.shortRange
       ? html` <span class="v ranged">${w.shortRange}${w.longRange ? ` / ${w.longRange}` : ''} yd</span>`
       : '';
     return html`
-      <div class="top">
+      <div class="col">
+        ${this._headerLine()}
+        <div class="top2">
           <div class="blk atkblk">
-            <div class="h">
-              <span>Your attack</span>
-              <span class="r">Initiative <b>${init?.value ?? this._pend()}</b>
-                <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
-                ${this._lastInitTotal() != null ? html`<b class="initres" title="Last Initiative roll result">${this._lastInitTotal()}</b>` : ''}
-              </span>
-            </div>
+            <div class="h"><span>Your attack</span></div>
 
             <div class="attacktop">
               ${this._artBox()}
@@ -1487,13 +1432,12 @@ export class EdCombat extends LitElement {
           </div>
 
           ${this._damageTbl()}
-
-          <div class="dabpair">
-            ${this._defArmourSection()}
-            ${this._potionsSection()}
-          </div>
-          ${this._modsGroup()}
-          ${this._logBlock()}
+        </div>
+        <div class="modsrow">
+          ${this._modsBlock()}
+          ${this._potionsSection()}
+        </div>
+        ${this._logTable()}
       </div>
 
       ${this._stepAudit ? this._stepAuditTpl() : ''}
