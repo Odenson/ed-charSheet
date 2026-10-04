@@ -438,3 +438,53 @@ test('applyModifiers folds operations in order', () => {
   assert.equal(r.value, 11);
   assert.equal(r.base, 10);
 });
+
+// --- attribute-modifier fold (T-002) ----------------------------------------
+import { foldAttribute } from './characteristics.js';
+
+const attrFx = (name, value, extra = {}) => ({
+  type: 'attribute-modifier',
+  target: { domain: 'attribute', name },
+  operation: 'add',
+  value,
+  measure: 'value',
+  source: 'thread',
+  ...extra,
+});
+
+test('foldAttribute: no effects → base value and its step', () => {
+  const r = foldAttribute('Strength', 16, []);
+  assert.equal(r.value, 16);
+  assert.equal(r.step, 7);
+  assert.deepEqual(r.modifiers, []);
+});
+
+test('foldAttribute: a value modifier changes the Value, and through it the Step', () => {
+  assert.equal(foldAttribute('Strength', 16, [attrFx('Strength', 2)]).value, 18);
+  const r = foldAttribute('Strength', 15, [attrFx('Strength', 3)]); // Step 6 at 15, 7 at 18
+  assert.equal(foldAttribute('Strength', 15, []).step, 6);
+  assert.equal(r.value, 18);
+  assert.equal(r.step, 7);
+  assert.equal(r.modifiers[0].measure, 'value');
+});
+
+test('foldAttribute: a step modifier adjusts the Step only (Perception −1 step)', () => {
+  const r = foldAttribute('Perception', 14, [attrFx('Perception', 1, { operation: 'subtract', measure: 'step' })]);
+  assert.equal(r.value, 14);
+  assert.equal(r.baseStep, 6);
+  assert.equal(r.step, 5);
+});
+
+test('foldAttribute: ignores other attributes, situational and gmDiscretion effects', () => {
+  const r = foldAttribute('Strength', 16, [
+    attrFx('Dexterity', 5),
+    attrFx('Strength', 5, { condition: 'situational' }),
+    attrFx('Strength', 5, { gmDiscretion: true }),
+  ]);
+  assert.equal(r.value, 16);
+  assert.equal(r.step, 7);
+});
+
+test('foldAttribute: the Step is floored at 0', () => {
+  assert.equal(foldAttribute('Charisma', 1, [attrFx('Charisma', 9, { operation: 'subtract', measure: 'step' })]).step, 0);
+});

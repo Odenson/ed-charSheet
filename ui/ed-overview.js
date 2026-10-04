@@ -68,10 +68,14 @@ export class EdOverview extends LitElement {
     .blk h4 { margin: 0 0 6px; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .agrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .acell { background: var(--bg-chip); border-radius: 8px; padding: 5px 8px; }
-    .acell .an { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; }
+    .acell .an { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
     .acell .r { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
     .acell .av { font-size: var(--fs-value); font-weight: 500; line-height: 1; }
     .acell .asd { font-size: var(--fs-eyebrow); color: var(--muted); }
+    /* An attribute changed by an always-on effect (e.g. a magic item): a small
+       signed pill in the accent colour sits on the name line, leaving the number
+       untouched. Presentation only — the value is the engine's folded number. */
+    .acell .adelt { font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 1px 5px; border-radius: 999px; white-space: nowrap; text-transform: none; background: var(--accent-bg); color: var(--accent); cursor: help; }
     .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); flex: none; padding: 0; }
     .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     .kmark { color: var(--karma); }
@@ -220,6 +224,7 @@ export class EdOverview extends LitElement {
     if (o?.kind === 'discipline') return `${o.name.slice(0, 3)} ${o.circle}`;
     if (o?.kind === 'race') return o.name ?? 'race';
     if (o?.kind === 'condition') return o.name ?? 'condition';
+    if (o?.kind === 'item' || o?.kind === 'thread' || o?.kind === 'spell') return o.name ?? m.source ?? '';
     return m.source ?? '';
   }
 
@@ -295,6 +300,32 @@ export class EdOverview extends LitElement {
     if (!c || c.value == null) return html`${this._pend()}${this._rollBtn(label, null, undefined, false, key)}`;
     const title = `Step ${c.value} (base ${c.base}${this._modSummary(c.modifiers)})`;
     return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma, false, key)}`;
+  }
+
+  // One attribute tile. When an always-on effect (a magic item, a racial or thread
+  // bonus) changes the attribute, the number is tinted and a signed badge names the
+  // net change; hovering explains it from the engine's `modifiers` (base + each
+  // source). The deltas and the folded Value/Step all come from the engine.
+  _attrCell(a) {
+    const mods = a.modifiers ?? [];
+    const changed = mods.length > 0 && (a.valueDelta || a.stepDelta);
+    const signed = (n) => `${n > 0 ? '+' : '−'}${Math.abs(n)}`;
+    const badge = !changed ? '' : a.valueDelta ? signed(a.valueDelta) : `${signed(a.stepDelta)} step`;
+    const valueMods = mods.filter((m) => m.measure === 'value');
+    const stepMods = mods.filter((m) => m.measure === 'step');
+    const title = changed
+      ? `${a.name}: Value ${a.value}${valueMods.length ? ` (base ${a.rawValue}${this._modSummary(valueMods)})` : ''} · Step ${a.step}${stepMods.length ? ` (base ${a.baseStep}${this._modSummary(stepMods)} step)` : ''}`
+      : '';
+    return html`
+      <div class="acell">
+        <div class="an"><span>${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</span>${changed ? html`<span class="adelt" title=${title}>${badge}</span>` : ''}</div>
+        <div class="r">
+          <span class="av">${a.value}</span>
+          <span class="asd">${a.step} · ${a.dice}</span>
+          ${this._rollBtn(a.name, a.step, a.karma)}
+        </div>
+      </div>
+    `;
   }
 
   // Karma: available points (max in the tooltip); the roll button rolls the Karma
@@ -954,18 +985,7 @@ export class EdOverview extends LitElement {
             <div class="blk">
               <h4>Attributes</h4>
               <div class="agrid">
-                ${(m.attributes ?? []).map(
-                  (a) => html`
-                    <div class="acell">
-                      <div class="an">${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</div>
-                      <div class="r">
-                        <span class="av">${a.value}</span>
-                        <span class="asd">${a.step} · ${a.dice}</span>
-                        ${this._rollBtn(a.name, a.step, a.karma)}
-                      </div>
-                    </div>
-                  `,
-                )}
+                ${(m.attributes ?? []).map((a) => this._attrCell(a))}
               </div>
             </div>
             ${this._legend()}
