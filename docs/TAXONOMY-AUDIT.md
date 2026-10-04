@@ -6,7 +6,7 @@ documented architecture. Same spirit as [RULEBOOK-AUDIT.md](RULEBOOK-AUDIT.md):
 record a discrepancy here *before* fixing it, and cite the finding id (`T-nnn`)
 in the fixing commit.
 
-> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 4 fixed (T-001, T-002, T-003, T-018).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
+> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 7 fixed (T-001, T-002, T-003, T-004, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
 
 ## Scope & authority
 
@@ -53,7 +53,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 ## Result at a glance
 
-47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 4 fixed (T-001, T-002, T-003, T-018), 3 narrowed, 47 open including the 4 added by the re-validation. S1 fixed ×3 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
+47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 7 fixed (T-001, T-002, T-003, T-004, T-016, T-018, T-049), 5 narrowed (T-021, T-023, T-031, T-032, T-046), 44 not yet fixed including the 4 added by the re-validation. S1 fixed ×4 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
 
 ## Summary table
 
@@ -62,7 +62,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-001 | Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names | S1 | 3 | data | fixed (a968c33) |
 | T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | fixed (2c27128) |
 | T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | fixed (cf3c05f); Bone Charm half split out as T-051 |
-| T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | open |
+| T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | fixed (uncommitted) |
 | T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | open |
 | T-006 | Custom-item builder emits characteristic-modifier effects with a measure the engine ignores | S1 | 3 | ui | open |
 | T-007 | Spells tab adds step bonuses to rolls itself (castingStep, Effect step, Patterncraft step) | S2 | 1 | ui | open |
@@ -74,14 +74,14 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-013 | `allSilverAlloc` in the trade modal duplicates engine `allocForSilver` | S2 | 1 | ui | open |
 | T-014 | Karma ledger clamp and Ritual affordability are computed in ed-app / ed-overview (duplicated from store.js) | S2 | 1 | ui | open |
 | T-015 | store.js folds taxonomy fields to decide a thread weapon's Damage step | S2 | 1 | ui | open |
-| T-016 | `attack-modifier` with `measure: "rating"` is outside the documented contract | S2 | 2 | data | open |
+| T-016 | `attack-modifier` with `measure: "rating"` is outside the documented contract | S2 | 2 | data | fixed (uncommitted) |
 | T-017 | `stacking` semantics in code differ from §7 (per-origin progression, origin-less exempt) | S2 | 2 | engine | open |
 | T-018 | Obsidiman Skin armor value disagrees with its own summary | S2 | 3 | data | fixed (17b960e) |
 | T-019 | Per-success talent/skill effects kept as `note` while the same shape is structured elsewhere | S2 | 3 | data | open |
 | T-020 | Spell Success-Level/Extra-Thread options: v4 migration is partial | S2 | 3 | data | open |
-| T-021 | Combat pools ignore `operation` (only `subtract` is special) and do not implement the §4.1 `set`-first contract | S2 | 3 | engine | open |
+| T-021 | Combat pools ignore `operation` (only `subtract` is special) and do not implement the §4.1 `set`-first contract | S2 | 3 | engine | narrowed (uncommitted) |
 | T-022 | Documented vocabulary with no handler and no "reserved" marking | S2 | 3 | engine | open |
-| T-023 | Unknown or unsupported effect values are skipped silently everywhere | S2 | 3 | engine | open |
+| T-023 | Unknown or unsupported effect values are skipped silently everywhere | S2 | 3 | engine | narrowed (uncommitted) |
 | T-024 | Weapon Damage Step has two sources (`ref.damageStep` and the `attack-modifier add`); §4.1 documents only the effect | S2 | 3 | engine | open |
 | T-025 | Hard-coded rule defaults and constants in UI code | S2 | 3 | ui | open |
 | T-026 | Recomputable values still stored in character data (Kolon) | S3 | 1 | data | open |
@@ -107,7 +107,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-046 | Test coverage gaps against the documented vocabulary | S3 | 3 | engine | open (narrowed) |
 | T-047 | Restriction gate: empty `discipline: []` blocks a knack forever; undocumented edge behaviours | S3 | 3 | engine | open |
 | T-048 | Custom-item validator and builder do not know taxonomy v5/v6; `dice` measure accepted with a numeric value | S3 | 3 | engine | open |
-| T-049 | `foldPool` silently drops dice effects that are unparseable or use `subtract` | S2 | 3 | engine | open |
+| T-049 | `foldPool` silently drops dice effects that are unparseable or use `subtract` | S2 | 3 | engine | fixed (uncommitted) |
 | T-050 | Spell dice readout filters on raw effect fields in `buildCastPlan` | S3 | 3 | engine | open |
 | T-051 | Bone Charm's Recovery effect disagrees with the rulebook; its Death/Unconsciousness −1 is unsupported | S2 | 3 | data | open (owner decision) |
 
@@ -230,7 +230,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 ### T-004 — Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools
 - Source pass id: T-E03
-- Severity: S1  Tier: 3  Status: open
+- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (see the Re-validation table; the Bracers were migrated to `step` on the owner's ruling)
 - Area: engine
 - Documented: §2 "`attack-modifier` ... weapon / natural-attack damage step, to-hit step ... so the combat resolver can gather them in one dispatch"; §6 auto-apply of `always` effects; §5 measure meanings.
 - Observed: `foldPool` folds only `measure==='result'` or `'step'`; any other measure is skipped with no trace. Executed: Aspect of the Casual Murderer (`attack/Attack` +5 and `attack/Damage` +5, `measure:"rating"`, sustained) is admitted by `activeSpellBundlesFor` (1 bundle), then `damagePool({weaponDamageStep:5,strengthStep:6})` = step 11, i.e. unchanged; the active-spell chip reads "+5 Attack rating". Separately `weaponPoolEffects` admits only `test-modifier`/`resource-modifier`, and `store.js:1384-1395` only `measure:"step"`, `add`, `replace`, so Bracers of Obsidiman Strength ranks 2/4 (`attack/Damage`, `measure:"result"`, scope "close combat", always) are folded nowhere.
@@ -350,7 +350,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 ### T-016 — `attack-modifier` with `measure: "rating"` is outside the documented contract
 - Source pass id: T-D03
-- Severity: S2  Tier: 2 (doc clarification) or 3 (data change)  Status: open
+- Severity: S2  Tier: 2 (doc clarification) or 3 (data change)  Status: fixed 2026-10-05 (no `attack-modifier` uses `rating` now; see T-004)
 - Area: data
 - Documented: §2: `attack-modifier` "adjusts an attack's step or result". §5: `rating` = "a static stat (defense / armor / threshold / movement)".
 - Observed: six `attack-modifier` effects use `measure: "rating"`, all in two spells. "Aspect of the Fog Ghost": Attack +3 and Damage +3 (sustained), plus an `extraThreads` Attack +1. "Aspect of the Casual Murderer": Attack +5 and Damage +5, plus an `extraThreads` Attack +1. `attack-modifier` with `result` also appears twice in `thread-items.json` (Bracers of Obsidiman Strength, Damage +1/+2, scope "close combat"). `result` is documented.
@@ -413,7 +413,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 ### T-021 — Combat pools ignore `operation` (only `subtract` is special) and do not implement the §4.1 `set`-first contract
 - Source pass id: T-E04
-- Severity: S2  Tier: 3  Status: open
+- Severity: S2  Tier: 3  Status: narrowed 2026-10-05 (pools report unsupported operations; `set`-first not implemented)
 - Area: engine
 - Documented: §4.1 "All `set` effects on a target establish the base first ..., then `add`/`subtract`/… fold on top"; "Substitution talents ... are `set` on the base"; §4 operations list.
 - Observed: `opValue` negates on `subtract` and otherwise returns `value`. A `set`, `multiply`, `min`, `max` or `divide` effect is therefore added; a `{ref}` value is string-concatenated. Executed on `damagePool(5+6)`: `set 3` gives 14, `multiply 2` gives 13, `set {ref}` gives `"11[object Object]"`. The §4.1 pass-1 fold exists only in `applyModifiers` (`characteristics.js:161-165`); `damagePool`/`attackPool` have no such pass. No shipped pool-bound effect uses these today (spell `set` effects are `duration:"test"` and not sustained), but the validator lets custom items carry `set` and `{ref}` on a `test-modifier`, and equipped weapon `test-modifier` effects go straight to `foldPool`.
@@ -433,7 +433,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 ### T-023 — Unknown or unsupported effect values are skipped silently everywhere
 - Source pass id: T-E07
-- Severity: S2  Tier: 3  Status: open
+- Severity: S2  Tier: 3  Status: narrowed 2026-10-05 (combat pools report `unapplied`; other consumers still silent)
 - Area: engine / tests
 - Documented: Checklist B "fail visibly (or are skipped deliberately) — not silently mis-computed"; ARCH §3 placeholder-pill principle.
 - Observed: every consumer filters with `type ===`/`target.name ===` matches and ignores the rest (`characteristics.js:155,201-205,224-228`; `combat.js:171-178`; `ability-ranks.js:62`; `store.js:1565-1570`). There is no `console.warn`, no "unhandled effect" list, and no test or lint that validates `rules/*.json` against the vocabulary (`tools/` has only import/dev-server/fold tests). `engine/validate-item.js` is the sole vocabulary gate and covers only custom items (8 of 14 types; no `ref`/`multiply`/`min`/`max`; condition objects unchecked). T-002/02/03 are all instances of this gap.
@@ -736,7 +736,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 Re-check of every finding against current code and data after releases v1.25.0 to v1.28.0 (Spells target effects, `action-modifier` v5, Combat tab redesign, Night's Edge with `dice` measure and `object` selector, v6). Method: scripted re-inventory of `rules/*.json` effects (949, was 945), targeted reads/greps of the cited lines, `node --test` (942 pass, 0 fail; was 725). The `character-data` branch was re-read for T-026, T-032 and T-043. No audit pass was re-run end to end, and the new UI code in `ed-spells.js` / `ed-combat.js` was spot-checked, not line-audited.
 
-**Result: 4 findings fixed (T-001, T-002, T-003, T-018), 3 narrowed, 40 still open exactly as logged; 4 new findings (T-048 to T-051).** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
+**Result at the time of the re-validation (2026-10-04): no finding closed, 3 narrowed, 4 new (T-048 to T-051). Fixes made since are tracked in the table below, the Log and each finding's Status line.** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
 
 ### Verdicts
 
@@ -745,7 +745,7 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 | T-001 | fixed 2026-10-05 (`a968c33`) | Knack `parents` and `restrictions.ability` names normalised to `Melee Weapon` / `Missile Weapon` / `Throwing Weapon`; the 3 plural stub talents deleted; `store-knack.test.js` fixtures moved to singular; `knacks-catalog.test.js` gained a guard against the stubs and a check that the weapon parents are talents disciplines teach |
 | T-002 | fixed 2026-10-05 (`2c27128`) | New `foldAttribute` in `engine/characteristics.js` folds always-on `attribute-modifier` effects (`measure` value, default, or step; Step floored at 0). `store.js` now assembles `activeEffects` before the attributes and `attrVal` reads the folded Value, so carrying capacity, defences, Mystic Armor, talent steps and `attribute\|…\|Step` refs all see it. Tests: `engine/characteristics.test.js`, new `store-attribute-modifier.test.js`. The mixed `measure` (races/Bracers `value`, Beer Mug `step`) is now honoured both ways |
 | T-003 | fixed 2026-10-05 (`cf3c05f`; Warrior), Bone Charm split to T-051 | Owner chose option B (`rating` is the one measure for characteristics). Warrior Circle 7 effect migrated `count` → `rating`; rule-agent confirmed the bonus (RULES-FAQ Q023: Warrior Circle 7 "gains an additional Recovery test"). Tests added in `engine/characteristics.test.js`. EFFECT-TAXONOMY §5 marks `count` reserved and states characteristics take `rating`. **Bone Charm deliberately not migrated**: the book says its bonus is +1 to Recovery test *results*, not +1 per day, so migrating would have made it wrong in a new way |
-| T-004 | still open | `foldPool` handles `dice`, `result`, `step` only; `rating` skipped. Aspect of the Fog Ghost / Casual Murderer still `attack-modifier` + `rating` |
+| T-004 | fixed 2026-10-05 | Owner ruled "+N to a test" is a **Step** bonus (RULES-FAQ Q009) and the Aspect bonuses sit on the target (Q024). (1) Aspect of the Fog Ghost / Casual Murderer: `rating` → `step`, `close-combat` scope, plus notes; Casual Murderer `situational`. (2) `activeSpellBundlesFor` understands the §6 token `close-combat` (melee + unarmed) and a `situationalOn` list; new `situationalSpellBundlesFor`; a situational spell appears as a toggle chip in the Combat tab's Situational segment. (3) New `activeItemBundlesFor` routes always-on `attack-modifier` effects of worn NON-weapon items into the pools (rank effects collapse by `stacking`; a weapon is excluded because its own effects already arrive via the selected weapon); Bracers' scope normalised to `close-combat`. Side effect: the custom Beer Mug of Brawling (+1 Damage step, always) now takes effect. (4) `foldPool` reports effects it cannot fold — see T-021/T-023/T-049. Owner ruled the Bracers ranks 2/4 are `step` too (same "+N to close combat Damage tests" wording as the Aspect spells), so they were migrated `result` → `step`: rank 4 now adds +2 Damage Step in close combat |
 | T-005 | still open | `ed-spells.js` rebuilds `total` as `result.total + karmaResult.total` (cast and learn paths); roll-logged detail still carries no grand total and no mods |
 | T-006 | still open | Builder `TYPE_META` still one `rating` measure for all characteristic targets; validator has no measure/target cross-check |
 | T-007, T-008, T-009 | still open | `_charmStepBonus`, `plan.castingStep + armed.step`, `perSucc` in the badge and `_aimSummary`, `_spellRatingMods` all present |
@@ -755,13 +755,13 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 | T-013 | still open | `allSilverAlloc` still in `ed-trade-modal.js` |
 | T-014 | still open | karma clamp / ritual affordability still in `ed-app.js` and `ed-overview.js` |
 | T-015 | still open | store.js thread-weapon `damageStep = e.value` loop unchanged |
-| T-016 | still open | Same 6 `attack-modifier` + `rating` effects in the two Aspect spells |
+| T-016 | fixed 2026-10-05 | No `attack-modifier` uses `rating` any more (the two Aspect spells migrated to `step`, see T-004) |
 | T-017 | still open | `collapseStacking` unchanged (per-origin, origin-less exempt) |
 | T-018 | fixed 2026-10-05 (`17b960e`; value now 3) | Rule-agent (RULES-FAQ Q022): the Armor Table gives Obsidiman Skin Physical 3 / Mystic 1 (PG p. 435). The `summary` is right; `value: 2` is wrong. Fix is a one-number data change to `3`, Tier 3 |
 | T-019 | still open | 17 `note` + `on-success` + `perSuccess` effects |
 | T-020 | still open | `yards` / `count` measures still unused for range, area and targets |
-| T-021 | still open | `opValue` in `combat.js` still only special-cases `subtract` |
-| T-022, T-023, T-044 | still open | No handler for `grant-attack`, `sense`, `enable-option`, `ref` operation; still no lint or warning. `foldPool` also drops unparseable `dice` silently (see T-048) |
+| T-021 | narrowed 2026-10-05 | Attack/Damage pools now skip, and report, an effect with an unsupported operation (`set`, `multiply`, ...) or a non-numeric value instead of mis-adding it (`foldPool`). The §4.1 `set`-first contract is still not implemented for pools; no shipped effect needs it |
+| T-022, T-023, T-044 | T-023 narrowed 2026-10-05; T-022, T-044 still open | No handler for `grant-attack`, `sense`, `enable-option`, `ref` operation. For T-023, the combat pools now return `unapplied` (label + reason) for every effect that targets the roll but cannot be folded; it is stored on the Roll Log entry and shown in the Combat log detail as "⚠ Not applied: …". A catalog test keeps shipped Attack/Damage modifiers foldable. Other consumers (characteristics, defences, ability ranks) and a rules-wide lint are still silent |
 | T-024 | still open | `ref.damageStep` and the `attack-modifier` effect remain two sources |
 | T-025 | still open | Fee fallback `: 10` (`ed-disciplines.js`), tier mapping in `ed-app.js` / `ed-disciplines.js`, `roll.vs ?? 'Mystic'` ×3, 10 copper in trade modal |
 | T-026 | still open | `kolon.json` on `character-data` still stores `karma.available` 35 and `karma.legend` 980 |
@@ -794,7 +794,7 @@ Appendices A to C and Checklists A to C describe the v4 vocabulary (14 types, 94
 - Proposed remedy: export the validator tables, add the v5/v6 vocabulary, and reject `dice` with a non-string value. Tier 3.
 
 ### T-049 — `foldPool` silently drops dice effects that are unparseable or use `subtract`
-- Severity: S2  Tier: 3  Status: open
+- Severity: S2  Tier: 3  Status: fixed 2026-10-05 (`foldPool` reports an unreadable or subtracted Bonus Die in `unapplied`; tests in `engine/combat.test.js`)
 - Area: engine
 - Observed: in `engine/combat.js` the `measure:"dice"` branch pushes a bonus die only `if (list && e.operation !== 'subtract')`. A malformed dice string or a subtracted die produces no bonus and no trace. The v6 §5.2 grammar says nothing about `subtract`.
 - Impact: latent (the only shipped dice effect, Night's Edge `D4` with `add`, works). A homebrew or future spell with a typo vanishes. Another instance of T-023.
@@ -1137,3 +1137,5 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 | 2026-10-05 | T-001 fixed (`a968c33`): knack parents use singular weapon talent names; plural stubs removed. |
 | 2026-10-05 | T-002 fixed (`2c27128`): `attribute-modifier` folds into attributes; Overview pill. |
 | 2026-10-05 | T-003 fixed (`cf3c05f`): Warrior Circle 7 Recovery bonus uses `rating`; Bone Charm split out as T-051 (open, owner decision). |
+| 2026-10-05 | T-004 narrowed, T-016 fixed (uncommitted): Aspect of the Fog Ghost / Casual Murderer migrated to `step` with `close-combat` scope; Casual Murderer situational. Bracers routing and a toggle for situational spell bundles remain open. |
+| 2026-10-05 | T-004 fixed, T-049 fixed, T-021 and T-023 narrowed (uncommitted): situational spell toggle, worn-item attack routing, `close-combat` scope, and `unapplied` reporting in the combat log. |

@@ -103,3 +103,16 @@ test('glyph is crossed swords for attack/damage labels (case-insensitive), dice 
 test('miss outcome preserved', () => {
   assert.deepEqual(logRowCells({ label: 'Attack', outcome: { word: 'Miss', ok: false } }).outcome, { word: 'Miss', ok: false });
 });
+
+test('a roll entry that carried unapplied effects says so in the detail (never silent)', () => {
+  const c = logRowCells({
+    label: 'Damage — Sword',
+    step: 11,
+    total: 14,
+    unapplied: [{ label: 'Aspect of the Fog Ghost', reason: 'measure "rating" is not supported in an attack or damage pool' }],
+    mods: [{ label: 'Knocked Down', value: -3 }],
+  });
+  assert.match(c.detail, /Knocked Down −3/);
+  assert.match(c.detail, /⚠ Not applied: Aspect of the Fog Ghost \(measure "rating" is not supported/);
+  assert.equal(logRowCells({ label: 'Damage', step: 11, total: 14 }).detail, '', 'older entries unchanged');
+});

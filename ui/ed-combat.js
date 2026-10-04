@@ -21,7 +21,7 @@
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css, nothing } from 'lit';
 import { weaponOccurrence } from '../engine/spells.js';
-import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor } from '../engine/combat.js';
+import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
@@ -630,6 +630,9 @@ export class EdCombat extends LitElement {
       // Active self-cast spells whose sustained attack-modifier folds into the
       // pools while active (Arrow of Night's +6 to the missile's Damage step).
       activeSpellBundles: this._activeSpellBundles(),
+      // Always-on attack/damage bonuses of worn non-weapon items (Bracers of
+      // Obsidiman Strength, a custom magic item).
+      activeItemBundles: this._activeItemBundles(),
     });
   }
   // Active self-cast spells whose sustained attack-modifier folds into the
@@ -638,12 +641,25 @@ export class EdCombat extends LitElement {
   // only supplies the tagged active effects and the selected weapon's category
   // (the "selection" — mirroring _armedForPick's scopes).
   _activeSpellBundles() {
+    // A spell's situational bonus (Aspect of the Casual Murderer) folds only while
+    // its chip is toggled on in the Situational segment (the chip name lives in `_sits`).
+    return activeSpellBundlesFor(this.model?.activeEffects ?? [], ...this._weaponArgs(), { situationalOn: this._sits ?? [] });
+  }
+  // The active spells with a situational bonus for the selected weapon — listed as
+  // toggles beside the combat situations.
+  _situationalSpells() {
+    return situationalSpellBundlesFor(this.model?.activeEffects ?? [], ...this._weaponArgs());
+  }
+  // Equipped items that are not weapons (a weapon's own effects reach the pools via
+  // the selected weapon, so they must not be folded a second time here).
+  _activeItemBundles() {
     const w = this._selWeapon();
-    return activeSpellBundlesFor(
-      this.model?.activeEffects ?? [],
-      w?.category ?? null,
-      w && w.category != null ? { name: w.name, category: w.category, index: w.index ?? 0 } : null,
-    );
+    const names = (this.model?.items ?? []).filter((it) => it.equipped && it.ref?.category == null).map((it) => it.name);
+    return activeItemBundlesFor(this.model?.activeEffects ?? [], w?.category ?? null, names);
+  }
+  _weaponArgs() {
+    const w = this._selWeapon();
+    return [w?.category ?? null, w && w.category != null ? { name: w.name, category: w.category, index: w.index ?? 0 } : null];
   }
   // The session-armed talents (model.armedTalents) whose weapon scope matches the
   // current pick: an armed Mystic Aim (`appliesTo` missile/throwing) folds into a
@@ -821,6 +837,7 @@ export class EdCombat extends LitElement {
       {
         difficulty: target != null ? { value: target, win: 'Hit', lose: 'Miss' } : null,
         mods: ap.resultMods,
+        unapplied: ap.unapplied,
         // Deferred Strain: charged at the modal's commit for a set-dice roll (0
         // otherwise — an ordinary roll already paid it above).
         strain: setDice ? ap.strain : 0,
@@ -837,7 +854,7 @@ export class EdCombat extends LitElement {
       this._karmaCtx(this.model?.combat?.damageKarma),
       undefined,
       // Bonus Dice (Night's Edge's D4): their own exploding group, not part of the step.
-      { mods: dp.resultMods, bonusDice: dp.bonusDice },
+      { mods: dp.resultMods, bonusDice: dp.bonusDice, unapplied: dp.unapplied },
     );
   }
   // The most recent Initiative roll's total from the device-local Log (newest
@@ -887,7 +904,7 @@ export class EdCombat extends LitElement {
       const sign = v > 0 ? '+' : '';
       if (e.type === 'resource-modifier' && e.target?.domain === 'resource' && e.target?.name === 'Strain' && v) {
         out.push({ cls: 'strain', text: `${v}⚡`, title: 'Strain cost — charged once, on Apply' });
-      } else if (e.type === 'test-modifier') {
+      } else if (e.type === 'test-modifier' || (e.type === 'attack-modifier' && e.measure !== 'dice' && typeof e.value === 'number')) {
         const t = e.target?.name ?? '';
         const tag = t === 'Attack' ? 'atk' : t === 'Damage' ? 'dmg' : t === 'Action' ? 'act' : t.toLowerCase();
         out.push({ cls: v >= 0 ? 'pos' : 'neg', text: `${sign}${v} ${tag}`, title: e.summary ?? '' });
@@ -998,10 +1015,12 @@ export class EdCombat extends LitElement {
   }
   _situations() {
     const cond = this.model?.combat?.conditions ?? {};
-    return (this.model?.combatRules?.situations ?? []).map((b) => ({
+    const rules = (this.model?.combatRules?.situations ?? []).map((b) => ({
       ...b,
       locked: (cond.knockedDown && b.name === 'Knocked Down') || (cond.harried && b.name === 'Harried'),
     }));
+    // Active spells whose bonus applies only in some situation join the list as toggles.
+    return [...rules, ...this._situationalSpells().map((b) => ({ ...b, locked: false }))];
   }
   _charmItems() {
     return (this.model?.items ?? []).filter((it) => it.equipped && it.kind === 'blood-charm');
@@ -1214,7 +1233,9 @@ export class EdCombat extends LitElement {
     const charms = this._charmItems();
     const charmNames = this._activeCharmNames();
     const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
-    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: this._sits, charmNames });
+    // A toggled spell chip whose spell has since ended is no longer in `sits`; don't count it.
+    const knownSits = new Set(sits.map((s) => s.name));
+    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: (this._sits ?? []).filter((n) => knownSits.has(n)), charmNames });
     const tab = normalizeModTab(this._modTab);
     let panel;
     if (tab === 'sits') {

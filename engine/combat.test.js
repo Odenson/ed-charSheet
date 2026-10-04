@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents, activeSpellBundlesFor } from './combat.js';
+import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -25,11 +25,12 @@ test('rules/combat.json carries 10 options and 12 situations', () => {
 });
 
 test('empty effect list: unchanged step, no mods, no strain', () => {
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects: [] }), { step: TALENT, resultMods: [], strain: 0 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects: [] }), { step: TALENT, resultMods: [], strain: 0, unapplied: [] });
   assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [] }), {
     step: STR + WEAPON,
     resultMods: [],
     bonusDice: [],
+    unapplied: [],
   });
 });
 
@@ -62,26 +63,28 @@ test('damagePool bonusSteps: adds success-level steps, never fabricates a null b
 
 test('Aggressive Attack: +3 attack step, +3 damage step, defense mods excluded, 1 Strain', () => {
   const effects = option('Aggressive Attack').effects;
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT + 3, resultMods: [], strain: 1 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT + 3, resultMods: [], strain: 1, unapplied: [] });
   assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
     step: STR + WEAPON + 3,
     resultMods: [],
     bonusDice: [],
+    unapplied: [],
   });
 });
 
 test('Called Shot: −3 attack step, 1 Strain, note folds nothing', () => {
   const effects = option('Called Shot').effects;
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT - 3, resultMods: [], strain: 1 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT - 3, resultMods: [], strain: 1, unapplied: [] });
 });
 
 test('Defensive Stance: −3 attack AND damage (except-knockdown scope), defense mods excluded', () => {
   const effects = option('Defensive Stance').effects;
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT - 3, resultMods: [], strain: 0 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT - 3, resultMods: [], strain: 0, unapplied: [] });
   assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
     step: STR + WEAPON - 3,
     resultMods: [],
     bonusDice: [],
+    unapplied: [],
   });
 });
 
@@ -106,7 +109,7 @@ test('Partial Darkness: −2 attack step, scope sight', () => {
 
 test('Harried: −2 attack step, defense mods excluded', () => {
   const effects = situation('Harried').effects;
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT - 2, resultMods: [], strain: 0 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT - 2, resultMods: [], strain: 0, unapplied: [] });
 });
 
 test('Knocked Down is a flat RESULT mod (B10): step unchanged, mods carry the −3', () => {
@@ -120,11 +123,12 @@ test('Knocked Down is a flat RESULT mod (B10): step unchanged, mods carry the �
 test('note-only riders fold nothing: Full Cover, Surprised, Stun, Knockdown, Jump Up, Set Charge', () => {
   for (const name of ['Full Cover', 'Surprised', 'Attacking to Stun', 'Attacking to Knockdown', 'Jump Up', 'Setting Against a Charge', 'Range — Short']) {
     const effects = (option(name) ?? situation(name)).effects;
-    assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT, resultMods: [], strain: 0 }, name);
+    assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT, resultMods: [], strain: 0, unapplied: [] }, name);
     assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
       step: STR + WEAPON,
       resultMods: [],
       bonusDice: [],
+      unapplied: [],
     }, name);
   }
 });
@@ -192,6 +196,7 @@ test('collectCombatEffects: player toggles return attack/damage effects AND defe
     step: TALENT + 3, // Aggressive Attack +3 step (Partial Cover has no test mod)
     resultMods: [],
     strain: 1,
+    unapplied: [],
   });
 });
 
@@ -201,12 +206,12 @@ test('collectCombatEffects: Knocked Down stripped entirely when locked (B11)', (
   assert.equal(r.damageEffects.length, 0);
   assert.equal(r.defenseMods.length, 0);
   // The pool sees nothing — the −3 rides ed-app's roll-time mods instead.
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT, resultMods: [], strain: 0 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT, resultMods: [], strain: 0, unapplied: [] });
 });
 
 test('collectCombatEffects: Harried keeps its Action −2 but strips defence mods (B11)', () => {
   const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], rules: RULES, conditions: { harried: true } });
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT - 2, resultMods: [], strain: 0 });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT - 2, resultMods: [], strain: 0, unapplied: [] });
   assert.equal(r.defenseMods.length, 0);
 });
 
@@ -604,4 +609,114 @@ test('tickArmedTalents decrements roundsLeft and drops the expired', () => {
   assert.equal(next[0].roundsLeft, 2);
   // Pure: the input is untouched.
   assert.equal(armed[0].roundsLeft, 1);
+});
+
+// --- Aspect spells (T-004): sustained Step bonuses on the target, close combat only ----
+
+const aspectSpells = JSON.parse(readFileSync(new URL('../rules/spells.json', import.meta.url))).spells;
+const asSpellFx = (spell) => spell.effects.map((e) => ({ ...e, origin: { kind: 'spell', name: spell.name } }));
+
+test('activeSpellBundlesFor: close-combat scope covers melee and unarmed, not missile or no weapon', () => {
+  const fx = asSpellFx(aspectSpells['Aspect of the Fog Ghost']);
+  for (const cat of ['melee', 'unarmed']) assert.equal(activeSpellBundlesFor(fx, cat).length, 1, cat);
+  assert.deepEqual(activeSpellBundlesFor(fx, 'missile'), []);
+  assert.deepEqual(activeSpellBundlesFor(fx, null), []);
+});
+
+test('Aspect of the Fog Ghost: +3 Attack and Damage Step reach the close-combat pools', () => {
+  const [bundle] = activeSpellBundlesFor(asSpellFx(aspectSpells['Aspect of the Fog Ghost']), 'melee');
+  const attack = attackPool({ talentStep: 9, effects: bundle.effects });
+  const damage = damagePool({ weaponDamageStep: 5, strengthStep: 6, effects: bundle.effects });
+  assert.equal(attack.step, 12);
+  assert.equal(damage.step, 14);
+});
+
+test('Aspect of the Casual Murderer: situational, so it never folds into the pools on its own', () => {
+  const fx = asSpellFx(aspectSpells['Aspect of the Casual Murderer']);
+  assert.ok(fx.filter((e) => e.type === 'attack-modifier').every((e) => e.condition === 'situational' && e.measure === 'step' && e.scope === 'close-combat'));
+  assert.deepEqual(activeSpellBundlesFor(fx, 'melee'), []);
+});
+
+// --- T-004: situational spell bundles, worn-item routing, visible `unapplied` -------------
+
+const threadItems = JSON.parse(readFileSync(new URL('../rules/thread-items.json', import.meta.url))).items;
+const bracersAt = (rank) =>
+  threadItems['Bracers of Obsidiman Strength'].threadRanks
+    .filter((r) => r.rank <= rank)
+    .flatMap((r) => r.effects ?? [])
+    .map((e) => ({ ...e, origin: { kind: 'thread', name: 'Bracers of Obsidiman Strength', rank } }));
+
+test('situational spell bundle: listed for the weapon, folded only when toggled on', () => {
+  const fx = asSpellFx(aspectSpells['Aspect of the Casual Murderer']);
+  const listed = situationalSpellBundlesFor(fx, 'melee');
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].name, 'Aspect of the Casual Murderer');
+  assert.match(listed[0].summary, /Blindsided/);
+  assert.deepEqual(situationalSpellBundlesFor(fx, 'missile'), [], 'close-combat only');
+  assert.deepEqual(activeSpellBundlesFor(fx, 'melee'), [], 'off by default');
+  const [on] = activeSpellBundlesFor(fx, 'melee', null, { situationalOn: ['Aspect of the Casual Murderer'] });
+  assert.equal(damagePool({ weaponDamageStep: 5, strengthStep: 6, effects: on.effects }).step, 16);
+  assert.equal(attackPool({ talentStep: 9, effects: on.effects }).step, 14);
+  // always-on spells are not listed as toggles
+  assert.deepEqual(situationalSpellBundlesFor(asSpellFx(aspectSpells['Aspect of the Fog Ghost']), 'melee'), []);
+});
+
+test('activeItemBundlesFor: Bracers rank 4 gives the replaced +2 Step (not +1+2) in close combat only', () => {
+  const fx = bracersAt(4);
+  const [b] = activeItemBundlesFor(fx, 'melee', ['Bracers of Obsidiman Strength']);
+  assert.equal(b.name, 'Bracers of Obsidiman Strength');
+  assert.equal(b.effects.length, 1);
+  const folded = collectCombatEffects({ activeItemBundles: [b], rules: { options: [], situations: [] } });
+  const dp = damagePool({ weaponDamageStep: 5, strengthStep: 6, effects: folded.damageEffects });
+  assert.deepEqual(dp.resultMods, [], 'a Step bonus, not a flat result mod');
+  assert.equal(dp.step, 13, 'Strength 6 + weapon 5 + Bracers rank 4 (+2, replacing the rank 2 +1)');
+  assert.equal(activeItemBundlesFor(fx, 'unarmed', ['Bracers of Obsidiman Strength']).length, 1);
+  assert.deepEqual(activeItemBundlesFor(fx, 'missile', ['Bracers of Obsidiman Strength']), []);
+  assert.deepEqual(activeItemBundlesFor(fx, null, ['Bracers of Obsidiman Strength']), [], 'no weapon, scoped effect does not apply');
+  assert.deepEqual(activeItemBundlesFor(fx, 'melee', ['Some Weapon']), [], 'only the named non-weapon items');
+});
+
+test('activeItemBundlesFor: an unscoped always-on item bonus applies to any pick; situational never does', () => {
+  const eff = (o) => ({ type: 'attack-modifier', target: { domain: 'attack', name: 'Damage' }, operation: 'add', value: 1, measure: 'step', source: 'item', summary: 'x', origin: { kind: 'item', name: 'Mug' }, ...o });
+  assert.equal(activeItemBundlesFor([eff({})], 'missile', ['Mug']).length, 1);
+  assert.deepEqual(activeItemBundlesFor([eff({ condition: 'situational' })], 'melee', ['Mug']), []);
+  assert.deepEqual(activeItemBundlesFor([eff({ gmDiscretion: true })], 'melee', ['Mug']), []);
+});
+
+test('unapplied: an effect that targets the roll but cannot be folded is reported, not dropped', () => {
+  const base = { type: 'attack-modifier', target: { domain: 'attack', name: 'Damage' }, source: 'spell', origin: { kind: 'spell', name: 'S' }, summary: 's' };
+  const damage = (effects) => damagePool({ weaponDamageStep: 5, strengthStep: 6, effects });
+  const rating = damage([{ ...base, operation: 'add', value: 5, measure: 'rating', label: 'Aspect' }]);
+  assert.equal(rating.step, 11);
+  assert.deepEqual(rating.unapplied, [{ label: 'Aspect', reason: 'measure "rating" is not supported in an attack or damage pool' }]);
+  assert.match(damage([{ ...base, operation: 'set', value: 3, measure: 'step', label: 'X' }]).unapplied[0].reason, /operation "set"/);
+  assert.equal(damage([{ ...base, operation: 'set', value: 3, measure: 'step' }]).step, 11, 'never mis-added');
+  assert.match(damage([{ ...base, operation: 'add', value: { ref: 'attribute|Willpower|Step' }, measure: 'step', label: 'Y' }]).unapplied[0].reason, /not a number/);
+  assert.match(damage([{ ...base, operation: 'add', value: 'banana', measure: 'dice', label: 'Z' }]).unapplied[0].reason, /not readable/);
+  assert.match(damage([{ ...base, operation: 'subtract', value: 'D4', measure: 'dice', label: 'W' }]).unapplied[0].reason, /cannot be subtracted/);
+  // an effect aimed at the other pool, or one that folds fine, reports nothing
+  assert.deepEqual(attackPool({ talentStep: 9, effects: [{ ...base, operation: 'add', value: 5, measure: 'rating' }] }).unapplied, []);
+  assert.deepEqual(damage([{ ...base, operation: 'add', value: 2, measure: 'step' }]).unapplied, []);
+  // duplicates collapse
+  const twice = { ...base, operation: 'add', value: 5, measure: 'rating', label: 'Aspect' };
+  assert.equal(damage([twice, twice]).unapplied.length, 1);
+});
+
+test('catalog guard: every shipped Attack/Damage modifier can be folded by the pools', () => {
+  const walk = (o, hit) => {
+    if (Array.isArray(o)) return o.forEach((x) => walk(x, hit));
+    if (o && typeof o === 'object') {
+      if ((o.type === 'attack-modifier' || o.type === 'test-modifier') && ['Attack', 'Damage'].includes(o.target?.name) && typeof o.value !== 'object') hit(o);
+      Object.values(o).forEach((v) => walk(v, hit));
+    }
+  };
+  const bad = [];
+  for (const f of ['spells', 'items', 'custom-items', 'thread-items', 'combat', 'talents', 'skills', 'knacks', 'disciplines', 'races']) {
+    walk(JSON.parse(readFileSync(new URL(`../rules/${f}.json`, import.meta.url))), (e) => {
+      const okMeasure = ['step', 'result', 'dice'].includes(e.measure);
+      const okOp = e.operation === undefined || e.operation === 'add' || e.operation === 'subtract';
+      if (!okMeasure || !okOp) bad.push(`${f}: ${e.summary} (${e.measure}/${e.operation})`);
+    });
+  }
+  assert.deepEqual(bad, [], 'these would be reported as "Not applied" in the combat log');
 });
