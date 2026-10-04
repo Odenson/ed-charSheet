@@ -59,7 +59,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 | Id | Title | Sev | Tier | Area | Status |
 |---|---|---|---|---|---|
-| T-001 | Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names | S1 | 3 | data | open |
+| T-001 | Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names | S1 | 3 | data | fixed (uncommitted) |
 | T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | open |
 | T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | open |
 | T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | open |
@@ -182,7 +182,7 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 ### T-001 — Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names
 - Source pass id: T-D01
-- Severity: S1  Tier: 3  Status: open
+- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (data fix as proposed; no character file stored a plural name)
 - Area: data
 - Documented: CLAUDE.md / ARCHITECTURE §4.1 treats `rules/talents.json` names as the identifiers that disciplines, characters and knacks share. `rules/disciplines.json` line 3: "Talent names normalized to match rules/talents.json and data/character.json (e.g. rulebook 'Missile Weapons' -> 'Missile Weapon')".
 - Observed:
@@ -731,13 +731,13 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 Re-check of every finding against current code and data after releases v1.25.0 to v1.28.0 (Spells target effects, `action-modifier` v5, Combat tab redesign, Night's Edge with `dice` measure and `object` selector, v6). Method: scripted re-inventory of `rules/*.json` effects (949, was 945), targeted reads/greps of the cited lines, `node --test` (942 pass, 0 fail; was 725). The `character-data` branch was re-read for T-026, T-032 and T-043. No audit pass was re-run end to end, and the new UI code in `ed-spells.js` / `ed-combat.js` was spot-checked, not line-audited.
 
-**Result: 1 finding fixed (T-018), 3 narrowed, 43 still open exactly as logged; 3 new findings (T-048 to T-050).** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
+**Result: 2 findings fixed (T-001, T-018), 3 narrowed, 42 still open exactly as logged; 3 new findings (T-048 to T-050).** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
 
 ### Verdicts
 
 | Id | Verdict | Evidence now |
 |---|---|---|
-| T-001 | still open | Knack `parents` still plural (`Melee Weapons` ×15, `Missile Weapons` ×3, `Throwing Weapons` ×5, counts include the stubs) and the 6 stub talents remain |
+| T-001 | fixed 2026-10-05 | Knack `parents` and `restrictions.ability` names normalised to `Melee Weapon` / `Missile Weapon` / `Throwing Weapon`; the 3 plural stub talents deleted; `store-knack.test.js` fixtures moved to singular; `knacks-catalog.test.js` gained a guard against the stubs and a check that the weapon parents are talents disciplines teach |
 | T-002 | still open, scope grew | No `attribute-modifier` fold in `engine/`. The measure is also inconsistent in data: races and Bracers use `value`, custom-items Beer Mug uses `step`, builder default is `value` |
 | T-003 | still open | `recoveryTests` still goes through `healthRating` with the rating-only guard; both `measure:"count"` effects (Warrior circle 7, Bone Charm) unchanged |
 | T-004 | still open | `foldPool` handles `dice`, `result`, `step` only; `rating` skipped. Aspect of the Fog Ghost / Casual Murderer still `attack-modifier` + `rating` |
@@ -1118,4 +1118,4 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 |---|---|
 | 2026-09-30 | Scaffold created. |
 | 2026-09-30 | Audit pass complete: 3 parallel read-only passes merged; 47 findings logged, none fixed. |
-| 2026-10-04 | Re-validation against `6ea5d12` (taxonomy v6): 0 closed (T-018 fixed 2026-10-05), 3 narrowed (T-031, T-032, T-046), 3 new (T-048 to T-050). Test suite 942/0. |
+| 2026-10-04 | Re-validation against `6ea5d12` (taxonomy v6): 0 closed (T-018 and T-001 fixed 2026-10-05), 3 narrowed (T-031, T-032, T-046), 3 new (T-048 to T-050). Test suite 942/0. |

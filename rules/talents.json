@@ -2857,21 +2857,9 @@
         }
       ]
     },
-    "Melee Weapons": {
-      "name": "Melee Weapons",
-      "attribute": "Dexterity"
-    },
-    "Missile Weapons": {
-      "name": "Missile Weapons",
-      "attribute": "Dexterity"
-    },
     "Read and Write Language": {
       "name": "Read and Write Language",
       "attribute": "Perception"
-    },
-    "Throwing Weapons": {
-      "name": "Throwing Weapons",
-      "attribute": "Dexterity"
     },
     "Karma Ritual": {
       "name": "Karma Ritual",
