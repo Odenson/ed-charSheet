@@ -61,7 +61,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 |---|---|---|---|---|---|
 | T-001 | Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names | S1 | 3 | data | fixed (uncommitted) |
 | T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | fixed (uncommitted) |
-| T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | open |
+| T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | fixed (uncommitted); Bone Charm half split out as T-051 |
 | T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | open |
 | T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | open |
 | T-006 | Custom-item builder emits characteristic-modifier effects with a measure the engine ignores | S1 | 3 | ui | open |
@@ -731,7 +731,7 @@ Ordered by severity, then tier. All are `open`; nothing has been applied. Tier 1
 
 Re-check of every finding against current code and data after releases v1.25.0 to v1.28.0 (Spells target effects, `action-modifier` v5, Combat tab redesign, Night's Edge with `dice` measure and `object` selector, v6). Method: scripted re-inventory of `rules/*.json` effects (949, was 945), targeted reads/greps of the cited lines, `node --test` (942 pass, 0 fail; was 725). The `character-data` branch was re-read for T-026, T-032 and T-043. No audit pass was re-run end to end, and the new UI code in `ed-spells.js` / `ed-combat.js` was spot-checked, not line-audited.
 
-**Result: 3 findings fixed (T-001, T-002, T-018), 3 narrowed, 41 still open exactly as logged; 3 new findings (T-048 to T-050).** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
+**Result: 4 findings fixed (T-001, T-002, T-003, T-018), 3 narrowed, 40 still open exactly as logged; 4 new findings (T-048 to T-051).** Line numbers in the findings above have drifted (`ed-combat.js` and `ed-spells.js` changed by hundreds of lines); each finding's *symptom* was re-confirmed by symbol, not by the old line.
 
 ### Verdicts
 
@@ -739,7 +739,7 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 |---|---|---|
 | T-001 | fixed 2026-10-05 | Knack `parents` and `restrictions.ability` names normalised to `Melee Weapon` / `Missile Weapon` / `Throwing Weapon`; the 3 plural stub talents deleted; `store-knack.test.js` fixtures moved to singular; `knacks-catalog.test.js` gained a guard against the stubs and a check that the weapon parents are talents disciplines teach |
 | T-002 | fixed 2026-10-05 | New `foldAttribute` in `engine/characteristics.js` folds always-on `attribute-modifier` effects (`measure` value, default, or step; Step floored at 0). `store.js` now assembles `activeEffects` before the attributes and `attrVal` reads the folded Value, so carrying capacity, defences, Mystic Armor, talent steps and `attribute\|…\|Step` refs all see it. Tests: `engine/characteristics.test.js`, new `store-attribute-modifier.test.js`. The mixed `measure` (races/Bracers `value`, Beer Mug `step`) is now honoured both ways |
-| T-003 | still open | `recoveryTests` still goes through `healthRating` with the rating-only guard; both `measure:"count"` effects (Warrior circle 7, Bone Charm) unchanged |
+| T-003 | fixed 2026-10-05 (Warrior); Bone Charm split to T-051 | Owner chose option B (`rating` is the one measure for characteristics). Warrior Circle 7 effect migrated `count` → `rating`; rule-agent confirmed the bonus (RULES-FAQ Q023: Warrior Circle 7 "gains an additional Recovery test"). Tests added in `engine/characteristics.test.js`. EFFECT-TAXONOMY §5 marks `count` reserved and states characteristics take `rating`. **Bone Charm deliberately not migrated**: the book says its bonus is +1 to Recovery test *results*, not +1 per day, so migrating would have made it wrong in a new way |
 | T-004 | still open | `foldPool` handles `dice`, `result`, `step` only; `rating` skipped. Aspect of the Fog Ghost / Casual Murderer still `attack-modifier` + `rating` |
 | T-005 | still open | `ed-spells.js` rebuilds `total` as `result.total + karmaResult.total` (cast and learn paths); roll-logged detail still carries no grand total and no mods |
 | T-006 | still open | Builder `TYPE_META` still one `rating` measure for all characteristic targets; validator has no measure/target cross-check |
@@ -801,6 +801,15 @@ Appendices A to C and Checklists A to C describe the v4 vocabulary (14 types, 94
 - Observed: `engine/spells.js` builds `out.dice` by filtering `spell.effects` on `measure === 'dice'`, `duration === 'sustained'`, `!gmDiscretion` and `typeof value === 'string'`, separately from the `foldPool` path that actually rolls the die. Two filters, one rule.
 - Impact: latent. The readout can promise a die the pool does not roll (or the reverse) if one filter changes.
 - Proposed remedy: derive the readout from the same collected bundle the pool uses.
+
+### T-051 — Bone Charm's Recovery effect disagrees with the rulebook; its Death/Unconsciousness −1 is unsupported
+- Severity: S2  Tier: 3  Status: open (needs owner decision)
+- Area: data
+- Source: found while fixing T-003; rule-agent answer logged as RULES-FAQ Q023.
+- Observed: `rules/items.json` Bone Charm carries `characteristic-modifier` `RecoveryTests` add 1, `measure:"count"`, summary "+1 Recovery test." The book (Player's Guide, blood charms) says the common Bone Charm grants a +1 bonus *to Recovery tests*, i.e. to the test result, like booster potions and healing kits, not +1 test per day. The effect is inert today (the fold drops `count`), so it is accidentally harmless; migrating it to `rating` as for the Warrior would have given an extra daily Recovery, which is wrong.
+- Also: the item's `DeathRating −1` / `UnconsciousnessRating −1` effects are not stated by the book. It describes 1 Blood Magic Damage, tracked separately and not healable while the charm is worn; whether that lowers the ratings is ambiguous.
+- Impact: none computed today for the Recovery effect (dropped); the −1/−1 ratings do apply and may be wrong.
+- Proposed remedy: owner decides the representation. Likely a `test-modifier` on `Recovery`, `measure:"result"`, `add 1`, `condition:"always"` (the shape healing kits and potions use), and rule on the −1/−1 ratings. The Blood Magic Damage itself is a note.
 
 ## Accepted / deliberate deviations
 
@@ -1118,4 +1127,4 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 |---|---|
 | 2026-09-30 | Scaffold created. |
 | 2026-09-30 | Audit pass complete: 3 parallel read-only passes merged; 47 findings logged, none fixed. |
-| 2026-10-04 | Re-validation against `6ea5d12` (taxonomy v6): 0 closed (T-018, T-001 and T-002 fixed 2026-10-05), 3 narrowed (T-031, T-032, T-046), 3 new (T-048 to T-050). Test suite 942/0. |
+| 2026-10-04 | Re-validation against `6ea5d12` (taxonomy v6): 0 closed (T-018, T-001, T-002 and T-003 fixed 2026-10-05), 3 narrowed (T-031, T-032, T-046), 4 new (T-048 to T-051). Test suite 942/0. |

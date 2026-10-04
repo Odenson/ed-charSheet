@@ -214,6 +214,30 @@ test('Chakka: Recovery Tests = 3 (table, no adept bonus)', () => {
   assert.equal(recoveryTests(17, [], lookup).value, 3);
 });
 
+test('T-003: an always-on RecoveryTests +1 (rating measure) adds a Recovery test', () => {
+  const fx = { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'RecoveryTests' }, operation: 'add', value: 1, measure: 'rating', condition: 'always', source: 'item', summary: '+1 Recovery test.' };
+  const r = recoveryTests(17, [fx], lookup);
+  assert.equal(r.base, 3);
+  assert.equal(r.value, 4);
+  // situational / GM-discretion ones do not auto-apply
+  assert.equal(recoveryTests(17, [{ ...fx, condition: 'situational' }], lookup).value, 3);
+});
+
+test('T-003: the Warrior Circle 7 RecoveryTests effect uses the rating measure the fold honours', () => {
+  const disciplines = JSON.parse(readFileSync(new URL('../rules/disciplines.json', import.meta.url))).disciplines;
+  const found = [];
+  const walk = (o) => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (o && typeof o === 'object') {
+      if (o.type === 'characteristic-modifier' && o.target?.name === 'RecoveryTests') found.push(o);
+      Object.values(o).forEach(walk);
+    }
+  };
+  walk(disciplines);
+  assert.ok(found.length >= 1, 'Warrior circle 7');
+  for (const e of found) assert.equal(e.measure ?? 'rating', 'rating', e.summary);
+});
+
 test('a non-adept (no Durability, no Circle) gets the raw table ratings', () => {
   const eff = adeptHealthEffects([]); // e.g. someone with no Disciplines
   assert.equal(eff.length, 0);

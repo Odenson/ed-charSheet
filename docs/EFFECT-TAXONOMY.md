@@ -303,8 +303,10 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 | `rounds` | duration in combat rounds (1 round = 1 Initiative roll) | +2 rounds |
 | `minutes` | duration in minutes (1 minute = 10 rounds) | Increase Duration +2 minutes |
 | `hours` | duration in hours (1 hour = 600 rounds) | +2 hours |
-| `count` | discrete count | +1 recovery test/day |
+| `count` | discrete count — **reserved**: no engine path reads it (the one data use left, Bone Charm, is a known data error — T-051 in TAXONOMY-AUDIT) | (a future pool-style "+1 use") |
 | `action` | an action type (word value, not a number) | set Frighten to Simple |
+
+**Characteristics take `rating`.** `RecoveryTests` (Recovery Tests per day) is a derived characteristic like `DeathRating` and `WoundThreshold`, so "+1 Recovery test" is `characteristic-modifier` / `RecoveryTests` / `add 1` / `measure: "rating"`. It is *not* a `count` (T-003 in [TAXONOMY-AUDIT.md](TAXONOMY-AUDIT.md)); a `count` effect on it would be ignored by the fold.
 
 ### 5.1 Action values
 

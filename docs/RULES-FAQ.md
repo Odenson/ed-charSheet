@@ -630,3 +630,17 @@ Sources:
 - text-RB-players-guide.txt:16484-16500 (p. 435 — Armor Table: Obsidiman Skin 3 / 1 / 0 / 100 / 20 / Rare)
 - player-tables-narrative.txt:1031 (same stats in prose)
 - text-race-players.txt:35 (same racial text)
+
+### Q023 — Warrior Circle 7 extra Recovery test per day; Bone Charm Recovery bonus and Death/Unconsciousness effects
+Keywords: warrior, recovery test, additional recovery, seventh circle, circle 7, recovery bonus, bone charm, blood charm, blood magic damage, death rating, unconsciousness rating, ork · Resolved: 2026-10-05 · Context: TAXONOMY-AUDIT T-003
+
+(1) Yes. Warrior Seventh Circle: "Recovery: The adept gains an additional Recovery test." Rules text defines Recovery bonuses as permanently increasing the number of Recovery tests per day. Companion Guide variants say "an additional Recovery test per day".
+(2) The Bone Charm (common version) causes 1 Blood Magic Damage on implanting and "grants a +1 bonus to his Recovery tests". That is a +1 bonus to the Recovery test result, NOT +1 Recovery test per day. Death/Unconsciousness -1: the book does not state this for the charm. Blood Magic Damage is recorded separately; only permanent Blood Magic Damage is recorded as a reduction of Death and Unconsciousness Ratings. Charm damage is stated to be unhealable until the item is used or removed (not permanent), so a -1 Death/Unconsciousness rating effect is not directly supported; the book is silent/ambiguous on whether it lowers the ratings. Owner decision needed.
+
+Sources:
+- text-discipline-players.txt:453 (Warrior Circle 7 Recovery)
+- text-RB-players-guide.txt:2955-2956 (Recovery bonuses = tests per day)
+- text-RB-players-guide.txt:15727-15732 (Bone Charm: 1 Blood Magic Damage, +1 bonus to Recovery tests)
+- text-RB-players-guide.txt:8886-8897 (Blood Magic Damage tracked separately; permanent = reduction of Death/Unconsciousness Ratings)
+- text-RB-players-guide.txt:8933-8936 (blood charm damage cannot be healed until item used or removed)
+- text-RB-companions-guide.txt:5706-5714 (Bone Charm enchanting stats; no effect change)
