@@ -416,7 +416,7 @@ export class EdCombat extends LitElement {
     this._weapon = s.weapon;
     this._talent = s.talent;
     this._opts = [...s.opts];
-    this._sits = [...s.sits];
+    this._sits = s.sits.filter((n) => n !== 'Knocked Down'); // now a live condition, never a toggle
     this._charmsOn = [...s.charmsOn];
     this._target = s.target;
     this._modTab = normalizeModTab(s.modTab);
@@ -930,9 +930,18 @@ export class EdCombat extends LitElement {
     // passive text only, no enforcement.
     if (o.note) parts.push(o.note);
     if (o.locked) parts.push('Live condition — the sheet already applies this; it cannot be removed here.');
+    else if (o.name === 'Knocked Down') parts.push('Click to be knocked down: the sheet applies the condition (−3 to every test, −3 defence) until you Stand up.');
     return parts.join('\n');
   }
   _toggle(section, name) {
+    // The Knocked Down chip is not a Combat-tab scratch toggle: clicking it knocks the
+    // character down, i.e. sets the app-wide live condition (−3 to every roll on every tab,
+    // −3 defence). Once live the chip is locked; "Stand up" ends it. It is never put in
+    // `_sits`, so the −3 is not folded a second time into the pools.
+    if (section === 'sits' && name === 'Knocked Down') {
+      this._fallDown();
+      return;
+    }
     // Blood-charms are global activation (engine-level, not tab-local). Dispatch to
     // ed-app's session activeCharms so the effect is an effect regardless of tab
     // (Combat attack/damage, Spells casting/effect, Disciplines badge when armed).
@@ -1059,6 +1068,17 @@ export class EdCombat extends LitElement {
     // show up. `kind: 'action'` marks it as a non-roll entry for the renderers.
     if (this.characterId) {
       saveRollLog({ rollId: uid(), at: new Date().toISOString(), kind: 'action', label: 'Stand up' }, this.characterId);
+      this._loadRolls();
+    }
+  }
+  // The mirror of _standUp: the Knocked Down chip sets the same session-only live
+  // condition a failed Knockdown test does (ed-app folds it into every roll and the
+  // defence; nothing is persisted).
+  _fallDown() {
+    if (this.model?.combat?.conditions?.knockedDown) return;
+    this.dispatchEvent(new CustomEvent('ed-edit-knockdown', { detail: { knockedDown: true }, bubbles: true, composed: true }));
+    if (this.characterId) {
+      saveRollLog({ rollId: uid(), at: new Date().toISOString(), kind: 'action', label: 'Knocked Down' }, this.characterId);
       this._loadRolls();
     }
   }
