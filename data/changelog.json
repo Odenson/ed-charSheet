@@ -3,18 +3,24 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      {
-        "type": "changed",
-        "text": "Situational chips (Blindsided, Cover, Darkness, Surprised, Range Long and others) now apply across the whole app: Defence updates on every tab, penalties apply to rolls, and each active chip shows in Overview Active Effects with a clear button. Surprised now applies its -3 Defence, and Range Long also affects damage."
-      },
-      {
-        "type": "changed",
-        "text": "Harried (from the chip or from being Burdened) now applies its −2 Step to every roll, not only Combat attacks; the Karma die is exempt."
-      }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.32.0",
+      "date": "2026-10-05",
+      "summary": "Situational chips (Blindsided, Cover, Darkness, Surprised, Range Long and others) are now global live conditions: Defence and roll penalties apply on every tab, active chips show in Overview Active Effects with a clear button, and Surprised and Range Long follow the book.",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Situational chips (Blindsided, Cover, Darkness, Surprised, Range Long and others) now apply across the whole app: Defence updates on every tab, penalties apply to rolls, and each active chip shows in Overview Active Effects with a clear button. Surprised now applies its -3 Defence, and Range Long also affects damage."
+        },
+        {
+          "type": "changed",
+          "text": "Harried (from the chip or from being Burdened) now applies its −2 Step to every roll, not only Combat attacks; the Karma die is exempt."
+        }
+      ]
+    },
     {
       "version": "1.31.0",
       "date": "2026-10-05",

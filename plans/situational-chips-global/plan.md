@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.32.0
 ---
 # Delivery Plan: Situational chips global (situational-chips-global)
 
