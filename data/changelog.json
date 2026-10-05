@@ -7,6 +7,21 @@
   },
   "releases": [
     {
+      "version": "1.29.0",
+      "date": "2026-10-05",
+      "summary": "Unarmed is now a Weapon choice in the Combat tab so unarmed attacks and Strength-step Damage work, and extra attack successes now add +2 Damage steps (was +1) for all weapons.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Combat tab: Unarmed is now a Weapon choice, so an unarmed attack against Physical Defense and its Strength-step Damage roll work with the Unarmed Combat talent. None stays the choice for free-action rolls such as Avoid Blow."
+        },
+        {
+          "type": "fixed",
+          "text": "Extra attack successes now add +2 Damage steps each (was +1), for all weapons."
+        }
+      ]
+    },
+    {
       "version": "1.28.0",
       "date": "2026-10-04",
       "summary": "Night's Edge now works end to end: pick an equipped weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration, backed by taxonomy v6 (dice values and an object selector).",

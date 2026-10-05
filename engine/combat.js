@@ -45,7 +45,7 @@ import { parseDice } from './dice.js';
  * Which attack talents/skills can wield a weapon of a given category. Melee →
  * Melee Weapon; missile → Missile Weapon; throwing → Throwing Weapon (owner
  * decision: throwing-only, a thrown weapon is not also offered Melee Weapon);
- * the synthetic Unarmed weapon → Unarmed Combat. A null/unknown category (e.g.
+ * the synthetic `UNARMED_WEAPON` → Unarmed Combat. A null/unknown category (e.g.
  * the "None" picker entry) returns null — the caller shows the *whole* rollable
  * talent/skill list instead of a filtered one.
  * @param {string|null|undefined} category
@@ -57,6 +57,18 @@ const WEAPON_TALENTS = {
   throwing: ['Throwing Weapon'],
   unarmed: ['Unarmed Combat'],
 };
+export const UNARMED_WEAPON = Object.freeze({
+  name: 'Unarmed',
+  category: 'unarmed',
+  damageStep: 0,
+  shortRange: null,
+  longRange: null,
+  image: null,
+});
+
+/** Damage Steps added per extra attack success level (PG p.34, p.378). */
+export const EXTRA_SUCCESS_DAMAGE_STEPS = 2;
+
 export function attackTalentNamesFor(category) {
   if (category == null) return null;
   return WEAPON_TALENTS[category] ?? [];
@@ -65,8 +77,8 @@ export function attackTalentNamesFor(category) {
 /**
  * Extra attack success levels above the target number — every whole 5 the attack
  * result beats the target is one level (PG success-level rule, owner-confirmed).
- * Clamped at 0 so a miss never subtracts. Each level adds +1 to the Damage step
- * (threaded into `damagePool` as `bonusSteps`).
+ * Clamped at 0 so a miss never subtracts. Each level adds +2 Damage steps via
+ * `successDamageSteps` (threaded into `damagePool` as `bonusSteps`).
  * @param {number|null|undefined} result the attack roll's final total (post-mods)
  * @param {number|null|undefined} target the target number to beat
  * @returns {number} success levels ≥ 0 (0 when no usable numbers, or a miss)
@@ -74,6 +86,15 @@ export function attackTalentNamesFor(category) {
 export function attackSuccessLevels(result, target) {
   if (!isFiniteNum(result) || !isFiniteNum(target)) return 0;
   return Math.max(0, Math.floor((result - target) / 5));
+}
+
+/**
+ * Damage steps granted by N extra attack success levels (+2 each).
+ * @param {number|null|undefined} levels
+ * @returns {number} steps ≥ 0 (0 for unusable or non-positive input)
+ */
+export function successDamageSteps(levels) {
+  return isFiniteNum(levels) && levels > 0 ? levels * EXTRA_SUCCESS_DAMAGE_STEPS : 0;
 }
 
 /**
@@ -154,13 +175,17 @@ function appliesToTest(e, ctx) {
  *   the caller to the bundles the player toggled).
  * @param {{testKind:'attack'|'damage', sightBased?:boolean, activeTalent?:string}} ctx test context.
  * @returns {{step:number|null, resultMods:Array<{label:string,value:number}>,
- *   strain:number}}
+ *   strain:number, unapplied:Array<{label:string, reason:string}>}}
+ *   `unapplied` names every effect that targets this test but could not be folded
+ *   (unsupported measure or operation, a non-numeric value, an unreadable dice
+ *   string) — surfaced in the combat log, never silently dropped.
  */
 function foldPool(baseStep, effects, ctx) {
   let step = isFiniteNum(baseStep) ? baseStep : null;
   const resultMods = [];
   const stepMods = [];
   const bonusDice = [];
+  const unapplied = [];
   let strain = 0;
   for (const e of effects ?? []) {
     if (!e || typeof e !== 'object') continue;
@@ -175,18 +200,31 @@ function foldPool(baseStep, effects, ctx) {
     if (!appliesToTest(e, ctx)) continue;
     const v = opValue(e);
     const label = e.label ?? e.summary ?? `${e.target.name} ${e.target.domain}`;
+    const skip = (reason) => {
+      if (!unapplied.some((u) => u.label === label && u.reason === reason)) unapplied.push({ label, reason });
+    };
     if (e.measure === 'dice') {
       // Taxonomy v6: a dice string is a separate Bonus Die group, never a step.
       const list = parseDice(e.value);
-      if (list && e.operation !== 'subtract') bonusDice.push({ label, value: e.value, dice: list });
-    } else if (e.measure === 'result') {
-      resultMods.push({ label, value: v });
-    } else if (e.measure === 'step' && step != null) {
-      step += v;
-      stepMods.push({ label, value: v });
+      if (!list) skip(`dice value "${e.value}" is not readable`);
+      else if (e.operation === 'subtract') skip('a Bonus Die cannot be subtracted');
+      else bonusDice.push({ label, value: e.value, dice: list });
+    } else if (e.measure === 'result' || e.measure === 'step') {
+      if (e.operation !== undefined && e.operation !== 'add' && e.operation !== 'subtract') {
+        skip(`operation "${e.operation}" is not supported in an attack or damage pool`);
+      } else if (!isFiniteNum(e.value)) {
+        skip('value is not a number');
+      } else if (e.measure === 'result') {
+        resultMods.push({ label, value: v });
+      } else if (step != null) {
+        step += v;
+        stepMods.push({ label, value: v });
+      }
+    } else {
+      skip(`measure ${e.measure ? `"${e.measure}"` : '(none)'} is not supported in an attack or damage pool`);
     }
   }
-  return { step, resultMods, strain, stepMods, bonusDice };
+  return { step, resultMods, strain, stepMods, bonusDice, unapplied };
 }
 
 /**
@@ -198,11 +236,11 @@ function foldPool(baseStep, effects, ctx) {
  *   (default true) lets a special sense ignore scope:"sight" penalties.
  *   `activeTalent` names the talent being rolled (e.g. "Spellcasting") so a
  *   named-ability target like `{test, Spellcasting}` applies only there.
- * @returns {{step:number|null, resultMods:Array, strain:number}}
+ * @returns {{step:number|null, resultMods:Array, strain:number, unapplied:Array<{label:string, reason:string}>}}
  */
 export function attackPool({ talentStep, effects, opts = {}, activeTalent }) {
-  const { step, resultMods, strain } = foldPool(talentStep, effects, { testKind: 'attack', sightBased: opts.sightBased !== false, activeTalent });
-  return { step, resultMods, strain };
+  const { step, resultMods, strain, unapplied } = foldPool(talentStep, effects, { testKind: 'attack', sightBased: opts.sightBased !== false, activeTalent });
+  return { step, resultMods, strain, unapplied };
 }
 
 /**
@@ -210,20 +248,20 @@ export function attackPool({ talentStep, effects, opts = {}, activeTalent }) {
  * step-measure damage modifiers (Aggressive Attack +3, Defensive Stance −3 via
  * its "except Knockdown" scope) and any flat result mods. No strain.
  * @param {object} args `{ weaponDamageStep, strengthStep, effects, bonusSteps?, activeTalent? }`
- *   `bonusSteps` (default 0) is the extra-success-level damage bonus from the
- *   attack roll (see `attackSuccessLevels`) — added on top of the folded step.
+ *   `bonusSteps` (default 0) is the extra-success damage bonus in STEPS (2 x
+ *   levels, see `successDamageSteps`) — added on top of the folded step.
  *   `activeTalent` is forwarded so an `Effect` test-modifier still knows which
  *   talent armed the spell (future-proof; Effect itself is talent-agnostic).
- * @returns {{step:number|null, resultMods:Array, bonusDice:Array<{label:string,value:string,dice:Array}>}}
+ * @returns {{step:number|null, resultMods:Array, bonusDice:Array<{label:string,value:string,dice:Array}>, unapplied:Array<{label:string, reason:string}>}}
  *   `bonusDice` are taxonomy-v6 dice effects (Night's Edge's D4): rolled as their own group, never a step.
  */
 export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps = 0, activeTalent }) {
   const base = isFiniteNum(weaponDamageStep) && isFiniteNum(strengthStep) ? weaponDamageStep + strengthStep : null;
-  const { step, resultMods, bonusDice } = foldPool(base, effects, { testKind: 'damage', activeTalent });
+  const { step, resultMods, bonusDice, unapplied } = foldPool(base, effects, { testKind: 'damage', activeTalent });
   // Success-level bonus rides on the base step, never fabricates one (null stays
   // null → placeholder pill).
   const withBonus = step != null && isFiniteNum(bonusSteps) && bonusSteps > 0 ? step + bonusSteps : step;
-  return { step: withBonus, resultMods, bonusDice };
+  return { step: withBonus, resultMods, bonusDice, unapplied };
 }
 
 /**
@@ -234,7 +272,7 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
  * `baseParts` are the structural bases (attack: the talent step; damage: the
  * Strength step + weapon Damage Step) as `{ label, value }`; their sum is the
  * fold's base. `effects` is the same flat list the pools fold. `bonusSteps`
- * (damage only) adds the attack success-level bonus as its own part.
+ * (damage only, in steps: 2 x levels) adds the attack success-level bonus as its own part.
  *
  * @param {Array<{label:string, value:number|null}>} baseParts
  * @param {object[]} effects
@@ -308,6 +346,16 @@ function weaponPoolEffects(effects, name) {
 }
 
 /**
+ * Does an effect `scope` cover the selected weapon's category? A scope equal to the
+ * category matches ('missile', 'melee'); the taxonomy §6 token `close-combat` covers
+ * melee weapons and unarmed attacks. A null category matches only unscoped effects.
+ */
+function scopeMatchesCategory(scope, category) {
+  if (scope === 'close-combat') return category === 'melee' || category === 'unarmed';
+  return scope === category;
+}
+
+/**
  * The session's active self-cast spell bundles whose sustained attack-modifier
  * effects fold into the combat pools while active (Arrow of Night's +6 to the
  * missile's Damage step). Pure — the view supplies the origin-tagged active
@@ -315,7 +363,8 @@ function weaponPoolEffects(effects, name) {
  * engine picks the foldable bundles so the scope gate is unit-testable. Only
  * auto-apply (`condition` 'always'/absent, not `gmDiscretion`) attack-modifiers
  * targeting `{attack, Attack|Damage}` are admitted; a `scope` must equal the
- * weapon category ('missile' → missile weapons only, mirroring `_armedForPick`).
+ * weapon category ('missile' → missile weapons only, mirroring `_armedForPick`;
+ * `close-combat` → melee and unarmed).
  * Test-modifiers (Shadow Meld's +4 Stealthy Stride) already fold onto the
  * ability's own step, so they never route here.
  * @param {object[]} [activeEffects] `model.activeEffects` (origin-tagged)
@@ -323,7 +372,32 @@ function weaponPoolEffects(effects, name) {
  * @param {{name:string, category:string, index:number}|null} [weapon] the selected weapon and its occurrence index among equipped same-name items (object-bearing effects, taxonomy v6)
  * @returns {Array<{name:string, effects:object[]}>} bundles named by the spell
  */
-export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = null) {
+export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = null, { situationalOn = [] } = {}) {
+  const on = new Set(situationalOn ?? []);
+  return spellAttackBundles(activeEffects, weaponCategory, weapon, (e) => {
+    const c = e.condition ?? 'always';
+    return c === 'always' || (c === 'situational' && on.has(e.origin.name));
+  });
+}
+
+/**
+ * The active spells that have a *situational* attack/damage bonus for the selected
+ * weapon (Aspect of the Casual Murderer: only against Blindsided, Knocked Down or
+ * Surprised opponents). The Combat tab lists these as toggles beside the combat
+ * situations; a toggled one is then passed back as `situationalOn` to
+ * `activeSpellBundlesFor`. Same scope/object gating, `summary` is for the chip title.
+ * @returns {Array<{name:string, effects:object[], summary:string}>}
+ */
+export function situationalSpellBundlesFor(activeEffects, weaponCategory, weapon = null) {
+  return spellAttackBundles(activeEffects, weaponCategory, weapon, (e) => (e.condition ?? 'always') === 'situational').map((b) => ({
+    ...b,
+    summary: b.effects.map((e) => e.summary).filter(Boolean).join(' '),
+  }));
+}
+
+// Shared screen: origin spell + {attack, Attack|Damage} + scope/object gate, with
+// the caller deciding which `condition`s are admitted. gmDiscretion never folds.
+function spellAttackBundles(activeEffects, weaponCategory, weapon, admitCondition) {
   const cat = weaponCategory ?? null;
   const bySpell = new Map();
   for (const e of activeEffects ?? []) {
@@ -331,7 +405,7 @@ export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = nu
     if (e.type !== 'attack-modifier') continue;
     if (!e.target || e.target.domain !== 'attack') continue;
     if (e.target.name !== 'Damage' && e.target.name !== 'Attack') continue;
-    if ((e.condition ?? 'always') !== 'always' || e.gmDiscretion) continue;
+    if (e.gmDiscretion || !admitCondition(e)) continue;
     if (e.object) {
       // Taxonomy v6: `object.kind` replaces `scope`; the effect rides only the
       // weapon chosen at cast (name + occurrence index among equipped items).
@@ -340,12 +414,48 @@ export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = nu
       const kindOk = kind === 'weapon' || (kind === 'melee-weapon' && weapon.category === 'melee') || (kind === 'missile-weapon' && weapon.category === 'missile');
       if (!kindOk) continue;
       if (!e.chosen || e.chosen.name !== weapon.name || (e.chosen.index ?? 0) !== (weapon.index ?? 0)) continue;
-    } else if (e.scope && e.scope !== cat) continue;
+    } else if (e.scope && !scopeMatchesCategory(e.scope, cat)) continue;
     const name = e.origin.name;
     if (!bySpell.has(name)) bySpell.set(name, { name, effects: [] });
     bySpell.get(name).effects.push(e);
   }
   return [...bySpell.values()];
+}
+
+/**
+ * Always-on attack/damage bonuses (`attack-modifier` or `test-modifier` on the
+ * Attack/Damage test) from equipped NON-weapon items (a thread item
+ * such as Bracers of Obsidiman Strength, or a custom magic item). A weapon's own
+ * effects reach the pools through `selectedWeaponEffects`, so the caller passes only
+ * the names of the equipped items that are not weapons. Effects are collapsed per
+ * item by their `stacking` (rank effects `replace` each other), scope-gated against
+ * the selected weapon's category, and never include situational / GM-discretion /
+ * object-bound effects.
+ * @param {object[]} [activeEffects] `model.activeEffects` (origin-tagged)
+ * @param {string|null} [weaponCategory] the selected weapon's category
+ * @param {Iterable<string>} [itemNames] names of equipped non-weapon items
+ * @returns {Array<{name:string, effects:object[]}>}
+ */
+export function activeItemBundlesFor(activeEffects, weaponCategory, itemNames = []) {
+  const names = new Set(itemNames ?? []);
+  const cat = weaponCategory ?? null;
+  const byItem = new Map();
+  for (const e of activeEffects ?? []) {
+    const o = e?.origin;
+    if ((o?.kind !== 'item' && o?.kind !== 'thread') || !names.has(o.name)) continue;
+    // An item may express an Attack/Damage bonus either as an `attack-modifier`
+    // ({attack, Attack|Damage}) or as a `test-modifier` ({test, Attack|Damage}); the
+    // pools fold both the same way.
+    const isAttackMod = e.type === 'attack-modifier' && e.target?.domain === 'attack';
+    const isTestMod = e.type === 'test-modifier' && e.target?.domain === 'test';
+    if (!isAttackMod && !isTestMod) continue;
+    if (e.target.name !== 'Damage' && e.target.name !== 'Attack') continue;
+    if ((e.condition ?? 'always') !== 'always' || e.gmDiscretion || e.object) continue;
+    if (e.scope && !scopeMatchesCategory(e.scope, cat)) continue;
+    if (!byItem.has(o.name)) byItem.set(o.name, []);
+    byItem.get(o.name).push(e);
+  }
+  return [...byItem].map(([name, effects]) => ({ name, effects: collapseStacking(effects) }));
 }
 
 /**
@@ -383,6 +493,9 @@ export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = nu
  *   Pre-screened by the view (origin spell, {attack, Attack|Damage} target,
  *   scope matched to the weapon); folded through `addBundle` so the step-audit
  *   names the SPELL as the source.
+ * @param {Array<{name:string, effects:object[]}>} [args.activeItemBundles]  always-on
+ *   attack/damage bonuses of equipped non-weapon items (`activeItemBundlesFor`),
+ *   labelled by the ITEM name in the step audit.
  * @param {object[]} [args.selectedWeaponEffects]  the selected weapon's woven
  *   effects (from its `equippedWeapons` entry)
  * @param {Object<string,number>|string[]} [args.armedOptions]  a map
@@ -399,7 +512,7 @@ export function activeSpellBundlesFor(activeEffects, weaponCategory, weapon = nu
  *   Defence & Armour block folds into the sheet's derived ratings for display
  *   (never dispatched into the derived defence — see `foldCombatRatings`).
  */
-export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], activeSpellBundles = [], selectedWeaponEffects = [], selectedWeaponName = 'Weapon', armedOptions = [], armedTalents = [], rules, conditions = {} }) {
+export function collectCombatEffects({ selectedOptions = [], selectedSituations = [], selectedCharms = [], activeSpellBundles = [], activeItemBundles = [], selectedWeaponEffects = [], selectedWeaponName = 'Weapon', armedOptions = [], armedTalents = [], rules, conditions = {} }) {
   const optList = rules?.options ?? [];
   const sitList = rules?.situations ?? [];
   const attackEffects = [];
@@ -467,6 +580,7 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   // matched) — `addBundle` only re-labels — and each pool admits the effect via
   // the widened appliesToTest (Damage → damage pool only).
   for (const bundle of activeSpellBundles ?? []) addBundle(bundle, bundle?.name ?? 'Active spell');
+  for (const bundle of activeItemBundles ?? []) addBundle(bundle, bundle?.name ?? 'Item');
 
   if (conditions.harried) {
     const harriedBundle = sitList.find((o) => o.name === 'Harried');

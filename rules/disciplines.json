@@ -281,7 +281,7 @@
           "circle": 7,
           "talents": ["Crushing Blow"],
           "effects": [
-            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "RecoveryTests" }, "operation": "add", "value": 1, "measure": "count", "source": "discipline", "summary": "Gains an additional Recovery test." }
+            { "type": "characteristic-modifier", "target": { "domain": "characteristic", "name": "RecoveryTests" }, "operation": "add", "value": 1, "measure": "rating", "source": "discipline", "summary": "Gains an additional Recovery test." }
           ]
         },
         {

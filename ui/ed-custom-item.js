@@ -21,7 +21,7 @@ import { LitElement, html, css } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
 import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking, weightToForm, weightFromForm } from './custom-item-state.js';
 import {
-  MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, OPERATIONS, MEASURES, CONDITIONS,
+  MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, TYPE_HINT, OPERATIONS, MEASURES, CONDITIONS,
   summaryFor, blankEffect, finishEffect, cleanItemForm,
 } from './custom-item-builder.js';
 import { cap, prettyName } from './format.js';
@@ -496,7 +496,7 @@ export class EdCustomItem extends LitElement {
     return html`
       <div class="erow">
         <span class="fld type"><label>Type</label>
-          <select .value=${e.type} @change=${(ev) => this._setEffect(i, { type: ev.target.value })} aria-label="Effect type">
+          <select .value=${e.type} title=${TYPE_HINT[e.type] ?? ''} @change=${(ev) => this._setEffect(i, { type: ev.target.value })} aria-label="Effect type">
             ${TYPE_ORDER.map((t) => html`<option value=${t}>${cap(t.replace(/-/g, ' '))}</option>`)}
           </select>
         </span>

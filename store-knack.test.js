@@ -50,8 +50,8 @@ test('resolveKnack falls back to parsing the legacy "Knack (Parent)" string', ()
 });
 
 test('resolveKnack tags an unknown parent as a talent (not a skill)', () => {
-  const k = resolveKnack({ name: 'Down Strike (Melee Weapons)' }, {}, skillNames);
-  assert.deepEqual(k.parent, { type: 'talent', name: 'Melee Weapons' });
+  const k = resolveKnack({ name: 'Down Strike (Melee Weapon)' }, {}, skillNames);
+  assert.deepEqual(k.parent, { type: 'talent', name: 'Melee Weapon' });
 });
 
 test('resolveKnack keeps a bare unknown knack, with no parent', () => {
@@ -125,24 +125,24 @@ test('real catalog: a parent binds to whichever kind the character owns', () => 
   const both = resolveKnack(
     { name: 'Point-Blank Shot' },
     realCatalog,
-    new Set(['Missile Weapons', 'Throwing Weapons']),
-    new Set(['Missile Weapons']),
+    new Set(['Missile Weapon', 'Throwing Weapon']),
+    new Set(['Missile Weapon']),
   );
-  assert.deepEqual(both.parent, { type: 'talent', name: 'Missile Weapons' });
+  assert.deepEqual(both.parent, { type: 'talent', name: 'Missile Weapon' });
   const via = resolveKnack(
-    { name: 'Point-Blank Shot', via: 'Throwing Weapons' },
+    { name: 'Point-Blank Shot', via: 'Throwing Weapon' },
     realCatalog,
-    new Set(['Throwing Weapons']),
+    new Set(['Throwing Weapon']),
     new Set(),
   );
-  assert.deepEqual(via.parent, { type: 'skill', name: 'Throwing Weapons' });
+  assert.deepEqual(via.parent, { type: 'skill', name: 'Throwing Weapon' });
 });
 
 test('real catalog: multi-parent knack defaults to first, `via` picks another', () => {
   const k = resolveKnack({ name: 'Point-Blank Shot' }, realCatalog);
-  assert.equal(k.parent.name, 'Missile Weapons');
-  const v = resolveKnack({ name: 'Point-Blank Shot', via: 'Throwing Weapons' }, realCatalog);
-  assert.equal(v.parent.name, 'Throwing Weapons');
+  assert.equal(k.parent.name, 'Missile Weapon');
+  const v = resolveKnack({ name: 'Point-Blank Shot', via: 'Throwing Weapon' }, realCatalog);
+  assert.equal(v.parent.name, 'Throwing Weapon');
   assert.equal(v.requiredRank, 3);
 });
 

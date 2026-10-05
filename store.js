@@ -6,7 +6,7 @@
 // and the model is re-derived from inputs (data flows back down). Derived values
 // are never stored.
 
-import { attributeValue, valueToStep, talentStep, makeDiceForStep } from './engine/derive.js';
+import { attributeValue, talentStep, makeDiceForStep } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
@@ -33,6 +33,7 @@ import {
   talentKarmaUse,
   collapseByTarget,
   autoApplies,
+  foldAttribute,
 } from './engine/characteristics.js';
 import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
@@ -644,167 +645,9 @@ export function deriveModel(character, rules, session = {}) {
   const raceEntry = (racesFile.races ?? []).find((r) => r.name === character.meta?.race);
   const racialAbilities = (raceEntry?.abilities ?? []).map((a) => ({ name: a.name, summary: a.summary }));
 
-  // Attributes -> value/step/dice, preserving the canonical order.
-  const order = ['Dexterity', 'Strength', 'Toughness', 'Perception', 'Willpower', 'Charisma'];
-  const attrStepByName = {};
-  const attributes = order
-    .filter((name) => character.attributes?.[name])
-    .map((name) => {
-      const a = character.attributes[name];
-      const value = attributeValue(a);
-      const step = valueToStep(value);
-      attrStepByName[name] = step;
-      return { name, value, step, dice: diceForStep(step), ...a };
-    });
-
-  // Disciplines -> talents with derived step/dice, plus reference detail
-  // (durability, half-magic, artisan skills, per-circle abilities) from rules.
-  let disciplines = (character.disciplines ?? []).map((d, dIdx) => {
-    const ref = discByName[d.name] ?? {};
-    // "Required" (Discipline) talents = every talent the Discipline grants at any
-    // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
-    // Ritual which every adept receives automatically. Anything else the character
-    // knows here was a chosen Talent Option (optional). Data-driven from
-    // disciplines.json; no separate flag on the character's talents.
-    const requiredTalents = new Set([
-      ...UNIVERSAL_TALENTS,
-      ...(ref.circles ?? []).flatMap((c) => [...(c.talents ?? []), ...(c.freeTalents ?? [])]),
-    ]);
-    const talents = (d.talents ?? []).map((t) => {
-      const cat = talentCatalog[t.name] || {};
-      const attribute = cat.attribute || null;
-      const aStep = attribute ? attrStepByName[attribute] : undefined;
-      const step = attribute != null && aStep != null ? talentStep(aStep, t.rank) : null;
-      // Talent tests are Karma-eligible by default (core rule); only rollable
-      // talents (those with a step) carry a karma context. The talent catalog may
-      // opt out (`karma: false`), as may a Versatility-learned instance.
-      const karma = step != null ? talentKarmaUse({ karma: cat.karma, viaVersatility: t.viaVersatility }) : null;
-      return {
-        name: t.name,
-        rank: t.rank,
-        // Arming talents (Mystic Aim): a precursor test that, on a HIT, arms an
-        // effect for a later action, lasting `arms.rounds` rounds. Surfaced on the
-        // talent (not just the Combat pill) so EVERY roll surface recognises it and
-        // dispatches the same armed session state. Derived here: the precursor
-        // roll gets this talent's Step/karma/Strain injected; `effects` is the
-        // armed payload (its on-success test-targeting effects — both fold if a
-        // talent has more than one); `appliesTo` carries the weapon scope from its
-        // combat pill so an armed bonus only applies to the right attack type.
-        // Anticipate Blow also arms an on-success defence-modifier, so the payload
-        // filter admits defense-modifiers too (the engine folds those into the
-        // live Defence figure, not a roll pool).
-        arms: cat.arms
-          ? {
-              roll: {
-                vs: cat.arms.roll?.vs ?? null,
-                strain: cat.arms.roll?.strain ?? cat.strain ?? 0,
-                step: step ?? null,
-                karma,
-              },
-              rounds: cat.arms.rounds ?? 1,
-              appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
-              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
-            }
-          : null,
-        // The Circle the talent was learned at — a stored input, surfaced so the
-        // Disciplines tab can group talents by Circle. Also drives the derived tier.
-        circle: t.circle ?? null,
-        attribute,
-        action: cat.action || null,
-        step,
-        dice: step != null ? diceForStep(step) : '',
-        karma,
-        required: requiredTalents.has(t.name),
-        // Terse one-line effect for the Effect column, and the paraphrased detail
-        // the info modal shows. `documented` is false for talents not yet enriched
-        // (the modal then shows only the basics we have). Same source as items/skills.
-        brief: cat.presentation?.shortEffect ?? null,
-        detail: {
-          summary: cat.summary || null,
-          versus: cat.versus || null,
-          strain: cat.strain ?? null,
-          // Derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION) — the
-          // chip shows what pricing actually uses, never a stored/catalog copy.
-          tier: tierForCircle(t.circle, legendFile?.costs),
-          skillUse: cat.skillUse || null,
-          notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
-          documented: !!cat.summary,
-        },
-      };
-    });
-    // Discipline abilities granted at circles up to the character's current circle.
-    const abilities = (ref.circles ?? [])
-      .filter((c) => c.circle <= d.circle)
-      .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, type: e.type, summary: e.summary })))
-      .filter((a) => a.summary);
-    // Half-Magic test (PG p.81, "Making Half-Magic Tests"): the Step is the
-    // chosen Attribute Step + the character's Circle, and the GM picks the
-    // Attribute per situation — so the roller offers ALL attributes, one derived
-    // option each (step never stored). Perception is the printed default (every
-    // Discipline's half-magic description is a Perception-based test), flagged so
-    // the picker focuses it. Karma-eligible like any Discipline test. Null (no
-    // button) if the discipline has no half-magic or the Circle can't resolve.
-    const halfMagicOptions =
-      ref.halfMagic && d.circle != null
-        ? attributes
-            .filter((a) => a.step != null)
-            .map((a) => ({ attribute: a.name, step: a.step + d.circle, dice: diceForStep(a.step + d.circle) }))
-        : [];
-    const halfMagicRoll = halfMagicOptions.length
-      ? {
-          circle: d.circle,
-          defaultAttribute: halfMagicOptions.some((o) => o.attribute === 'Perception') ? 'Perception' : halfMagicOptions[0].attribute,
-          options: halfMagicOptions,
-          karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
-        }
-      : null;
-    // Circle-advancement status (engine/advancement.js): `circle` stays the
-    // stored, training-gated attained Circle (input); this DERIVES the
-    // talent-supported Circle so the UI can flag a stored value the talents don't
-    // justify (imported/edited data) and surface eligibility to advance. Pure
-    // derivation — nothing stored (ARCHITECTURE §4.1).
-    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])));
-    // Per-Circle option slots (PLAN-LEARN-TALENTS §7). Each open slot carries its
-    // learnable pool (status-eligible talents minus already-known), enriched with
-    // the terse effect for the picker; a Circle with no pool data (Warden+) is
-    // flagged `available:false`. All derived from rule data — nothing stored.
-    const knownNames = new Set((d.talents ?? []).map((t) => t.name));
-    const slots = optionSlots(ref, d.talents, d.circle).map((s) => {
-      if (!s.open) return s;
-      const pool = learnableTalents(ref, s.circle, { costs: legendFile?.costs, knownNames });
-      return { ...s, available: pool.available, learnable: pool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })) };
-    });
-    return {
-      name: d.name,
-      circle: d.circle,
-      circleStatus: circleInfo,
-      optionSlots: slots,
-      // Discipline Talent(s) the next Circle would grant (not already known) —
-      // what the "train to next Circle" action adds at Rank 1 (PLAN-LEARN-TALENTS §7).
-      nextGrant: nextCircleGrant(ref, d.circle, knownNames),
-      // The advance quote (only when eligible): the Legend to purchase the granted
-      // Discipline Talent(s) at Rank 1, and the suggested silver training fee from
-      // the Circle Training Cost Table (ED4 p.454 — an editable, negotiable
-      // default). Null/absent leaves the modal to show a placeholder.
-      advanceCost: circleInfo.eligible
-        ? (() => {
-            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestDisciplineCircle(character.disciplines), legendFile?.costs, 1);
-            const grantCount = nextCircleGrant(ref, d.circle, knownNames).length;
-            return {
-              legend: perDT == null ? null : perDT * grantCount,
-              trainingSilver: legendFile?.costs?.circleTraining?.[String(circleInfo.next)] ?? null,
-            };
-          })()
-        : null,
-      durability: ref.durability ?? null,
-      halfMagic: ref.halfMagic?.summary ?? null,
-      halfMagicRoll,
-      artisanSkills: ref.artisanSkills ?? [],
-      talents,
-      abilities,
-    };
-  });
-
+  // Effects are assembled BEFORE the attributes so always-on `attribute-modifier`
+  // effects (taxonomy §2) fold into the attribute Value/Step every downstream
+  // derivation reads.
   // Derived characteristics (Phase 3). The engine reads the ED4 Characteristics
   // Table and layers taxonomy `effects` on top. Only always-on effects auto-apply.
   // Sources the engine currently knows about: race + discipline circles reached.
@@ -971,7 +814,174 @@ export function deriveModel(character, rules, session = {}) {
     // state (session.activeSpells), never persisted, tagged origin `spell`.
     ...activeSpellEffects(session?.activeSpells),
   ];
-  const attrVal = (name) => attributeValue(character.attributes?.[name]);
+
+  // Attributes -> value/step/dice, preserving the canonical order.
+  const order = ['Dexterity', 'Strength', 'Toughness', 'Perception', 'Willpower', 'Charisma'];
+  const attrStepByName = {};
+  const attributes = order
+    .filter((name) => character.attributes?.[name])
+    .map((name) => {
+      const a = character.attributes[name];
+      // Always-on attribute-modifier effects fold onto Value (measure "value") and
+      // Step (measure "step") in the engine; the stored inputs stay untouched.
+      const fold = foldAttribute(name, attributeValue(a), activeEffects);
+      const { value, step, modifiers, valueDelta, stepDelta } = fold;
+      attrStepByName[name] = step;
+      // rawValue / baseStep: the unmodified Value and the Step of the folded Value, so
+      // the Overview tooltip can show how the number was built.
+      return { name, value, step, dice: diceForStep(step), modifiers, valueDelta, stepDelta, rawValue: fold.base, baseStep: fold.baseStep, ...a };
+    });
+
+  // Disciplines -> talents with derived step/dice, plus reference detail
+  // (durability, half-magic, artisan skills, per-circle abilities) from rules.
+  let disciplines = (character.disciplines ?? []).map((d, dIdx) => {
+    const ref = discByName[d.name] ?? {};
+    // "Required" (Discipline) talents = every talent the Discipline grants at any
+    // circle (its per-circle `talents` + `freeTalents`), plus Durability and Karma
+    // Ritual which every adept receives automatically. Anything else the character
+    // knows here was a chosen Talent Option (optional). Data-driven from
+    // disciplines.json; no separate flag on the character's talents.
+    const requiredTalents = new Set([
+      ...UNIVERSAL_TALENTS,
+      ...(ref.circles ?? []).flatMap((c) => [...(c.talents ?? []), ...(c.freeTalents ?? [])]),
+    ]);
+    const talents = (d.talents ?? []).map((t) => {
+      const cat = talentCatalog[t.name] || {};
+      const attribute = cat.attribute || null;
+      const aStep = attribute ? attrStepByName[attribute] : undefined;
+      const step = attribute != null && aStep != null ? talentStep(aStep, t.rank) : null;
+      // Talent tests are Karma-eligible by default (core rule); only rollable
+      // talents (those with a step) carry a karma context. The talent catalog may
+      // opt out (`karma: false`), as may a Versatility-learned instance.
+      const karma = step != null ? talentKarmaUse({ karma: cat.karma, viaVersatility: t.viaVersatility }) : null;
+      return {
+        name: t.name,
+        rank: t.rank,
+        // Arming talents (Mystic Aim): a precursor test that, on a HIT, arms an
+        // effect for a later action, lasting `arms.rounds` rounds. Surfaced on the
+        // talent (not just the Combat pill) so EVERY roll surface recognises it and
+        // dispatches the same armed session state. Derived here: the precursor
+        // roll gets this talent's Step/karma/Strain injected; `effects` is the
+        // armed payload (its on-success test-targeting effects — both fold if a
+        // talent has more than one); `appliesTo` carries the weapon scope from its
+        // combat pill so an armed bonus only applies to the right attack type.
+        // Anticipate Blow also arms an on-success defence-modifier, so the payload
+        // filter admits defense-modifiers too (the engine folds those into the
+        // live Defence figure, not a roll pool).
+        arms: cat.arms
+          ? {
+              roll: {
+                vs: cat.arms.roll?.vs ?? null,
+                strain: cat.arms.roll?.strain ?? cat.strain ?? 0,
+                step: step ?? null,
+                karma,
+              },
+              rounds: cat.arms.rounds ?? 1,
+              appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
+              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
+            }
+          : null,
+        // The Circle the talent was learned at — a stored input, surfaced so the
+        // Disciplines tab can group talents by Circle. Also drives the derived tier.
+        circle: t.circle ?? null,
+        attribute,
+        action: cat.action || null,
+        step,
+        dice: step != null ? diceForStep(step) : '',
+        karma,
+        required: requiredTalents.has(t.name),
+        // Terse one-line effect for the Effect column, and the paraphrased detail
+        // the info modal shows. `documented` is false for talents not yet enriched
+        // (the modal then shows only the basics we have). Same source as items/skills.
+        brief: cat.presentation?.shortEffect ?? null,
+        detail: {
+          summary: cat.summary || null,
+          versus: cat.versus || null,
+          strain: cat.strain ?? null,
+          // Derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION) — the
+          // chip shows what pricing actually uses, never a stored/catalog copy.
+          tier: tierForCircle(t.circle, legendFile?.costs),
+          skillUse: cat.skillUse || null,
+          notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
+          documented: !!cat.summary,
+        },
+      };
+    });
+    // Discipline abilities granted at circles up to the character's current circle.
+    const abilities = (ref.circles ?? [])
+      .filter((c) => c.circle <= d.circle)
+      .flatMap((c) => (c.effects ?? []).map((e) => ({ circle: c.circle, type: e.type, summary: e.summary })))
+      .filter((a) => a.summary);
+    // Half-Magic test (PG p.81, "Making Half-Magic Tests"): the Step is the
+    // chosen Attribute Step + the character's Circle, and the GM picks the
+    // Attribute per situation — so the roller offers ALL attributes, one derived
+    // option each (step never stored). Perception is the printed default (every
+    // Discipline's half-magic description is a Perception-based test), flagged so
+    // the picker focuses it. Karma-eligible like any Discipline test. Null (no
+    // button) if the discipline has no half-magic or the Circle can't resolve.
+    const halfMagicOptions =
+      ref.halfMagic && d.circle != null
+        ? attributes
+            .filter((a) => a.step != null)
+            .map((a) => ({ attribute: a.name, step: a.step + d.circle, dice: diceForStep(a.step + d.circle) }))
+        : [];
+    const halfMagicRoll = halfMagicOptions.length
+      ? {
+          circle: d.circle,
+          defaultAttribute: halfMagicOptions.some((o) => o.attribute === 'Perception') ? 'Perception' : halfMagicOptions[0].attribute,
+          options: halfMagicOptions,
+          karma: { grants: [{ scope: null, via: null, summary: 'Half-Magic — Karma may be spent on the test (core rule).' }] },
+        }
+      : null;
+    // Circle-advancement status (engine/advancement.js): `circle` stays the
+    // stored, training-gated attained Circle (input); this DERIVES the
+    // talent-supported Circle so the UI can flag a stored value the talents don't
+    // justify (imported/edited data) and surface eligibility to advance. Pure
+    // derivation — nothing stored (ARCHITECTURE §4.1).
+    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])));
+    // Per-Circle option slots (PLAN-LEARN-TALENTS §7). Each open slot carries its
+    // learnable pool (status-eligible talents minus already-known), enriched with
+    // the terse effect for the picker; a Circle with no pool data (Warden+) is
+    // flagged `available:false`. All derived from rule data — nothing stored.
+    const knownNames = new Set((d.talents ?? []).map((t) => t.name));
+    const slots = optionSlots(ref, d.talents, d.circle).map((s) => {
+      if (!s.open) return s;
+      const pool = learnableTalents(ref, s.circle, { costs: legendFile?.costs, knownNames });
+      return { ...s, available: pool.available, learnable: pool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })) };
+    });
+    return {
+      name: d.name,
+      circle: d.circle,
+      circleStatus: circleInfo,
+      optionSlots: slots,
+      // Discipline Talent(s) the next Circle would grant (not already known) —
+      // what the "train to next Circle" action adds at Rank 1 (PLAN-LEARN-TALENTS §7).
+      nextGrant: nextCircleGrant(ref, d.circle, knownNames),
+      // The advance quote (only when eligible): the Legend to purchase the granted
+      // Discipline Talent(s) at Rank 1, and the suggested silver training fee from
+      // the Circle Training Cost Table (ED4 p.454 — an editable, negotiable
+      // default). Null/absent leaves the modal to show a placeholder.
+      advanceCost: circleInfo.eligible
+        ? (() => {
+            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestDisciplineCircle(character.disciplines), legendFile?.costs, 1);
+            const grantCount = nextCircleGrant(ref, d.circle, knownNames).length;
+            return {
+              legend: perDT == null ? null : perDT * grantCount,
+              trainingSilver: legendFile?.costs?.circleTraining?.[String(circleInfo.next)] ?? null,
+            };
+          })()
+        : null,
+      durability: ref.durability ?? null,
+      halfMagic: ref.halfMagic?.summary ?? null,
+      halfMagicRoll,
+      artisanSkills: ref.artisanSkills ?? [],
+      talents,
+      abilities,
+    };
+  });
+
+  // Folded attribute Value (base + points + increases + always-on attribute effects).
+  const attrVal = (name) => attributes.find((x) => x.name === name)?.value ?? 0;
   // Combat steps come from the governing attribute's Step (already derived above).
   const dexStep = attrStepByName.Dexterity;
   const strStep = attrStepByName.Strength;

@@ -238,7 +238,7 @@
         {
           "rank": 2,
           "effects": [
-            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 1, "measure": "result", "condition": "always", "stacking": "replace", "scope": "close combat", "source": "thread", "summary": "+1 to close combat Damage tests." }
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 1, "measure": "step", "condition": "always", "stacking": "replace", "scope": "close-combat", "source": "thread", "summary": "+1 to close combat Damage tests." }
           ]
         },
         {
@@ -251,7 +251,7 @@
         {
           "rank": 4,
           "effects": [
-            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 2, "measure": "result", "condition": "always", "stacking": "replace", "scope": "close combat", "source": "thread", "summary": "+2 to close combat Damage tests." }
+            { "type": "attack-modifier", "target": { "domain": "attack", "name": "Damage" }, "operation": "add", "value": 2, "measure": "step", "condition": "always", "stacking": "replace", "scope": "close-combat", "source": "thread", "summary": "+2 to close combat Damage tests." }
           ]
         },
         {

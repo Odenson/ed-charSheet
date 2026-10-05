@@ -1127,10 +1127,11 @@
               },
               "operation": "add",
               "value": 1,
-              "measure": "rating",
+              "measure": "step",
               "source": "spell",
-              "summary": "Increase Effect (+1 bonus)",
-              "duration": "sustained"
+              "summary": "Increase Effect (+1 Attack Step in close combat)",
+              "duration": "sustained",
+              "scope": "close-combat"
             }
           ]
         },
@@ -1155,10 +1156,11 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "rating",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
-          "summary": "+3 close-combat Attack while active."
+          "summary": "+3 Attack Step in close combat while active.",
+          "scope": "close-combat"
         },
         {
           "type": "attack-modifier",
@@ -1168,10 +1170,11 @@
           },
           "operation": "add",
           "value": 3,
-          "measure": "rating",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
-          "summary": "+3 close-combat Damage while active."
+          "summary": "+3 Damage Step in close combat while active.",
+          "scope": "close-combat"
         },
         {
           "type": "defense-modifier",
@@ -1185,6 +1188,12 @@
           "duration": "sustained",
           "source": "spell",
           "summary": "+3 Physical Defense while active."
+        },
+        {
+          "type": "note",
+          "gmDiscretion": true,
+          "source": "spell",
+          "summary": "The bound spirit urges the target to attack the nearest foe each round; the target may resist with a Willpower test against Social Defense 12. If they resist, or attack spirits or undead, the spell ends and neither this spell nor Summon Fog Ghost can be cast for a day."
         }
       ],
       "summary": "+3 to close combat Attack and Damage tests, +3 to Physical Defense"
@@ -4078,10 +4087,12 @@
               },
               "operation": "add",
               "value": 1,
-              "measure": "rating",
+              "measure": "step",
               "source": "spell",
-              "summary": "Increase Effect (+1 bonus)",
-              "duration": "sustained"
+              "summary": "Increase Effect (+1 Attack Step in close combat against Blindsided, Knocked Down or Surprised opponents)",
+              "duration": "sustained",
+              "scope": "close-combat",
+              "condition": "situational"
             }
           ]
         }
@@ -4095,10 +4106,12 @@
           },
           "operation": "add",
           "value": 5,
-          "measure": "rating",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
-          "summary": "+5 Attack while active."
+          "summary": "+5 Attack Step in close combat against Blindsided, Knocked Down or Surprised opponents.",
+          "scope": "close-combat",
+          "condition": "situational"
         },
         {
           "type": "attack-modifier",
@@ -4108,13 +4121,21 @@
           },
           "operation": "add",
           "value": 5,
-          "measure": "rating",
+          "measure": "step",
           "duration": "sustained",
           "source": "spell",
-          "summary": "+5 Damage while active."
+          "summary": "+5 Damage Step in close combat against Blindsided, Knocked Down or Surprised opponents.",
+          "scope": "close-combat",
+          "condition": "situational"
+        },
+        {
+          "type": "note",
+          "gmDiscretion": true,
+          "source": "spell",
+          "summary": "The spell ends if the target could attack a Blindsided, Knocked Down or Surprised opponent and does not. If the target causes no damage, or the spell ends early, the target takes a Wound and the spell cannot be recast for a day."
         }
       ],
-      "summary": "+5 to Attack and Damage tests"
+      "summary": "+5 to close combat Attack and Damage tests against Blindsided, Knocked Down or Surprised opponents"
     },
     "Astral Beacon": {
       "name": "Astral Beacon",

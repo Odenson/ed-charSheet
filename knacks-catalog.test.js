@@ -69,3 +69,33 @@ test('every discipline-restricted knack names a well-formed discipline', () => {
   }
   assert.deepEqual(bad, [], `malformed discipline restrictions: ${bad.join('; ')}`);
 });
+
+// T-001 (docs/TAXONOMY-AUDIT.md): the rulebook plurals ("Melee Weapons", ...) once
+// leaked into knack parents and were papered over with attribute-only stub talents,
+// so the orphan check above passed while a character owning the real singular talent
+// could never qualify for those knacks. The stubs are gone; the weapon talents that
+// knacks parent on must be the ones disciplines actually teach.
+test('weapon-talent knack parents are the singular talents disciplines teach', () => {
+  const disciplines = JSON.parse(readFileSync(new URL('./rules/disciplines.json', import.meta.url))).disciplines;
+  const taught = new Set();
+  const add = (t) => taught.add(typeof t === 'string' ? t : t?.name);
+  for (const d of disciplines) {
+    for (const c of d.circles ?? []) [c.freeTalents ?? []].flat().concat(c.talents ?? []).forEach(add);
+    for (const list of Object.values(d.talentOptions ?? {})) (Array.isArray(list) ? list : []).forEach(add);
+  }
+  const weaponParents = new Set();
+  for (const entry of Object.values(knacks)) {
+    for (const p of entry.parents ?? []) {
+      const name = typeof p === 'string' ? p : p?.name;
+      if (/^(Melee|Missile|Throwing) Weapon/.test(name ?? '')) weaponParents.add(name);
+    }
+  }
+  assert.deepEqual([...weaponParents].sort(), ['Melee Weapon', 'Missile Weapon', 'Throwing Weapon']);
+  for (const n of weaponParents) assert.ok(taught.has(n), `${n} is not taught by any discipline`);
+});
+
+test('no plural weapon-talent stubs in the talent catalog', () => {
+  for (const n of ['Melee Weapons', 'Missile Weapons', 'Throwing Weapons']) {
+    assert.ok(!(n in talents), `${n} stub must not exist (use the singular discipline talent)`);
+  }
+});

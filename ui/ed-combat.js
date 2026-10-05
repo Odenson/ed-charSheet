@@ -21,7 +21,7 @@
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css, nothing } from 'lit';
 import { weaponOccurrence } from '../engine/spells.js';
-import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor } from '../engine/combat.js';
+import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, UNARMED_WEAPON, successDamageSteps, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
@@ -453,10 +453,11 @@ export class EdCombat extends LitElement {
   }
 
   _damageBonusBadge() {
-    const n = this._damageBonus();
-    if (!n) return '';
-    // Compact: just the +N; the hover explains it is the attack's success levels.
-    return html`<span class="dmgbonus" title="${n} success level${n > 1 ? 's' : ''} on the attack — +${n} to the Damage step">+${n}</span>`;
+    const steps = this._damageBonus();
+    if (!steps) return '';
+    const n = this._damageLevels();
+    // Compact: just the +steps; the hover explains the attack's success levels.
+    return html`<span class="dmgbonus" title="${n} success level${n > 1 ? 's' : ''} on the attack — +${steps} to the Damage step">+${steps}</span>`;
   }
   _pend() { return html`<span class="pend">—</span>`; }
   _rating(n) { return n == null ? this._pend() : html`${n}`; }
@@ -465,6 +466,8 @@ export class EdCombat extends LitElement {
   // "None" (category null) is the default: no weapon, so the attack picker lists
   // *every* rollable talent/skill (a free-action / non-attack roll like Avoid
   // Blow). Picking a real weapon filters the list to that weapon's category.
+  // Reserved keys: 'None' and 'Unarmed' (engine UNARMED_WEAPON, Damage Step 0).
+  // An equipped weapon with either name is keyed `equipped:<name>` to avoid a clash.
   _weapons() {
     const equipped = this.model?.combat?.equippedWeapons ?? [];
     // Each weapon carries its occurrence `index` among equipped same-name items
@@ -472,9 +475,11 @@ export class EdCombat extends LitElement {
     // `name#N` for later duplicates), so a spell's chosen {name, index} can match.
     return [
       { name: 'None', key: 'None', index: 0, category: null, damageStep: null, shortRange: null, longRange: null, image: null },
+      { ...UNARMED_WEAPON, key: 'Unarmed', index: 0 },
       ...equipped.map((w) => {
         const index = weaponOccurrence(equipped, w);
-        return { ...w, index, key: index > 0 ? `${w.name}#${index}` : w.name };
+        const base = index > 0 ? `${w.name}#${index}` : w.name;
+        return { ...w, index, key: w.name === 'None' || w.name === 'Unarmed' ? `equipped:${base}` : base };
       }),
     ];
   }
@@ -630,6 +635,9 @@ export class EdCombat extends LitElement {
       // Active self-cast spells whose sustained attack-modifier folds into the
       // pools while active (Arrow of Night's +6 to the missile's Damage step).
       activeSpellBundles: this._activeSpellBundles(),
+      // Always-on attack/damage bonuses of worn non-weapon items (Bracers of
+      // Obsidiman Strength, a custom magic item).
+      activeItemBundles: this._activeItemBundles(),
     });
   }
   // Active self-cast spells whose sustained attack-modifier folds into the
@@ -638,12 +646,25 @@ export class EdCombat extends LitElement {
   // only supplies the tagged active effects and the selected weapon's category
   // (the "selection" — mirroring _armedForPick's scopes).
   _activeSpellBundles() {
+    // A spell's situational bonus (Aspect of the Casual Murderer) folds only while
+    // its chip is toggled on in the Situational segment (the chip name lives in `_sits`).
+    return activeSpellBundlesFor(this.model?.activeEffects ?? [], ...this._weaponArgs(), { situationalOn: this._sits ?? [] });
+  }
+  // The active spells with a situational bonus for the selected weapon — listed as
+  // toggles beside the combat situations.
+  _situationalSpells() {
+    return situationalSpellBundlesFor(this.model?.activeEffects ?? [], ...this._weaponArgs());
+  }
+  // Equipped items that are not weapons (a weapon's own effects reach the pools via
+  // the selected weapon, so they must not be folded a second time here).
+  _activeItemBundles() {
     const w = this._selWeapon();
-    return activeSpellBundlesFor(
-      this.model?.activeEffects ?? [],
-      w?.category ?? null,
-      w && w.category != null ? { name: w.name, category: w.category, index: w.index ?? 0 } : null,
-    );
+    const names = (this.model?.items ?? []).filter((it) => it.equipped && it.ref?.category == null).map((it) => it.name);
+    return activeItemBundlesFor(this.model?.activeEffects ?? [], w?.category ?? null, names);
+  }
+  _weaponArgs() {
+    const w = this._selWeapon();
+    return [w?.category ?? null, w && w.category != null ? { name: w.name, category: w.category, index: w.index ?? 0 } : null];
   }
   // The session-armed talents (model.armedTalents) whose weapon scope matches the
   // current pick: an armed Mystic Aim (`appliesTo` missile/throwing) folds into a
@@ -678,15 +699,18 @@ export class EdCombat extends LitElement {
         if (tl.name === name) return tl.resultMods ?? [];
     return [];
   }
-  // #7: extra attack success levels → +steps to damage. Only while the current
+  // #7: extra attack success levels → +2 Damage steps each (engine successDamageSteps). Only while the current
   // pick's attack is armed. With a target number in play the levels come from the
   // rolled total vs the target (engine clamps a miss to 0); with NO target the GM
   // adjudicates, so the player types the success count (`_manualSuccesses`).
-  _damageBonus() {
+  _damageLevels() {
     if (!this._attackArmed) return 0;
     if (this._targetNum() != null) return attackSuccessLevels(this._lastAttack?.total, this._lastAttack?.target);
     const n = Number(this._manualSuccesses);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }
+  _damageBonus() {
+    return successDamageSteps(this._damageLevels());
   }
   // The manual success input is offered after a no-target attack roll (GM
   // adjudicates the successes that buff the Damage step).
@@ -821,6 +845,7 @@ export class EdCombat extends LitElement {
       {
         difficulty: target != null ? { value: target, win: 'Hit', lose: 'Miss' } : null,
         mods: ap.resultMods,
+        unapplied: ap.unapplied,
         // Deferred Strain: charged at the modal's commit for a set-dice roll (0
         // otherwise — an ordinary roll already paid it above).
         strain: setDice ? ap.strain : 0,
@@ -837,7 +862,7 @@ export class EdCombat extends LitElement {
       this._karmaCtx(this.model?.combat?.damageKarma),
       undefined,
       // Bonus Dice (Night's Edge's D4): their own exploding group, not part of the step.
-      { mods: dp.resultMods, bonusDice: dp.bonusDice },
+      { mods: dp.resultMods, bonusDice: dp.bonusDice, unapplied: dp.unapplied },
     );
   }
   // The most recent Initiative roll's total from the device-local Log (newest
@@ -887,7 +912,7 @@ export class EdCombat extends LitElement {
       const sign = v > 0 ? '+' : '';
       if (e.type === 'resource-modifier' && e.target?.domain === 'resource' && e.target?.name === 'Strain' && v) {
         out.push({ cls: 'strain', text: `${v}⚡`, title: 'Strain cost — charged once, on Apply' });
-      } else if (e.type === 'test-modifier') {
+      } else if (e.type === 'test-modifier' || (e.type === 'attack-modifier' && e.measure !== 'dice' && typeof e.value === 'number')) {
         const t = e.target?.name ?? '';
         const tag = t === 'Attack' ? 'atk' : t === 'Damage' ? 'dmg' : t === 'Action' ? 'act' : t.toLowerCase();
         out.push({ cls: v >= 0 ? 'pos' : 'neg', text: `${sign}${v} ${tag}`, title: e.summary ?? '' });
@@ -998,10 +1023,12 @@ export class EdCombat extends LitElement {
   }
   _situations() {
     const cond = this.model?.combat?.conditions ?? {};
-    return (this.model?.combatRules?.situations ?? []).map((b) => ({
+    const rules = (this.model?.combatRules?.situations ?? []).map((b) => ({
       ...b,
       locked: (cond.knockedDown && b.name === 'Knocked Down') || (cond.harried && b.name === 'Harried'),
     }));
+    // Active spells whose bonus applies only in some situation join the list as toggles.
+    return [...rules, ...this._situationalSpells().map((b) => ({ ...b, locked: false }))];
   }
   _charmItems() {
     return (this.model?.items ?? []).filter((it) => it.equipped && it.kind === 'blood-charm');
@@ -1214,7 +1241,9 @@ export class EdCombat extends LitElement {
     const charms = this._charmItems();
     const charmNames = this._activeCharmNames();
     const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
-    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: this._sits, charmNames });
+    // A toggled spell chip whose spell has since ended is no longer in `sits`; don't count it.
+    const knownSits = new Set(sits.map((s) => s.name));
+    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: (this._sits ?? []).filter((n) => knownSits.has(n)), charmNames });
     const tab = normalizeModTab(this._modTab);
     let panel;
     if (tab === 'sits') {
@@ -1435,7 +1464,7 @@ export class EdCombat extends LitElement {
                   <span class="v">${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}</span>
                   ${this._damageBonusBadge()}
                   ${this._showManualSuccesses()
-                    ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
+                    ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step (each adds +2 Damage steps)">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
                     : ''}
                   <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>⚄</button>
                   <span class="strain-k">Strain</span><span class="strain">${ap.strain}</span>

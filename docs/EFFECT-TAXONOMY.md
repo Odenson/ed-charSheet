@@ -127,6 +127,23 @@ Natural attacks pair a `grant-attack` (which *names* the attack) with
 roll bonuses that are not attack-specific (a +1 to all `Action` tests, a skill
 modifier).
 
+**Which one for an Attack/Damage bonus?** The combat pools fold `{attack, Attack|Damage}`
+and `{test, Attack|Damage}` identically, so a *bonus* works under either type. The
+authoring rule:
+
+- `attack-modifier` — what an attack **is**, or a bonus bound to a specific weapon or
+  spell: a weapon's own Damage Step, a damage spell's Effect Step, a thread weapon's
+  rank bonuses, a spell's sustained bonus on the weapon it was cast on.
+- `test-modifier` — a bonus to a **roll**: combat options and situations, talents,
+  blood charms, and any worn item that adds to the Attack or Damage test (e.g. a
+  custom magic item such as Beer Mug of Brawling). **Use this one for an item's
+  Attack/Damage bonus.**
+
+A consumer must therefore accept both for bonuses (the worn-item and active-spell
+routing in `engine/combat.js` does). Collapsing the bonus uses of `attack-modifier`
+onto `test-modifier` is the agreed longer-term cleanup; see T-024 in
+[TAXONOMY-AUDIT.md](TAXONOMY-AUDIT.md).
+
 `grant-karma-use` mirrors the source spreadsheet's `…UseKarma` flags: a Discipline
 circle grants the adept the right to spend a Karma Point on a class of test (e.g.
 Perception, Initiative, ranged Damage). `target` is a `test`; use `scope` to
@@ -303,8 +320,10 @@ Earthdawn "+2" is ambiguous without this. **The most correctness-critical field.
 | `rounds` | duration in combat rounds (1 round = 1 Initiative roll) | +2 rounds |
 | `minutes` | duration in minutes (1 minute = 10 rounds) | Increase Duration +2 minutes |
 | `hours` | duration in hours (1 hour = 600 rounds) | +2 hours |
-| `count` | discrete count | +1 recovery test/day |
+| `count` | discrete count — **reserved**: no engine path reads it (the one data use left, Bone Charm, is a known data error — T-051 in TAXONOMY-AUDIT) | (a future pool-style "+1 use") |
 | `action` | an action type (word value, not a number) | set Frighten to Simple |
+
+**Characteristics take `rating`.** `RecoveryTests` (Recovery Tests per day) is a derived characteristic like `DeathRating` and `WoundThreshold`, so "+1 Recovery test" is `characteristic-modifier` / `RecoveryTests` / `add 1` / `measure: "rating"`. It is *not* a `count` (T-003 in [TAXONOMY-AUDIT.md](TAXONOMY-AUDIT.md)); a `count` effect on it would be ignored by the fold.
 
 ### 5.1 Action values
 
@@ -493,10 +512,12 @@ lives, but may be stated explicitly.
    (§3). Base derivation needs no vocabulary entry, so it is supported today; add
    `Knockdown` to §3 when the first effect modifies it — a **Tier-2** change
    (bump + migrate). Deferred until that effect exists.
-6. `attack-modifier` scope (added v2) — currently only weapon *damage* uses it.
-   The to-hit bonuses (talent `test-modifier`/`{test, Attack}` like Mystic Aim)
-   stay in the `test` domain for now; if combat resolution lands, decide whether
-   `{attack, Attack}` becomes their home in a later migration. Weapon damage
+6. `attack-modifier` scope (added v2) — **Partly resolved (2026-10).** Both types
+   exist for Attack/Damage and the engine folds them identically; the authoring split
+   is in §2 (`attack-modifier` = what an attack is or a bonus bound to a weapon/spell,
+   `test-modifier` = a roll bonus, including worn items). Whether to collapse the bonus
+   uses onto `test-modifier` is deferred until the weapon Damage Step has one source
+   (T-024). Weapon damage
    keeps `operation: add` for all categories — missile/thrown are **not** flat
    steps independent of Strength; they add their Damage Step to Strength like
    melee, so they keep `add` and take the engine's Strength default (§4.1). Only

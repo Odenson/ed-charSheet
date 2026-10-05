@@ -102,7 +102,7 @@ blocker.
 Anticipate Blow, etc. — as a standalone action, not tied to a weapon.
 
 **Fix (owner design 2026-08-11):** add a **"None"** default entry to the *weapon*
-dropdown (alongside Unarmed). When **None** is selected, the talent/skill picker
+dropdown (alongside Unarmed; the Unarmed entry was dropped at v1.11.0 and restored 2026-10-05 by plans/unarmed-combat/ with category `unarmed`, Damage Step 0 + Strength). When **None** is selected, the talent/skill picker
 drops the weapon-category filter and lists **every** talent and skill the
 character owns that has a `step` (each rollable). Picking one and hitting the
 Attack-line `⚄` rolls that talent/skill on its own `step` / `karma` — a plain
@@ -124,19 +124,19 @@ instead of a separate section.
 
 **Rule (owner):** every 5 the attack test beats the target number is one success
 level; **extra** success levels add to damage. Example: target 5, attack rolls
-17 → beats by 12 → 2 extra levels → **+2 steps** to the Damage step.
+17 → beats by 12 → 2 extra levels → **+4 steps** to the Damage step (2026-10-05 correction: +2 steps per level, PG p.34/378).
 
 **Confirmed formula (owner):** a success level = every whole 5 the attack result
-is above the target number, and each level gives the Damage roll **+1 step**:
+is above the target number, and each level gives the Damage roll **+2 steps** (corrected 2026-10-05; was +1):
 
 ```
 successLevels  = max(0, floor((attackResult − targetNumber) / 5))  // clamp: miss → 0
-damageStepBonus = successLevels                                     // +1 Damage step per level
+damageStepBonus = successLevels * 2                                 // +2 Damage steps per level
 ```
 
 Note the `max(0, …)`: on a miss `attackResult < targetNumber`, `floor` goes
 negative — clamp to 0 so a miss never *reduces* damage. Worked examples (owner):
-target 5 → result 11 = 1 level (+1); result 17 = 2 (+2); result 24 = 3 (+3).
+target 5 → result 11 = 1 level (+2); result 17 = 2 (+4); result 24 = 3 (+6).
 Only applies on a **hit** with a **target number** entered.
 
 **Architecture:** attack and damage are currently independent rolls; the attack
@@ -149,8 +149,8 @@ result must reach the damage pool.
    the Roll Log it already reloads on `ed-roll-logged`: the newest **attack** entry
    carries `total` (post-mods, incl. any Knocked Down −3) and `difficulty`. Match
    the attack roll specifically (its label starts "Attack"), not damage/initiative.
-   Compute the bonus, show it as a badge on the Damage line (e.g. "+2 dmg · 2
-   successes"). Clears when the weapon/talent pick changes.
+   Compute the bonus, show it as a badge on the Damage line (e.g. "+4", hover "2 success levels on the
+   attack — +4 to the Damage step"; corrected 2026-10-05, was "+2 dmg · 2 successes"). Clears when the weapon/talent pick changes.
 3. Placeholder-pill rule intact: no target or no attack result → no fabricated
    bonus (bonus is 0, base Damage step shows normally).
 
@@ -273,8 +273,8 @@ relative paths.
 
 ## Resolved (owner, 2026-08-11)
 
-- **Q2 (item 7):** ✅ success level = `floor((result − target)/5)`; **+1 Damage
-  step per level**. First 5-band (hit, 0–4 over) = 0 bonus.
+- **Q2 (item 7):** ✅ success level = `floor((result − target)/5)`; **+2 Damage
+  steps per level** (corrected 2026-10-05; was +1). First 5-band (hit, 0–4 over) = 0 bonus.
 - **Q3 (item 4):** ✅ **Throwing-only** for throwing-category weapons (no melee).
 - **Q5 (item 3):** ✅ **Charge, no refund** — toggle-on = −1 Karma, stays spent;
   guard against double-charge on "Roll again". App-wide.

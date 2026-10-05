@@ -13,6 +13,8 @@
 // the effect applier, and the shape of the return value are all general, so the
 // remaining characteristics are added by repeating the pattern, not new design.
 
+import { valueToStep } from './derive.js';
+
 // Homebrew rules (docs/HOMEBREW-RULES.md): an optional `formula` replaces a
 // rating's table base. The formula's own refs (Durability ranks, Circle, etc.)
 // already encode the adept synthesis, so overridden ratings do NOT also fold
@@ -561,4 +563,43 @@ export function maxKarma(karmaModifier, circle, maximum = null) {
   if (typeof karmaModifier !== 'number' || typeof circle !== 'number') return null;
   const base = karmaModifier * circle;
   return typeof maximum === 'number' && Number.isFinite(maximum) ? Math.min(base, maximum) : base;
+}
+
+/**
+ * Fold always-on `attribute-modifier` effects onto one attribute (taxonomy §2/§5).
+ * `measure:"value"` (the default) adjusts the attribute Value before it becomes a
+ * Step; `measure:"step"` adjusts the resulting Step. Situational / gmDiscretion
+ * effects do not auto-apply (§6). The Step never drops below 0.
+ *
+ * @param {string} name       attribute name (Dexterity ... Charisma)
+ * @param {number} baseValue  base + points + increases
+ * (`baseStep` in the result is the Step of the folded Value, before step modifiers)
+ * @param {Array<object>} effects  active effects from race/discipline/items/…
+ * `valueDelta` / `stepDelta` are the net change versus the unmodified attribute,
+ * for display only.
+ * @returns {{base:number, value:number, valueDelta:number, baseStep:number, step:number, stepDelta:number,
+ *   modifiers:Array<{value,operation,source,origin,summary,measure:'value'|'step'}>}}
+ */
+export function foldAttribute(name, baseValue, effects) {
+  const match = (measure) => (e) =>
+    e.type === 'attribute-modifier' &&
+    e.target?.domain === 'attribute' &&
+    e.target?.name === name &&
+    (e.measure ?? 'value') === measure;
+  const v = applyModifiers(baseValue, effects, match('value'));
+  const baseStep = valueToStep(v.value);
+  const s = applyModifiers(baseStep, effects, match('step'));
+  const step = Math.max(0, s.value);
+  return {
+    base: baseValue,
+    value: v.value,
+    valueDelta: v.value - baseValue,
+    baseStep,
+    step,
+    stepDelta: step - valueToStep(baseValue),
+    modifiers: [
+      ...v.modifiers.map((m) => ({ ...m, measure: 'value' })),
+      ...s.modifiers.map((m) => ({ ...m, measure: 'step' })),
+    ],
+  };
 }

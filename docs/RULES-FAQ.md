@@ -617,3 +617,72 @@ Follow-up sources:
 
 Decision: 2026-10-04 — owner: (1) Night's Edge is cast on the weapon, so its Spellcasting difficulty is the weapon's Mystic Defense. (house rule)
 Decision: 2026-10-04 — owner: (2) A willing target may lower their own Mystic Defense to 2 for a spell cast on them. Rules classification only; not applied by any feature yet. (house rule)
+
+### Q022 — Obsidiman racial Natural Armor (Physical/Mystic) and the "Obsidiman Skin" armor item
+Keywords: obsidiman, obsidimen, natural armor, racial ability, obsidiman skin, living armor, physical armor 3, mystic armor, armor table, Wound Threshold · Resolved: 2026-10-04 · Context: TAXONOMY-AUDIT T-018
+
+Racial Natural Armor: obsidiman skin has Physical Armor Rating 3; no Mystic Armor is stated for the racial ability. Obsidimen can wear only other "living" armor, whose protection adds to Natural Armor. Separately, obsidimen get +3 Wound Threshold. The racial value is 3, not 2.
+Armor item "Obsidiman Skin" (made from a slain obsidiman) is a distinct, purchasable armor on the Armor Table: Physical 3, Mystic 1, Initiative Penalty 0, cost 100, weight 20, Rare. Its text says obsidimen attack anyone wearing it on sight and dwarfs/trolls worsen Attitude by two degrees. The text does not say whether it counts as "living" armor for obsidimen. A items.json entry with Physical add 2 contradicts the book on both the racial ability (3) and the item (3); Mystic 1 matches the item only.
+
+Sources:
+- text-RB-players-guide.txt:1453-1459 (obsidiman racial abilities: Wound Threshold +3, Natural Armor Physical 3)
+- text-RB-players-guide.txt:15622-15627 (Obsidiman Skin armor description)
+- text-RB-players-guide.txt:16484-16500 (p. 435 — Armor Table: Obsidiman Skin 3 / 1 / 0 / 100 / 20 / Rare)
+- player-tables-narrative.txt:1031 (same stats in prose)
+- text-race-players.txt:35 (same racial text)
+
+### Q023 — Warrior Circle 7 extra Recovery test per day; Bone Charm Recovery bonus and Death/Unconsciousness effects
+Keywords: warrior, recovery test, additional recovery, seventh circle, circle 7, recovery bonus, bone charm, blood charm, blood magic damage, death rating, unconsciousness rating, ork · Resolved: 2026-10-05 · Context: TAXONOMY-AUDIT T-003
+
+(1) Yes. Warrior Seventh Circle: "Recovery: The adept gains an additional Recovery test." Rules text defines Recovery bonuses as permanently increasing the number of Recovery tests per day. Companion Guide variants say "an additional Recovery test per day".
+(2) The Bone Charm (common version) causes 1 Blood Magic Damage on implanting and "grants a +1 bonus to his Recovery tests". That is a +1 bonus to the Recovery test result, NOT +1 Recovery test per day. Death/Unconsciousness -1: the book does not state this for the charm. Blood Magic Damage is recorded separately; only permanent Blood Magic Damage is recorded as a reduction of Death and Unconsciousness Ratings. Charm damage is stated to be unhealable until the item is used or removed (not permanent), so a -1 Death/Unconsciousness rating effect is not directly supported; the book is silent/ambiguous on whether it lowers the ratings. Owner decision needed.
+
+Sources:
+- text-discipline-players.txt:453 (Warrior Circle 7 Recovery)
+- text-RB-players-guide.txt:2955-2956 (Recovery bonuses = tests per day)
+- text-RB-players-guide.txt:15727-15732 (Bone Charm: 1 Blood Magic Damage, +1 bonus to Recovery tests)
+- text-RB-players-guide.txt:8886-8897 (Blood Magic Damage tracked separately; permanent = reduction of Death/Unconsciousness Ratings)
+- text-RB-players-guide.txt:8933-8936 (blood charm damage cannot be healed until item used or removed)
+- text-RB-companions-guide.txt:5706-5714 (Bone Charm enchanting stats; no effect change)
+
+### Q024 — Aspect of the Fog Ghost (N2) and Aspect of the Casual Murderer (N7): do the bonuses apply to the target character or a separate spirit entity?
+Keywords: aspect of the fog ghost, aspect of the casual murderer, summon fog ghost, nethermancer, binding spell, bound spirit, willing target, +3 attack damage physical defense, +5 attack damage, spirit merges, sustained effect · Resolved: 2026-10-05 · Context: spells.json aspect spells
+
+(1) Fog Ghost (Nethermancer 2nd Circle): Threads 1; Weaving 6/11; Casting TMD; Range 10 yards; Duration Rank rounds; Effect "+3 to close combat Attack and Damage tests, +3 to Physical Defense". It is a "Binding" spell: the caster binds a maleficent spirit to a WILLING target within the fog. Spellcasting test vs the target's Mystic Defense; if successful "the target gains +3 to close combat Attack and Damage tests, and Physical Defense for the duration". The spirit urges the target to attack the nearest non-spirit/non-undead each round; resisting needs a Willpower test vs the spirit's Social Defense 12. Resisting, or attacking spirits/undead, ends the spell and the spirit departs; this spell and Summon Fog Ghost cannot be cast for a full day. Only one active casting at a time (including Summon Fog Ghost); may share a matrix with Summon Fog Ghost. Success Levels: +2 rounds duration. Extra Threads: +1 bonus, +10 yards range.
+(2) The bonuses go to the TARGET character, not a separate entity: the text says "the target gains". The separate fog-ghost entity is the different spell Summon Fog Ghost (named in the text, not detailed here). No separate attacking spirit is described for Aspect.
+(3) Casual Murderer (Nethermancer 7th Circle): Threads 1; Weaving 11/16; TMD; Touch; Duration Rank+5 rounds; Effect line "+5 to Attack and Damage tests". The spirit "materializes over the target and merges with him"; the target "gains a +5 bonus to close combat Attack and Damage tests against opponents who are Blindsided, Knocked Down or Surprised". So it is on the target character, but is close combat only and conditional on those opponent states (the one-line Effect omits that; the body governs). Not attacking such a foe when able ends the spell; causing no damage or ending prematurely inflicts a Wound on the target and bars recasting for a day. One active casting at a time. Success Levels: +2 rounds. Extra Threads: +1 bonus.
+Ambiguity: the Fog Ghost body says "to Attack and Damage tests... and Physical Defense" without conditions; the Fog Ghost Physical Defense bonus is unconditional for the duration. Casual Murderer's summary line vs body differ in scope (see above). Whether the +3 Physical Defense also holds against spirits/undead is unstated. The app modeling these as folded effects on the target matches the book; conditions (Casual Murderer's opponent states, the compulsion, the end-and-lockout triggers) are not modeled by a flat bonus.
+
+Sources:
+- text-spell-players.txt:2674-2698 (Fog Ghost); text-RB-players-guide.txt:12100-12121 (p. 322-323)
+- text-spell-players.txt:3419-3442 (Casual Murderer); text-RB-players-guide.txt:12659-12679 (p. 336-337)
+- text-spell-table-all.txt:324, 414 (summary rows)
+
+### Q025 — Unarmed Combat: attack/damage flow, Defense, success levels, armor, weapons/shield, knacks, strain, Karma
+Keywords: unarmed combat, unarmed attack, unarmed damage, fists, punch, kick, bare hands, Strength step damage, no weapon, Physical Defense, extra success +2 damage, armor, Karma on damage, Body Blade, Claw Shape, Shield Bash, Hammer Punch, tail attack, grapple, attached weapon, gauntlet · Resolved: 2026-10-05 · Context: unarmed-combat
+
+(1) Unarmed Combat is a talent (Step Rank+DEX, Standard action, Strain 0, Skill Use Yes at Novice). Unless noted otherwise, the Damage test uses the Strength Step only: no base weapon step (no "fists" step; effectively +0). Contrast weapons, which add their Damage Step to Strength Step. Tail Attack (t'skrang) likewise: Damage test uses Strength Step.
+(2) The Attack test is vs the target's Physical Defense. No "no weapon in hand" condition is stated. Attached weapons (gauntlet, boot spike, tail weapon) are used with Unarmed Combat and still count as weapons. Unarmed attacks are one of two close-combat types (reach usually 2 yards).
+(3) Yes: the general Attack rule gives "+2 bonus damage for each extra success" on an Attack test vs Physical Defense (not specific to weapons; extra success = each 5 over the Difficulty Number). This is +2 Damage STEPS per extra success (a Step modifier applied before the dice are rolled), NOT +2 flat points added to the Damage result (revised 2026-10-05): the PG worked example takes Silar's crossbow from Step 10 to Step 14 with two extra successes, and the Success Levels example says "each extra success adds +2 Steps to her Damage test, for a total bonus of +4" (PG:931-936, p. 34). See also Q009. Armor-hardening effects (Hardened Armor, dragon Armored Scales) reduce this to +1 Step per extra success (GM:10161-10163, 17093-17096).
+(4) No unarmed-specific armor rule. The general rule applies: subtract Physical Armor from the Damage test result unless a spell/power says otherwise; Wound if single-attack damage >= Wound Threshold. Not covered: any special armored/unarmored treatment.
+(5) Weapon/shield in hand: no general prohibition stated. Only Hammer Punch (Companion-era knack, Rank 5, Strain 1, +2 Damage, two-handed) bars using off-hand/other limbs for attacks or a shield. Shield Bash is a separate talent (Rank+STR, Simple, Strain 1) used after a successful attack with Melee Weapons "or a similar talent or skill" for the Damage test; target makes Knockdown vs damage dealt; incompatible with Second Weapon. Not stated whether Unarmed Combat counts as "similar". Unarmed Damage-modifying options present: Body Blade knack (Companion; Unarmed Combat Rank 5; Rank+STR; Free; Strain 1; replaces unarmed damage step for one attack); Claw Shape talent (Step Rank+STR+3, Simple, Strain 0; used for Damage in unarmed combat; can be enhanced by Down Strike); Hammer Punch (+2); Crack the World (Focused Strike, +2 per success, vs Mystic Defense); spell Blazing Fists of Rage (+3 unarmed Damage; benefits Claw Shape/Swift Kick, not tail weapons); special maneuvers Aim to Injure, Armor Cutter, Exploit Armor Flaw, Grab and Strike, Eye Gouge, Mighty Throw; Phantom Strike (reach). Replacement effects: only one talent substituting Strength Step for Damage may be used.
+(6) Unarmed Combat talent Strain 0; no attack Strain. Talents may spend 1 Karma Point for a Karma Die on the talent test (the Attack test); that Karma does not carry to the Damage test. Karma on the Damage test needs an ability granting it: some Disciplines have Karma-for-damage lines (Cat's Grace: "any unarmed Damage test"; Earth Skin-era Warrior line: "any Damage test made in close combat"). Unarmed Combat's own entry has no Karma line. If used as a skill, no Karma. Ambiguity: whether Strength-only Damage test may take Karma without such a grant is not stated.
+
+Sources:
+- text-talents-players.txt:691-694; text-RB-players-guide.txt:6383-6390 (p. 177)
+- text-RB-players-guide.txt:14534-14538 (Tail Attack); 14727-14741, 14768-14786 (Close combat, grappling, p. 391-392); 15328-15333 (Attached Weapons)
+- text-RB-players-guide.txt:14199-14229 (success levels +2 damage, Damage test, armor; p. 378-379); 14262-14269; 922-936 (Success Levels rule + "+2 Steps" example, p. 34); text-RB-gamemasters-guide.txt:10161-10163, 17093-17096 (Hardened Armor / Armored Scales: +2 reduced to +1 per extra success)
+- text-RB-players-guide.txt:5945-5952 (Shield Bash, p. 166); 4656-4668 (Claw Shape); 4111-4144 (replacement effects, talents and Karma, p. 120-121); 3190-3192; 3906-3907
+- text-RB-companions-guide.txt:4244-4262 (Body Blade, Eye Gouge)
+- text-RB-deeper-secrets.txt:14119-14159 (Hammer Punch, Mighty Throw, Phantom Strike); 10782-10798 (Crack the World); 836-844 (Blazing Fists of Rage)
+
+Addendum (2026-10-05) — every discipline Circle "Karma:" grant on Damage tests (PG = text-RB-players-guide.txt; CG = text-RB-companions-guide.txt):
+- Archer C5: "Damage tests made with ranged weapons" (PG:3112)
+- Beastmaster C5: "any unarmed Damage test" (PG:3192)
+- Cavalryman C5: "any Damage tests made while mounted" (PG:3263); Cavalryman C11 (Warden): "Damage tests made by their mount" (CG:981)
+- Sky Raider C5: "Damage tests made with melee or throwing weapons at or above the character's one-handed Size limit" (PG:3628)
+- Swordmaster C5: "Damage tests made with a melee weapon" (PG:3699)
+- Warrior C5: "any Damage test made in close combat" (PG:3906)
+- Weaponsmith C5: "Damage tests he makes with a weapon he crafted" (PG:3973)
+- Thief C11 (Warden): "Damage tests made against targets suffering a penalty to their Physical Defense" (CG:1371)
+No others in PG/CG/Deeper Secrets/GM Guide. Karma on Damage is granted only by these discipline lines; the general Talents-and-Karma rule (PG:4128-4132) puts Karma on the talent's own test only.

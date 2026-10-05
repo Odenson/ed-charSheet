@@ -214,6 +214,30 @@ test('Chakka: Recovery Tests = 3 (table, no adept bonus)', () => {
   assert.equal(recoveryTests(17, [], lookup).value, 3);
 });
 
+test('T-003: an always-on RecoveryTests +1 (rating measure) adds a Recovery test', () => {
+  const fx = { type: 'characteristic-modifier', target: { domain: 'characteristic', name: 'RecoveryTests' }, operation: 'add', value: 1, measure: 'rating', condition: 'always', source: 'item', summary: '+1 Recovery test.' };
+  const r = recoveryTests(17, [fx], lookup);
+  assert.equal(r.base, 3);
+  assert.equal(r.value, 4);
+  // situational / GM-discretion ones do not auto-apply
+  assert.equal(recoveryTests(17, [{ ...fx, condition: 'situational' }], lookup).value, 3);
+});
+
+test('T-003: the Warrior Circle 7 RecoveryTests effect uses the rating measure the fold honours', () => {
+  const disciplines = JSON.parse(readFileSync(new URL('../rules/disciplines.json', import.meta.url))).disciplines;
+  const found = [];
+  const walk = (o) => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (o && typeof o === 'object') {
+      if (o.type === 'characteristic-modifier' && o.target?.name === 'RecoveryTests') found.push(o);
+      Object.values(o).forEach(walk);
+    }
+  };
+  walk(disciplines);
+  assert.ok(found.length >= 1, 'Warrior circle 7');
+  for (const e of found) assert.equal(e.measure ?? 'rating', 'rating', e.summary);
+});
+
 test('a non-adept (no Durability, no Circle) gets the raw table ratings', () => {
   const eff = adeptHealthEffects([]); // e.g. someone with no Disciplines
   assert.equal(eff.length, 0);
@@ -437,4 +461,54 @@ test('applyModifiers folds operations in order', () => {
   const r = applyModifiers(10, eff, () => true);
   assert.equal(r.value, 11);
   assert.equal(r.base, 10);
+});
+
+// --- attribute-modifier fold (T-002) ----------------------------------------
+import { foldAttribute } from './characteristics.js';
+
+const attrFx = (name, value, extra = {}) => ({
+  type: 'attribute-modifier',
+  target: { domain: 'attribute', name },
+  operation: 'add',
+  value,
+  measure: 'value',
+  source: 'thread',
+  ...extra,
+});
+
+test('foldAttribute: no effects → base value and its step', () => {
+  const r = foldAttribute('Strength', 16, []);
+  assert.equal(r.value, 16);
+  assert.equal(r.step, 7);
+  assert.deepEqual(r.modifiers, []);
+});
+
+test('foldAttribute: a value modifier changes the Value, and through it the Step', () => {
+  assert.equal(foldAttribute('Strength', 16, [attrFx('Strength', 2)]).value, 18);
+  const r = foldAttribute('Strength', 15, [attrFx('Strength', 3)]); // Step 6 at 15, 7 at 18
+  assert.equal(foldAttribute('Strength', 15, []).step, 6);
+  assert.equal(r.value, 18);
+  assert.equal(r.step, 7);
+  assert.equal(r.modifiers[0].measure, 'value');
+});
+
+test('foldAttribute: a step modifier adjusts the Step only (Perception −1 step)', () => {
+  const r = foldAttribute('Perception', 14, [attrFx('Perception', 1, { operation: 'subtract', measure: 'step' })]);
+  assert.equal(r.value, 14);
+  assert.equal(r.baseStep, 6);
+  assert.equal(r.step, 5);
+});
+
+test('foldAttribute: ignores other attributes, situational and gmDiscretion effects', () => {
+  const r = foldAttribute('Strength', 16, [
+    attrFx('Dexterity', 5),
+    attrFx('Strength', 5, { condition: 'situational' }),
+    attrFx('Strength', 5, { gmDiscretion: true }),
+  ]);
+  assert.equal(r.value, 16);
+  assert.equal(r.step, 7);
+});
+
+test('foldAttribute: the Step is floored at 0', () => {
+  assert.equal(foldAttribute('Charisma', 1, [attrFx('Charisma', 9, { operation: 'subtract', measure: 'step' })]).step, 0);
 });

@@ -39,6 +39,9 @@ export function logRowCells(entry) {
       // Bonus Dice (e.g. Night's Edge's D4) are their own group, absent on older entries.
       r.bonusResult?.total != null && Number.isFinite(Number(r.bonusResult.total)) ? `Bonus die +${r.bonusResult.total}` : '',
       ...(r.mods ?? []).map(modText),
+      // Effects that targeted this roll but could not be folded (unsupported
+      // measure/operation, unreadable dice) — said plainly rather than dropped.
+      ...(r.unapplied ?? []).map((u) => `⚠ Not applied: ${u.label} (${u.reason})`),
     ].filter(Boolean).join(' · '),
   };
 }

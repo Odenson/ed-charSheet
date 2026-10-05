@@ -303,6 +303,7 @@ export class EdApp extends LitElement {
           // Bonus Dice (taxonomy v6): a separate group; absent on rolls without one.
           ...(bonusResult ? { bonusResult: { dice: bonusResult.dice, total: bonusResult.total } } : {}),
           mods: this._roll.mods ?? [],
+          ...(this._roll.unapplied?.length ? { unapplied: this._roll.unapplied } : {}),
         },
         this._characterId,
       );
@@ -1516,7 +1517,7 @@ export class EdApp extends LitElement {
   // body). A recovery roll made while a step-boost is armed rolls at the bumped
   // step (Booster/Healing +8) — the dice and the log then show the boosted step.
   // The +N comes from the armed potion's catalog data, never a view literal.
-  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim, arms, bonusDice }) {
+  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim, arms, bonusDice, unapplied }) {
     let rollStep = step;
     const recBonus = armedRecoveryBonus(this._pendingUse);
     if (apply?.action === 'recovery-heal' && recBonus.stepBonus) rollStep += recBonus.stepBonus;
@@ -1547,6 +1548,9 @@ export class EdApp extends LitElement {
       karma: karmaCtx,
       // Bonus Dice group (taxonomy v6) — null for ordinary rolls.
       bonusDice: bonusDice?.length ? bonusDice : null,
+      // Effects that targeted this roll but could not be folded (engine `unapplied`):
+      // recorded on the log entry so a dropped bonus is visible, never silent.
+      unapplied: unapplied?.length ? unapplied : null,
       apply: apply ?? null,
       difficulty: difficulty ?? null,
       // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
