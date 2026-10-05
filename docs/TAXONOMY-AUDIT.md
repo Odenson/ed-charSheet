@@ -6,7 +6,7 @@ documented architecture. Same spirit as [RULEBOOK-AUDIT.md](RULEBOOK-AUDIT.md):
 record a discrepancy here *before* fixing it, and cite the finding id (`T-nnn`)
 in the fixing commit.
 
-> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
+> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 52 findings (T-052 added 2026-10-05), 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
 
 ## Scope & authority
 
@@ -53,7 +53,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 ## Result at a glance
 
-47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049), 6 narrowed (T-021, T-023, T-031, T-032, T-038, T-046), 43 not yet fixed including the 4 added by the re-validation (T-049 is among the 8 fixed). S1 fixed ×6 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
+47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 52 findings (T-052 added 2026-10-05), 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049), 6 narrowed (T-021, T-023, T-031, T-032, T-038, T-046), 43 not yet fixed including the 4 added by the re-validation (T-049 is among the 8 fixed). S1 fixed ×6 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
 
 ## Summary table
 
@@ -110,6 +110,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-049 | `foldPool` silently drops dice effects that are unparseable or use `subtract` | S2 | 3 | engine | fixed (uncommitted) |
 | T-050 | Spell dice readout filters on raw effect fields in `buildCastPlan` | S3 | 3 | engine | open |
 | T-051 | Bone Charm's Recovery effect disagrees with the rulebook; its Death/Unconsciousness −1 is unsupported | S2 | 3 | data | open (owner decision) |
+| T-052 | No effect type can grant a skill or talent as usable by default (Shadow Meld) | S3 | 3 (docs/log); remedy Tier 2 | taxonomy/data | open |
 
 ## Checklist A — Documented vocabulary ↔ data (data pass)
 
@@ -182,7 +183,7 @@ Other checks that passed, no finding:
 
 ## Findings
 
-Ordered by severity, then tier. Each finding's own `Status` line is current: T-001, T-002, T-003 and T-018 are `fixed` (commit shas in the summary table); the others are `open`. T-048 to T-051 were added in the 2026-10-04 re-validation (see *New findings*). Tier 1/2 remedies need owner sign-off.
+Ordered by severity, then tier. Each finding's own `Status` line is current: T-001, T-002, T-003 and T-018 are `fixed` (commit shas in the summary table); the others are `open`. T-048 to T-051 were added in the 2026-10-04 re-validation (see *New findings*); T-052 was added later (2026-10-05). Tier 1/2 remedies need owner sign-off.
 
 ### T-001 — Knack parent names ("Melee Weapons", "Missile Weapons", "Throwing Weapons") never match the character's talent names
 - Source pass id: T-D01
@@ -821,6 +822,14 @@ Appendices A to C and Checklists A to C describe the v4 vocabulary (14 types, 94
 - Impact: none computed today for the Recovery effect (dropped); the −1/−1 ratings do apply and may be wrong.
 - Proposed remedy: owner decides the representation. Likely a `test-modifier` on `Recovery`, `measure:"result"`, `add 1`, `condition:"always"` (the shape healing kits and potions use), and rule on the −1/−1 ratings. The Blood Magic Damage itself is a note.
 
+### T-052 — No effect type can grant a skill or talent as usable by default (Shadow Meld)
+- Severity: S3  Tier: 3 (docs/log); the remedy is Tier 2  Status: open
+- Area: taxonomy/data
+- Source: found while updating Shadow Meld (`plans/update-shadow-meld`); added 2026-10-05, after the 2026-10-04 re-validation.
+- Observed: Shadow Meld (Player's Guide p. 321) lets the target use Stealthy Stride as a default skill. No effect type or domain can grant a talent or skill as usable by default, so `rules/spells.json` models it as a display-only `note` effect ("May use Stealthy Stride as a default skill if not possessed.") plus the description text.
+- Impact: the grant is informational only; the sheet does not make the skill available or roll it by default.
+- Proposed remedy: either a new effect type or operation for default-skill grants (Tier 2: bump the taxonomy doc version, migrate `rules/*.json`, update schema and `effectTaxonomy` refs), or a documented `note` convention. Not done here.
+
 ## Accepted / deliberate deviations
 
 _None recorded. Owner to mark any finding `accepted` with a reason._
@@ -1147,3 +1156,4 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 | 2026-10-05 | `attack-modifier` vs `test-modifier` (uncommitted): option A adopted. Authoring rule written into EFFECT-TAXONOMY §2, §11 Q6 partly resolved, custom-item Type control gets a hint; the collapse onto `test-modifier` is recorded as an agreed follow-up under T-024. |
 | 2026-10-05 | T-006 fixed (uncommitted): per-target measure tables in the validator, shared by the builder; Measure dropdown restricted; `test-modifier` defaults to `step`. T-038 narrowed. |
 | 2026-10-05 | T-005 fixed (uncommitted): engine `rollTotal`; the modal sends `total`; Spells and the Roll Log use it. All six S1 findings are now fixed. |
+| 2026-10-05 | T-052 added (open): no effect type can grant a skill or talent as default; Shadow Meld models it as a display-only `note`. |

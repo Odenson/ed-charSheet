@@ -3,7 +3,7 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": []
+    "changes": ["Shadow Meld now matches the Player's Guide: it has a +2 minutes duration option on extra successes and extra threads, an Increase Effect thread that raises the Stealthy Stride bonus by 2, and a note that Stealthy Stride works as a default skill."]
   },
   "releases": [
     {

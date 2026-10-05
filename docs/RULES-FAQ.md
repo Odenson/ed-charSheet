@@ -726,3 +726,14 @@ Sources:
 - text-RB-companions-guide.txt:3580-3589 (Long Shot)
 
 Decision: 2026-10-05 — (a) Surprised: follow the book; encode -3 Physical and Mystic Defence, "no actions" stays a note (house rule). (b) Impaired Movement: a scoped per-roll toggle for movement-based tests; the Movement Rate reduction stays a display note (house rule). (c) Darkness/Range scoped penalties are offered as per-roll toggles on non-combat rolls; which tests are sight-based is left to the player per roll (house rule). (d) Multiple simultaneous situational Defence/test modifiers stack additively, no cap (house rule).
+
+### Q028 — Shadow Meld (Nethermancer Circle 1): full stat block, effects, Success Levels, Extra Threads, Extended Shadow Meld knack
+Keywords: Shadow Meld, Nethermancer, Stealthy Stride, +4 bonus, shadows, invisible, default skill, light, Extended Shadow Meld, until dawn, Increase Duration, Increase Effect · Resolved: 2026-10-05 · Context: update-shadow-meld
+
+Stat block (PG p. 321): Circle 1, Nethermancer; Threads 1; Weaving 5/10; Casting TMD; Range Touch; Duration Rank minutes; Effect "+ 4 to Stealthy Stride tests". Text: Spellcasting test vs the target's Mystic Defense; on success the target gains +4 to all Stealthy Stride tests "while near shadows" for the duration and may use Stealthy Stride as a default skill if lacking it. The target can still be seen normally in light, but light does not end the spell; stepping back into shadow makes the target near-invisible again. Success Levels: Increase Duration (+2 minutes). Extra Threads: Increase Duration (+2 minutes), Increase Effect (+2 bonus). The extracts give no penalty to observers' Perception/detection tests and no numeric light thresholds beyond "near shadows". The effect is a "bonus" (not explicitly "steps"; the spell table says "+ 4 to Stealthy Stride tests"). Per Q012/Q016, each extra success = +2 minutes; each extra thread = +2 minutes OR +2 to the bonus (options per thread, stackable). Deeper Secrets knack Extended Shadow Meld (Circle 1; requires Patterncraft rank 5, Shadow Meld; restricted to Nethermancer Circle 5; Strain 2; Blood Magic): duration is until dawn and can't be increased. Not in the Companion; no other Deeper Secrets spell entry. The spell table matches the PG.
+
+Sources:
+- text-RB-players-guide.txt:12036-12049 (p. 321); text-spell-players.txt:2580-2597; manual/text-player-guide-nethermancer-spells.txt:133
+- text-spell-table-all.txt:308
+- text-RB-deeper-secrets.txt:17418-17427 (p. 425, Extended Shadow Meld)
+- Searched with no Shadow Meld hits: text-RB-companions-guide.txt, text-spell-deeperSecrets.txt
