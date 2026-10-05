@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.29.0
 ---
 # Delivery Plan: Unarmed Combat (unarmed-combat)
 
