@@ -21,7 +21,7 @@
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css, nothing } from 'lit';
 import { weaponOccurrence } from '../engine/spells.js';
-import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
+import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, UNARMED_WEAPON, successDamageSteps, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
 import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
@@ -453,10 +453,11 @@ export class EdCombat extends LitElement {
   }
 
   _damageBonusBadge() {
-    const n = this._damageBonus();
-    if (!n) return '';
-    // Compact: just the +N; the hover explains it is the attack's success levels.
-    return html`<span class="dmgbonus" title="${n} success level${n > 1 ? 's' : ''} on the attack — +${n} to the Damage step">+${n}</span>`;
+    const steps = this._damageBonus();
+    if (!steps) return '';
+    const n = this._damageLevels();
+    // Compact: just the +steps; the hover explains the attack's success levels.
+    return html`<span class="dmgbonus" title="${n} success level${n > 1 ? 's' : ''} on the attack — +${steps} to the Damage step">+${steps}</span>`;
   }
   _pend() { return html`<span class="pend">—</span>`; }
   _rating(n) { return n == null ? this._pend() : html`${n}`; }
@@ -465,6 +466,8 @@ export class EdCombat extends LitElement {
   // "None" (category null) is the default: no weapon, so the attack picker lists
   // *every* rollable talent/skill (a free-action / non-attack roll like Avoid
   // Blow). Picking a real weapon filters the list to that weapon's category.
+  // Reserved keys: 'None' and 'Unarmed' (engine UNARMED_WEAPON, Damage Step 0).
+  // An equipped weapon with either name is keyed `equipped:<name>` to avoid a clash.
   _weapons() {
     const equipped = this.model?.combat?.equippedWeapons ?? [];
     // Each weapon carries its occurrence `index` among equipped same-name items
@@ -472,9 +475,11 @@ export class EdCombat extends LitElement {
     // `name#N` for later duplicates), so a spell's chosen {name, index} can match.
     return [
       { name: 'None', key: 'None', index: 0, category: null, damageStep: null, shortRange: null, longRange: null, image: null },
+      { ...UNARMED_WEAPON, key: 'Unarmed', index: 0 },
       ...equipped.map((w) => {
         const index = weaponOccurrence(equipped, w);
-        return { ...w, index, key: index > 0 ? `${w.name}#${index}` : w.name };
+        const base = index > 0 ? `${w.name}#${index}` : w.name;
+        return { ...w, index, key: w.name === 'None' || w.name === 'Unarmed' ? `equipped:${base}` : base };
       }),
     ];
   }
@@ -694,15 +699,18 @@ export class EdCombat extends LitElement {
         if (tl.name === name) return tl.resultMods ?? [];
     return [];
   }
-  // #7: extra attack success levels → +steps to damage. Only while the current
+  // #7: extra attack success levels → +2 Damage steps each (engine successDamageSteps). Only while the current
   // pick's attack is armed. With a target number in play the levels come from the
   // rolled total vs the target (engine clamps a miss to 0); with NO target the GM
   // adjudicates, so the player types the success count (`_manualSuccesses`).
-  _damageBonus() {
+  _damageLevels() {
     if (!this._attackArmed) return 0;
     if (this._targetNum() != null) return attackSuccessLevels(this._lastAttack?.total, this._lastAttack?.target);
     const n = Number(this._manualSuccesses);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }
+  _damageBonus() {
+    return successDamageSteps(this._damageLevels());
   }
   // The manual success input is offered after a no-target attack roll (GM
   // adjudicates the successes that buff the Damage step).
@@ -1456,7 +1464,7 @@ export class EdCombat extends LitElement {
                   <span class="v">${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}</span>
                   ${this._damageBonusBadge()}
                   ${this._showManualSuccesses()
-                    ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
+                    ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step (each adds +2 Damage steps)">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
                     : ''}
                   <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>⚄</button>
                   <span class="strain-k">Strain</span><span class="strain">${ap.strain}</span>

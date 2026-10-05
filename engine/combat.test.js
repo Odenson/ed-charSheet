@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from './combat.js';
+import { attackPool, damagePool, auditPool, resolveAttack, netDamage, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, successCount, tickArmedTalents, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor, UNARMED_WEAPON, successDamageSteps, EXTRA_SUCCESS_DAMAGE_STEPS } from './combat.js';
 
 const combat = JSON.parse(readFileSync(new URL('../rules/combat.json', import.meta.url)));
 const option = (name) => combat.options.find((o) => o.name === name);
@@ -481,18 +481,69 @@ test('auditPool: attack breakdown lists the base + step mods; step matches attac
   assert.ok(!a.parts.some((p) => /Defence|Strain/i.test(p.label)));
 });
 
-test('auditPool: damage breakdown carries both bases and the success-level bonus', () => {
+test('auditPool: damage breakdown carries both bases and the success-level bonus (+2 steps per level)', () => {
+  const bonusSteps = successDamageSteps(2); // two attack success levels = 4 steps
+  assert.equal(bonusSteps, 4);
   const a = auditPool(
     [{ label: 'Strength step', value: STR }, { label: 'Battle Axe Damage Step', value: WEAPON }],
     [],
     { testKind: 'damage' },
-    2, // two attack success levels
+    bonusSteps,
   );
-  assert.equal(a.step, STR + WEAPON + 2);
+  assert.equal(a.step, STR + WEAPON + 4);
   assert.deepEqual(a.parts.filter((p) => p.kind === 'base').map((p) => p.value), [STR, WEAPON]);
   const bonus = a.parts.find((p) => p.kind === 'step');
-  assert.equal(bonus.value, 2);
-  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [], bonusSteps: 2 }).step, a.step);
+  assert.equal(bonus.value, 4);
+  assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects: [], bonusSteps }).step, a.step);
+});
+
+test('unarmed: UNARMED_WEAPON has the promised shape and is frozen', () => {
+  assert.equal(UNARMED_WEAPON.name, 'Unarmed');
+  assert.equal(UNARMED_WEAPON.category, 'unarmed');
+  assert.equal(UNARMED_WEAPON.damageStep, 0);
+  assert.equal(UNARMED_WEAPON.shortRange, null);
+  assert.equal(UNARMED_WEAPON.longRange, null);
+  assert.equal(UNARMED_WEAPON.image, null);
+  assert.ok(!('effects' in UNARMED_WEAPON));
+  assert.ok(Object.isFrozen(UNARMED_WEAPON));
+});
+
+test('unarmed: Damage Step is Strength step + 0; null Strength gives null; bonusSteps add', () => {
+  const w = UNARMED_WEAPON.damageStep;
+  assert.equal(damagePool({ weaponDamageStep: w, strengthStep: 7, effects: [] }).step, 7);
+  assert.equal(damagePool({ weaponDamageStep: w, strengthStep: null, effects: [] }).step, null);
+  assert.equal(damagePool({ weaponDamageStep: w, strengthStep: null, effects: [], bonusSteps: 4 }).step, null);
+  assert.equal(damagePool({ weaponDamageStep: w, strengthStep: 7, effects: [], bonusSteps: 4 }).step, 11);
+});
+
+test('unarmed: attackTalentNamesFor(UNARMED_WEAPON.category) is Unarmed Combat only', () => {
+  assert.deepEqual(attackTalentNamesFor(UNARMED_WEAPON.category), ['Unarmed Combat']);
+});
+
+test('unarmed: audit sum equals the damage pool step', () => {
+  const bonusSteps = successDamageSteps(1);
+  const a = auditPool(
+    [{ label: 'Strength step', value: 7 }, { label: 'Unarmed Damage Step', value: UNARMED_WEAPON.damageStep }],
+    [], { testKind: 'damage' }, bonusSteps,
+  );
+  assert.equal(a.step, 7 + 0 + 2);
+  assert.equal(a.step, damagePool({ weaponDamageStep: UNARMED_WEAPON.damageStep, strengthStep: 7, effects: [], bonusSteps }).step);
+});
+
+test('successDamageSteps: +2 Damage steps per level; unusable input is 0', () => {
+  assert.equal(EXTRA_SUCCESS_DAMAGE_STEPS, 2);
+  assert.equal(successDamageSteps(0), 0);
+  assert.equal(successDamageSteps(1), 2);
+  assert.equal(successDamageSteps(2), 4);
+  assert.equal(successDamageSteps(3), 6);
+  for (const bad of [-1, null, undefined, NaN, Infinity]) assert.equal(successDamageSteps(bad), 0);
+});
+
+test('success levels to damage steps end to end (R3): 11 vs 5 is +2, 17 vs 5 is +4, a miss is 0', () => {
+  assert.equal(successDamageSteps(attackSuccessLevels(11, 5)), 2);
+  assert.equal(successDamageSteps(attackSuccessLevels(17, 5)), 4);
+  assert.equal(successDamageSteps(attackSuccessLevels(4, 5)), 0);
+  assert.equal(successDamageSteps(attackSuccessLevels(9, 5)), 0);
 });
 
 test('auditPool: result-measure mods are kind "result" (roll total, not the Step)', () => {

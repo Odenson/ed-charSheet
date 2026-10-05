@@ -45,7 +45,7 @@ import { parseDice } from './dice.js';
  * Which attack talents/skills can wield a weapon of a given category. Melee →
  * Melee Weapon; missile → Missile Weapon; throwing → Throwing Weapon (owner
  * decision: throwing-only, a thrown weapon is not also offered Melee Weapon);
- * the synthetic Unarmed weapon → Unarmed Combat. A null/unknown category (e.g.
+ * the synthetic `UNARMED_WEAPON` → Unarmed Combat. A null/unknown category (e.g.
  * the "None" picker entry) returns null — the caller shows the *whole* rollable
  * talent/skill list instead of a filtered one.
  * @param {string|null|undefined} category
@@ -57,6 +57,18 @@ const WEAPON_TALENTS = {
   throwing: ['Throwing Weapon'],
   unarmed: ['Unarmed Combat'],
 };
+export const UNARMED_WEAPON = Object.freeze({
+  name: 'Unarmed',
+  category: 'unarmed',
+  damageStep: 0,
+  shortRange: null,
+  longRange: null,
+  image: null,
+});
+
+/** Damage Steps added per extra attack success level (PG p.34, p.378). */
+export const EXTRA_SUCCESS_DAMAGE_STEPS = 2;
+
 export function attackTalentNamesFor(category) {
   if (category == null) return null;
   return WEAPON_TALENTS[category] ?? [];
@@ -65,8 +77,8 @@ export function attackTalentNamesFor(category) {
 /**
  * Extra attack success levels above the target number — every whole 5 the attack
  * result beats the target is one level (PG success-level rule, owner-confirmed).
- * Clamped at 0 so a miss never subtracts. Each level adds +1 to the Damage step
- * (threaded into `damagePool` as `bonusSteps`).
+ * Clamped at 0 so a miss never subtracts. Each level adds +2 Damage steps via
+ * `successDamageSteps` (threaded into `damagePool` as `bonusSteps`).
  * @param {number|null|undefined} result the attack roll's final total (post-mods)
  * @param {number|null|undefined} target the target number to beat
  * @returns {number} success levels ≥ 0 (0 when no usable numbers, or a miss)
@@ -74,6 +86,15 @@ export function attackTalentNamesFor(category) {
 export function attackSuccessLevels(result, target) {
   if (!isFiniteNum(result) || !isFiniteNum(target)) return 0;
   return Math.max(0, Math.floor((result - target) / 5));
+}
+
+/**
+ * Damage steps granted by N extra attack success levels (+2 each).
+ * @param {number|null|undefined} levels
+ * @returns {number} steps ≥ 0 (0 for unusable or non-positive input)
+ */
+export function successDamageSteps(levels) {
+  return isFiniteNum(levels) && levels > 0 ? levels * EXTRA_SUCCESS_DAMAGE_STEPS : 0;
 }
 
 /**
@@ -227,8 +248,8 @@ export function attackPool({ talentStep, effects, opts = {}, activeTalent }) {
  * step-measure damage modifiers (Aggressive Attack +3, Defensive Stance −3 via
  * its "except Knockdown" scope) and any flat result mods. No strain.
  * @param {object} args `{ weaponDamageStep, strengthStep, effects, bonusSteps?, activeTalent? }`
- *   `bonusSteps` (default 0) is the extra-success-level damage bonus from the
- *   attack roll (see `attackSuccessLevels`) — added on top of the folded step.
+ *   `bonusSteps` (default 0) is the extra-success damage bonus in STEPS (2 x
+ *   levels, see `successDamageSteps`) — added on top of the folded step.
  *   `activeTalent` is forwarded so an `Effect` test-modifier still knows which
  *   talent armed the spell (future-proof; Effect itself is talent-agnostic).
  * @returns {{step:number|null, resultMods:Array, bonusDice:Array<{label:string,value:string,dice:Array}>, unapplied:Array<{label:string, reason:string}>}}
@@ -251,7 +272,7 @@ export function damagePool({ weaponDamageStep, strengthStep, effects, bonusSteps
  * `baseParts` are the structural bases (attack: the talent step; damage: the
  * Strength step + weapon Damage Step) as `{ label, value }`; their sum is the
  * fold's base. `effects` is the same flat list the pools fold. `bonusSteps`
- * (damage only) adds the attack success-level bonus as its own part.
+ * (damage only, in steps: 2 x levels) adds the attack success-level bonus as its own part.
  *
  * @param {Array<{label:string, value:number|null}>} baseParts
  * @param {object[]} effects

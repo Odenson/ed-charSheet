@@ -657,3 +657,32 @@ Sources:
 - text-spell-players.txt:2674-2698 (Fog Ghost); text-RB-players-guide.txt:12100-12121 (p. 322-323)
 - text-spell-players.txt:3419-3442 (Casual Murderer); text-RB-players-guide.txt:12659-12679 (p. 336-337)
 - text-spell-table-all.txt:324, 414 (summary rows)
+
+### Q025 — Unarmed Combat: attack/damage flow, Defense, success levels, armor, weapons/shield, knacks, strain, Karma
+Keywords: unarmed combat, unarmed attack, unarmed damage, fists, punch, kick, bare hands, Strength step damage, no weapon, Physical Defense, extra success +2 damage, armor, Karma on damage, Body Blade, Claw Shape, Shield Bash, Hammer Punch, tail attack, grapple, attached weapon, gauntlet · Resolved: 2026-10-05 · Context: unarmed-combat
+
+(1) Unarmed Combat is a talent (Step Rank+DEX, Standard action, Strain 0, Skill Use Yes at Novice). Unless noted otherwise, the Damage test uses the Strength Step only: no base weapon step (no "fists" step; effectively +0). Contrast weapons, which add their Damage Step to Strength Step. Tail Attack (t'skrang) likewise: Damage test uses Strength Step.
+(2) The Attack test is vs the target's Physical Defense. No "no weapon in hand" condition is stated. Attached weapons (gauntlet, boot spike, tail weapon) are used with Unarmed Combat and still count as weapons. Unarmed attacks are one of two close-combat types (reach usually 2 yards).
+(3) Yes: the general Attack rule gives "+2 bonus damage for each extra success" on an Attack test vs Physical Defense (not specific to weapons; extra success = each 5 over the Difficulty Number). This is +2 Damage STEPS per extra success (a Step modifier applied before the dice are rolled), NOT +2 flat points added to the Damage result (revised 2026-10-05): the PG worked example takes Silar's crossbow from Step 10 to Step 14 with two extra successes, and the Success Levels example says "each extra success adds +2 Steps to her Damage test, for a total bonus of +4" (PG:931-936, p. 34). See also Q009. Armor-hardening effects (Hardened Armor, dragon Armored Scales) reduce this to +1 Step per extra success (GM:10161-10163, 17093-17096).
+(4) No unarmed-specific armor rule. The general rule applies: subtract Physical Armor from the Damage test result unless a spell/power says otherwise; Wound if single-attack damage >= Wound Threshold. Not covered: any special armored/unarmored treatment.
+(5) Weapon/shield in hand: no general prohibition stated. Only Hammer Punch (Companion-era knack, Rank 5, Strain 1, +2 Damage, two-handed) bars using off-hand/other limbs for attacks or a shield. Shield Bash is a separate talent (Rank+STR, Simple, Strain 1) used after a successful attack with Melee Weapons "or a similar talent or skill" for the Damage test; target makes Knockdown vs damage dealt; incompatible with Second Weapon. Not stated whether Unarmed Combat counts as "similar". Unarmed Damage-modifying options present: Body Blade knack (Companion; Unarmed Combat Rank 5; Rank+STR; Free; Strain 1; replaces unarmed damage step for one attack); Claw Shape talent (Step Rank+STR+3, Simple, Strain 0; used for Damage in unarmed combat; can be enhanced by Down Strike); Hammer Punch (+2); Crack the World (Focused Strike, +2 per success, vs Mystic Defense); spell Blazing Fists of Rage (+3 unarmed Damage; benefits Claw Shape/Swift Kick, not tail weapons); special maneuvers Aim to Injure, Armor Cutter, Exploit Armor Flaw, Grab and Strike, Eye Gouge, Mighty Throw; Phantom Strike (reach). Replacement effects: only one talent substituting Strength Step for Damage may be used.
+(6) Unarmed Combat talent Strain 0; no attack Strain. Talents may spend 1 Karma Point for a Karma Die on the talent test (the Attack test); that Karma does not carry to the Damage test. Karma on the Damage test needs an ability granting it: some Disciplines have Karma-for-damage lines (Cat's Grace: "any unarmed Damage test"; Earth Skin-era Warrior line: "any Damage test made in close combat"). Unarmed Combat's own entry has no Karma line. If used as a skill, no Karma. Ambiguity: whether Strength-only Damage test may take Karma without such a grant is not stated.
+
+Sources:
+- text-talents-players.txt:691-694; text-RB-players-guide.txt:6383-6390 (p. 177)
+- text-RB-players-guide.txt:14534-14538 (Tail Attack); 14727-14741, 14768-14786 (Close combat, grappling, p. 391-392); 15328-15333 (Attached Weapons)
+- text-RB-players-guide.txt:14199-14229 (success levels +2 damage, Damage test, armor; p. 378-379); 14262-14269; 922-936 (Success Levels rule + "+2 Steps" example, p. 34); text-RB-gamemasters-guide.txt:10161-10163, 17093-17096 (Hardened Armor / Armored Scales: +2 reduced to +1 per extra success)
+- text-RB-players-guide.txt:5945-5952 (Shield Bash, p. 166); 4656-4668 (Claw Shape); 4111-4144 (replacement effects, talents and Karma, p. 120-121); 3190-3192; 3906-3907
+- text-RB-companions-guide.txt:4244-4262 (Body Blade, Eye Gouge)
+- text-RB-deeper-secrets.txt:14119-14159 (Hammer Punch, Mighty Throw, Phantom Strike); 10782-10798 (Crack the World); 836-844 (Blazing Fists of Rage)
+
+Addendum (2026-10-05) — every discipline Circle "Karma:" grant on Damage tests (PG = text-RB-players-guide.txt; CG = text-RB-companions-guide.txt):
+- Archer C5: "Damage tests made with ranged weapons" (PG:3112)
+- Beastmaster C5: "any unarmed Damage test" (PG:3192)
+- Cavalryman C5: "any Damage tests made while mounted" (PG:3263); Cavalryman C11 (Warden): "Damage tests made by their mount" (CG:981)
+- Sky Raider C5: "Damage tests made with melee or throwing weapons at or above the character's one-handed Size limit" (PG:3628)
+- Swordmaster C5: "Damage tests made with a melee weapon" (PG:3699)
+- Warrior C5: "any Damage test made in close combat" (PG:3906)
+- Weaponsmith C5: "Damage tests he makes with a weapon he crafted" (PG:3973)
+- Thief C11 (Warden): "Damage tests made against targets suffering a penalty to their Physical Defense" (CG:1371)
+No others in PG/CG/Deeper Secrets/GM Guide. Karma on Damage is granted only by these discipline lines; the general Talents-and-Karma rule (PG:4128-4132) puts Karma on the talent's own test only.
