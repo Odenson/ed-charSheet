@@ -225,7 +225,7 @@ Four pure modules. Each is independently testable and lazy-loaded.
 The engine's modifier model is the taxonomy `effects` array (§4.2): it gathers
 active effects and folds them onto base values by `operation`/`measure`. Only
 **always-on, non-`gmDiscretion`** effects auto-apply; situational and triggered
-ones are surfaced for the player/GM, never silently baked into a static rating.
+ones are surfaced for the player/GM, never silently baked into a static rating. Exceptions are explicit player activations, never silent: an active global Situational chip (`session.situations`; plans/situational-chips-global) folds its `defense-modifier`s into derived Defence, and an activated blood charm (`session.activeCharms`) folds its situational test mods.
 Non-numeric effects resolve by their own rule rather than summing: `action-modifier`
 (taxonomy v5) `set`s a talent's or skill's action, fastest wins
 (`engine/ability-actions.js`); the effective `action` plus `actionBase` /
@@ -250,6 +250,14 @@ For a single character (a few dozen properties) the cascade is a pure
 simple, obviously correct, and instant. Change `Toughness.points` and the whole
 derived set (Death Rating, Wound Threshold, Recovery, Physical Defense, any
 dependent talent) is recomputed from inputs.
+
+Session-only live conditions are extra `deriveModel(character, rules, session)`
+inputs, never stored in the character: `session.knockedDown` (the Knocked Down
+condition) and `session.situations` (the active Situational chips from
+`rules/combat.json`, held by `ui/ed-app.js`). A chip's Defence mods fold into the
+derived Physical/Mystic Defence and list as Active Effects; its test mods ride
+roll time (`engine/roll-mods.js`: unscoped on every roll, scoped as per-roll
+toggles outside Combat pools).
 
 The `REF`-driven **dependency graph** in the original design is a performance
 optimization (recompute *only* affected downstream properties). It is **not**
@@ -493,7 +501,7 @@ and its runbook.
     ed-notes.js       # Notes tab (running character log)
     ed-settings.js    # settings modal
     ed-homebrew.js    # homebrew rules loader/manager
-    ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group)
+    ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
     ed-edit-meta.js   # meta edit modal
     ed-add-legend.js  # add Legend Points modal
@@ -520,6 +528,7 @@ and its runbook.
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
+    roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve
     health.js                # health ratings (Unconscious/Death/wound/recovery)
     encumbrance.js           # carry/lift capacity + encumbrance
     weight.js                # item-weight totals

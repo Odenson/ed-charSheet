@@ -157,7 +157,7 @@ function appliesToTest(e, ctx) {
       if (e.scope === 'sight' && ctx.sightBased === false) return false;
       return true;
     }
-    if (kind === 'damage') return e.scope === 'except-knockdown';
+    if (kind === 'damage') return e.scope === 'except-knockdown' || e.scope === 'ranged';
   }
   // Named ability (e.g. "Spellcasting") — the engine already records an
   // effect as an effect regardless of tab; the charm's Spellcasting +6 applies
@@ -503,8 +503,11 @@ export function activeItemBundlesFor(activeEffects, weaponCategory, itemNames = 
  *   (Mystic Aim hit); a `perSuccess` on-success effect scales by the count. A
  *   plain name array is accepted and treated as count 1.
  * @param {{options:object[], situations:object[]}} args.rules  rules/combat.json
- * @param {{knockedDown?:boolean, harried?:boolean}} args.conditions
- *   model.combat.conditions
+ * @param {{knockedDown?:boolean, harried?:boolean, situations?:string[]}} args.conditions
+ *   model.combat.conditions — `situations` are the global live Situational chips:
+ *   defence mods and unscoped test mods are stripped (derived Defence / roll-time
+ *   already carry them), scoped test mods are kept in the pools; `harried` and
+ *   `knockedDown` are stripped entirely (roll-time)
  * @returns {{attackEffects:object[], damageEffects:object[], defenseMods:Array<{source:string, name:string, value:number}>, armorMods:Array<{source:string, name:string, value:number}>}}
  *   `attackEffects`/`damageEffects` feed `attackPool`/`damagePool` (a single
  *   effect list is fine for both — each pool's `appliesToTest` picks its own
@@ -582,21 +585,60 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   for (const bundle of activeSpellBundles ?? []) addBundle(bundle, bundle?.name ?? 'Active spell');
   for (const bundle of activeItemBundles ?? []) addBundle(bundle, bundle?.name ?? 'Item');
 
-  if (conditions.harried) {
-    const harriedBundle = sitList.find((o) => o.name === 'Harried');
-    if (harriedBundle) {
-      for (const e of harriedBundle.effects ?? []) {
-        if (e?.type === 'defense-modifier') continue; // already folded into derived defence
-        const labelled = { ...e, label: 'Harried' }; // source name, not the summary
-        attackEffects.push(labelled);
-        damageEffects.push(labelled);
-      }
+  // Global live situations (session `situations`, plus the locked encumbrance
+  // Harried which is already folded into derived Defence and rides roll-time):
+  // their Defence mods are already in derived Defence and their UNSCOPED test mods
+  // ride the roll-time path on every roll, so both are stripped here. SCOPED test
+  // mods stay (attack pools take every scope, damage pools take `ranged` only —
+  // `appliesToTest` decides). "Knocked Down" is never fed here (session.knockedDown
+  // is its sole source and it rides roll-time).
+  for (const name of conditions.situations ?? []) {
+    if (name === 'Knocked Down') continue;
+    const bundle = sitList.find((o) => o.name === name);
+    for (const e of bundle?.effects ?? []) {
+      if (e?.type !== 'test-modifier' || !e.scope) continue;
+      const labelled = { ...e, label: name };
+      attackEffects.push(labelled);
+      damageEffects.push(labelled);
     }
   }
+
   // Knocked Down is deliberately absent: its −3 result-mod rides `_rollTimeMods`
   // and its defence mod is already folded — never fed here.
 
   return { attackEffects, damageEffects, defenseMods, armorMods };
+}
+
+/** Roll kinds exempt from unscoped situational penalties (the Karma die). One
+ *  point of change if this is ever narrowed or widened. */
+export const UNSCOPED_EXEMPT_KINDS = Object.freeze(['karma']);
+
+/**
+ * Classify the active global Situational chips' test mods for the roll-time path.
+ * Unscoped mods (no `scope`: Harried) apply to every roll; scoped mods (sight,
+ * ranged, movement) are auto-applied in Combat pools and offered as per-roll
+ * toggles elsewhere. "Knocked Down" (sole source session.knockedDown) and unknown
+ * names are skipped. Pure; never mutates its inputs.
+ * @param {string[]} activeNames active situation names
+ * @param {{combat:{situations:object[]}}} rules
+ * @returns {{unscoped:Array<{label:string,value:number,measure:string}>,
+ *   scoped:Array<{label:string,value:number,measure:string,scope:string}>}}
+ */
+export function situationRollMods(activeNames, rules) {
+  const sitList = rules?.combat?.situations ?? [];
+  const unscoped = [];
+  const scoped = [];
+  for (const name of activeNames ?? []) {
+    if (name === 'Knocked Down') continue;
+    const bundle = sitList.find((s) => s.name === name);
+    for (const e of bundle?.effects ?? []) {
+      if (e?.type !== 'test-modifier' || e.target?.domain !== 'test' || e.target?.name !== 'Action') continue;
+      const mod = { label: name, value: opValue(e), measure: e.measure === 'result' ? 'result' : 'step' };
+      if (e.scope) scoped.push({ ...mod, scope: e.scope });
+      else unscoped.push(mod);
+    }
+  }
+  return { unscoped, scoped };
 }
 
 /**

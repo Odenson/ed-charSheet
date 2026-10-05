@@ -1061,7 +1061,38 @@ export function deriveModel(character, rules, session = {}) {
     ...e,
     origin: { kind: 'condition', name: weightStanding.label },
   }));
-  const foldedEffects = [...activeEffects, ...conditionDefenseEffects, ...encumbranceConditionEffects];
+  // Global Situational chips (session-only `session.situations`, plans/situational-
+  // chips-global): the effective set is the chip names deduped, with "Knocked Down"
+  // ignored (session.knockedDown is its sole source) and the Harried chip ignored
+  // while Burdened (encumbrance already supplies Harried — no double count). Each
+  // active situation's Defence mods fold into the derived Defence below; its other
+  // effects list as condition Active Effects (test mods ride roll-time).
+  const burdened = weightStanding.stage === ENCUMBRANCE.BURDENED;
+  const activeSituations = [...new Set(Array.isArray(session?.situations) ? session.situations : [])].filter(
+    (n) => n !== 'Knocked Down' && !(n === 'Harried' && burdened) && (combatFile?.situations ?? []).some((s) => s.name === n),
+  );
+  const situationEffects = activeSituations.flatMap((n) =>
+    ((combatFile?.situations ?? []).find((s) => s.name === n)?.effects ?? [])
+      .filter((e) => e?.type !== 'note')
+      // A live chip's Defence mod folds unconditionally (like Knocked Down's):
+      // the player toggling it IS the condition being met.
+      .map((e) => ({ ...e, ...(e.type === 'defense-modifier' ? { condition: 'always' } : {}), origin: { kind: 'condition', name: n } })),
+  );
+  // A chip with no machine effect (Full Cover) still lists as a row.
+  const situationRows = activeSituations
+    .filter((n) => !situationEffects.some((e) => e.origin.name === n))
+    .map((n) => ({
+      type: 'note',
+      source: 'condition',
+      summary: (combatFile.situations.find((s) => s.name === n).summary ?? n),
+      origin: { kind: 'condition', name: n },
+    }));
+  const foldedEffects = [
+    ...activeEffects,
+    ...conditionDefenseEffects,
+    ...situationEffects.filter((e) => e.type === 'defense-modifier'),
+    ...encumbranceConditionEffects,
+  ];
 
   // Karma ledger (plans/PLAN-LEGEND-KARMA-RITUAL-LOG.md): `available` is DERIVED from the
   // stored inputs `resources.karma.converted` (lifetime gained) minus `spent` (lifetime
@@ -1556,6 +1587,8 @@ export function deriveModel(character, rules, session = {}) {
       // stored health inputs, which must not carry the fact.
       knockedDown: session?.knockedDown === true,
       harried: weightStanding.stage === ENCUMBRANCE.BURDENED,
+      // Active global Situational chip names (session-only, never stored).
+      situations: activeSituations,
     },
     damageKarma: karmaUse('Damage', activeEffects),
   };
@@ -1737,7 +1770,7 @@ export function deriveModel(character, rules, session = {}) {
     // derived, never stored. Activated blood-charms' situational effects are
     // already folded into `activeEffects` above when session.activeCharms is set,
     // so the panel also surfaces a one-shot charm while armed.
-    activeEffects: [...activeEffects, ...conditionEffects, ...encumbranceConditionEffects],
+    activeEffects: [...activeEffects, ...conditionEffects, ...situationEffects.filter((e) => e.type !== 'defense-modifier'), ...situationEffects.filter((e) => e.type === 'defense-modifier'), ...situationRows, ...encumbranceConditionEffects],
     // Session-only activated blood-charms (names). The view renders chips from
     // this (not local SCRATCH) so an activation is an engine-level fact, not a
     // per-tab toggle — a Spellcasting/Effect bonus armed in Combat also reaches a

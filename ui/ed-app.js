@@ -1,7 +1,8 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
 import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
-import { applyHealth, endOfDayResetPlan, knockdownOutcome, KNOCKED_DOWN_EFFECT, recoveriesRemaining } from '../engine/health.js';
+import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
+import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
 import { successCount, tickArmedTalents } from '../engine/combat.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
@@ -79,6 +80,11 @@ export class EdApp extends LitElement {
     // conditions while set, but the fact is never persisted to the character.
     // Cleared on character switch, like the armed potion.
     _knockedDown: { state: true },
+    // Session-only active Situational chips (plans/situational-chips-global): names
+    // from rules/combat.json `situations`. Same contract as `_knockedDown` — fold
+    // into derived Defence / Active Effects / roll-time mods, never persisted,
+    // cleared on character switch and the new-day reset.
+    _situations: { state: true },
     // Session-only new-day reset (PLAN-END-OF-DAY-RESET): { source } while a day
     // reset is pending; the ed-day-reset modal renders from it. Cleared on
     // finalize, cancel, or a character switch. MUST be reactive state — setting
@@ -300,7 +306,7 @@ export class EdApp extends LitElement {
           karma: karmaResult ? { step: karmaResult.step, dice: karmaResult.dice, total: karmaResult.total } : null,
           // Bonus Dice (taxonomy v6): a separate group; absent on rolls without one.
           ...(bonusResult ? { bonusResult: { dice: bonusResult.dice, total: bonusResult.total } } : {}),
-          mods: this._roll.mods ?? [],
+          mods: e.detail.mods ?? this._roll.mods ?? [],
           ...(this._roll.unapplied?.length ? { unapplied: this._roll.unapplied } : {}),
         },
         this._characterId,
@@ -406,6 +412,9 @@ export class EdApp extends LitElement {
     // the Overview active-effects row and the Combat tab. Session-only state,
     // never persisted (decision I); the engine re-derives the fold.
     this.addEventListener('ed-edit-knockdown', (e) => this._setKnockedDown(!!e.detail?.knockedDown));
+    // A Situational chip was clicked (Combat tab) or cleared (Overview x). Free
+    // toggle, session-only (plans/situational-chips-global).
+    this.addEventListener('ed-toggle-situation', (e) => this._toggleSituation(e.detail?.name));
     // A trade (plans/PLAN-TRADE-ITEMS.md): one dispatch carrying BOTH the next
     // item list and the resulting purse, persisted atomically + one re-derive.
     this.addEventListener('ed-trade', (e) => this._editTrade(e.detail));
@@ -513,6 +522,7 @@ export class EdApp extends LitElement {
       // condition, and no pending day reset (all session state, never persisted).
       this._pendingUse = null;
       this._knockedDown = false;
+      this._situations = [];
       this._activeSpells = []; // active self-cast spells (session-only, 6b)
       this._activeCharms = []; // activated blood-charms (session-only, not persisted — equipped gives always implant, activation gives situational test mods globally)
       this._armedTalents = []; // armed `arms` talents (Mystic Aim): session-only, counted down each Initiative
@@ -833,6 +843,7 @@ export class EdApp extends LitElement {
   _derive() {
     return deriveModel(this._character, this._rules, {
       knockedDown: this._knockedDown,
+      situations: this._situations ?? [],
       activeSpells: this._activeSpells ?? [],
       activeCharms: this._activeCharms ?? [],
       armedTalents: this._armedTalents ?? [],
@@ -847,6 +858,22 @@ export class EdApp extends LitElement {
     if (!this._character) return;
     this._knockedDown = !!down;
     this._model = this._derive();
+  }
+
+  // Toggle a Situational chip on/off app-wide (session-only). Knocked Down has its
+  // own flow (fall/stand up) and a Harried that encumbrance already imposes is
+  // locked, so both are ignored here; unknown names never enter the set. A
+  // roll-log action entry records the change, like Knocked Down.
+  _toggleSituation(name) {
+    if (!this._character || !name || name === 'Knocked Down') return;
+    if (name === 'Harried' && this._model?.combat?.conditions?.harried && !(this._situations ?? []).includes('Harried')) return;
+    if (!(this._rules?.combatFile?.situations ?? []).some((s) => s.name === name)) return;
+    const on = (this._situations ?? []).includes(name);
+    this._situations = on ? this._situations.filter((n) => n !== name) : [...(this._situations ?? []), name];
+    this._model = this._derive();
+    if (this._characterId) {
+      saveRollLog({ rollId: uid(), at: new Date().toISOString(), kind: 'action', label: `${name} ${on ? 'cleared' : 'set'}` }, this._characterId);
+    }
   }
 
   // New-day reset (PLAN-END-OF-DAY-RESET.md) — the SINGLE flow for both hitpoints.
@@ -930,6 +957,7 @@ export class EdApp extends LitElement {
     const hadKnockdown = !!this._knockedDown;
     this._pendingUse = null;
     this._knockedDown = false;
+    this._situations = [];
     this._activeCharms = [];
     this._armedTalents = [];
     const combatEl = this.renderRoot?.querySelector('ed-combat');
@@ -1485,18 +1513,24 @@ export class EdApp extends LitElement {
     return raw ? new URL(raw, location.href).href : fallback;
   }
 
-  // Roll-time modifiers from live conditions. While Knocked Down every test
-  // takes the condition's −3 (PG p.389: "suffers a –3 penalty to his tests" —
-  // the worked example includes the next Initiative test, so there are no
-  // Action-only or Initiative/Knockdown/Recovery exemptions). The only roll
-  // that never takes it is the Karma die, which is a die roll, not a test. The
-  // value comes from the engine's synthesized condition effect
-  // (KNOCKED_DOWN_EFFECT) — a static number is never typed here, and the
-  // penalty is applied at roll time, never folded into a stored/derived stat.
-  _rollTimeMods({ kind } = {}) {
-    if (!this._knockedDown) return [];
-    if (kind === 'karma') return [];
-    return [{ label: 'Knocked Down', value: KNOCKED_DOWN_EFFECT.value }];
+  // Roll-time modifiers from live conditions (engine/roll-mods.js decides; this
+  // only feeds the live inputs in). While Knocked Down every test takes the
+  // condition's result -3 (PG p.389); Harried (chip or encumbrance) is a -2 Step
+  // mod on every roll; scoped Situational penalties (Darkness, Range Long,
+  // Impaired Movement) are offered as pre-ticked per-roll toggles. The Karma die
+  // never takes any of them. Applied at roll time, never folded into a stored or
+  // derived stat. `pool` marks a Combat attack/damage pool roll, which already
+  // applies the scoped penalties, so no toggle is offered there.
+  _rollTimeMods({ kind, pool } = {}) {
+    const cond = this._model?.combat?.conditions ?? {};
+    return rollTimeMods({
+      kind,
+      pool: !!pool,
+      knockedDown: !!this._knockedDown,
+      harried: !!cond.harried,
+      situations: this._situations ?? [],
+      rules: { combat: this._rules?.combatFile },
+    });
   }
 
   // Close the roll modal and return focus to the button that opened it, ring
@@ -1515,11 +1549,18 @@ export class EdApp extends LitElement {
   // body). A recovery roll made while a step-boost is armed rolls at the bumped
   // step (Booster/Healing +8) — the dice and the log then show the boosted step.
   // The +N comes from the armed potion's catalog data, never a view literal.
-  _rollConfig({ label, karma, apply, kind, difficulty, step, mods, strain, aim, arms, bonusDice, unapplied }) {
+  _rollConfig({ label, karma, apply, kind, pool, difficulty, step, mods, strain, aim, arms, bonusDice, unapplied }) {
     let rollStep = step;
     const recBonus = armedRecoveryBonus(this._pendingUse);
     if (apply?.action === 'recovery-heal' && recBonus.stepBonus) rollStep += recBonus.stepBonus;
-    const stepRow = this._model?.stepByNumber?.[rollStep];
+    // Live-condition mods: Step mods fold into the Step (min Step 1) before the
+    // dice lookup, result mods ride the total, scoped ones are optional toggles
+    // the modal re-resolves (engine/roll-mods.js).
+    const timeMods = this._rollTimeMods({ kind, pool });
+    const stepByNumber = this._model?.stepByNumber ?? {};
+    const fixed = resolveOptionalMods({ baseStep: rollStep, mods: timeMods.applied, stepByNumber });
+    const baseStep = fixed.step;
+    const stepRow = resolveOptionalMods({ baseStep, mods: timeMods.optional, stepByNumber }).stepRow;
     if (!stepRow) return null;
     // Resolve the Karma die's step row (D6) so the modal can offer +D6. A
     // set-dice roll (True Shot) carries `maxDice`/`rank` for the extra-Karma
@@ -1554,7 +1595,13 @@ export class EdApp extends LitElement {
       // The view's pool result-mods (e.g. Desperate Blow's +6) ride first;
       // the universal Knocked Down −3 (every test, Karma die only excluded)
       // is added after — it applies to every roll, combat or not.
-      mods: [...(mods ?? []), ...this._rollTimeMods({ kind, apply })],
+      mods: [...(mods ?? []), ...fixed.resultMods],
+      // Applied Step mods (display only: already in the Step) and the optional
+      // per-roll toggles, with the base Step + step map the modal re-resolves from.
+      stepMods: fixed.stepMods,
+      optionalMods: timeMods.optional,
+      baseStep,
+      stepByNumber: timeMods.optional.length ? stepByNumber : null,
       // Deferred Strain for a set-dice roll — charged at the modal's commit
       // (see the `ed-strain` handler), 0 for ordinary rolls (already paid).
       strain: strain ?? 0,
@@ -1923,6 +1970,10 @@ export class EdApp extends LitElement {
             .apply=${this._roll.apply}
             .difficulty=${this._roll.difficulty}
             .mods=${this._roll.mods}
+            .stepMods=${this._roll.stepMods}
+            .optionalMods=${this._roll.optionalMods}
+            .baseStep=${this._roll.baseStep}
+            .stepByNumber=${this._roll.stepByNumber}
             .strain=${this._roll.strain}
             .aim=${this._roll.aim}
             @close=${() => this._closeRoll()}

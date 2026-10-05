@@ -20,3 +20,12 @@ export function modTabCounts({ options, armedNames, toggledOpts, sits, toggledSi
 export function normalizeModTab(v) {
   return MOD_TABS.some(t => t.id === v) ? v : 'opts';
 }
+
+// Situational (rules/combat.json) chips are global live conditions held by ed-app
+// (session.situations), so the Combat tab's local/remembered `_sits` keeps only
+// the OTHER Situational-segment chips (spell-driven ones). Strips any rule
+// situation name — e.g. one stored by an older session — harmlessly.
+export function localSituationNames(names, situationRules) {
+  const rules = new Set((situationRules || []).map(s => s.name));
+  return (names || []).filter(n => !rules.has(n));
+}

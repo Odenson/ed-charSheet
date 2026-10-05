@@ -123,7 +123,9 @@ test('equipped weapons: only the equipped weapon kind, with category/damage/rang
 test('strength step, live conditions and the Damage-test karma grant are exposed', () => {
   assert.equal(modelA.combat.strengthStep, 3); // STR 4 → step 3
 
-  assert.deepEqual(modelA.combat.conditions, { knockedDown: true, harried: true });
+  assert.equal(modelA.combat.conditions.knockedDown, true);
+  assert.equal(modelA.combat.conditions.harried, true);
+  assert.ok(Array.isArray(modelA.combat.conditions.situations));
 
   const dmg = modelA.combat.damageKarma;
   assert.ok(dmg, 'Archer circle 5 grants Damage-test karma');
@@ -147,13 +149,13 @@ test('clear load: conditions both false, only light weapons equipped', () => {
     resources: { health: { damage: 0, wounds: 0 }, karma: { available: 3 } },
   };
   const modelB = deriveModel(charB, rules);
-  assert.deepEqual(modelB.combat.conditions, { knockedDown: false, harried: false });
+  assert.deepEqual(modelB.combat.conditions, { knockedDown: false, harried: false, situations: [] });
   assert.deepEqual(modelB.combat.equippedWeapons.map((w) => w.name), ['Ork Dagger']);
 });
 
 test('combatRules exposes the rule bundles the chips render from (ed-combat/1)', () => {
   assert.equal(modelA.combatRules.options.length, 10);
-  assert.equal(modelA.combatRules.situations.length, 12);
+  assert.equal(modelA.combatRules.situations.length, 11);
   assert.equal(modelA.combatRules.options[0].name, 'Aggressive Attack');
   const harried = modelA.combatRules.situations.find((s) => s.name === 'Harried');
   assert.equal(harried.mapsToCondition, 'harried');

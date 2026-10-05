@@ -27,7 +27,7 @@ import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { itemImageUrl } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
-import { MOD_TABS, modTabCounts, normalizeModTab } from './combat-mods-state.js';
+import { MOD_TABS, modTabCounts, normalizeModTab, localSituationNames } from './combat-mods-state.js';
 import { logRowCells } from './combat-log-rows.js';
 import './ed-confirm.js';
 
@@ -404,7 +404,7 @@ export class EdCombat extends LitElement {
       weapon: this._weapon,
       talent: this._talent,
       opts: [...(this._opts ?? [])],
-      sits: [...(this._sits ?? [])],
+      sits: localSituationNames(this._sits, this.model?.combatRules?.situations),
       charmsOn: [...(this._charmsOn ?? [])],
       target: this._target,
       modTab: this._modTab,
@@ -416,7 +416,8 @@ export class EdCombat extends LitElement {
     this._weapon = s.weapon;
     this._talent = s.talent;
     this._opts = [...s.opts];
-    this._sits = s.sits.filter((n) => n !== 'Knocked Down'); // now a live condition, never a toggle
+    // Situational chips are global live conditions (ed-app); only spell chips are remembered here.
+    this._sits = localSituationNames(s.sits, this.model?.combatRules?.situations);
     this._charmsOn = [...s.charmsOn];
     this._target = s.target;
     this._modTab = normalizeModTab(s.modTab);
@@ -620,7 +621,8 @@ export class EdCombat extends LitElement {
     const charmNames = this._activeCharmNames();
     return collectCombatEffects({
       selectedOptions: this._opts ?? [],
-      selectedSituations: this._sits ?? [],
+      // Situational chips are global (conditions.situations below), never local.
+      selectedSituations: [],
       selectedCharms: this._charmItems().filter((c) => charmNames.includes(c.name)),
       selectedWeaponEffects: this._selWeapon()?.effects ?? [],
       selectedWeaponName: this._selWeapon()?.name ?? 'Weapon',
@@ -800,7 +802,7 @@ export class EdCombat extends LitElement {
     this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step, karma, kind, ...extra }, bubbles: true, composed: true }));
   }
   _activeNames() {
-    const names = [...(this._opts ?? []), ...(this._sits ?? []), ...(this._charmsOn ?? [])];
+    const names = [...(this._opts ?? []), ...this._activeSits(), ...(this._charmsOn ?? [])];
     return names.length ? names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '') : '';
   }
   _rollLabel(base, weapon) {
@@ -843,6 +845,7 @@ export class EdCombat extends LitElement {
       karma,
       undefined,
       {
+        pool: true, // Combat pool roll: the pool already applies scoped situational penalties
         difficulty: target != null ? { value: target, win: 'Hit', lose: 'Miss' } : null,
         mods: ap.resultMods,
         unapplied: ap.unapplied,
@@ -862,7 +865,7 @@ export class EdCombat extends LitElement {
       this._karmaCtx(this.model?.combat?.damageKarma),
       undefined,
       // Bonus Dice (Night's Edge's D4): their own exploding group, not part of the step.
-      { mods: dp.resultMods, bonusDice: dp.bonusDice, unapplied: dp.unapplied },
+      { pool: true, mods: dp.resultMods, bonusDice: dp.bonusDice, unapplied: dp.unapplied },
     );
   }
   // The most recent Initiative roll's total from the device-local Log (newest
@@ -957,6 +960,14 @@ export class EdCombat extends LitElement {
       this._charmsOn = cur;
       return;
     }
+    // A Situational chip from rules/combat.json is a global live condition: dispatch
+    // up (ed-app owns the session set, folds Defence / roll mods, logs the action)
+    // instead of keeping a Combat-local toggle. Spell-driven chips stay local.
+    if (section === 'sits' && (this.model?.combatRules?.situations ?? []).some((s) => s.name === name)) {
+      this.dispatchEvent(new CustomEvent('ed-toggle-situation', { detail: { name }, bubbles: true, composed: true }));
+      if (this.characterId) this._loadRolls();
+      return;
+    }
     const key = section === 'opts' ? '_opts' : '_sits';
     const list = [...(this[key] ?? [])];
     const i = list.indexOf(name);
@@ -1029,6 +1040,11 @@ export class EdCombat extends LitElement {
         >${o.name}${badges.map((b) => html`<span class="badge ${b.cls}" title=${b.title}>${b.text}</span>`)}${armBadges}</button>`;
       })}
     </div>`;
+  }
+  // Active Situational-segment chips: the global live set (model) plus the local
+  // spell-driven toggles.
+  _activeSits() {
+    return [...(this.model?.combat?.conditions?.situations ?? []), ...(this._sits ?? [])];
   }
   _situations() {
     const cond = this.model?.combat?.conditions ?? {};
@@ -1263,11 +1279,11 @@ export class EdCombat extends LitElement {
     const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
     // A toggled spell chip whose spell has since ended is no longer in `sits`; don't count it.
     const knownSits = new Set(sits.map((s) => s.name));
-    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: (this._sits ?? []).filter((n) => knownSits.has(n)), charmNames });
+    const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: this._activeSits().filter((n) => knownSits.has(n)), charmNames });
     const tab = normalizeModTab(this._modTab);
     let panel;
     if (tab === 'sits') {
-      panel = sits.length ? this._chips(sits, this._sits, 'sits', 'sit') : html`<div class="empty">No situations apply right now.</div>`;
+      panel = sits.length ? this._chips(sits, this._activeSits(), 'sits', 'sit') : html`<div class="empty">No situations apply right now.</div>`;
     } else if (tab === 'charms') {
       panel = charms.length
         ? this._chips(charms, charmNames, 'charms', 'charm')

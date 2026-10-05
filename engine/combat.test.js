@@ -18,9 +18,9 @@ const TALENT = 10; // the character's attack talent step
 const WEAPON = 5; // weapon Damage Step
 const STR = 8; // Strength step
 
-test('rules/combat.json carries 10 options and 12 situations', () => {
+test('rules/combat.json carries 10 options and 11 situations', () => {
   assert.equal(combat.options.length, 10);
-  assert.equal(combat.situations.length, 12);
+  assert.equal(combat.situations.length, 11);
   assert.equal(combat.schema, 'ed-combat/1');
 });
 
@@ -88,9 +88,10 @@ test('Defensive Stance: −3 attack AND damage (except-knockdown scope), defense
   });
 });
 
-test('Action-test mods hit the attack pool but not the damage (Effect) pool', () => {
-  const effects = situation('Range — Long').effects; // −2 to Action tests
-  assert.equal(attackPool({ talentStep: TALENT, effects }).step, TALENT - 2);
+test('Non-ranged Action-test mods hit the attack pool but not the damage (Effect) pool', () => {
+  const effects = situation('Impaired Movement — Light').effects; // Action mod, scope movement
+  const delta = attackPool({ talentStep: TALENT, effects }).step - TALENT;
+  assert.ok(delta < 0);
   assert.equal(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }).step, STR + WEAPON);
 });
 
@@ -121,7 +122,7 @@ test('Knocked Down is a flat RESULT mod (B10): step unchanged, mods carry the �
 });
 
 test('note-only riders fold nothing: Full Cover, Surprised, Stun, Knockdown, Jump Up, Set Charge', () => {
-  for (const name of ['Full Cover', 'Surprised', 'Attacking to Stun', 'Attacking to Knockdown', 'Jump Up', 'Setting Against a Charge', 'Range — Short']) {
+  for (const name of ['Full Cover', 'Surprised', 'Attacking to Stun', 'Attacking to Knockdown', 'Jump Up', 'Setting Against a Charge']) {
     const effects = (option(name) ?? situation(name)).effects;
     assert.deepEqual(attackPool({ talentStep: TALENT, effects }), { step: TALENT, resultMods: [], strain: 0, unapplied: [] }, name);
     assert.deepEqual(damagePool({ weaponDamageStep: WEAPON, strengthStep: STR, effects }), {
@@ -209,9 +210,9 @@ test('collectCombatEffects: Knocked Down stripped entirely when locked (B11)', (
   assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT, resultMods: [], strain: 0, unapplied: [] });
 });
 
-test('collectCombatEffects: Harried keeps its Action −2 but strips defence mods (B11)', () => {
+test('collectCombatEffects: locked Harried is stripped from the pool (rides roll-time, no double count)', () => {
   const r = collectCombatEffects({ selectedOptions: [], selectedSituations: [], selectedCharms: [], rules: RULES, conditions: { harried: true } });
-  assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT - 2, resultMods: [], strain: 0, unapplied: [] });
+  assert.deepEqual(attackPool({ talentStep: TALENT, effects: r.attackEffects }), { step: TALENT, resultMods: [], strain: 0, unapplied: [] });
   assert.equal(r.defenseMods.length, 0);
 });
 

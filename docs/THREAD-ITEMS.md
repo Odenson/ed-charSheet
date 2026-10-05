@@ -163,7 +163,11 @@ Delivery splits by whether the item is a weapon (`ref.category` present):
   sources (weapon bundles + `itemOptions` + global) so `collectCombatEffects`
   sees one list; a bundle's `defense-modifier` effects flow into `defenseMods`
   and fold onto the Combat-tab Defence readout via `foldCombatRatings` **only
-  when toggled** — never into the always-on derived Defence (B7).
+  when toggled** — never into the always-on derived Defence (B7). B7 is retired
+  for the rules/combat.json **Situational** chips only (owner sign-off,
+  plans/situational-chips-global): those are global session conditions folded
+  into derived Defence on every tab; combat options, blood charms and item
+  options stay informational per B7.
 
 **How it reaches a roll:** `equippedWeapons` carries `combatOptions` through to
 the model; the Combat tab merges them into the option list it renders

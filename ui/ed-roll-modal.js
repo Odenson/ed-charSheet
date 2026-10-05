@@ -4,6 +4,7 @@ import { LitElement, html, css } from 'lit';
 import { rollStep, rollKarmaDice, rollDiceList, rollTotal } from '../engine/dice.js';
 import { knockdownOutcome } from '../engine/health.js';
 import { successCount } from '../engine/combat.js';
+import { resolveOptionalMods } from '../engine/roll-mods.js';
 
 export class EdRollModal extends LitElement {
   static properties = {
@@ -14,6 +15,12 @@ export class EdRollModal extends LitElement {
     apply: { attribute: false }, // { action, label } | undefined — show an "Apply" button
     difficulty: { attribute: false }, // { value, win?, lose? } | null — "vs Difficulty N" comparison; win/lose override the default Success/Failure words (e.g. Hit/Miss)
     mods: { attribute: false }, // [{ label, value }] | null — roll-time modifiers
+    stepMods: { attribute: false }, // [{ label, value, measure:'step' }] | null — applied Step mods (already in stepRow; shown only)
+    optionalMods: { attribute: false }, // [{ label, value, measure, on }] | null — per-roll toggles (scoped situational penalties), pre-ticked
+    baseStep: { attribute: false }, // number — the Step before the optional mods (re-resolved when a Step toggle flips)
+    stepByNumber: { attribute: false }, // { [step]: stepRow } | null — lookup for that re-resolve
+    _off: { state: true }, // Set of unticked optional-mod labels
+    _stepRowOv: { state: true }, // re-resolved stepRow after a Step toggle
     strain: { attribute: false }, // number | 0 — Strain charged at commit for a set-dice/aim roll; 0 otherwise (already paid)
     aim: { attribute: false }, // { vs:'Mystic'|'Physical'|'Social', strain } | null — aim roll: enter the target's defence, roll vs it, resolve Hit/Miss (Mystic Aim)
     bonusDice: { attribute: false }, // [{ label, dice:[{count,sides}] }] | null — Bonus Dice (taxonomy v6, e.g. Night's Edge D4): their own exploding group, rolled with the step
@@ -83,6 +90,9 @@ export class EdRollModal extends LitElement {
     .aimlbl { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); }
     .aimlbl input { width: 72px; font: inherit; font-size: var(--fs-value); padding: 5px 8px; border-radius: 8px; border: 1px solid light-dark(#c9ccd3, #3a4150); background: light-dark(#f1f2f5, #1b1f27); color: inherit; }
     button.commit:disabled { opacity: 0.4; cursor: default; }
+    .optmods { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-bottom: 1px solid light-dark(#e2e5ea, #2c313b); }
+    .optmod { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); cursor: pointer; }
+    .optmod input { accent-color: var(--accent, #b26a00); }
     .modchip { font-size: var(--fs-fine); font-weight: 500; color: light-dark(#5a6472, #93a0b3); background: light-dark(#f1f2f5, #1b1f27); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
     .outcome { margin-top: 8px; font-size: var(--fs-small); font-weight: 500; text-align: right; }
     .outcome.ok { color: light-dark(#3d6b4a, #82c39a); }
@@ -113,6 +123,8 @@ export class EdRollModal extends LitElement {
   updated(changed) {
     // A new roll target resets any spent Karma, then rolls.
     if (changed.has('stepRow') && this.stepRow) {
+      this._off = new Set();
+      this._stepRowOv = null;
       this._karmaOn = false;
       this._karmaResult = null;
       // A fresh roll interaction may spend Karma once (see _toggleKarma);
@@ -203,7 +215,7 @@ export class EdRollModal extends LitElement {
   }
 
   _roll() {
-    this._result = rollStep(this.stepRow);
+    this._result = rollStep(this._stepRowOv ?? this.stepRow);
     this._bonusResult = this._rollBonus();
     // Re-roll the Karma die too if it's currently spent.
     this._karmaResult = this._karmaOn && this.karma?.stepRow ? rollStep(this.karma.stepRow) : null;
@@ -212,6 +224,38 @@ export class EdRollModal extends LitElement {
     // the character down; the app re-derives that state from this result.
     if (this.apply?.action === 'knockdown-result') this._apply();
     this._log();
+  }
+
+  // --- optional per-roll mods (scoped situational penalties) --------------------
+
+  _ticked() {
+    return (this.optionalMods ?? []).filter((m) => !this._off?.has(m.label));
+  }
+  // Every mod applied to this roll: the fixed result mods, the fixed Step mods,
+  // and the ticked optional ones.
+  _stepModsAll() {
+    return [...(this.stepMods ?? []), ...this._ticked().filter((m) => m.measure === 'step')];
+  }
+  _resultModsAll() {
+    return [...(this.mods ?? []), ...this._ticked().filter((m) => m.measure !== 'step')];
+  }
+  // Tick/untick one optional mod. A Step mod re-resolves the Step row (min Step 1)
+  // and re-rolls at it; a result mod only changes the total. Either way the Roll
+  // Log entry is upserted with just what is applied.
+  _toggleOptional(m) {
+    const off = new Set(this._off ?? []);
+    if (off.has(m.label)) off.delete(m.label);
+    else off.add(m.label);
+    this._off = off;
+    if (m.measure === 'step') {
+      // baseStep already includes the fixed Step mods, so re-resolve from the
+      // ticked optional Step mods only.
+      const only = resolveOptionalMods({ baseStep: this.baseStep, mods: this._ticked().filter((x) => x.measure === 'step'), stepByNumber: this.stepByNumber ?? {} });
+      this._stepRowOv = only.stepRow ?? this.stepRow;
+      this._roll();
+    } else {
+      this._log();
+    }
   }
 
   _toggleKarma() {
@@ -310,6 +354,9 @@ export class EdRollModal extends LitElement {
           // The full total (dice + Karma + Bonus Dice + roll-time mods) the modal judged
           // the roll by, so a listener never re-sums it (and never leaves the mods out).
           total: this._grandTotal(),
+          // What was actually applied (Step mods tagged so a reader can tell them
+          // from flat result mods): unticked optional mods are absent.
+          mods: [...this._resultModsAll(), ...this._stepModsAll().map((m) => ({ label: m.label, value: m.value, measure: 'step' }))],
           outcome: this._outcome(),
           // Aim rolls carry their in-modal target so the log (and the Combat tab's
           // arm check) records the difficulty; other rolls carry it on the config.
@@ -355,7 +402,7 @@ export class EdRollModal extends LitElement {
 
   // The full total: dice + Karma die + any roll-time modifiers.
   _grandTotal() {
-    return rollTotal({ result: this._result, karmaResult: this._karmaResult, bonusResult: this._bonusResult, mods: this.mods });
+    return rollTotal({ result: this._result, karmaResult: this._karmaResult, bonusResult: this._bonusResult, mods: this._resultModsAll() });
   }
 
   // The comparison against a difficulty, when one is set. For a Knockdown test
@@ -524,15 +571,27 @@ export class EdRollModal extends LitElement {
                   <span class="gsub">${this._bonusResult.total}</span>
                 </div>`
               : ''}
-            ${(this.mods ?? []).length
+            ${this._resultModsAll().length || this._stepModsAll().length
               ? html`<div class="grp">
                   <span class="glbl">Mods</span>
                   <span class="chain">
-                    ${(this.mods ?? []).map(
+                    ${this._resultModsAll().map(
                       (m) => html`<span class="modchip" title=${m.label}>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}</span>`,
                     )}
+                    ${this._stepModsAll().map(
+                      (m) => html`<span class="modchip" title="${m.label} (Step modifier, already in the Step)">${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value} Step</span>`,
+                    )}
                   </span>
-                  <span class="gsub">${(this.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0)}</span>
+                  <span class="gsub">${this._resultModsAll().reduce((s, m) => s + (Number(m.value) || 0), 0)}</span></div>`
+              : ''}
+            ${(this.optionalMods ?? []).length
+              ? html`<div class="optmods" role="group" aria-label="Situational penalties for this roll">
+                  ${this.optionalMods.map(
+                    (m) => html`<label class="optmod">
+                      <input type="checkbox" .checked=${!this._off?.has(m.label)} @change=${() => this._toggleOptional(m)} />
+                      <span>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}${m.measure === 'step' ? ' Step' : ''}</span>
+                    </label>`,
+                  )}
                 </div>`
               : ''}
           </div>
