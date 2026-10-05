@@ -239,6 +239,14 @@ export class EdCustomItem extends LitElement {
       item: { ...this._form.item, ref: { ...(this._form.item.ref ?? {}), [k]: value } },
     };
   }
+  // Switching kind drops the kind-specific ref fields but keeps the ones every
+  // kind shares, so converting e.g. Gear -> Weapon does not wipe cost/weight.
+  _setKind(kind) {
+    const old = this._form.item.ref ?? {};
+    const ref = {};
+    for (const k of ['cost', 'description', 'weight', 'availability']) if (old[k] !== undefined) ref[k] = old[k];
+    this._setFormItem({ kind, ref });
+  }
   _setCategory(value) {
     const ref = { ...(this._form.item.ref ?? {}), category: value };
     if (value === 'unarmed') { delete ref.shortRange; delete ref.longRange; }
@@ -341,8 +349,8 @@ export class EdCustomItem extends LitElement {
       <span class="fld target">
         <label>Target</label>
         <select .value=${preset} @change=${(ev) => this._setTargetName(i, ev.target.value)} aria-label="Target">
-          ${(meta?.names ?? []).map((n) => html`<option value=${n}>${prettyName(n)}</option>`)}
-          ${meta?.open ? html`<option value="__other__">Other…</option>` : ''}
+          ${(meta?.names ?? []).map((n) => html`<option value=${n} ?selected=${n === preset}>${prettyName(n)}</option>`)}
+          ${meta?.open ? html`<option value="__other__" ?selected=${preset === '__other__'}>Other…</option>` : ''}
         </select>
         ${meta?.open && open
           ? html`<input type="text" class="other" .value=${e.target?.name ?? ''} placeholder="named ability"
@@ -436,8 +444,8 @@ export class EdCustomItem extends LitElement {
           </span>
           <span class="fld kind">
             <label for="f-kind">Kind</label>
-            <select id="f-kind" .value=${kind} @change=${(e) => this._setFormItem({ kind: e.target.value, ref: {} })}>
-              ${KIND_ORDER.map((k) => html`<option value=${k}>${KLABEL[k]}</option>`)}
+            <select id="f-kind" .value=${kind} @change=${(e) => this._setKind(e.target.value)}>
+              ${KIND_ORDER.map((k) => html`<option value=${k} ?selected=${k === kind}>${KLABEL[k]}</option>`)}
             </select>
           </span>
         </div>
@@ -453,7 +461,7 @@ export class EdCustomItem extends LitElement {
               rf.type === 'checkbox'
                 ? html`<label class="chk"><input type="checkbox" ?checked=${item.ref?.living === true} @change=${(e) => this._setRef('living', e.target.checked)} /> ${rf.label}</label>`
                 : rf.type === 'select'
-                  ? html`<span class="fld"><label>${rf.label}</label><select .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => (rf.k === 'category' ? this._setCategory(e.target.value) : this._setRef(rf.k, e.target.value))}>${['', ...rf.options].map((o) => html`<option value=${o}>${o || '—'}</option>`)}</select></span>`
+                  ? html`<span class="fld"><label>${rf.label}</label><select .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => (rf.k === 'category' ? this._setCategory(e.target.value) : this._setRef(rf.k, e.target.value))}>${['', ...rf.options].map((o) => html`<option value=${o} ?selected=${o === (item.ref?.[rf.k] ?? '')}>${o || '—'}</option>`)}</select></span>`
                   : rf.type === 'weight'
                     ? this._weightField(item)
                     : html`<span class="fld"><label>${rf.label}</label><input type=${rf.type === 'number' ? 'number' : 'text'} min=${rf.type === 'number' ? '0' : nothing} step=${rf.type === 'number' ? '1' : nothing} .value=${item.ref?.[rf.k] ?? ''} @input=${(e) => this._setRef(rf.k, rf.type === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} />${rf.hint ? html`<span class="hint">${rf.hint}</span>` : ''}</span>`,
@@ -510,23 +518,23 @@ export class EdCustomItem extends LitElement {
       <div class="erow">
         <span class="fld type"><label>Type</label>
           <select .value=${e.type} title=${TYPE_HINT[e.type] ?? ''} @change=${(ev) => this._setEffect(i, { type: ev.target.value })} aria-label="Effect type">
-            ${TYPE_ORDER.map((t) => html`<option value=${t}>${cap(t.replace(/-/g, ' '))}</option>`)}
+            ${TYPE_ORDER.map((t) => html`<option value=${t} ?selected=${t === e.type}>${cap(t.replace(/-/g, ' '))}</option>`)}
           </select>
         </span>
         ${e.type !== 'note' ? this._effectTargetInput(e, i) : ''}
         ${e.type !== 'note'
           ? html`<span class="fld"><label>Op</label>
               <select .value=${e.operation} @change=${(ev) => this._setEffect(i, { operation: ev.target.value })} aria-label="Operation">
-                ${OPERATIONS.map((o) => html`<option value=${o}>${o}</option>`)}
+                ${OPERATIONS.map((o) => html`<option value=${o} ?selected=${o === e.operation}>${o}</option>`)}
               </select></span>
             <span class="fld v"><label>Value</label><input type="number" .value=${value} @change=${(ev) => this._setEffect(i, { value: Number(ev.target.value) || 0 })} /></span>
             <span class="fld"><label>Measure</label>
               <select .value=${e.measure ?? meta?.measure ?? 'rating'} @change=${(ev) => this._setEffect(i, { measure: ev.target.value })} aria-label="Measure">
-                ${MEASURES.map((m) => html`<option value=${m}>${m}</option>`)}
+                ${MEASURES.map((m) => html`<option value=${m} ?selected=${m === (e.measure ?? meta?.measure ?? 'rating')}>${m}</option>`)}
               </select></span>
             <span class="fld"><label>Condition</label>
               <select .value=${e.condition ?? 'always'} @change=${(ev) => this._setEffect(i, { condition: ev.target.value })} aria-label="Condition">
-                ${CONDITIONS.map((c) => html`<option value=${c}>${c}</option>`)}
+                ${CONDITIONS.map((c) => html`<option value=${c} ?selected=${c === (e.condition ?? 'always')}>${c}</option>`)}
               </select></span>`
           : ''}
         <button type="button" class="cdel" aria-label="Remove effect" @click=${() => this._removeEffect(i)}>✕</button>

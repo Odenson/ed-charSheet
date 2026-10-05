@@ -10,6 +10,10 @@
       },
       {
         "type": "fixed",
+        "text": "Custom item builder: editing an existing item showed Weapon in the Kind dropdown (and the first option in other dropdowns) whatever it was saved as; dropdowns now show the saved value, and changing Kind keeps cost, weight, availability and description."
+      },
+      {
+        "type": "fixed",
         "text": "Custom item builder: a weapon Damage Step of 0 is now kept, and the Damage Step field is the single source for the weapon's Damage effect."
       }
     ]
