@@ -1,6 +1,6 @@
 {
   "schema": "ed-items/3",
-  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v6)",
+  "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v3)",
   "source": "custom",
   "notes": "Player-created items, folded into rules/custom-items.json on dev by CI.",
   "items": {
@@ -75,6 +75,40 @@
       },
       "presentation": {
         "shortEffect": "personally hunted"
+      }
+    },
+    "Chain Gauntels": {
+      "kind": "weapon",
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "condition": "always",
+          "source": "item",
+          "summary": "Adds +1 Damage step"
+        }
+      ],
+      "ref": {
+        "cost": 2,
+        "category": "unarmed",
+        "strMin": 2,
+        "size": 1,
+        "damageStep": 1,
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
+        "availability": "Common",
+        "description": "Leather and Chainmail gloves that adds weight to a punch."
+      },
+      "presentation": {
+        "shortEffect": "+1 unarmed damage"
       }
     }
   }
