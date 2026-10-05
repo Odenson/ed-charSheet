@@ -545,6 +545,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 - Evidence: rules/custom-items.json:3; tools/worker/worker.js:287; data/changelog.json:299.
 - Impact: doc and data disagree. The tag is not read by the engine, so no wrong value, but it is the exact half-migration Tier 2 is meant to prevent.
 - Proposed remedy: bump the tag in `rules/custom-items.json`, the `character-data` copy and worker.js, update the test fixtures in the same change, and confirm the CI fold does not reject a v4 file.
+- Update 2026-10-05: the bundled file and the worker/dev-server stamps are v6, but the CI fold (`tools/fold-custom-items.mjs`) mirrors `character-data`'s `data/custom-items.json` byte for byte and that file still says v3. The fold commit `929f0bb` therefore reintroduced v3 into `rules/custom-items.json` and turned the conformance tests red; it was re-tagged v6 by hand on `dev`. **It will happen again on the next custom-item save.** Permanent fix, owner decision: (a) have the fold stamp the current `effectTaxonomy` ref when mirroring (and update its tests), or (b) bump the tag in `character-data`'s `data/custom-items.json` once.
 
 ### T-033 — Undocumented effect fields and ref property (`note`, `rounds` in the table, `Max`)
 - Source pass id: T-D05
