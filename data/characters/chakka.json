@@ -395,12 +395,16 @@
       "name": "Dark Archer Armour",
       "equipped": true,
       "threadRank": 4
+    },
+    {
+      "name": "Chain Gauntels",
+      "equipped": true
     }
   ],
   "wealth": {
     "coins": {
       "copper": 5,
-      "silver": 458,
+      "silver": 456,
       "gold": 205,
       "earth": 0,
       "water": 0,
