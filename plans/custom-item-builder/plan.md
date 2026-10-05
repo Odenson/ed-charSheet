@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.30.0
 ---
 # Delivery Plan: Custom item builder: unarmed weapons (custom-item-builder)
 

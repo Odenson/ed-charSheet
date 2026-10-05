@@ -3,22 +3,28 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      {
-        "type": "added",
-        "text": "Custom item builder: weapons can now be Unarmed (e.g. a Gauntlet), with range fields hidden for them."
-      },
-      {
-        "type": "fixed",
-        "text": "Custom item builder: editing an existing item showed Weapon in the Kind dropdown (and the first option in other dropdowns) whatever it was saved as; dropdowns now show the saved value, and changing Kind keeps cost, weight, availability and description."
-      },
-      {
-        "type": "fixed",
-        "text": "Custom item builder: a weapon Damage Step of 0 is now kept, and the Damage Step field is the single source for the weapon's Damage effect."
-      }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.30.0",
+      "date": "2026-10-05",
+      "summary": "Custom item builder: weapons can now be Unarmed (e.g. a Gauntlet), with the Damage Step field as the single source for weapon damage, a stored Damage Step of 0, and dropdowns that show the saved value.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Custom item builder: weapons can now be Unarmed (e.g. a Gauntlet), with range fields hidden for them."
+        },
+        {
+          "type": "fixed",
+          "text": "Custom item builder: editing an existing item showed Weapon in the Kind dropdown (and the first option in other dropdowns) whatever it was saved as; dropdowns now show the saved value, and changing Kind keeps cost, weight, availability and description."
+        },
+        {
+          "type": "fixed",
+          "text": "Custom item builder: a weapon Damage Step of 0 is now kept, and the Damage Step field is the single source for the weapon's Damage effect."
+        }
+      ]
+    },
     {
       "version": "1.29.0",
       "date": "2026-10-05",
