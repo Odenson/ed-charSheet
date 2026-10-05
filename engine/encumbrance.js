@@ -126,7 +126,7 @@ export function encumbranceEffects(stage) {
           measure: 'step',
           condition: 'always',
           source: 'condition',
-          summary: 'Burdened (Harried) — −2 to Action test Steps.',
+          summary: 'Burdened (Harried) — −2 Step to all tests.',
         },
       ];
     case ENCUMBRANCE.OVERBURDENED:

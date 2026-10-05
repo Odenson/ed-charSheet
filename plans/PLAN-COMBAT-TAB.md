@@ -275,7 +275,10 @@ wrong):**
    equipped-item** effects. The live summary shows the **final Attack/Damage step**
    (step-measure mods baked in), any **result-measure mods** carried to the roll,
    and the running **strain**. Defense-modifier toggles are **informational only**
-   (they never change the derived defense — B7).
+   (they never change the derived defense — B7). *Note: B7 is retired for the
+   rules/combat.json Situational chips (plans/situational-chips-global): they
+   are now global session conditions folded into derived Defence; combat
+   options and charms remain informational.*
 4. **Roll Attack** — `final attack step` (+ result mods) vs the optional **target
    number** to beat → hit/miss (roll modal `difficulty`). Karma is offered where
    the talent allows (existing roll-modal behavior).

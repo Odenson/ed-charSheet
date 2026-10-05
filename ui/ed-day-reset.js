@@ -137,6 +137,10 @@ export class EdDayReset extends LitElement {
                     .apply=${this.roll.apply}
                     .difficulty=${this.roll.difficulty}
                     .mods=${this.roll.mods}
+                    .stepMods=${this.roll.stepMods}
+                    .optionalMods=${this.roll.optionalMods}
+                    .baseStep=${this.roll.baseStep}
+                    .stepByNumber=${this.roll.stepByNumber}
                     .strain=${this.roll.strain}
                     .aim=${this.roll.aim}
                     @close=${(e) => this._rollClosed(e)}

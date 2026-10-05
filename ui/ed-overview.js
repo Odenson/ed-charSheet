@@ -150,6 +150,7 @@ export class EdOverview extends LitElement {
     .ftag.cond { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
     .stand { flex: none; font: inherit; font-size: var(--fs-eyebrow); font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: none; color: var(--accent); cursor: pointer; }
     .stand:hover { background: var(--accent-bg); }
+    .stand.clear { padding: 2px 7px; line-height: 1; }
     .emroll { white-space: nowrap; }
     .info { background: none; border: none; color: var(--accent); cursor: pointer; font-size: var(--fs-body); padding: 0 0 0 3px; line-height: 1; vertical-align: -1px; opacity: 0; transition: opacity 0.15s ease; }
     /* Universal hover-reveal: ANY info icon stays hidden until you hover (or
@@ -751,7 +752,8 @@ export class EdOverview extends LitElement {
   }
 
   // Active Effects: for now, only live conditions — Knocked Down (carrying a
-  // roll-time −3 to every test while prone) and an active encumbrance stage
+  // roll-time −3 to every test while prone), each active Situational chip (with a
+  // ✕ clear button; plans/situational-chips-global) and an active encumbrance stage
   // (Burdened / Overburdened, PG p.405). Special Features (race + discipline
   // circle abilities) and equipped item / thread-item effects are intentionally
   // NOT listed at this stage, even though they are still folded into the engine's
@@ -842,7 +844,15 @@ export class EdOverview extends LitElement {
                       @click=${() =>
                         this.dispatchEvent(new CustomEvent('ed-edit-knockdown', { detail: { knockedDown: false }, bubbles: true, composed: true }))}
                     >Stand up</button>`
-                  : ''}
+                  : (this.model?.combat?.conditions?.situations ?? []).includes(name)
+                    ? html`<button
+                        class="stand clear"
+                        title="Clear ${name}"
+                        aria-label="Clear ${name}"
+                        @click=${() =>
+                          this.dispatchEvent(new CustomEvent('ed-toggle-situation', { detail: { name }, bubbles: true, composed: true }))}
+                      >✕</button>`
+                    : ''}
               </div>
             `,
           )}

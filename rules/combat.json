@@ -149,9 +149,9 @@
     {
       "name": "Harried",
       "mapsToCondition": "harried",
-      "summary": "−2 to Action tests; −2 Physical & Mystic Defence.",
+      "summary": "−2 Step to all tests (except the Karma die); −2 Physical & Mystic Defence.",
       "effects": [
-        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 to Action tests." },
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 Step to all tests." },
         { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": -2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−2 Physical Defence." },
         { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": -2, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−2 Mystic Defence." },
         { "type": "note", "source": "condition", "summary": "Social Defence at the gamemaster's discretion. When the sheet already reports the character as Harried (e.g. from encumbrance), the tab pre-selects and locks this chip so its effects are not counted twice." }
@@ -159,16 +159,16 @@
     },
     {
       "name": "Impaired Movement — Light",
-      "summary": "−2 to Action tests.",
+      "summary": "−2 to movement-based tests (per-roll toggle).",
       "effects": [
-        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 to Action tests (light impaired movement)." }
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "scope": "movement", "source": "condition", "summary": "−2 to Action tests (light impaired movement)." }
       ]
     },
     {
       "name": "Impaired Movement — Heavy",
-      "summary": "−4 to Action tests.",
+      "summary": "−4 to movement-based tests (per-roll toggle).",
       "effects": [
-        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -4, "measure": "step", "condition": "situational", "source": "condition", "summary": "−4 to Action tests (heavy impaired movement)." }
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -4, "measure": "step", "condition": "situational", "scope": "movement", "source": "condition", "summary": "−4 to Action tests (heavy impaired movement)." }
       ]
     },
     {
@@ -183,22 +183,19 @@
       ]
     },
     {
-      "name": "Range — Short",
-      "summary": "No modifier.",
-      "effects": []
-    },
-    {
       "name": "Range — Long",
-      "summary": "−2 to Action tests.",
+      "summary": "−2 to Attack and Damage tests.",
       "effects": [
-        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "source": "condition", "summary": "−2 to Action tests at long range." }
+        { "type": "test-modifier", "target": { "domain": "test", "name": "Action" }, "operation": "add", "value": -2, "measure": "step", "condition": "situational", "scope": "ranged", "source": "condition", "summary": "−2 to Attack and Damage tests at long range." }
       ]
     },
     {
       "name": "Surprised",
       "summary": "No actions this round; −3 Physical & Mystic Defence.",
       "effects": [
-        { "type": "note", "source": "condition", "summary": "A surprised character can take no actions this round and subtracts −3 from Physical & Mystic Defence (Social at the gamemaster's discretion) (PG p.390). 'No tests allowed' has no machine-applicable taxonomy encoding, so the whole situation is a display-only rider." }
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Physical" }, "operation": "add", "value": -3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−3 Physical Defence." },
+        { "type": "defense-modifier", "target": { "domain": "defense", "name": "Mystic" }, "operation": "add", "value": -3, "measure": "rating", "condition": "situational", "source": "condition", "summary": "−3 Mystic Defence." },
+        { "type": "note", "source": "condition", "summary": "A surprised character can take no actions this round and subtracts −3 from Physical & Mystic Defence (Social at the gamemaster's discretion) (PG p.390). 'No actions' has no machine-applicable taxonomy encoding, so it stays a display-only note; the Defence penalty is the effects above." }
       ]
     }
   ]
