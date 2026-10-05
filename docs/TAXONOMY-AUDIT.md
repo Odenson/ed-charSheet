@@ -450,6 +450,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 - Evidence: `engine/combat.js:212-215,271-281`; `store.js:1370-1395`; `rules/items.json` weapon entries (scan: 48 weapons, 46 with both, 0 differing).
 - Impact: latent duplicated truth; editing one copy (or a custom weapon with only the effect, which gets a null step and a placeholder pill) diverges silently.
 - Proposed remedy: declare one canonical source (recommend the effect, per §4.1) and derive `damageStep` from it, or document `ref.damageStep` as the combat input and drop the duplicate effect.
+- **Follow-up agreed by the owner (2026-10-05, option B):** once the weapon Damage Step has a single source, collapse the *bonus* uses of `attack-modifier` onto `test-modifier`, leaving `attack-modifier` to mean only "this weapon's or spell's base step". Candidates to migrate: the sustained spell bonuses (Arrow of Night, the two Aspects, Night's Edge's dice) and the thread-weapon rank bonuses, plus the builder's weapon templates. Today the authoring rule is the interim one written into EFFECT-TAXONOMY §2 (option A): both types fold identically in the combat pools, and an item's Attack/Damage bonus should be a `test-modifier`. Settle T-024 first, because the weapon's base Damage Step (`ref.damageStep` and the effect) is what keeps `attack-modifier` from being retired outright.
 
 ### T-025 — Hard-coded rule defaults and constants in UI code
 - Source pass id: T-U09
@@ -1139,3 +1140,4 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 | 2026-10-05 | T-003 fixed (`cf3c05f`): Warrior Circle 7 Recovery bonus uses `rating`; Bone Charm split out as T-051 (open, owner decision). |
 | 2026-10-05 | T-004 narrowed, T-016 fixed (uncommitted): Aspect of the Fog Ghost / Casual Murderer migrated to `step` with `close-combat` scope; Casual Murderer situational. Bracers routing and a toggle for situational spell bundles remain open. |
 | 2026-10-05 | T-004 fixed, T-049 fixed, T-021 and T-023 narrowed (uncommitted): situational spell toggle, worn-item attack routing, `close-combat` scope, and `unapplied` reporting in the combat log. |
+| 2026-10-05 | `attack-modifier` vs `test-modifier` (uncommitted): option A adopted. Authoring rule written into EFFECT-TAXONOMY §2, §11 Q6 partly resolved, custom-item Type control gets a hint; the collapse onto `test-modifier` is recorded as an agreed follow-up under T-024. |

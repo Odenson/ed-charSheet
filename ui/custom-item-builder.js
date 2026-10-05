@@ -29,6 +29,12 @@ export const TYPE_META = {
   'attribute-modifier': { domain: 'attribute', names: ['Dexterity', 'Strength', 'Toughness', 'Perception', 'Willpower', 'Charisma'], measure: 'value', label: '' },
 };
 export const TYPE_ORDER = Object.keys(TYPE_META);
+
+// One-line guidance shown on the effect Type control (docs/EFFECT-TAXONOMY.md §2).
+export const TYPE_HINT = {
+  'attack-modifier': 'Changes the weapon itself, e.g. its Damage Step. For a bonus to the Attack or Damage roll, use Test modifier.',
+  'test-modifier': 'A bonus to a roll — use this for an item that adds to the Attack or Damage test.',
+};
 export const OPERATIONS = ['add', 'subtract', 'set'];
 export const MEASURES = ['rating', 'step', 'result', 'value', 'points', 'rank'];
 export const CONDITIONS = ['always', 'situational'];
