@@ -303,7 +303,7 @@ the defaults for generated effects.
 
 | Kind (KLABEL) | Reference fields shown | Default effect quick-templates |
 |---|---|---|
-| **weapon** | Category (melee/missile/throwing), STR min, Size, Damage Step; short/long Range when missile/throwing | Damage `attack-modifier add`, target `{attack, Damage}`, measure **step** |
+| **weapon** | Category (melee/missile/throwing/unarmed), STR min, Size, Damage Step; short/long Range shown except for unarmed | Generated from the Damage Step field (single input; shown read-only, no Damage template): `attack-modifier add`, target `{attack, Damage}`, measure **step**. A hand-added duplicate blocks save; opening a legacy weapon seeds the field from its effect |
 | **armor** | Living checkbox, weight, availability | Physical Armour `+N`; Mystic Armour `+N` (`armor-modifier add`, measure **rating**); Initiative `−N` (`characteristic-modifier subtract`, measure **step**) |
 | **shield** | Living checkbox, weight, availability | Physical Armour `+N` (measure **rating**) |
 | **ammunition** | Weight, availability, quantity | Note |

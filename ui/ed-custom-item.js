@@ -17,12 +17,12 @@
 // Enter confirms (primary buttons are autofocused); Escape closes the form first,
 // then the modal; theme-aware via light-dark().
 
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
 import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking, weightToForm, weightFromForm } from './custom-item-state.js';
 import {
   MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, TYPE_HINT, OPERATIONS, MEASURES, CONDITIONS,
-  summaryFor, blankEffect, finishEffect, cleanItemForm,
+  summaryFor, blankEffect, finishEffect, cleanItemForm, damageStepEffect, seedDamageStep,
 } from './custom-item-builder.js';
 import { cap, prettyName } from './format.js';
 
@@ -35,10 +35,10 @@ const KIND_ORDER = ['weapon', 'armor', 'shield', 'ammunition', 'gear', 'magic-it
 // §6.2 — kind-driven reference fields (cost/description are common to all kinds).
 const REF_FIELDS = {
   weapon: [
-    { k: 'category', label: 'Category', type: 'select', options: ['melee', 'missile', 'throwing'] },
+    { k: 'category', label: 'Category', type: 'select', options: ['melee', 'missile', 'throwing', 'unarmed'] },
     { k: 'strMin', label: 'STR min', type: 'number' },
     { k: 'size', label: 'Size', type: 'number' },
-    { k: 'damageStep', label: 'Damage Step', type: 'number' },
+    { k: 'damageStep', label: 'Damage Step', type: 'number', hint: 'Added to your Strength step (also for unarmed weapons).' },
     { k: 'shortRange', label: 'Short range', type: 'text' },
     { k: 'longRange', label: 'Long range', type: 'text' },
     { k: 'weight', label: 'Weight', type: 'weight' },
@@ -56,7 +56,7 @@ const REF_FIELDS = {
 // §6.2 — per-kind effect quick-templates. Each builds a raw effect; the builder
 // sets source/condition/summary.
 const QUICK_TEMPLATES = {
-  weapon: [{ label: '＋ Damage Step', build: () => ({ type: 'attack-modifier', operation: 'add', value: 1, measure: 'step', target: { domain: 'attack', name: 'Damage' }, condition: 'always' }) }],
+  weapon: [],
   armor: [
     { label: '＋ Physical Armour', build: () => ({ type: 'armor-modifier', operation: 'add', value: 1, measure: 'rating', target: { domain: 'armor', name: 'Physical' }, condition: 'always' }) },
     { label: '＋ Mystic Armour', build: () => ({ type: 'armor-modifier', operation: 'add', value: 1, measure: 'rating', target: { domain: 'armor', name: 'Mystic' }, condition: 'always' }) },
@@ -191,7 +191,7 @@ export class EdCustomItem extends LitElement {
     // §6.6). `committed` is only a fallback for a name the overlay never touched.
     const item = this._working.get(name) ?? this.committed?.[name];
     if (!item) return;
-    this._form = { name, item: JSON.parse(JSON.stringify(item)), originalName: name };
+    this._form = { name, item: seedDamageStep(JSON.parse(JSON.stringify(item))), originalName: name };
     this._summaryOverride = new Set();
     this._weightMode = 'none';
   }
@@ -238,6 +238,11 @@ export class EdCustomItem extends LitElement {
       ...this._form,
       item: { ...this._form.item, ref: { ...(this._form.item.ref ?? {}), [k]: value } },
     };
+  }
+  _setCategory(value) {
+    const ref = { ...(this._form.item.ref ?? {}), category: value };
+    if (value === 'unarmed') { delete ref.shortRange; delete ref.longRange; }
+    this._setFormItem({ ref });
   }
   _setShortEffect(value) {
     this._form = {
@@ -444,14 +449,14 @@ export class EdCustomItem extends LitElement {
           <div class="fh">Reference</div>
           <div class="refgrid">
             <span class="fld"><label>Cost (sp)</label><input type="number" min="0" .value=${item.ref?.cost ?? ''} @change=${(e) => this._setRef('cost', e.target.value === '' ? undefined : Number(e.target.value))} /></span>
-            ${refFields.map((rf) =>
+            ${refFields.filter((rf) => !(kind === 'weapon' && item.ref?.category === 'unarmed' && (rf.k === 'shortRange' || rf.k === 'longRange'))).map((rf) =>
               rf.type === 'checkbox'
                 ? html`<label class="chk"><input type="checkbox" ?checked=${item.ref?.living === true} @change=${(e) => this._setRef('living', e.target.checked)} /> ${rf.label}</label>`
                 : rf.type === 'select'
-                  ? html`<span class="fld"><label>${rf.label}</label><select .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => this._setRef(rf.k, e.target.value)}>${['', ...rf.options].map((o) => html`<option value=${o}>${o || '—'}</option>`)}</select></span>`
+                  ? html`<span class="fld"><label>${rf.label}</label><select .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => (rf.k === 'category' ? this._setCategory(e.target.value) : this._setRef(rf.k, e.target.value))}>${['', ...rf.options].map((o) => html`<option value=${o}>${o || '—'}</option>`)}</select></span>`
                   : rf.type === 'weight'
                     ? this._weightField(item)
-                    : html`<span class="fld"><label>${rf.label}</label><input type=${rf.type === 'number' ? 'number' : 'text'} .value=${item.ref?.[rf.k] ?? ''} @change=${(e) => this._setRef(rf.k, rf.type === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} /></span>`,
+                    : html`<span class="fld"><label>${rf.label}</label><input type=${rf.type === 'number' ? 'number' : 'text'} min=${rf.type === 'number' ? '0' : nothing} step=${rf.type === 'number' ? '1' : nothing} .value=${item.ref?.[rf.k] ?? ''} @input=${(e) => this._setRef(rf.k, rf.type === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} />${rf.hint ? html`<span class="hint">${rf.hint}</span>` : ''}</span>`,
             )}
             <span class="fld desc"><label>Description</label><textarea .value=${item.ref?.description ?? ''} @input=${(e) => this._setRef('description', e.target.value)}></textarea></span>
             <span class="fld desc">
@@ -470,9 +475,12 @@ export class EdCustomItem extends LitElement {
             ? html`<div class="qt">${templates.map((t) => html`<button type="button" class="qtbtn" @click=${() => this._addEffect(t)}>${t.label}</button>`)}</div>`
             : ''}
           <div class="elist">
+            ${kind === 'weapon' ? this._generatedRow(damageStepEffect(item.ref?.damageStep)) : ''}
             ${(item.effects ?? []).length
               ? item.effects.map((e, i) => this._effectRow(e, i))
-              : html`<div class="empty">No effects yet — add one or use a template above.</div>`}
+              : kind === 'weapon' && damageStepEffect(item.ref?.damageStep)
+                ? ''
+                : html`<div class="empty">${templates.length ? 'No effects yet — add one or use a template above.' : 'No effects yet — add one with the button below.'}</div>`}
           </div>
           <button type="button" class="qtbtn add" @click=${this._addBlankEffect}>＋ Add effect row</button>
         </div>
@@ -488,6 +496,11 @@ export class EdCustomItem extends LitElement {
         </div>
       </form>
     `;
+  }
+
+  _generatedRow(e) {
+    if (!e) return '';
+    return html`<div class="erow gen"><span class="gtag">from Damage Step</span><span class="gsum">${e.summary}</span></div>`;
   }
 
   _effectRow(e, i) {
@@ -624,6 +637,9 @@ export class EdCustomItem extends LitElement {
     .elist { display: flex; flex-direction: column; gap: 8px; }
     .erow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; padding: 8px; }
     .erow .cdel { align-self: flex-start; }
+    .erow.gen { align-items: center; opacity: 0.85; }
+    .erow.gen .gtag { font-size: var(--fs-eyebrow); color: var(--muted); }
+    .erow.gen .gsum { font-size: var(--fs-small); color: var(--fg); }
   `;
 }
 
