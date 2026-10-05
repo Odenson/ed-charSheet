@@ -127,3 +127,23 @@ test('rollKarmaDice one die matches a single rollStep total (shape-compatible)',
   assert.equal(one.total, single.total);
   assert.deepEqual(one.groups, single.groups);
 });
+
+// --- rollTotal (T-005): the one number a roll is judged by ------------------------------
+
+import { rollTotal } from './dice.js';
+
+test('rollTotal: dice + Karma die + Bonus Dice + flat roll-time mods', () => {
+  assert.equal(rollTotal({ result: { total: 10 } }), 10);
+  assert.equal(rollTotal({ result: { total: 10 }, karmaResult: { total: 4 }, bonusResult: { total: 3 }, mods: [{ value: -3 }, { value: 2 }] }), 16);
+  assert.equal(rollTotal({ result: { total: 10 }, karmaResult: null, bonusResult: null, mods: undefined }), 10);
+  assert.equal(rollTotal({}), 0, 'no result yet');
+  assert.equal(rollTotal({ result: { total: 10 }, mods: [{ value: 'x' }, {}] }), 10, 'non-numeric mods count as 0');
+});
+
+test('rollTotal: Knocked Down −3 can turn a hit into a miss — and the success level with it', () => {
+  // A cast against 10 that rolled exactly 10: a hit with no mods, a miss (7) with Knocked Down.
+  const hit = rollTotal({ result: { total: 10 } });
+  const knocked = rollTotal({ result: { total: 10 }, mods: [{ label: 'Knocked Down', value: -3 }] });
+  assert.equal(hit >= 10, true);
+  assert.equal(knocked >= 10, false);
+});

@@ -78,6 +78,20 @@ export function parseDice(str) {
 }
 
 /**
+ * The full total of a completed roll: the step dice, plus the Karma die, plus any
+ * Bonus Dice group, plus the flat roll-time modifiers (`[{label, value}]`, e.g.
+ * Knocked Down −3). This is the one number a roll is judged by — the modal's
+ * Hit/Miss, the Roll Log and every success-level count must all use it.
+ * @param {{result?:{total:number}, karmaResult?:{total:number}|null, bonusResult?:{total:number}|null, mods?:Array<{value:number}>}} roll
+ * @returns {number}
+ */
+export function rollTotal({ result, karmaResult, bonusResult, mods } = {}) {
+  if (!result) return 0;
+  const modSum = (mods ?? []).reduce((s, m) => s + (Number(m?.value) || 0), 0);
+  return (result.total ?? 0) + (karmaResult?.total ?? 0) + (bonusResult?.total ?? 0) + modSum;
+}
+
+/**
  * Roll a parsed dice list as ONE separate group of exploding Bonus Dice (each
  * physical die explodes independently via `rollDie`). Returns
  * { dice:[{sides, rolls[]}], total } with one `dice` entry per physical die.

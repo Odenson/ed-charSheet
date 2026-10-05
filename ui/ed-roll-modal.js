@@ -1,7 +1,7 @@
 // ui/ed-roll-modal.js — modal showing a step dice roll: the dice used, each
 // die's result, exploding dice chained as the same die again, and the total.
 import { LitElement, html, css } from 'lit';
-import { rollStep, rollKarmaDice, rollDiceList } from '../engine/dice.js';
+import { rollStep, rollKarmaDice, rollDiceList, rollTotal } from '../engine/dice.js';
 import { knockdownOutcome } from '../engine/health.js';
 import { successCount } from '../engine/combat.js';
 
@@ -307,6 +307,9 @@ export class EdRollModal extends LitElement {
           result: this._result,
           karmaResult: this._karmaResult,
           bonusResult: this._bonusResult ?? undefined,
+          // The full total (dice + Karma + Bonus Dice + roll-time mods) the modal judged
+          // the roll by, so a listener never re-sums it (and never leaves the mods out).
+          total: this._grandTotal(),
           outcome: this._outcome(),
           // Aim rolls carry their in-modal target so the log (and the Combat tab's
           // arm check) records the difficulty; other rolls carry it on the config.
@@ -352,10 +355,7 @@ export class EdRollModal extends LitElement {
 
   // The full total: dice + Karma die + any roll-time modifiers.
   _grandTotal() {
-    const r = this._result;
-    if (!r) return 0;
-    const modSum = (this.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
-    return r.total + (this._karmaResult?.total ?? 0) + (this._bonusResult?.total ?? 0) + modSum;
+    return rollTotal({ result: this._result, karmaResult: this._karmaResult, bonusResult: this._bonusResult, mods: this.mods });
   }
 
   // The comparison against a difficulty, when one is set. For a Knockdown test

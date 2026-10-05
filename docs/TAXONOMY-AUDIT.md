@@ -6,7 +6,7 @@ documented architecture. Same spirit as [RULEBOOK-AUDIT.md](RULEBOOK-AUDIT.md):
 record a discrepancy here *before* fixing it, and cite the finding id (`T-nnn`)
 in the fixing commit.
 
-> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 8 fixed (T-001, T-002, T-003, T-004, T-006, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
+> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
 
 ## Scope & authority
 
@@ -53,7 +53,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 ## Result at a glance
 
-47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 8 fixed (T-001, T-002, T-003, T-004, T-006, T-016, T-018, T-049), 6 narrowed (T-021, T-023, T-031, T-032, T-038, T-046), 43 not yet fixed including the 4 added by the re-validation (T-049 is among the 8 fixed). S1 fixed ×5 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
+47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049), 6 narrowed (T-021, T-023, T-031, T-032, T-038, T-046), 43 not yet fixed including the 4 added by the re-validation (T-049 is among the 8 fixed). S1 fixed ×6 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
 
 ## Summary table
 
@@ -63,7 +63,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | fixed (2c27128) |
 | T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | fixed (cf3c05f); Bone Charm half split out as T-051 |
 | T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | fixed (uncommitted) |
-| T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | open |
+| T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | fixed (uncommitted) |
 | T-006 | Custom-item builder emits characteristic-modifier effects with a measure the engine ignores | S1 | 3 | ui | fixed (uncommitted) |
 | T-007 | Spells tab adds step bonuses to rolls itself (castingStep, Effect step, Patterncraft step) | S2 | 1 | ui | open |
 | T-008 | Combat tab re-derives armed-talent per-success bonuses and spell defence/armour deltas | S2 | 1 | ui | open |
@@ -240,13 +240,14 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 ### T-005 — Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them
 - Source pass id: T-U01
-- Severity: S1  Tier: 3  Status: open
+- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (see the Resolution note below)
 - Area: ui
 - Documented: ARCHITECTURE §3: "The UI never mutates state or computes game values directly." UI-GUIDELINES §5. The roll modal's total is "dice + Karma die + any roll-time modifiers" (ed-roll-modal.js:333).
 - Observed: `_rollCast` passes Spellcasting `resultMods` (for example an activated Desperate Spell's bonus) to the roll modal as flat `mods` (ed-spells.js:1016-1025). The modal's Hit/Miss outcome and `_grandTotal()` include those mods. ed-spells `_onRoll` then rebuilds the total itself as `result.total + karmaResult.total`, omitting `mods`, and uses that to compute `successCount` (cast levels). The `ed-roll-logged` detail has no grand total: `{rollId, result, karmaResult, outcome, difficulty}` (ed-roll-modal.js:286-297). ed-app adds mods for the log (ed-app.js:286) but ed-spells does not.
 - Evidence: ed-spells.js:366 and 399 (`const levels = successCount(total, this._castTarget)`); ed-spells.js:354 (learn-roll total, same omission); ed-spells.js:1016-1025 (mods passed); ed-roll-modal.js:333-340 (`_grandTotal`); ed-app.js:286.
 - Impact: with any Spellcasting result mod active, the modal can say "Success" while `levels` is one or more lower. That blocks the self-cast activation (`levels >= 1`, `ed-spell-activate`), under-counts Success-Level extra effects, and misreports "Applied / No effect" for static effects. The wrong value is shown and acted on today.
 - Proposed remedy: have the modal include `total` (grand total) and `levels` in the `ed-roll-logged` detail, or have ed-spells call the engine with the merged total. Do not re-sum in the view.
+- Resolution 2026-10-05: new pure `rollTotal` in `engine/dice.js` (dice + Karma die + Bonus Dice + flat roll-time mods) is the one definition of a roll's total. The roll modal uses it for its Hit/Miss and now sends it as `total` on `ed-roll-logged`; `ed-app` logs that number and `ed-spells` uses it for the cast, learn-roll and teacher-roll totals instead of re-summing `result + karma` and leaving the mods out. Concrete case: a Knocked Down caster (−3 on every roll) rolls exactly the cast target; the modal said Miss while the Spells tab computed a success level and activated the spell. The Spells tab's `_onRoll` is a Lit method with no unit harness, so the tests cover `rollTotal` (`engine/dice.test.js`) and the wiring was checked by reading, not run in a browser.
 
 ### T-006 — Custom-item builder emits characteristic-modifier effects with a measure the engine ignores
 - Source pass id: T-U02
@@ -749,7 +750,7 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 | T-002 | fixed 2026-10-05 (`2c27128`) | New `foldAttribute` in `engine/characteristics.js` folds always-on `attribute-modifier` effects (`measure` value, default, or step; Step floored at 0). `store.js` now assembles `activeEffects` before the attributes and `attrVal` reads the folded Value, so carrying capacity, defences, Mystic Armor, talent steps and `attribute\|…\|Step` refs all see it. Tests: `engine/characteristics.test.js`, new `store-attribute-modifier.test.js`. The mixed `measure` (races/Bracers `value`, Beer Mug `step`) is now honoured both ways |
 | T-003 | fixed 2026-10-05 (`cf3c05f`; Warrior), Bone Charm split to T-051 | Owner chose option B (`rating` is the one measure for characteristics). Warrior Circle 7 effect migrated `count` → `rating`; rule-agent confirmed the bonus (RULES-FAQ Q023: Warrior Circle 7 "gains an additional Recovery test"). Tests added in `engine/characteristics.test.js`. EFFECT-TAXONOMY §5 marks `count` reserved and states characteristics take `rating`. **Bone Charm deliberately not migrated**: the book says its bonus is +1 to Recovery test *results*, not +1 per day, so migrating would have made it wrong in a new way |
 | T-004 | fixed 2026-10-05 | Owner ruled "+N to a test" is a **Step** bonus (RULES-FAQ Q009) and the Aspect bonuses sit on the target (Q024). (1) Aspect of the Fog Ghost / Casual Murderer: `rating` → `step`, `close-combat` scope, plus notes; Casual Murderer `situational`. (2) `activeSpellBundlesFor` understands the §6 token `close-combat` (melee + unarmed) and a `situationalOn` list; new `situationalSpellBundlesFor`; a situational spell appears as a toggle chip in the Combat tab's Situational segment. (3) New `activeItemBundlesFor` routes always-on `attack-modifier` effects of worn NON-weapon items into the pools (rank effects collapse by `stacking`; a weapon is excluded because its own effects already arrive via the selected weapon); Bracers' scope normalised to `close-combat`. Item bundles accept the bonus as either an `attack-modifier` or a `test-modifier` on the Attack/Damage test (the custom Beer Mug of Brawling, edited in the builder, uses the latter). Side effect: that Beer Mug now takes effect. (4) `foldPool` reports effects it cannot fold — see T-021/T-023/T-049. Owner ruled the Bracers ranks 2/4 are `step` too (same "+N to close combat Damage tests" wording as the Aspect spells), so they were migrated `result` → `step`: rank 4 now adds +2 Damage Step in close combat |
-| T-005 | still open | `ed-spells.js` rebuilds `total` as `result.total + karmaResult.total` (cast and learn paths); roll-logged detail still carries no grand total and no mods |
+| T-005 | fixed 2026-10-05 | See the Resolution note in the finding: one engine `rollTotal`, sent by the modal as `total`, used by `ed-app` and `ed-spells` |
 | T-006 | fixed 2026-10-05 | See the Resolution note in the finding: measure tables live in `engine/validate-item.js`, the validator rejects measures the engine ignores, the builder defaults and restricts from the same tables |
 | T-007, T-008, T-009 | still open | `_charmStepBonus`, `plan.castingStep + armed.step`, `perSucc` in the badge and `_aimSummary`, `_spellRatingMods` all present |
 | T-010 | still open | `castingTarget.match(/\d+/)` and `/Mystic Defense/i` still in `ed-spells.js` |
@@ -1144,3 +1145,4 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 | 2026-10-05 | T-004 fixed, T-049 fixed, T-021 and T-023 narrowed (uncommitted): situational spell toggle, worn-item attack routing, `close-combat` scope, and `unapplied` reporting in the combat log. |
 | 2026-10-05 | `attack-modifier` vs `test-modifier` (uncommitted): option A adopted. Authoring rule written into EFFECT-TAXONOMY §2, §11 Q6 partly resolved, custom-item Type control gets a hint; the collapse onto `test-modifier` is recorded as an agreed follow-up under T-024. |
 | 2026-10-05 | T-006 fixed (uncommitted): per-target measure tables in the validator, shared by the builder; Measure dropdown restricted; `test-modifier` defaults to `step`. T-038 narrowed. |
+| 2026-10-05 | T-005 fixed (uncommitted): engine `rollTotal`; the modal sends `total`; Spells and the Roll Log use it. All six S1 findings are now fixed. |
