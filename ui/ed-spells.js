@@ -382,12 +382,12 @@ export class EdSpells extends LitElement {
     if (this._pendingLearn && this._learn) {
       if (this._pendingLearn === 'teacher') {
         this._pendingLearn = null;
-        this._learn = { ...this._learn, teacher: { ok: !!detail?.outcome?.ok, total: (detail?.result?.total ?? 0) + (detail?.karmaResult?.total ?? 0) } };
+        this._learn = { ...this._learn, teacher: { ok: !!detail?.outcome?.ok, total: detail?.total ?? null } };
         return;
       }
       if (this._pendingLearn === 'patterncraft') {
         this._pendingLearn = null;
-        const total = (detail.result?.total ?? 0) + (detail.karmaResult?.total ?? 0);
+        const total = detail.total;
         const diff = this._learnRollDiff;
         const levels = diff != null ? successCount(total, diff) : 0;
         // learntSuccess = EXTRA successes (total levels − 1, floored at 0) — the
@@ -399,7 +399,9 @@ export class EdSpells extends LitElement {
     }
     const step = this._pendingStep;
     if (!step || !detail?.result) return;
-    const total = (detail.result.total ?? 0) + (detail.karmaResult?.total ?? 0);
+    // The modal's full total (dice + Karma + Bonus Dice + roll-time mods) — the same number
+    // its Hit/Miss was judged by, so the cast's success levels agree with the outcome shown.
+    const total = detail.total;
     const res = { total, outcome: detail.outcome ?? null };
     const firstOfRoll = detail.rollId !== this._lastRollId;
     this._lastRollId = detail.rollId;

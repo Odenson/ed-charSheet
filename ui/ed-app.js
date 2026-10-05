@@ -276,14 +276,12 @@ export class EdApp extends LitElement {
     // device-local (decision #2) and never rides the overlay or an export.
     this.addEventListener('ed-roll-logged', (e) => {
       if (!this._roll || !this._characterId) return;
-      const { rollId, result, karmaResult, bonusResult, outcome } = e.detail ?? {};
+      const { rollId, result, karmaResult, bonusResult, outcome, total } = e.detail ?? {};
       const r = result;
       if (!r || !rollId) return;
-      // The full displayed number the modal showed: dice + Karma die + roll-time
-      // mods — so the log matches what the player saw, and the recorded
-      // `mods`/`karma` sub-objects explain a total that isn't the raw dice sum
-      // without double-counting on render (decision #8).
-      const total = r.total + (karmaResult?.total ?? 0) + (bonusResult?.total ?? 0) + (this._roll.mods ?? []).reduce((s, m) => s + (Number(m.value) || 0), 0);
+      // `total` is the full number the modal showed (dice + Karma die + Bonus Dice + roll-time
+      // mods), so the log matches what the player saw; the recorded `mods`/`karma` sub-objects
+      // explain a total that isn't the raw dice sum without double-counting on render (decision #8).
       // An aim roll's difficulty is entered in the modal, so it rides the logged
       // event (`e.detail.difficulty`); ordinary rolls carry it on the roll config.
       const difficulty = this._roll.difficulty?.value ?? e.detail.difficulty ?? null;

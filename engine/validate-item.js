@@ -64,6 +64,31 @@ const TARGET_RULES = {
   'test-modifier': { domain: 'test', names: null },
 };
 
+// Which `measure` each effect type + target actually folds with (taxonomy §5). A
+// measure outside this set is ignored by the engine, so an item carrying it would
+// advertise a bonus that never applies (T-006). The first entry is the default the
+// builder pre-selects. `null` = unrestricted (note / duration-modifier).
+//   armor / defense  → rating            (static ratings)
+//   characteristic   → Initiative: step; every other rating-based characteristic: rating
+//   attribute        → value (default) or step
+//   attack / test    → step (default) or result (flat)
+const MEASURES_BY_TYPE = {
+  'armor-modifier': ['rating'],
+  'defense-modifier': ['rating'],
+  'attribute-modifier': ['value', 'step'],
+  'attack-modifier': ['step', 'result'],
+  'test-modifier': ['step', 'result'],
+};
+
+/** The measures an effect of `type` on target `name` folds with, default first; null when unrestricted. */
+export function measuresFor(type, name) {
+  if (type === 'characteristic-modifier') return name === 'Initiative' ? ['step'] : ['rating'];
+  return MEASURES_BY_TYPE[type] ?? null;
+}
+
+/** The measure the builder pre-selects for a type + target. */
+export const defaultMeasure = (type, name) => measuresFor(type, name)?.[0];
+
 /** Max chars for the equipped tile's one-line `presentation.shortEffect` label
  * (rules/items.json presentation legend: a "3-4 word" label). */
 export const MAX_SHORT_EFFECT = 32;
@@ -115,6 +140,11 @@ function validateEffect(name, e, index, errors) {
   const hasValue = typeof e.value === 'number' || (isPlainObject(e.value) && isNonEmptyString(e.value.ref));
   if (!hasValue) push(errors, `${at}: modifier requires a numeric value (or { ref })`);
   if (e.measure !== undefined && !MEASURES.has(e.measure)) push(errors, `${at}: invalid measure "${e.measure}"`);
+  else if (e.measure !== undefined) {
+    const allowed = measuresFor(e.type, e.target?.name);
+    if (allowed && !allowed.includes(e.measure))
+      push(errors, `${at}: measure "${e.measure}" is not valid for ${e.type} on ${e.target?.name ?? 'this target'} (use ${allowed.join(' or ')}); the engine would ignore it`);
+  }
 
   const rule = TARGET_RULES[e.type];
   if (rule) {

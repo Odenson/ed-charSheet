@@ -21,7 +21,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
 import { seedWorking, deltaFrom, hasChanges, commitForm, removeWorking, weightToForm, weightFromForm } from './custom-item-state.js';
 import {
-  MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, TYPE_HINT, OPERATIONS, MEASURES, CONDITIONS,
+  MAX_SHORT_EFFECT, TYPE_META, TYPE_ORDER, TYPE_HINT, OPERATIONS, MEASURES, CONDITIONS, measuresFor, reconcileMeasure,
   summaryFor, blankEffect, finishEffect, cleanItemForm, damageStepEffect, seedDamageStep,
 } from './custom-item-builder.js';
 import { cap, prettyName } from './format.js';
@@ -334,11 +334,10 @@ export class EdCustomItem extends LitElement {
     const meta = TYPE_META[e.type];
     const isOther = name === '__other__';
     const target = { ...(e.target ?? {}), domain: meta.domain, name: isOther ? (e.target?.name ?? '') : name };
-    if (isOther) {
-      this._setEffect(i, { target, _openTarget: true });
-    } else {
-      this._setEffect(i, { target, _openTarget: false });
-    }
+    // A different target may fold with a different measure (Initiative → step): keep the
+    // current one only if it is still valid, else take the target's default (T-006).
+    const measure = reconcileMeasure(e.type, target.name, e.measure);
+    this._setEffect(i, { target, measure, _openTarget: isOther });
   }
 
   _effectTargetInput(e, i) {
@@ -530,7 +529,7 @@ export class EdCustomItem extends LitElement {
             <span class="fld v"><label>Value</label><input type="number" .value=${value} @change=${(ev) => this._setEffect(i, { value: Number(ev.target.value) || 0 })} /></span>
             <span class="fld"><label>Measure</label>
               <select .value=${e.measure ?? meta?.measure ?? 'rating'} @change=${(ev) => this._setEffect(i, { measure: ev.target.value })} aria-label="Measure">
-                ${MEASURES.map((m) => html`<option value=${m} ?selected=${m === (e.measure ?? meta?.measure ?? 'rating')}>${m}</option>`)}
+                ${(measuresFor(e.type, e.target?.name) ?? MEASURES).map((m) => html`<option value=${m} ?selected=${m === (e.measure ?? meta?.measure ?? 'rating')}>${m}</option>`)}
               </select></span>
             <span class="fld"><label>Condition</label>
               <select .value=${e.condition ?? 'always'} @change=${(ev) => this._setEffect(i, { condition: ev.target.value })} aria-label="Condition">

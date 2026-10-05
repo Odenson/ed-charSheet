@@ -6,7 +6,7 @@ documented architecture. Same spirit as [RULEBOOK-AUDIT.md](RULEBOOK-AUDIT.md):
 record a discrepancy here *before* fixing it, and cite the finding id (`T-nnn`)
 in the fixing commit.
 
-> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 7 fixed (T-001, T-002, T-003, T-004, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
+> Status: **audit pass complete (2026-09-30); re-validated 2026-10-04 (see *Re-validation*): 51 findings, 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049).** Read-only audit of branch `dev` at `43b4e4a`+; three parallel passes (data, engine, UI/architecture), merged and renumbered `T-001…` by severity then tier. Original per-pass ids are kept in each finding as *Source pass id*.
 
 ## Scope & authority
 
@@ -53,7 +53,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 
 ## Result at a glance
 
-47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 7 fixed (T-001, T-002, T-003, T-004, T-016, T-018, T-049), 5 narrowed (T-021, T-023, T-031, T-032, T-046), 44 not yet fixed including the 4 added by the re-validation. S1 fixed ×4 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
+47 findings at the original pass — **S1 ×6**, S2 ×19, S3 ×22; Tier 1 ×15, Tier 2 ×9, Tier 3 ×23. Nothing was changed in the repo at that time. *Current position (2026-10-05): 51 findings, 9 fixed (T-001, T-002, T-003, T-004, T-005, T-006, T-016, T-018, T-049), 6 narrowed (T-021, T-023, T-031, T-032, T-038, T-046), 43 not yet fixed including the 4 added by the re-validation (T-049 is among the 8 fixed). S1 fixed ×6 of 6.* Caveats: the UI pass did not run the app or tests; the data pass audited character files from the `character-data` branch (not on `dev`); thread-item/restriction consistency was covered by the data and engine passes only. The engine suite (`node --test`) was green at 725/0 when the engine pass ran.
 
 ## Summary table
 
@@ -63,8 +63,8 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-002 | `attribute-modifier` has no engine handler; always-on attribute bonuses are listed as active but never applied | S1 | 3 | engine | fixed (2c27128) |
 | T-003 | `RecoveryTests` modifiers with `measure:"count"` are dropped by the `rating`-only guard | S1 | 3 | engine | fixed (cf3c05f); Bone Charm half split out as T-051 |
 | T-004 | Always-on `attack-modifier` effects with `measure:"rating"`/`"result"` never reach the combat pools | S1 | 3 | engine | fixed (uncommitted) |
-| T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | open |
-| T-006 | Custom-item builder emits characteristic-modifier effects with a measure the engine ignores | S1 | 3 | ui | open |
+| T-005 | Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them | S1 | 3 | ui | fixed (uncommitted) |
+| T-006 | Custom-item builder emits characteristic-modifier effects with a measure the engine ignores | S1 | 3 | ui | fixed (uncommitted) |
 | T-007 | Spells tab adds step bonuses to rolls itself (castingStep, Effect step, Patterncraft step) | S2 | 1 | ui | open |
 | T-008 | Combat tab re-derives armed-talent per-success bonuses and spell defence/armour deltas | S2 | 1 | ui | open |
 | T-009 | UI reads effect-taxonomy fields directly to format or filter effects | S2 | 1 | ui | open |
@@ -96,7 +96,7 @@ Status: `open` · `accepted` (deliberate, documented) · `fix-proposed` · `fixe
 | T-035 | `test`-domain target names fall outside the §3 list; one sense is spelled three ways | S3 | 2 | data | open |
 | T-036 | Vocabulary and fields the code relies on that the taxonomy does not document | S3 | 2 | engine | open |
 | T-037 | Taxonomy §11 and §6 text stale against shipped code | S3 | 2 | engine | open |
-| T-038 | Custom-item builder duplicates the validator's type/target/measure tables | S3 | 2 | ui | open |
+| T-038 | Custom-item builder duplicates the validator's type/target/measure tables | S3 | 2 | ui | narrowed (uncommitted) |
 | T-039 | Two idioms for negative modifiers | S3 | 3 | data | open |
 | T-040 | Stale taxonomy/schema version text in docs and code comments | S3 | 3 | data | open |
 | T-041 | Two homebrew `set` targets in use are undocumented in HOMEBREW-RULES §5.5 | S3 | 3 | data | open |
@@ -240,23 +240,26 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 
 ### T-005 — Spell cast success levels ignore roll-time flat mods, while the modal outcome includes them
 - Source pass id: T-U01
-- Severity: S1  Tier: 3  Status: open
+- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (see the Resolution note below)
 - Area: ui
 - Documented: ARCHITECTURE §3: "The UI never mutates state or computes game values directly." UI-GUIDELINES §5. The roll modal's total is "dice + Karma die + any roll-time modifiers" (ed-roll-modal.js:333).
 - Observed: `_rollCast` passes Spellcasting `resultMods` (for example an activated Desperate Spell's bonus) to the roll modal as flat `mods` (ed-spells.js:1016-1025). The modal's Hit/Miss outcome and `_grandTotal()` include those mods. ed-spells `_onRoll` then rebuilds the total itself as `result.total + karmaResult.total`, omitting `mods`, and uses that to compute `successCount` (cast levels). The `ed-roll-logged` detail has no grand total: `{rollId, result, karmaResult, outcome, difficulty}` (ed-roll-modal.js:286-297). ed-app adds mods for the log (ed-app.js:286) but ed-spells does not.
 - Evidence: ed-spells.js:366 and 399 (`const levels = successCount(total, this._castTarget)`); ed-spells.js:354 (learn-roll total, same omission); ed-spells.js:1016-1025 (mods passed); ed-roll-modal.js:333-340 (`_grandTotal`); ed-app.js:286.
 - Impact: with any Spellcasting result mod active, the modal can say "Success" while `levels` is one or more lower. That blocks the self-cast activation (`levels >= 1`, `ed-spell-activate`), under-counts Success-Level extra effects, and misreports "Applied / No effect" for static effects. The wrong value is shown and acted on today.
 - Proposed remedy: have the modal include `total` (grand total) and `levels` in the `ed-roll-logged` detail, or have ed-spells call the engine with the merged total. Do not re-sum in the view.
+- Resolution 2026-10-05: new pure `rollTotal` in `engine/dice.js` (dice + Karma die + Bonus Dice + flat roll-time mods) is the one definition of a roll's total. The roll modal uses it for its Hit/Miss and now sends it as `total` on `ed-roll-logged`; `ed-app` logs that number and `ed-spells` uses it for the cast, learn-roll and teacher-roll totals instead of re-summing `result + karma` and leaving the mods out. Concrete case: a Knocked Down caster (−3 on every roll) rolls exactly the cast target; the modal said Miss while the Spells tab computed a success level and activated the spell. The Spells tab's `_onRoll` is a Lit method with no unit harness, so the tests cover `rollTotal` (`engine/dice.test.js`) and the wiring was checked by reading, not run in a browser.
 
 ### T-006 — Custom-item builder emits characteristic-modifier effects with a measure the engine ignores
 - Source pass id: T-U02
-- Severity: S1  Tier: 3  Status: open
+- Severity: S1  Tier: 3  Status: fixed 2026-10-05 (see the Resolution note below)
 - Area: ui
 - Documented: EFFECT-TAXONOMY §6: "A `measure` mismatch is also a guard: a `rating`-measure modifier applies to a static rating, not to a step or result." Data convention: Initiative effects use `measure: "step"` (rules/items.json 15x, thread-items 11x, disciplines 2x); RecoveryTests uses `count`.
 - Observed: `TYPE_META['characteristic-modifier'].measure` is a single `'rating'` for all targets. `blankEffect` and `_setEffect` (on a type change) and the target select (`_setTargetName`, which never resets the measure) leave Initiative/RecoveryTests at `rating`. `stepCharacteristic` only matches `(e.measure ?? 'step') === 'step'`, so an explicit `rating` Initiative effect never folds. The quick template "− Initiative" does set `step`, so only the dropdown path is broken. The Measure select offers all 6 measures for every type, and `validateItem` does not cross-check measure against target, so the bad item is accepted and saved.
 - Evidence: ui/custom-item-builder.js:30 (TYPE_META characteristic-modifier) and :57-65 (`blankEffect`); ui/ed-custom-item.js:286-292 and :296-298 (`_setEffect`), :318-326 (`_setTargetName`), :506-512 (Measure select); ui/ed-custom-item.js:59-70 (templates that do set measure correctly); engine/characteristics.js:470-477; engine/validate-item.js:108-132 (no measure/target cross-check).
 - Impact: a player who builds a custom item with "Initiative -1" from the dropdown gets an item whose auto-summary reads "Reduces Initiative by 1" but has no effect on the derived Initiative step. The mismatch is saved to GitHub.
 - Proposed remedy: make the builder's measure default per target (Initiative -> step, RecoveryTests -> count, rating targets -> rating), reset it in `_setTargetName`, and add a measure/target cross-check to `validateItem`. Engine auditor owns the validator side.
+- Re-check 2026-10-05 against the builder after v1.29/v1.30 (unarmed weapons, Damage Step as a single input, dropdown fixes): **still open, narrowed.** (a) The `RecoveryTests` half is no longer wrong: the builder's default `rating` is the measure the fold honours since T-003. (b) **Initiative is still broken.** Executed: `blankEffect('characteristic-modifier')` gives target `WoundThreshold`, measure `rating`; choosing Initiative through `_setTargetName` leaves `rating`; `finishEffect` summarises it "Reduces Initiative by 1", the validator accepts it, and `initiative(8, [effect])` returns 8, not 7. (c) The Measure select still offers all six measures for every type and `validateItem` has no measure/target cross-check. (d) The v1.30 `?selected` fixes make the Measure select display the stored value, which is good, but it now shows `rating` for an Initiative effect without any hint that it will be ignored. (e) Adjacent: `test-modifier` still defaults to `result`, while the owner's Step ruling (Q009) and the shipped data use `step` for Attack and Damage; the Beer Mug only worked because its author changed the measure by hand. Nothing in the v1.29/v1.30 changes touches measure defaults, so the remedy below is unchanged.
+- Resolution 2026-10-05: engine/validate-item.js now owns which measures each type and target folds with (`measuresFor`, `defaultMeasure`): Initiative `step`, other characteristics `rating`, armor/defence `rating`, attribute `value` or `step`, attack/test `step` or `result`. `validateItem` rejects any other measure, naming the allowed ones, so a bad item cannot be saved. The builder takes its defaults from the same tables (a blank characteristic effect, a type change, and `reconcileMeasure` on a target change all land on a measure that folds; `test-modifier` now defaults to `step` per the Step ruling), and the Measure dropdown offers only the allowed measures. Every saved custom-items file (bundled, local, `character-data`) still validates. Tests in `custom-item-builder.test.js`. Also narrows T-038: the builder now imports these tables from the validator instead of copying them.
 
 ### T-007 — Spells tab adds step bonuses to rolls itself (castingStep, Effect step, Patterncraft step)
 - Source pass id: T-U03
@@ -542,6 +545,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 - Evidence: rules/custom-items.json:3; tools/worker/worker.js:287; data/changelog.json:299.
 - Impact: doc and data disagree. The tag is not read by the engine, so no wrong value, but it is the exact half-migration Tier 2 is meant to prevent.
 - Proposed remedy: bump the tag in `rules/custom-items.json`, the `character-data` copy and worker.js, update the test fixtures in the same change, and confirm the CI fold does not reject a v4 file.
+- Update 2026-10-05: the bundled file and the worker/dev-server stamps are v6, but the CI fold (`tools/fold-custom-items.mjs`) mirrors `character-data`'s `data/custom-items.json` byte for byte and that file still says v3. The fold commit `929f0bb` therefore reintroduced v3 into `rules/custom-items.json` and turned the conformance tests red; it was re-tagged v6 by hand on `dev`. **It will happen again on the next custom-item save.** Permanent fix, owner decision: (a) have the fold stamp the current `effectTaxonomy` ref when mirroring (and update its tests), or (b) bump the tag in `character-data`'s `data/custom-items.json` once.
 
 ### T-033 — Undocumented effect fields and ref property (`note`, `rounds` in the table, `Max`)
 - Source pass id: T-D05
@@ -747,8 +751,8 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 | T-002 | fixed 2026-10-05 (`2c27128`) | New `foldAttribute` in `engine/characteristics.js` folds always-on `attribute-modifier` effects (`measure` value, default, or step; Step floored at 0). `store.js` now assembles `activeEffects` before the attributes and `attrVal` reads the folded Value, so carrying capacity, defences, Mystic Armor, talent steps and `attribute\|…\|Step` refs all see it. Tests: `engine/characteristics.test.js`, new `store-attribute-modifier.test.js`. The mixed `measure` (races/Bracers `value`, Beer Mug `step`) is now honoured both ways |
 | T-003 | fixed 2026-10-05 (`cf3c05f`; Warrior), Bone Charm split to T-051 | Owner chose option B (`rating` is the one measure for characteristics). Warrior Circle 7 effect migrated `count` → `rating`; rule-agent confirmed the bonus (RULES-FAQ Q023: Warrior Circle 7 "gains an additional Recovery test"). Tests added in `engine/characteristics.test.js`. EFFECT-TAXONOMY §5 marks `count` reserved and states characteristics take `rating`. **Bone Charm deliberately not migrated**: the book says its bonus is +1 to Recovery test *results*, not +1 per day, so migrating would have made it wrong in a new way |
 | T-004 | fixed 2026-10-05 | Owner ruled "+N to a test" is a **Step** bonus (RULES-FAQ Q009) and the Aspect bonuses sit on the target (Q024). (1) Aspect of the Fog Ghost / Casual Murderer: `rating` → `step`, `close-combat` scope, plus notes; Casual Murderer `situational`. (2) `activeSpellBundlesFor` understands the §6 token `close-combat` (melee + unarmed) and a `situationalOn` list; new `situationalSpellBundlesFor`; a situational spell appears as a toggle chip in the Combat tab's Situational segment. (3) New `activeItemBundlesFor` routes always-on `attack-modifier` effects of worn NON-weapon items into the pools (rank effects collapse by `stacking`; a weapon is excluded because its own effects already arrive via the selected weapon); Bracers' scope normalised to `close-combat`. Item bundles accept the bonus as either an `attack-modifier` or a `test-modifier` on the Attack/Damage test (the custom Beer Mug of Brawling, edited in the builder, uses the latter). Side effect: that Beer Mug now takes effect. (4) `foldPool` reports effects it cannot fold — see T-021/T-023/T-049. Owner ruled the Bracers ranks 2/4 are `step` too (same "+N to close combat Damage tests" wording as the Aspect spells), so they were migrated `result` → `step`: rank 4 now adds +2 Damage Step in close combat |
-| T-005 | still open | `ed-spells.js` rebuilds `total` as `result.total + karmaResult.total` (cast and learn paths); roll-logged detail still carries no grand total and no mods |
-| T-006 | still open | Builder `TYPE_META` still one `rating` measure for all characteristic targets; validator has no measure/target cross-check |
+| T-005 | fixed 2026-10-05 | See the Resolution note in the finding: one engine `rollTotal`, sent by the modal as `total`, used by `ed-app` and `ed-spells` |
+| T-006 | fixed 2026-10-05 | See the Resolution note in the finding: measure tables live in `engine/validate-item.js`, the validator rejects measures the engine ignores, the builder defaults and restricts from the same tables |
 | T-007, T-008, T-009 | still open | `_charmStepBonus`, `plan.castingStep + armed.step`, `perSucc` in the badge and `_aimSummary`, `_spellRatingMods` all present |
 | T-010 | still open | `castingTarget.match(/\d+/)` and `/Mystic Defense/i` still in `ed-spells.js` |
 | T-011 | still open | `/^Attack/.test(r.label)` still in `ed-combat.js` `_onRollLogged` |
@@ -772,7 +776,7 @@ Re-check of every finding against current code and data after releases v1.25.0 t
 | T-031 | **narrowed** | `ed-spells.js` now adopts `modal-controller` (3 of ~20: `ed-app`, `ed-disciplines`, `ed-spells`). 20 other files still hand-roll `document.addEventListener('keydown')` |
 | T-032 | **narrowed** | Fixed: all `rules/*.json` including `custom-items.json`, `tools/worker/worker.js`, `tools/dev-server.mjs` now say v6. Still v3: `character-data` `data/custom-items.json`, test fixtures (`validate-item.test.js`, `store-custom-items.test.js`, `fold-custom-items.test.js`, `worker.test.js`), comments (`validate-item.js`, `health.js`, `encumbrance.js`) |
 | T-033 to T-037 | still open | Taxonomy doc not changed for effect-level `note` / `rounds` / `Max`, scope tokens, §3 `test` names, §11 (still titled "Open questions (v3 review)"). v5/v6 notes were additive only |
-| T-038 | still open | Validator tables still not exported (`validateItem`, `MAX_SHORT_EFFECT`, `EFFECT_TYPES` only); builder keeps its own |
+| T-038 | narrowed 2026-10-05 | The builder now imports `measuresFor` / `defaultMeasure` from the validator; `TYPE_META` names, `OPERATIONS` and `CONDITIONS` are still copies |
 | T-039 | still open | 17 negative `add` effects, all in `combat.json` |
 | T-040 | still open | Same four stale version strings |
 | T-041, T-042 | still open | Homebrew docs unchanged for the two extra `set` targets and the ref dialect |
@@ -1141,3 +1145,5 @@ See [EFFECT-TAXONOMY.md](EFFECT-TAXONOMY.md) §2–§9 and [RESTRICTION-TAXONOMY
 | 2026-10-05 | T-004 narrowed, T-016 fixed (uncommitted): Aspect of the Fog Ghost / Casual Murderer migrated to `step` with `close-combat` scope; Casual Murderer situational. Bracers routing and a toggle for situational spell bundles remain open. |
 | 2026-10-05 | T-004 fixed, T-049 fixed, T-021 and T-023 narrowed (uncommitted): situational spell toggle, worn-item attack routing, `close-combat` scope, and `unapplied` reporting in the combat log. |
 | 2026-10-05 | `attack-modifier` vs `test-modifier` (uncommitted): option A adopted. Authoring rule written into EFFECT-TAXONOMY §2, §11 Q6 partly resolved, custom-item Type control gets a hint; the collapse onto `test-modifier` is recorded as an agreed follow-up under T-024. |
+| 2026-10-05 | T-006 fixed (uncommitted): per-target measure tables in the validator, shared by the builder; Measure dropdown restricted; `test-modifier` defaults to `step`. T-038 narrowed. |
+| 2026-10-05 | T-005 fixed (uncommitted): engine `rollTotal`; the modal sends `total`; Spells and the Roll Log use it. All six S1 findings are now fixed. |
