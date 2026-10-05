@@ -76,6 +76,40 @@
       "presentation": {
         "shortEffect": "personally hunted"
       }
+    },
+    "Chain Gauntels": {
+      "kind": "weapon",
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "operation": "add",
+          "value": 1,
+          "measure": "step",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "condition": "always",
+          "source": "item",
+          "summary": "Adds +1 Damage step"
+        }
+      ],
+      "ref": {
+        "cost": 2,
+        "category": "unarmed",
+        "strMin": 2,
+        "size": 1,
+        "damageStep": 1,
+        "weight": {
+          "amount": 2,
+          "unit": "lb"
+        },
+        "availability": "Common",
+        "description": "Leather and Chainmail gloves that adds weight to a punch."
+      },
+      "presentation": {
+        "shortEffect": "+1 unarmed damage"
+      }
     }
   }
 }
