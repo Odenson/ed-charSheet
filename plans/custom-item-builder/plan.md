@@ -1,5 +1,6 @@
 ---
-status: building
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: Custom item builder: unarmed weapons (custom-item-builder)
 

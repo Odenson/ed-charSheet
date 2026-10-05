@@ -320,10 +320,13 @@ short so the tile's right-hand space never overflows; empty is fine, then the
 tile derives its label from the first numeric effect),
 and an auto summary derived from the templates.
 
-Build note (§6.6): quick-templates shipped for **weapon / armor / shield /
+Build note (§6.6): quick-templates shipped for **armor / shield /
 blood-charm / healing-aid** only. **ammunition, gear and magic-item have none** —
 the "＋ Add effect row" covers them — and the blood-charm template is
-Unconsciousness-only (Death Rating via the generic row).
+Unconsciousness-only (Death Rating via the generic row). **weapon** had a
+"＋ Damage Step" template until custom-item-builder (2026-10-05); it was
+replaced by the Damage Step field, which generates the read-only Damage effect
+(row above).
 
 ### 6.3 Effects editor
 
@@ -430,8 +433,10 @@ global/separate from the per-character overlay, and `_dirty` recomputes as
 `hasCustomPendingEdits()`. "Cleared on confirmed commit" is commit-specific, not
 discard-specific.
 
-**§6.2 quick templates — 5 of 8 kinds.** Shipped for weapon, armor, shield,
-blood-charm, healing-aid. ammunition / gear / magic-item have **no** templates —
+**§6.2 quick templates — 4 of 8 kinds.** Shipped for armor, shield,
+blood-charm, healing-aid (weapon's Damage template was removed by
+custom-item-builder, 2026-10-05: the Damage Step field now generates that
+effect). ammunition / gear / magic-item have **no** templates —
 the plan's "Note" defaults and "any modifier template available" are served by
 the generic "＋ Add effect row". The blood-charm template is
 Unconsciousness-only; "Death Rating" needs the generic row. (Deferred, not a
@@ -457,7 +462,9 @@ editable.
 "Damage" only and free text only for test-modifier; the build lets **both**
 attack- and test-modifier take free-text names, mirroring the validator
 (`attack-modifier`/`test-modifier` are `names: null` → open). "Damage" is the
-quick-template default; the target select offers "Other…".
+default target name (TYPE_META); the target select offers "Other…". A weapon's own
+`add`/`step` Damage effect can no longer be hand-authored: it comes from the Damage
+Step field, and a hand-added duplicate blocks save.
 
 ### P6–P8 build notes
 

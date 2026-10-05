@@ -509,7 +509,7 @@ and its runbook.
     combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)
     combat-log-rows.js     # Combat-log row to table-cell mapping (pure)
     custom-item-state.js   # custom-item builder state
-    custom-item-builder.js # custom-item builder view
+    custom-item-builder.js # custom-item form helpers (pure: clean/validate, effect summaries, Damage Step → generated effect)
     legend-spent-view.js   # Legend-spent audit view
     picker.js              # generic list picker
     format.js              # display formatting helpers
