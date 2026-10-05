@@ -13,10 +13,17 @@
 // are never dropped; the modal's _setEffect keeps the summary in sync the same
 // way.
 
-import { validateItem, MAX_SHORT_EFFECT } from '../engine/validate-item.js';
+import { validateItem, MAX_SHORT_EFFECT, measuresFor, defaultMeasure } from '../engine/validate-item.js';
 import { prettyName } from './format.js';
 
-export { MAX_SHORT_EFFECT };
+export { MAX_SHORT_EFFECT, measuresFor, defaultMeasure };
+
+/** After a target change: keep the current measure if the new target still folds with it,
+ *  else take that target's default (e.g. switching to Initiative selects `step`). */
+export const reconcileMeasure = (type, targetName, current) => {
+  const allowed = measuresFor(type, targetName);
+  return allowed && !allowed.includes(current) ? allowed[0] : current;
+};
 
 // §6.4 — type → target/measure constraints (mirrors engine/validate-item.js).
 // `open` names allow a free-text target name (a named ability / natural appendage).
@@ -62,7 +69,9 @@ export const blankEffect = (type = 'armor-modifier') => {
     type,
     operation: 'add',
     value: 1,
-    measure: meta?.measure,
+    // The per-target default (Initiative → step, test bonuses → step, …) so the effect is born
+    // with a measure the engine folds; falls back to the type's own default.
+    measure: meta ? (defaultMeasure(type, meta.names[0]) ?? meta.measure) : undefined,
     target: meta ? { domain: meta.domain, name: meta.names[0] } : undefined,
     condition: 'always',
     summary: '',
