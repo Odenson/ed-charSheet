@@ -89,6 +89,38 @@ export const cleanEffects = (effects) =>
     return { ...rest, summary: rest.summary?.trim() ? rest.summary : summaryFor(rest) };
   });
 
+// Damage Step is the single input for a weapon's Damage effect (plans/
+// custom-item-builder/spec.md): the generated effect is derived from it at clean
+// time and never lives in form state.
+const validStep = (v) => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+
+/** The generated Damage effect for a Damage Step, or null when empty/invalid. */
+export const damageStepEffect = (step) => {
+  if (!validStep(step)) return null;
+  return finishEffect({
+    type: 'attack-modifier', operation: 'add', value: step, measure: 'step',
+    target: { domain: 'attack', name: 'Damage' }, condition: 'always',
+  });
+};
+
+export const isDamageStepEffect = (e) =>
+  e?.type === 'attack-modifier' && e.target?.domain === 'attack' && e.target?.name === 'Damage'
+  && e.operation === 'add' && e.measure === 'step';
+
+/** On open: fold the first stored Damage-step effect into ref.damageStep (field wins). */
+export function seedDamageStep(item) {
+  if (item?.kind !== 'weapon') return item;
+  const effects = item.effects ?? [];
+  const idx = effects.findIndex(isDamageStepEffect);
+  if (idx < 0) return item;
+  const out = { ...item, effects: effects.filter((_, i) => i !== idx) };
+  const cur = item.ref?.damageStep;
+  if (cur === undefined || cur === '') {
+    out.ref = { ...(item.ref ?? {}), damageStep: effects[idx].value };
+  }
+  return out;
+}
+
 // The pure core of the modal's "clean form" step: trim + validate the name,
 // drop transient ref empties, persist presentation.shortEffect only when
 // non-empty, then leave shape/taxonomy judgement to the shared engine gate.
@@ -96,11 +128,29 @@ export function cleanItemForm(name, item) {
   const trimmed = (name ?? '').trim();
   if (!trimmed) return { ok: false, errors: ['Name is required.'] };
   const effects = cleanEffects(item.effects ?? []);
+  const isWeapon = item.kind === 'weapon';
+  const unarmed = isWeapon && item.ref?.category === 'unarmed';
+  const errors = [];
+  if (isWeapon) {
+    const step = item.ref?.damageStep;
+    if (step !== undefined && step !== '' && !validStep(step)) {
+      errors.push('Damage Step must be a whole number of 0 or more');
+    }
+    if (effects.some(isDamageStepEffect)) {
+      errors.push('A Damage step effect duplicates the Damage Step field: use the Damage Step field instead.');
+    }
+    if (errors.length) return { ok: false, errors };
+    const gen = damageStepEffect(step);
+    if (gen) effects.unshift(gen);
+  }
   const clean = { kind: item.kind, effects };
   const ref = {};
   for (const [k, v] of Object.entries(item.ref ?? {})) {
+    if (unarmed && (k === 'shortRange' || k === 'longRange')) continue;
     if (k === 'cost') {
       if (typeof v === 'number' && v >= 0) ref.cost = v;
+    } else if (k === 'damageStep') {
+      if (validStep(v)) ref.damageStep = v;
     } else if (v !== undefined && v !== '' && v !== false && v !== 0) {
       ref[k] = v;
     }

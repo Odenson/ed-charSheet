@@ -686,3 +686,16 @@ Addendum (2026-10-05) — every discipline Circle "Karma:" grant on Damage tests
 - Weaponsmith C5: "Damage tests he makes with a weapon he crafted" (PG:3973)
 - Thief C11 (Warden): "Damage tests made against targets suffering a penalty to their Physical Defense" (CG:1371)
 No others in PG/CG/Deeper Secrets/GM Guide. Karma on Damage is granted only by these discipline lines; the general Talents-and-Karma rule (PG:4128-4132) puts Karma on the talent's own test only.
+
+### Q026 — Worn weapon-like item (gauntlet, brass knuckles, spiked glove) boosting unarmed Damage Step; is Damage Step 0 valid for a weapon?
+Keywords: gauntlet, brass knuckles, spiked glove, cestus, attached weapon, unarmed Damage Step bonus, Damage Step 0, zero damage step, improvised weapon, custom item · Resolved: 2026-10-05 · Context: custom-item-builder
+
+(1) Not covered as a stat block: no gauntlet, brass knuckles or spiked glove weapon entry with a Damage Step exists in the extracts (grep of all extracts for gauntlet/knuckle/spiked glove/cestus: only the Attached Weapons rule, Gauntlet as a Circle restriction, and the magic Gauntlets of Graaneel, a shield/armor thread item with no unarmed damage bonus). The only rule: weapons attached to the body (a gauntlet, spiked boot, t'skrang tail weapon) are used with Unarmed Combat, still count as weapons, and can be targeted by Disarm, Riposte, or weapon-enhancing spells. How such a weapon's Damage Step is applied is not stated; treat a gauntlet with +1 as an owner house item. (Q025 notes unarmed Damage otherwise uses Strength Step only.)
+(2) Damage Step 0: not covered. No text states 0 as a valid or invalid weapon Damage Step. Improvised melee weapons have a GM-set Damage Step with a -2 Attack penalty (no floor stated); unarmed damage is Strength Step with no weapon step (Q025).
+
+Sources:
+- text-RB-players-guide.txt:15328-15333 (Attached Weapons, p. 406 per index line 18896)
+- text-RB-players-guide.txt:14762-14767 (Improvised Melee Weapons, p. 392)
+- text-RB-companions-guide.txt:7595-7606 (Gauntlets of Graaneel, p. 203-204)
+
+Decision: 2026-10-05 — (R3) An unarmed-category weapon's Damage Step is additive to the Strength Step, matching ordinary weapons (house rule). (R4) A weapon Damage Step of 0 is accepted and stored (app convention; homebrew).
