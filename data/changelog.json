@@ -7,6 +7,57 @@
   },
   "releases": [
     {
+      "version": "1.31.0",
+      "date": "2026-10-05",
+      "summary": "Audit fixes: attribute bonuses, worn-item and spell combat bonuses, Recovery bonus, spell-cast totals and the custom item builder now compute correctly, with a Not-applied report in the combat log.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Overview: an attribute changed by an always-on effect (e.g. a magic item) shows a small pill such as +2 step beside its name, with a hover breakdown of where it comes from."
+        },
+        {
+          "type": "added",
+          "text": "Combat: active spells with a situational bonus (Aspect of the Casual Murderer) appear as toggles in the Situational tab and fold into attack and damage only while switched on."
+        },
+        {
+          "type": "added",
+          "text": "Combat log: effects that could not be applied to an attack or damage roll are now reported as \"Not applied\" with the reason, instead of being dropped silently."
+        },
+        {
+          "type": "added",
+          "text": "Combat: clicking the Knocked Down chip now sets the live Knocked Down condition (−3 to every roll, −3 defence) until you Stand up."
+        },
+        {
+          "type": "fixed",
+          "text": "Always-on attribute modifiers (e.g. Bracers of Obsidiman Strength at rank 6) now change the attribute, carrying capacity, defences and everything derived from it."
+        },
+        {
+          "type": "fixed",
+          "text": "Knacks that belong to Melee Weapon, Missile Weapon and Throwing Weapon now appear for characters who own those talents."
+        },
+        {
+          "type": "fixed",
+          "text": "Warrior Circle 7 now gains its extra Recovery test per day."
+        },
+        {
+          "type": "fixed",
+          "text": "Obsidiman Skin now gives Physical Armor 3, as printed."
+        },
+        {
+          "type": "fixed",
+          "text": "Aspect of the Fog Ghost and Aspect of the Casual Murderer give Step bonuses in close combat; worn items such as Bracers of Obsidiman Strength and custom magic items (e.g. a Beer Mug of Brawling) now add their Attack and Damage bonuses on the Combat tab."
+        },
+        {
+          "type": "fixed",
+          "text": "Spell casts and spell-learning rolls now use the same total as the roll window, including Knocked Down −3, so a cast the window calls a Miss no longer counts as a success."
+        },
+        {
+          "type": "fixed",
+          "text": "Custom item builder: effect measures now default to what the sheet actually applies (e.g. Initiative uses step), the Measure list only offers valid choices, and unsupported combinations are rejected."
+        }
+      ]
+    },
+    {
       "version": "1.30.0",
       "date": "2026-10-05",
       "summary": "Custom item builder: weapons can now be Unarmed (e.g. a Gauntlet), with the Damage Step field as the single source for weapon damage, a stored Damage Step of 0, and dropdowns that show the saved value.",
