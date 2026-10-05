@@ -102,7 +102,7 @@ blocker.
 Anticipate Blow, etc. — as a standalone action, not tied to a weapon.
 
 **Fix (owner design 2026-08-11):** add a **"None"** default entry to the *weapon*
-dropdown (alongside Unarmed). When **None** is selected, the talent/skill picker
+dropdown (alongside Unarmed; the Unarmed entry was dropped at v1.11.0 and restored 2026-10-05 by plans/unarmed-combat/ with category `unarmed`, Damage Step 0 + Strength). When **None** is selected, the talent/skill picker
 drops the weapon-category filter and lists **every** talent and skill the
 character owns that has a `step` (each rollable). Picking one and hitting the
 Attack-line `⚄` rolls that talent/skill on its own `step` / `karma` — a plain
@@ -149,8 +149,8 @@ result must reach the damage pool.
    the Roll Log it already reloads on `ed-roll-logged`: the newest **attack** entry
    carries `total` (post-mods, incl. any Knocked Down −3) and `difficulty`. Match
    the attack roll specifically (its label starts "Attack"), not damage/initiative.
-   Compute the bonus, show it as a badge on the Damage line (e.g. "+2 dmg · 2
-   successes"). Clears when the weapon/talent pick changes.
+   Compute the bonus, show it as a badge on the Damage line (e.g. "+4", hover "2 success levels on the
+   attack — +4 to the Damage step"; corrected 2026-10-05, was "+2 dmg · 2 successes"). Clears when the weapon/talent pick changes.
 3. Placeholder-pill rule intact: no target or no attack result → no fabricated
    bonus (bonus is 0, base Damage step shows normally).
 

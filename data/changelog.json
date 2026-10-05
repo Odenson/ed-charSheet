@@ -6,7 +6,7 @@
     "changes": [
       {
         "type": "added",
-        "text": "Combat tab: Unarmed is now a Weapon choice, so an unarmed attack against Physical Defense and its Strength-step Damage roll work with the Unarmed Combat talent."
+        "text": "Combat tab: Unarmed is now a Weapon choice, so an unarmed attack against Physical Defense and its Strength-step Damage roll work with the Unarmed Combat talent. None stays the choice for free-action rolls such as Avoid Blow."
       },
       {
         "type": "fixed",
