@@ -56,8 +56,6 @@ Six tabs, each a distinct lens on the character:
 |-----|----------|
 | Overview | At-a-glance: hero portrait + header, attributes, defences, armour, movement, health, combat, and a compact Active Effects strip (live conditions only: Knocked Down with a Stand up control, encumbrance stages, each active Situational chip with a clear (✕) button, and a transient emergency-heal row); the strip scrolls internally so the Overview still fits the viewport |
 | Disciplines | Per-discipline detail with a toggle between the character's disciplines (talents live here — there is no separate Talents tab) |
-
-Disciplines tab Circle track: the next-Circle pill tooltip and the Train modal state the active advancement gate with live progress. With the homebrew `hb-optional-circle-advancement` rule on, that is "N talents at rank R, one from Circle C" (read-only progress, `—` pill when unresolved); otherwise the standard Discipline-Talent rank gate.
 | Combat | Per-encounter scratchpad: a floating header line (Defence, Armour, Initiative with roll, Available Karma); the Weapon picker (None for a free-action roll, Unarmed for Unarmed Combat with Strength-step Damage, then the equipped weapons) + attack talent card (attack/damage/strain stat-lines, target-# field) beside a Damage taken card (incl. the Knocked Down Stand-up control); a segmented control over combat-option / situational / blood-charm chips (active-count badges, session-remembered selection; Situational chips (Blindsided, Cover, Darkness, Harried, Impaired Movement, Range — Long, Surprised) are global session-only live conditions, not scratch toggles: clicking one dispatches `ed-toggle-situation`, folds its Defence into derived Defence on every tab and lists it in Overview Active Effects with a clear (✕) button; the Knocked Down chip sets the app-wide live Knocked Down condition, locked until Stand up, and an encumbrance Harried is locked on. Scoped penalties apply automatically in Combat pools — Darkness and Impaired Movement in the attack pool, Range Long in both the attack and damage pools — and appear as pre-ticked per-roll checkboxes in the roll modal elsewhere; unscoped penalties (Harried −2 Step, Knocked Down −3 to the result) apply to every roll on every tab except the Karma die); a Potions card; and the device-local roll log as a full-width table |
 | Spells | Grimoire + spell matrices by circle, the Weave/Cast/Effect cast flow, self-cast active effects, and target effects (cast on Other) — spellcasters only |
 | Equipment | Weapons, armour, thread items, kit |
@@ -72,6 +70,8 @@ Disciplines · Combat · Spells · Equipment · Notes).*
 *Combat tab layout redesigned 2026-10-04 by owner sign-off
 ([new-combat-ui plan](../plans/new-combat-ui/plan.md) — header line, side-by-side
 Attack and Damage taken cards, tabbed combat modifiers, log as a table).*
+
+*Disciplines Circle track (homebrew-circle-adv, 2026-11-14): the next-Circle pill tooltip states the advancement gate. Standard (PG p.452): all Circle 1–N Discipline Talents at the new Circle's rank. With the homebrew `hb-optional-circle-advancement` rule on (PG p.453) the tooltip reads "Circle C needs N talents at rank R, one from Circle F" with live progress, and the Train modal adds a read-only requirement row (count and from-Circle checks, the counted talents). When there is no higher Circle (or no higher row in the optional table) the next pill shows `—`, never a fabricated number.*
 
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,

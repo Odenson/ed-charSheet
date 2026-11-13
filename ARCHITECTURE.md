@@ -535,7 +535,7 @@ and its runbook.
     spells.js                # spell/matrix fold (grandfathered display parser, §5.5)
     legend.js                # Legend Point totals
     legend-spent.js          # Legend-spent reconciliation audit
-    advancement.js           # talent/skill advancement costs; Circle gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
+    advancement.js           # Circle-advancement status (supported Circle, eligibility, next requirement; no costs): gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
     potions.js               # potion/consumable effects
     formula.js               # rule-expression evaluator (§4.2)
     ability-ranks.js         # ability rank resolution

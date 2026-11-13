@@ -1,12 +1,12 @@
 // engine/advancement.js — pure, DOM-free Circle-advancement status for a
 // Discipline. Attaining a Circle in ED4 is gated on BOTH minimum talent ranks
-// AND training with a higher-Circle tutor (PG p.453) — training is an external
+// AND training with a higher-Circle tutor (PG p.452) — training is an external
 // event the sheet can't see, so the character's ATTAINED Circle stays a stored
 // input. This module derives the talent-SUPPORTED Circle and the requirement to
 // advance, so the UI can validate the stored number and surface "can advance"
 // without ever mutating or storing anything (ARCHITECTURE §4.1).
 //
-// The gate (PG p.453, "Minimum Talent Requirements"): to train for Circle C,
+// The gate (PG p.452, "Minimum Talent Requirements"): to train for Circle C,
 // every Discipline Talent granted at Circles 1..C-1 must be at rank >= C. Talent
 // Options never count; free talents and the universal talents (Durability, Karma
 // Ritual) are not the gating Discipline Talents in the "N in total" rule, so the
@@ -77,6 +77,7 @@ export function supportedCircle(ref, rankByName) {
  * @returns {{attained,supported,eligible,consistent,next,nextRequirement}}
  *   - `supported`  highest Circle the talents justify
  *   - `eligible`   supported > attained (the DTs already meet the next Circle's gate)
+ *   (optional path: eligible = attained+1 row satisfied; consistent = stored Circle's count clause; next is null past the Discipline's or table's last Circle)
  *   - `consistent` supported >= attained (the stored Circle is justified; false = bad/imported data)
  *   - `next`       attained + 1
  *   - `nextRequirement`  circleRequirement(next) — the checklist for advancing
