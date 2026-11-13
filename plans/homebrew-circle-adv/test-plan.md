@@ -15,7 +15,7 @@
 - circleStatus with opts (13 cases) - eligible/consistent/supported invariants; no climb, attained+1 row only; Circles 12-15 lagging min rank (R1); top Circle / beyond table / beyond ref.circles cap; Circle 1/null attained; F2 (a)(b)(c); consistency ignores from-Circle clause; per-Discipline independence (R4); standard path deep-equal with undefined/{}/no-table opts.
 
 ### tools/homebrew-optional-advancement-data.test.js
-- 14 legend rows equal R1; fromCircle === circle - 1; schema tag `ed-legend/1` and `circleTraining` unchanged; dormant homebrew rule (`enabled:false`, boolean set, overrides cites p.453, summary/note, source lists the target). Rule: R1.
+- 14 legend rows equal R1; fromCircle === circle - 1; schema tag `ed-legend/1` and `circleTraining` unchanged; enabled homebrew rule (`enabled:true`, boolean set, overrides cites p.453, summary/note, source lists the target). Rule: R1.
 
 ### store-optional-advancement.test.js
 - rule on vs off through deriveModel with real legend; `model.advancement.optional`; (a)/(e) raw `viaVersatility` reaches engine, off ignores flag; (b) null circle no false inconsistency; (c) table absent and (c2) invalid table fall back to standard; (d) non-boolean flag (1, "true") falls back; table never written onto the character.

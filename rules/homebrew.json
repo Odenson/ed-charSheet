@@ -89,8 +89,8 @@
       "name": "Advance Circles using all talents",
       "overrides": "Players' Guide p.453 - Optional Rule: Using All Talents To Advance (replaces p.452 Minimum Talent Requirements)",
       "summary": "To advance to a new Circle, a Discipline needs N talents (Discipline Talents or Talent Options) at a minimum rank, one of them from the Circle being left, instead of every lower-Circle Discipline Talent at rank equal to the new Circle.",
-      "enabled": false,
-      "note": "Uses the ed-homebrew/3 `set` lever with the boolean target `advancement.optionalTable` (docs/HOMEBREW-RULES.md §5.5). Evaluated per Discipline on that Discipline's own talents; Versatility-learned and free talents never count. The table (new Circle -> N / rank / from-Circle) lives in rules/legend.json costs.optionalAdvancement. Trainer, 40 hours and fees are unchanged. Ships dormant.",
+      "enabled": true,
+      "note": "Uses the ed-homebrew/3 `set` lever with the boolean target `advancement.optionalTable` (docs/HOMEBREW-RULES.md §5.5). Evaluated per Discipline on that Discipline's own talents; Versatility-learned and free talents never count. The table (new Circle -> N / rank / from-Circle) lives in rules/legend.json costs.optionalAdvancement. Trainer, 40 hours and fees are unchanged. Ships enabled for the current campaign.",
       "set": {
         "advancement.optionalTable": true
       }

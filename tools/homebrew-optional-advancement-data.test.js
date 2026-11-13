@@ -31,11 +31,11 @@ test('legend.json: schema tag and circleTraining unchanged', () => {
   });
 });
 
-test('homebrew.json: dormant hb-optional-circle-advancement boolean set rule', () => {
+test('homebrew.json: enabled hb-optional-circle-advancement boolean set rule', () => {
   const h = read('homebrew.json');
   const rule = h.rules.find((r) => r.id === 'hb-optional-circle-advancement');
   assert.ok(rule, 'rule present');
-  assert.equal(rule.enabled, false);
+  assert.equal(rule.enabled, true);
   assert.deepEqual(rule.set, { 'advancement.optionalTable': true });
   assert.match(rule.overrides, /p\.453/);
   assert.ok(rule.summary && rule.note);
