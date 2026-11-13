@@ -207,6 +207,15 @@ with a scalar or a **race-keyed map**.
     PLAN-HOMEBREW-LEGEND-TIER.md). Absent/0 ⇒ the standard tables. Read by the
     Legend-spent audit and the rank-editing pricing (engine/legend-spent.js,
     store.js `tierShift`).
+  - `advancement.optionalTable` — **boolean** (strict `true`): swaps the Circle
+    gate from the PG p.452 "all lower-Circle Discipline Talents at rank >= new
+    Circle" to the PG p.453 "Using All Talents To Advance" table in
+    `rules/legend.json` `costs.optionalAdvancement` (new Circle -> N talents at
+    rank R, one from the Circle being left), evaluated per Discipline over its
+    Discipline Talents and Talent Options (free, universal and Versatility-learned
+    talents never count). Missing/invalid table or a non-`true` value ⇒ the
+    standard gate. Read by `store.js` -> `engine/advancement.js` `circleStatus`
+    (plans/homebrew-circle-adv).
 - **Semantics.** `set` **replaces** the target's standard value; a rule may pair
   `set` with `effects`/`formula` on *different* targets. **Last-enabled-wins** if
   two enabled rules `set` the same target. A `set` value is a **constant** in v2

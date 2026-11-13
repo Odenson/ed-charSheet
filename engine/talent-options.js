@@ -20,7 +20,7 @@ export function disciplineTalentSet(ref) {
   return set;
 }
 
-function freeTalentSet(ref) {
+export function freeTalentSet(ref) {
   const set = new Set();
   for (const c of ref?.circles ?? []) for (const t of c.freeTalents ?? []) set.add(t);
   return set;

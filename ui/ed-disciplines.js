@@ -12,6 +12,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { ModalController } from './modal-controller.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
+import { describeRequirement } from '../engine/advancement.js';
 
 // Hover text for an ability whose action an effect changed (taxonomy v5
 // action-modifier). Pure formatting of the engine's pre-resolved fields: the
@@ -820,12 +821,21 @@ export class EdDisciplines extends LitElement {
   _circleTrack(d) {
     const cs = d.circleStatus ?? { attained: d.circle, supported: d.circle, next: (d.circle ?? 1) + 1, eligible: false, consistent: true };
     const at = cs.attained;
-    const curTitle = cs.consistent
+    const opt = cs.nextRequirement?.rule === 'optional';
+    const optText = opt ? describeRequirement(cs.nextRequirement) : null;
+    let curTitle = cs.consistent
       ? `Circle ${at}${cs.eligible ? ` — eligible to train to Circle ${cs.next}` : ''}`
       : `Stored as Circle ${at}, but this Discipline's talents only support Circle ${cs.supported} — its Circle 1–${at - 1} Discipline Talents are not all at Rank ${at}. Raise them, or correct the stored Circle.`;
-    const nextTitle = cs.eligible
+    let nextTitle = cs.eligible
       ? `All Circle 1–${at} Discipline Talents meet Rank ${cs.next} — eligible to train to Circle ${cs.next}.`
       : `Circle ${cs.next} — not yet eligible.`;
+    if (opt) {
+      // Optional homebrew gate (PG p.453): state the table row with live progress.
+      nextTitle = optText.unresolved
+        ? `Circle ${cs.next} — no optional-table row.`
+        : `Circle ${cs.next} needs ${optText.text} (${optText.progress}${optText.fromCircleMet ? '' : '; no qualifying Circle ' + cs.nextRequirement.fromCircle + ' talent yet'}).${cs.eligible ? ' Eligible to train.' : ' Not yet eligible.'}`;
+      if (!cs.consistent) curTitle = `Stored as Circle ${at}, but this Discipline's talents only support Circle ${cs.supported} — too few talents at the Circle ${at} rank (optional advancement rule). Raise them, or correct the stored Circle.`;
+    }
     return html`
       <span class="ctrack">
         ${at > 1 ? html`<span class="cpill edge" aria-hidden="true">${at - 1}</span><span class="clnk"></span>` : ''}
@@ -833,7 +843,7 @@ export class EdDisciplines extends LitElement {
         <span class="clnk ${cs.eligible ? 'ready' : ''}"></span>
         ${cs.eligible
           ? html`<button class="cpill edge ready" title=${`Ready to advance — train to Circle ${cs.next}`} aria-label=${`Train to Circle ${cs.next}`} @click=${(e) => this._trainClick(d, cs, e)}><span aria-hidden="true">↑</span>${cs.next}</button>`
-          : html`<span class="cpill edge" title=${nextTitle}>${cs.next}</span>`}
+          : html`<span class="cpill edge" title=${cs.next == null ? 'No higher Circle in the optional advancement table.' : nextTitle}>${cs.next ?? '—'}</span>`}
       </span>
     `;
   }
@@ -868,6 +878,19 @@ export class EdDisciplines extends LitElement {
     const canTrain = legendOk && silverOk;
     const grantText = m.grants.length ? m.grants.join(', ') : 'no new talent (already known)';
     const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
+    // Read-only progress for the optional homebrew gate (PG p.453). Eligibility is
+    // already decided by circleStatus; this only displays it.
+    const req = m.requirement?.rule === 'optional' ? m.requirement : null;
+    const reqText = req ? describeRequirement(req) : null;
+    const reqRow = req
+      ? html`<div class="crow">
+          <div>
+            <div class="ck">${reqText.unresolved ? reqText.text : `Optional advancement: ${reqText.text}`}</div>
+            <div class="csub">${req.counted.length ? 'Counted: ' + req.counted.filter((t) => t.rank >= (req.minRank ?? Infinity)).map((t) => t.name).join(', ') : 'No countable talents'}</div>
+          </div>
+          <span class="cchk ${req.satisfied ? 'ok' : 'bad'}">${reqText.unresolved ? html`<span class="pend">—</span>` : html`${chk(req.countMet)}${reqText.progress} ${chk(req.hasFromCircle)}Circle ${req.fromCircle}`}</span>
+        </div>`
+      : '';
     return html`
       <div class="overlay" @click=${() => this._modalCtl.close()}>
         <div class="modal" role="dialog" aria-modal="true" aria-label="Train to next Circle" @click=${(e) => e.stopPropagation()}>
@@ -877,6 +900,7 @@ export class EdDisciplines extends LitElement {
           </div>
           <div class="mtext">Advancing ${m.discipline} to Circle ${m.next} grants ${grantText} at Rank 1, gains Circle ${m.next}'s Discipline abilities, and opens a new Talent Option slot to fill.</div>
           <div class="cbox">
+            ${reqRow}
             <div class="crow">
               <div><div class="ck">Purchase ${grantText} · Rank 1</div><div class="csub">Available Legend ${available ?? '—'}</div></div>
               <span class="cchk ${legendOk ? 'ok' : 'bad'}">${legendCost == null ? html`<span class="pend">—</span>` : html`${chk(legendOk)}${legendCost} Legend`}</span>
@@ -911,7 +935,7 @@ export class EdDisciplines extends LitElement {
   _trainClick(d, cs, e) {
     if (!this.editMode) this.dispatchEvent(new CustomEvent('ed-enter-edit', { bubbles: true, composed: true }));
     this._trainSilver = d.advanceCost?.trainingSilver ?? 0;
-    this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [], cost: d.advanceCost ?? null }, e);
+    this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [], cost: d.advanceCost ?? null, requirement: cs.nextRequirement ?? null }, e);
   }
 
   // Pick a talent for an open slot: close the picker (returns focus to the "+"),
