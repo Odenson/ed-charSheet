@@ -661,7 +661,7 @@ Ordered by severity, then tier. Each finding's own `Status` line is current: T-0
 - Area: doc
 - Documented: HOMEBREW-RULES §5.5 registry lists four targets: `karma.step`, `karma.maxCap`, `karma.ritualCost`, `legend.additionalTierShift`.
 - Observed:
-  - `store.js` `HOMEBREW_SET_TARGETS` holds six; the extra two are `legend.spellLearnCostMultiplier` and `spells.learnSilverMultiplier`.
+  - `store.js` `HOMEBREW_SET_TARGETS` holds seven; the extra two are `legend.spellLearnCostMultiplier` and `spells.learnSilverMultiplier`.
   - Rule `hb-free-spell-learning` uses both. The behaviour is honoured (they are in the registry), but the doc does not describe them.
 - Evidence: store.js:627; rules/homebrew.json:83-84.
 - Impact: doc drift only. The authoring guide is incomplete for a shipped, enabled rule.

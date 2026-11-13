@@ -193,7 +193,7 @@ with a scalar or a **race-keyed map**.
   stands). The keys are race names as in `rules/races.json`.
 - **Target registry.** Only targets in `HOMEBREW_SET_TARGETS` (`store.js`) are
   honoured; any other target name is **ignored** (never a silent override of the
-  wrong value). v2 registry:
+  wrong value). Registry (`store.js` `HOMEBREW_SET_TARGETS`):
   - `karma.step` — the Karma die Step (replaces the `KARMA_STEP` constant).
   - `karma.maxCap` — a **cap** fed to `maxKarma(modifier, circle, maximum)`; the
     engine applies `min(Modifier × Circle, maxCap)` (absent ⇒ no cap).
@@ -207,6 +207,11 @@ with a scalar or a **race-keyed map**.
     PLAN-HOMEBREW-LEGEND-TIER.md). Absent/0 ⇒ the standard tables. Read by the
     Legend-spent audit and the rank-editing pricing (engine/legend-spent.js,
     store.js `tierShift`).
+  - `legend.spellLearnCostMultiplier` — scalar multiplier (default 1) on each
+    learned spell's Legend cost, in the Legend-spent audit's spells sink and the
+    Learn modal's shown price (rule `hb-free-spell-learning`; 0 = free).
+  - `spells.learnSilverMultiplier` — scalar multiplier (default 1) on the Learn
+    modal's suggested silver price.
   - `advancement.optionalTable` — **boolean** (strict `true`): swaps the Circle
     gate from the PG p.452 "all lower-Circle Discipline Talents at rank >= new
     Circle" to the PG p.453 "Using All Talents To Advance" table in
@@ -214,7 +219,9 @@ with a scalar or a **race-keyed map**.
     rank R, one from the Circle being left), evaluated per Discipline over its
     Discipline Talents and Talent Options (free, universal and Versatility-learned
     talents never count). Missing/invalid table or a non-`true` value ⇒ the
-    standard gate. Read by `store.js` -> `engine/advancement.js` `circleStatus`
+    standard gate. Eligibility reads only the attained+1 row; consistency only the
+    stored Circle's count clause (no climb); the from-Circle clause matches the
+    talent's stored `circle` exactly (a missing `circle` never matches). Read by `store.js` -> `engine/advancement.js` `circleStatus`
     (plans/homebrew-circle-adv).
 - **Semantics.** `set` **replaces** the target's standard value; a rule may pair
   `set` with `effects`/`formula` on *different* targets. **Last-enabled-wins** if
