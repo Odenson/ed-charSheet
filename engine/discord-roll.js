@@ -1,0 +1,109 @@
+// engine/discord-roll.js — pure, DOM-free formatter for the Discord die report
+// (plans/discord-die-report). Turns a completed roll's report object into a
+// plain-text webhook message. No Earthdawn rules live here; it only reports
+// values the app already computed.
+
+import { isDiscordWebhookUrl } from '../store-discord.js';
+
+const ZWSP = String.fromCharCode(0x200b);
+const LIMIT = 2000;
+const WORD_CAP = 200;
+
+/** Escape Discord markdown and neutralise mentions (zero-width space). */
+export function escapeDiscord(s) {
+  const BS = String.fromCharCode(92);
+  let out = '';
+  for (const ch of String(s ?? '')) {
+    out += ch === BS || '*_~`|>#'.includes(ch) ? BS + ch : ch;
+  }
+  out = out.replace(/@(?=everyone|here)/gi, '@' + ZWSP).replace(/<@/g, '<@' + ZWSP);
+  // list markers at line start ("- x", "1. x")
+  return out.replace(/^(\s*)(-|\+|\d+\.)(\s)/gm, (_m, a, b, c) => a + BS + b + c);
+}
+
+/** Webhook username: trimmed, <=80, never "discord"/"clyde", blank -> Character. */
+export function safeUsername(name) {
+  let n = typeof name === 'string' ? name.trim() : '';
+  if (!n) return 'Character';
+  n = n.replace(/discord|clyde/gi, (m) => `${m[0]}${ZWSP}${m.slice(1)}`);
+  return n.slice(0, 80);
+}
+
+const signed = (n) => (n >= 0 ? `+${n}` : `${n}`);
+const chain = (rolls) => `[${rolls.join('↦')}]`;
+const groupText = (gr) => `${gr.label} ${chain(gr.rolls)} = ${gr.subtotal}`;
+
+function cap(s, n) {
+  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+}
+
+export function formatRollForDiscord(report, { name } = {}) {
+  const r = report ?? {};
+  const header = `🎲 **${escapeDiscord(r.label)}** — Step ${r.step} (${escapeDiscord(r.dice)})`;
+
+  const body = [];
+  let dice = (r.groups ?? []).map(groupText).join(' · ');
+  if (r.modifier) dice += `${dice ? ' · ' : ''}Modifier ${signed(r.modifier)}`;
+  if (dice) body.push(dice);
+
+  const k = r.karmaResult;
+  if (k && (k.groups ?? []).length) {
+    const gs = k.groups.map(groupText).join(' · ');
+    body.push(k.groups.length > 1 ? `✦ Karma ${gs} · Karma total = ${k.total}` : `✦ Karma ${gs}`);
+  }
+
+  const b = r.bonusResult;
+  if (b && (b.dice ?? []).length) {
+    body.push(`Bonus dice ${b.dice.map((d) => `D${d.sides} ${chain(d.rolls)}`).join(' · ')} = ${b.total}`);
+  }
+
+  if ((r.mods ?? []).length) {
+    body.push(
+      `Mods: ${r.mods
+        .map((m) => `${escapeDiscord(m.label)} ${signed(m.value)}${m.measure === 'step' ? ' Step' : ''}`)
+        .join(' · ')}`,
+    );
+  }
+
+  let total = `**Total ${r.total}**`;
+  if (r.difficulty != null) {
+    const vs = r.aim ? `${escapeDiscord(r.aim.vs ?? 'Mystic')} Defence` : 'Difficulty';
+    total += ` vs ${vs} ${r.difficulty}`;
+  }
+  if (r.outcome) {
+    const word = escapeDiscord(cap(String(r.outcome.word ?? ''), WORD_CAP));
+    total += ` — **${word}** ${r.outcome.ok ? '✅' : '❌'}`;
+  }
+
+  let content = [header, ...body, total].join('\n');
+  if (content.length > LIMIT) {
+    // Cut the detail lines first; keep the header and the bold Total line.
+    const budget = LIMIT - header.length - total.length - 2 - 1;
+    const detail = body.join('\n');
+    const cut = budget > 0 ? `${detail.slice(0, Math.max(0, budget))}…` : '…';
+    content = [header, cut, total].join('\n').slice(0, LIMIT);
+  }
+  return { username: safeUsername(name), content };
+}
+
+export function formatTestMessage({ name } = {}) {
+  return { username: safeUsername(name), content: '✅ Test message — Discord die reports are connected.' };
+}
+
+const withMentions = (m) => ({ username: m.username, content: m.content, allowed_mentions: { parse: [] } });
+
+export function buildWebhookPayload(report, opts) {
+  return withMentions(formatRollForDiscord(report, opts));
+}
+
+export function buildTestPayload(opts) {
+  return withMentions(formatTestMessage(opts));
+}
+
+export function discordSendDecision(cfg) {
+  if (!cfg || !cfg.enabled) return { send: false, reason: 'disabled' };
+  const url = typeof cfg.url === 'string' ? cfg.url.trim() : '';
+  if (!url) return { send: false, reason: 'blank' };
+  if (!isDiscordWebhookUrl(url)) return { send: false, reason: 'invalid' };
+  return { send: true };
+}
