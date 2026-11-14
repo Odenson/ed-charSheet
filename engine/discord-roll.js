@@ -105,6 +105,12 @@ function withThumbnail(embed, url) {
   return embed;
 }
 
+// Optional top-level webhook avatar (plans/user-image-discord). Never inside an embed.
+function withAvatar(payload, url) {
+  if (typeof url === 'string' && url.trim()) payload.avatar_url = url.trim();
+  return payload;
+}
+
 /** Embed variant of the report (plans/embedded-die-roll). Pure; same details as plain. */
 export function formatRollEmbed(report, { name, thumbnailUrl } = {}) {
   const r = report ?? {};
@@ -177,19 +183,20 @@ export function buildEmbedPayload(report, opts) {
 }
 
 /** Single entry point: embed when format === 'embed', else the plain payload. */
-export function buildPayload(report, { name, format, thumbnailUrl } = {}) {
-  return normalizeFormat(format) === 'embed' ? buildEmbedPayload(report, { name, thumbnailUrl }) : buildWebhookPayload(report, { name });
+export function buildPayload(report, { name, format, thumbnailUrl, avatarUrl } = {}) {
+  const payload = normalizeFormat(format) === 'embed' ? buildEmbedPayload(report, { name, thumbnailUrl }) : buildWebhookPayload(report, { name });
+  return withAvatar(payload, avatarUrl);
 }
 
-export function buildTestPayload({ name, format, thumbnailUrl } = {}) {
+export function buildTestPayload({ name, format, thumbnailUrl, avatarUrl } = {}) {
   if (normalizeFormat(format) === 'embed') {
-    return {
+    return withAvatar({
       username: safeUsername(name),
       embeds: [withThumbnail({ title: '✅ Test message', description: 'Discord die reports are connected.', color: GREEN, fields: [] }, thumbnailUrl)],
       allowed_mentions: { parse: [] },
-    };
+    }, avatarUrl);
   }
-  return withMentions(formatTestMessage({ name }));
+  return withAvatar(withMentions(formatTestMessage({ name })), avatarUrl);
 }
 
 export function discordSendDecision(cfg) {

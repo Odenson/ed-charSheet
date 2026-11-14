@@ -196,6 +196,18 @@ export function discordThumbnailUrl(portrait) {
   }
 }
 
+// Discord webhook avatar (plans/user-image-discord): the public portrait URL on
+// Pages when a portrait exists, else null (no placeholder; the key is omitted).
+export function discordAvatarUrl(portrait) {
+  try {
+    if (!onPages()) return null;
+    const p = typeof portrait === 'string' && portrait.trim() ? portrait : null;
+    return portraitUrlFor(p);
+  } catch {
+    return null;
+  }
+}
+
 // Resolve an item/weapon image path (e.g. `data/spear.png`) to a loadable URL.
 // Unlike a character portrait — runtime data written to the character-data branch
 // at save time and therefore read live from it — an item image is a STATIC rule

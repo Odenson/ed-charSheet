@@ -517,6 +517,10 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
   dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
   then Mods, Bonus dice, Karma). `buildPayload` picks the format; unknown is plain.
+  Both formats (and the test message) also carry an optional top-level `avatar_url`
+  (never inside the embed): `store.js` `discordAvatarUrl(portrait)` gives the raw portrait
+  URL on Pages only when a portrait exists, else `null` (no placeholder, local run, or
+  error) and the key is omitted so Discord shows the webhook's default icon.
   The Settings test message follows the draft format; as an embed it is title
   `✅ Test message`, description `Discord die reports are connected.`, green, no fields.
 - **No retry or queue.** A failed send shows a brief toast. The roll, the Roll
@@ -530,7 +534,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
-  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl
+  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl / discordAvatarUrl
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
   store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
