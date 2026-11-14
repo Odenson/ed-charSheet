@@ -82,7 +82,7 @@ export function readMessages(file) {
 }
 
 export function projectDirFor(cwd, projectsRoot = path.join(os.homedir(), '.claude', 'projects')) {
-  return path.join(projectsRoot, cwd.replace(/[/.]/g, '-'));
+  return path.join(projectsRoot, cwd.replace(/[^a-zA-Z0-9]/g, '-'));
 }
 
 // Most recently written top-level transcript = the running session.

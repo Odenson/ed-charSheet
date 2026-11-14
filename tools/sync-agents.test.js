@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('generated agent files match .agents/ source', () => {
   for (const [rel, text] of Object.entries(expected())) {
-    assert.equal(fs.readFileSync(path.join(root, rel), 'utf8'), text,
+    assert.equal(fs.readFileSync(path.join(root, rel), 'utf8').replace(/\r\n/g, '\n'), text,
       `${rel} is stale — run node tools/sync-agents.mjs`);
   }
 });
