@@ -123,11 +123,11 @@ export class EdOverview extends LitElement {
        quiet stats. Levels come from model.healthDanger (engine); amber = owner
        UI choice, red = at/over Unconscious or any Wound. Colour is never the only
        signal: the chip and the row title carry the headroom text. */
-    .hl { --warn: light-dark(#8a5a00, #e0b35c); --warn-bg: light-dark(#f6ecd6, #33290f); --bad: light-dark(#a63a2b, #e0846f); display: flex; gap: 12px; justify-content: space-between; align-items: center; border-radius: 7px; padding: 0 10px; height: 25px; margin-bottom: 3px; font: inherit; font-size: var(--fs-body); font-weight: 500; background: var(--bg-chip); color: inherit; border: 1px solid transparent; width: 100%; box-sizing: border-box; text-align: left; }
+    .hl { --warn: light-dark(#8a5a00, #e0b35c); --warn-bg: light-dark(#f6ecd6, #33290f); --bad: light-dark(#a63a2b, #e0846f); display: flex; gap: 12px; justify-content: space-between; align-items: center; border-radius: 7px; padding: 0; height: 25px; margin-bottom: 3px; font: inherit; font-size: var(--fs-body); font-weight: 500; background: transparent; color: inherit; border: 1px solid transparent; width: 100%; box-sizing: border-box; text-align: left; }
     button.hl { cursor: pointer; }
     button.hl:hover { border-color: var(--border); }
     button.hl:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-    .hl .l { width: 50px; color: var(--muted); font-weight: 400; flex: none; }
+    .hl .l { width: 50px; color: inherit; font-weight: 500; flex: none; }
     .hl .v { font-size: var(--fs-title); font-weight: 500; min-width: 22px; text-align: right; }
     .hl .v.lvl-warn { color: var(--warn); }
     .hl .v.lvl-bad { color: var(--bad); }
@@ -537,10 +537,10 @@ export class EdOverview extends LitElement {
       ? 'No Recovery Tests left today — reset for a new day'
       : boost ? `Recovery test (+${boost} step armed) — heals the result, uses one` : 'Recovery test — heals the result, uses one';
     return html`<span class="rl">
-      <span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>
       <button class="rdice" ?disabled=${none} title=${title}
-        aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}
-        @click=${() => this._recoveryTest()}>⚄</button>
+      aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}
+      @click=${() => this._recoveryTest()}>⚄</button>
+      <span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>
     </span>`;
   }
 
