@@ -71,6 +71,8 @@ Disciplines · Combat · Spells · Equipment · Notes).*
 ([new-combat-ui plan](../plans/new-combat-ui/plan.md) — header line, side-by-side
 Attack and Damage taken cards, tabbed combat modifiers, log as a table).*
 
+*Disciplines Circle track (homebrew-circle-adv, 2026-11-14): the next-Circle pill tooltip states the advancement gate. Standard (PG p.452): all Circle 1–N Discipline Talents at the new Circle's rank. With the homebrew `hb-optional-circle-advancement` rule on (PG p.453) the tooltip reads "Circle C needs N talents at rank R, one from Circle F" with live progress, and the Train modal adds a read-only requirement row (count and from-Circle checks, the counted talents). When there is no higher Circle (or no higher row in the optional table) the next pill shows `—`, never a fabricated number.*
+
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,
 initiative, knockdown, karma step, carry/lift, …) shows as a **muted dashed
@@ -128,6 +130,35 @@ concurrency — plans/PLAN-SAVE-CONCURRENCY.md):
   two font weights. The same modal surfaces for background auto-saves (silent
   saves never suppress a conflict).
 
+## 8a. Settings modal
+The header's settings (gear) icon opens the Settings modal (`ui/ed-settings.js`).
+It holds the autosave switch and idle interval and, when a character is loaded,
+a **Discord die reports** section for that character:
+- A **Post rolls to Discord** switch, with the hint "Webhook for <name>. Stored
+  only in this browser."
+- A webhook URL field (`https://discord.com/api/webhooks/…`; `ptb.`/`canary.`
+  and `discordapp.com` are also accepted). Once a URL is saved the field is
+  masked (`type=password`) and typing replaces it. A non-blank invalid URL shows
+  "Not a Discord webhook URL." inline and blocks Save. Blank is allowed.
+- A **Message format** radio group ("Plain text" default / "Embed"), between the
+  URL field and the test button. It is per character, saved with the webhook
+  config, and wraps on the narrow modal. Arrow keys move the selection; Enter
+  still saves; Escape and backdrop discard the draft.
+- A **Send test message** button (sends in the draft format), disabled while the URL is blank, invalid or a
+  test is sending. The inline result (`role="status"`) is "Sending…",
+  "✅ Test message sent" or "❌ <HTTP status | Network error>".
+- Standard modal contract: **Escape / Cancel / backdrop close** with no change,
+  **Enter saves** (form submit). The body scrolls on small screens. Theme-aware,
+  two font weights.
+- The webhook URL is a secret: it never appears in displayed text, toasts or
+  console output (see ARCHITECTURE §7.6).
+
+When the switch is on and the URL is valid, each finished roll interaction posts
+**one** message in the character's chosen format (plain text by default, or a Discord embed), sent once the roll modal closes or applies, so it
+carries the final total after any Karma or optional-mod toggles. A failed send
+shows a ~4 s error toast "Discord report failed: <HTTP status | Network error>"
+with no retry; the roll, the Roll Log and Karma are unaffected.
+
 ## Equipment tab — one armour worn
 A character can wear **one set of armour**: equipping a second armour (from the
 picker, the row toggle, or the item modal) asks for confirmation first —
@@ -140,7 +171,7 @@ agnostic and folds whatever ends up equipped.
 
 ## Other conventions
 - **Roll affordance:** every rollable stat (attributes, initiative, knockdown,
-  karma, talents) carries a small dice button that opens the roll modal. The modal's breakdown lists every applied modifier: result mods add to the total, Step mods are tagged "Step" and already folded into the rolled Step (min Step 1). Live conditions ride every roll except the Karma die (Knocked Down −3 to the result, Harried −2 Step). Active scoped situational penalties (Darkness, Impaired Movement, Range Long; on a damage roll only Range Long) appear as pre-ticked per-roll checkboxes; unticking one drops it from the total and the Roll Log entry. Combat attack/damage pools already include them, so no checkboxes appear there.
+  karma, talents) carries a small dice button that opens the roll modal. The modal's breakdown lists every applied modifier: result mods add to the total, Step mods are tagged "Step" and already folded into the rolled Step (min Step 1). Live conditions ride every roll except the Karma die (Knocked Down −3 to the result, Harried −2 Step). Active scoped situational penalties (Darkness, Impaired Movement, Range Long; on a damage roll only Range Long) appear as pre-ticked per-roll checkboxes; unticking one drops it from the total and the Roll Log entry. Combat attack/damage pools already include them, so no checkboxes appear there. When Discord die reports are on (§8a), the finished roll is also posted to the character's Discord webhook.
 - **Theme-aware:** all colours work in light and dark mode (CSS variables /
   `light-dark()`); never hardcode a colour that fails in one mode.
 - **Dev pill:** a `DEV` pill shows only on the `/dev/` instance; production shows

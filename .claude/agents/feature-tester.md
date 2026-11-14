@@ -6,6 +6,7 @@ description: >-
   cycle only. Invoked by the /build-feature orchestrator (Dev Lead); not for
   ad-hoc use.
 tools: Read, Write, Edit, Grep, Glob, Bash
+model: sonnet
 ---
 
 # Feature Tester

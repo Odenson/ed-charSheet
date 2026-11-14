@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -35,6 +35,9 @@ import './ed-character-picker.js';
 import './ed-conflict.js';
 import './ed-settings.js';
 import { saveRollLog } from '../store-rolllog.js';
+import { loadDiscordConfig, saveDiscordConfig, discordReady } from '../store-discord.js';
+import { postWebhook } from '../discord-send.js';
+import { buildPayload, buildTestPayload } from '../engine/discord-roll.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -62,6 +65,8 @@ export class EdApp extends LitElement {
     _saving: { state: true },
     _saveError: { state: true },
     _saveOk: { state: true },
+    _discordError: { state: true }, // transient Discord send-failure toast (fixed message only)
+    _discordTest: { state: true }, // Settings 'Send test message' result {state, message}
     _notice: { state: true }, // transient status message (e.g. Karma Ritual performed)
     _keyPrompt: { state: true },
     _confirmDiscard: { state: true },
@@ -259,6 +264,7 @@ export class EdApp extends LitElement {
       // the separate-component case).
       this._rollTrigger = deepActiveElement();
       this._rollOpenedByKeyboard = currentModality() === 'keyboard';
+      this._flushRollReport(); // a still-pending prior interaction ends here
       this._roll = config;
       // An Initiative roll (from the Combat OR Spells tab) is the round
       // start/end signal: advance the round counter. Phase 6b (PLAN-SPELLS)
@@ -280,7 +286,9 @@ export class EdApp extends LitElement {
     // and saves one Log entry per interaction, upserted by rollId — so
     // Karma toggles replace the row, never duplicate it. The log is
     // device-local (decision #2) and never rides the overlay or an export.
+    this.addEventListener('ed-discord-test', (e) => this._discordSendTest(e.detail?.url, e.detail?.format));
     this.addEventListener('ed-roll-logged', (e) => {
+      this._captureRollReport(e.detail);
       if (!this._roll || !this._characterId) return;
       const { rollId, result, karmaResult, bonusResult, outcome, total } = e.detail ?? {};
       const r = result;
@@ -343,6 +351,7 @@ export class EdApp extends LitElement {
         if (remaining != null && remaining <= 0) {
           this._showNotice(`No Recovery Tests left today — used all ${maxRec}. Start a new day to reset.`);
           this._roll = null;
+          this._flushRollReport();
           return;
         }
         this._editHealth(applyHealth(health, { damage: -result, recoveriesUsed: 1 }));
@@ -351,6 +360,7 @@ export class EdApp extends LitElement {
         // the heal), matching "stays until rolled AND recorded".
         if (this._pendingUse?.kind === 'step-boost') this._pendingUse = null;
         this._roll = null; // button-driven: apply and close
+        this._flushRollReport();
         // A recovery spent inside the day-reset spend loop: clear the embedded
         // roll and, once nothing more can be spent, finalize immediately — no
         // extra "Reset the day" click (plan: "after the spend loop, the reset
@@ -358,6 +368,7 @@ export class EdApp extends LitElement {
         // recovery (or none left).
         if (this._dayReset) {
           this._dayReset = { ...this._dayReset, roll: null };
+          this._flushRollReport();
           this._dayResetAfterSpend();
         }
       } else if (action === 'emergency-recovery-heal') {
@@ -366,12 +377,14 @@ export class EdApp extends LitElement {
         // emergency is armed, so a stale modal can never grant a free heal.
         if (this._pendingUse?.kind !== 'emergency-heal') {
           this._roll = null;
+          this._flushRollReport();
           return;
         }
         const health = this._character?.resources?.health ?? {};
         this._editHealth(applyHealth(health, { damage: -result }));
         this._pendingUse = null;
         this._roll = null;
+        this._flushRollReport();
       } else if (action === 'knockdown-result') {
         // A Knockdown test resolves itself at roll time — no verify button: a
         // failed test knocks the character down. The big hit's damage and any
@@ -513,6 +526,7 @@ export class EdApp extends LitElement {
   async _loadCharacter(id, { characters } = {}) {
     try {
       const { character, rules, base } = await loadCharacter(id);
+      this._flushRollReport(); // report the old character's roll before the swap
       this._characterId = id;
       if (characters) this._characters = characters;
       this._character = character;
@@ -890,6 +904,7 @@ export class EdApp extends LitElement {
   }
 
   _dayResetCancel() {
+    this._flushRollReport();
     this._dayReset = null;
     this._dayResetBeforeHealth = null;
   }
@@ -899,6 +914,7 @@ export class EdApp extends LitElement {
   _dayResetDismissRoll() {
     if (!this._dayReset) return;
     this._dayReset = { ...this._dayReset, roll: null };
+    this._flushRollReport();
   }
 
   // Decision F: a damage-heal spend is a ROLLED Recovery test through the SAME
@@ -968,6 +984,7 @@ export class EdApp extends LitElement {
     const afterHealth = { ...(this._character.resources?.health ?? {}) };
     const maxRec = this._model?.characteristics?.recoveries?.value ?? null;
     const source = this._dayReset?.source ?? null;
+    this._flushRollReport();
     this._dayReset = null;
     this._dayResetBeforeHealth = null;
     this._showNotice("New day — Recovery tests reset and the day's combat options cleared.");
@@ -1542,6 +1559,7 @@ export class EdApp extends LitElement {
     const openedByKeyboard = this._rollOpenedByKeyboard;
     this._rollTrigger = null;
     this._roll = null;
+    this._flushRollReport();
     returnFocusToTrigger(trigger, { openedByKeyboard });
   }
 
@@ -1662,8 +1680,72 @@ export class EdApp extends LitElement {
     this._doSave({ silent: true, keepalive: true });
   }
 
+  // --- Discord die report (plans/discord-die-report) -------------------------
+  // The roll modal re-logs on every Karma / mod toggle, so each landing only
+  // REPLACES the pending report; exactly one message goes out when the roll
+  // interaction ends (_flushRollReport), carrying the final total. The webhook
+  // URL is a secret: it lives only in localStorage and is never shown or logged.
+  _captureRollReport(detail) {
+    const cfg = this._roll ?? this._dayReset?.roll;
+    const { rollId, result, karmaResult, bonusResult, outcome, total } = detail ?? {};
+    if (!cfg || !this._characterId || !result || !rollId) return;
+    if (this._sentRollIds?.has(rollId)) return;
+    this._pendingReport = {
+      rollId,
+      characterId: this._characterId,
+      name: this._character?.meta?.name ?? '',
+      portrait: this._character?.meta?.portrait ?? null,
+      report: {
+        label: cfg.label,
+        step: result.step,
+        dice: result.dice,
+        groups: result.groups,
+        modifier: result.modifier,
+        karmaResult: karmaResult ?? null,
+        bonusResult,
+        mods: detail.mods ?? cfg.mods ?? [],
+        total,
+        difficulty: cfg.difficulty?.value ?? detail.difficulty ?? null,
+        outcome: outcome ?? null,
+        aim: cfg.aim ?? null,
+      },
+    };
+  }
+
+  _flushRollReport() {
+    const pending = this._pendingReport;
+    if (!pending) return;
+    this._pendingReport = null;
+    (this._sentRollIds ??= new Set()).add(pending.rollId);
+    try {
+      const cfg = loadDiscordConfig(pending.characterId);
+      if (!discordReady(cfg)) return;
+      const thumbnailUrl = cfg.format === 'embed' ? discordThumbnailUrl(pending.portrait) : undefined;
+      postWebhook(cfg.url, buildPayload(pending.report, { name: pending.name, format: cfg.format, thumbnailUrl }))
+        .then((r) => { if (!r.ok) this._showDiscordError(r.message); })
+        .catch(() => {});
+    } catch {
+      /* a send problem must never affect the roll, the Log or Karma */
+    }
+  }
+
+  _showDiscordError(message) {
+    this._discordError = message;
+    clearTimeout(this._discordErrorTimer);
+    this._discordErrorTimer = setTimeout(() => { this._discordError = null; }, 4000);
+  }
+
+  async _discordSendTest(url, format) {
+    this._discordTest = { state: 'sending' };
+    const thumbnailUrl = format === 'embed' ? discordThumbnailUrl(this._character?.meta?.portrait) : undefined;
+    const r = await postWebhook(url, buildTestPayload({ name: this._character?.meta?.name ?? '', format, thumbnailUrl }));
+    this._discordTest = r.ok ? { state: 'ok', message: 'Test message sent' } : { state: 'error', message: r.message };
+  }
+
   // Persist the autosave preferences (Settings modal) and re-arm/cancel the timer.
-  _applySettings({ enabled, seconds } = {}) {
+  _applySettings({ enabled, seconds, discord } = {}) {
+    if (discord && this._characterId) saveDiscordConfig(this._characterId, discord);
+    this._discordTest = null;
     this._autosaveEnabled = enabled !== false;
     if (Number.isFinite(seconds)) this._autosaveSeconds = seconds;
     localStorage.setItem('ed-autosave', this._autosaveEnabled ? 'on' : 'off');
@@ -1925,7 +2007,7 @@ export class EdApp extends LitElement {
           </svg></button>
         <button
           class="icon-btn settings"
-          @click=${() => (this._settings = true)}
+          @click=${() => { this._discordTest = null; this._settings = true; }}
           title="Settings (autosave)"
           aria-label="Settings"
         ><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1987,6 +2069,11 @@ export class EdApp extends LitElement {
         ? html`<ed-settings
             .enabled=${this._autosaveEnabled}
             .seconds=${this._autosaveSeconds}
+            .discord=${this._characterId ? loadDiscordConfig(this._characterId) : null}
+            .characterId=${this._characterId ?? ''}
+            .characterName=${this._character?.meta?.name ?? ''}
+            .hasCharacter=${!!this._character}
+            .testResult=${this._discordTest ?? null}
             @ed-settings=${(e) => this._applySettings(e.detail)}
             @close=${() => (this._settings = false)}
           ></ed-settings>`
@@ -2034,6 +2121,9 @@ export class EdApp extends LitElement {
         ? html`<div class="toast ok" role="status" @click=${() => { clearTimeout(this._saveOkTimer); this._saveOk = null; }}>
             Saved to GitHub ✓ ${this._saveOk.url ? html`— <a href=${this._saveOk.url} target="_blank" rel="noopener">view commit</a>` : ''}
           </div>`
+        : ''}
+      ${this._discordError
+        ? html`<div class="toast error" role="alert" @click=${() => (this._discordError = null)}>Discord report failed: ${this._discordError}</div>`
         : ''}
       ${this._notice
         ? html`<div class="toast ok" role="status" @click=${() => (this._notice = null)}>${this._notice}</div>`

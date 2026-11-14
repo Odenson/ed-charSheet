@@ -525,7 +525,7 @@
     },
     "Shadow Meld": {
       "name": "Shadow Meld",
-      "description": "Renders the target nearly invisible in shadows, granting +4 steps to all Stealthy Stride tests and letting Stealthy Stride function as a default skill. Cast against the target's Mystic Defense; ordinary light does not dispel it, and stepping back into shadow restores the effect.",
+      "description": "Renders the target nearly invisible in shadows, granting +4 to all Stealthy Stride tests while near shadows (the player judges \"near shadows\"; the bonus is always applied to the roll) and letting Stealthy Stride be used as a default skill. Cast against the target's Mystic Defense; ordinary light does not end the spell, and stepping back into shadow makes the target nearly invisible again. Extra successes or extra threads: +2 minutes duration, or (thread) +2 to the Stealthy Stride bonus.",
       "discipline": "Nethermancer",
       "circle": 1,
       "threadsToWeave": 1,
@@ -537,8 +537,57 @@
       "range": "Touch",
       "duration": "Rank minutes",
       "area": null,
-      "successes": [],
-      "extraThreads": [],
+      "successes": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)",
+              "condition": "on-success",
+              "perSuccess": true
+            }
+          ]
+        }
+      ],
+      "extraThreads": [
+        {
+          "label": "Increase Duration (+2 minutes)",
+          "effects": [
+            {
+              "type": "duration-modifier",
+              "operation": "add",
+              "value": 2,
+              "measure": "minutes",
+              "source": "spell",
+              "summary": "Increase Duration (+2 minutes)"
+            }
+          ]
+        },
+        {
+          "label": "Increase Effect (+2 Stealthy Stride)",
+          "effects": [
+            {
+              "type": "test-modifier",
+              "target": {
+                "domain": "test",
+                "name": "Stealthy Stride"
+              },
+              "operation": "add",
+              "value": 2,
+              "measure": "step",
+              "duration": "sustained",
+              "condition": "always",
+              "source": "spell",
+              "summary": "Increase Effect (+2 Stealthy Stride tests while near shadows)"
+            }
+          ]
+        }
+      ],
       "effects": [
         {
           "type": "test-modifier",
@@ -550,11 +599,18 @@
           "value": 4,
           "measure": "step",
           "duration": "sustained",
+          "condition": "always",
           "source": "spell",
-          "summary": "+4 steps to Stealthy Stride tests while active."
+          "summary": "+4 steps to Stealthy Stride tests while near shadows."
+        },
+        {
+          "type": "note",
+          "source": "spell",
+          "gmDiscretion": false,
+          "summary": "May use Stealthy Stride as a default skill if not possessed."
         }
       ],
-      "summary": "+4 steps to Stealthy Stride tests"
+      "summary": "+4 to Stealthy Stride tests near shadows; Stealthy Stride usable as a default skill"
     },
     "Soul Armor": {
       "name": "Soul Armor",

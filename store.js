@@ -38,7 +38,7 @@ import {
 import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
-import { circleStatus } from './engine/advancement.js';
+import { circleStatus, normalizeOptionalTable } from './engine/advancement.js';
 import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
 import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
@@ -178,6 +178,22 @@ export function portraitUrlFor(portrait) {
   if (!portrait) return null;
   if (onPages()) return `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/${portrait}`;
   return `./${portrait}`;
+}
+
+// Discord embed thumbnail (plans/thumbnail-in-roll). Discord fetches the URL, so
+// it must be absolute: the portrait on Pages, else a shipped placeholder served
+// from the production site (404 until first release to main).
+const PLACEHOLDER_BASE = 'https://odenson.github.io/ed-charSheet/';
+export const LOCAL_TEST_IMAGE = 'data/discord-local-test.png';
+export const NO_IMAGE_IMAGE = 'data/discord-no-image.png';
+export function discordThumbnailUrl(portrait) {
+  try {
+    if (!onPages()) return PLACEHOLDER_BASE + LOCAL_TEST_IMAGE;
+    const p = typeof portrait === 'string' && portrait.trim() ? portrait : null;
+    return portraitUrlFor(p) ?? PLACEHOLDER_BASE + NO_IMAGE_IMAGE;
+  } catch {
+    return null;
+  }
 }
 
 // Resolve an item/weapon image path (e.g. `data/spear.png`) to a loadable URL.
@@ -626,7 +642,7 @@ async function loadRules() {
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
 // may only override these; any other target name is ignored. Kept here (not in a
 // rule file) so the code that consumes each target and the registry stay together.
-export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier']);
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier', 'advancement.optionalTable']);
 
 /**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
@@ -781,6 +797,12 @@ export function deriveModel(character, rules, session = {}) {
       if (resolved !== undefined) homebrewSets[target] = resolved;
     }
   }
+
+  // Optional Circle-advancement gate (PG p.453; plans/homebrew-circle-adv): only
+  // on a strict boolean true AND a valid legend table; otherwise the standard gate.
+  const optionalAdvTable = homebrewSets['advancement.optionalTable'] === true
+    ? normalizeOptionalTable(legendFile?.costs?.optionalAdvancement)
+    : null;
 
   // Each effect carries an `origin` so a modifier can name its exact source
   // (e.g. distinguish an Archer bonus from a Nethermancer one in a tooltip).
@@ -938,7 +960,9 @@ export function deriveModel(character, rules, session = {}) {
     // talent-supported Circle so the UI can flag a stored value the talents don't
     // justify (imported/edited data) and surface eligibility to advance. Pure
     // derivation — nothing stored (ARCHITECTURE §4.1).
-    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])));
+    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])),
+      // raw d.talents (not model rows): rows drop `viaVersatility`.
+      optionalAdvTable ? { table: optionalAdvTable, talents: d.talents ?? [] } : undefined);
     // Per-Circle option slots (PLAN-LEARN-TALENTS §7). Each open slot carries its
     // learnable pool (status-eligible talents minus already-known), enriched with
     // the terse effect for the picker; a Circle with no pool data (Warden+) is
@@ -1698,6 +1722,7 @@ export function deriveModel(character, rules, session = {}) {
 
   return {
     meta: character.meta ?? {},
+    advancement: { optional: !!optionalAdvTable },
     legend,
     // Derived, never stored: the loadable URL for `meta.portrait` (branch raw
     // CDN on Pages, bundle-relative working copy locally).

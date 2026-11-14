@@ -726,3 +726,73 @@ Sources:
 - text-RB-companions-guide.txt:3580-3589 (Long Shot)
 
 Decision: 2026-10-05 — (a) Surprised: follow the book; encode -3 Physical and Mystic Defence, "no actions" stays a note (house rule). (b) Impaired Movement: a scoped per-roll toggle for movement-based tests; the Movement Rate reduction stays a display note (house rule). (c) Darkness/Range scoped penalties are offered as per-roll toggles on non-combat rolls; which tests are sight-based is left to the player per roll (house rule). (d) Multiple simultaneous situational Defence/test modifiers stack additively, no cap (house rule).
+
+### Q028 — Shadow Meld (Nethermancer Circle 1): full stat block, effects, Success Levels, Extra Threads, Extended Shadow Meld knack
+Keywords: Shadow Meld, Nethermancer, Stealthy Stride, +4 bonus, shadows, invisible, default skill, light, Extended Shadow Meld, until dawn, Increase Duration, Increase Effect · Resolved: 2026-10-05 · Context: update-shadow-meld
+
+Stat block (PG p. 321): Circle 1, Nethermancer; Threads 1; Weaving 5/10; Casting TMD; Range Touch; Duration Rank minutes; Effect "+ 4 to Stealthy Stride tests". Text: Spellcasting test vs the target's Mystic Defense; on success the target gains +4 to all Stealthy Stride tests "while near shadows" for the duration and may use Stealthy Stride as a default skill if lacking it. The target can still be seen normally in light, but light does not end the spell; stepping back into shadow makes the target near-invisible again. Success Levels: Increase Duration (+2 minutes). Extra Threads: Increase Duration (+2 minutes), Increase Effect (+2 bonus). The extracts give no penalty to observers' Perception/detection tests and no numeric light thresholds beyond "near shadows". The effect is a "bonus" (not explicitly "steps"; the spell table says "+ 4 to Stealthy Stride tests"). Per Q012/Q016, each extra success = +2 minutes; each extra thread = +2 minutes OR +2 to the bonus (options per thread, stackable). Deeper Secrets knack Extended Shadow Meld (Circle 1; requires Patterncraft rank 5, Shadow Meld; restricted to Nethermancer Circle 5; Strain 2; Blood Magic): duration is until dawn and can't be increased. Not in the Companion; no other Deeper Secrets spell entry. The spell table matches the PG.
+
+Sources:
+- text-RB-players-guide.txt:12036-12049 (p. 321); text-spell-players.txt:2580-2597; manual/text-player-guide-nethermancer-spells.txt:133
+- text-spell-table-all.txt:308
+- text-RB-deeper-secrets.txt:17418-17427 (p. 425, Extended Shadow Meld)
+- Searched with no Shadow Meld hits: text-RB-companions-guide.txt, text-spell-deeperSecrets.txt
+
+### Q029 — Optional rule "Using All Talents To Advance": full text, Optional Advancement Table, what it replaces, multi-Discipline handling
+Keywords: using all talents to advance, optional advancement table, optional rule circle advancement, min # of talents, min talent rank, single talent from circle, new circle, talent options count, legend award circles 11-15, half third legend award, homebrew circle advancement, multi-discipline advancement, equivalent talent circle, new discipline talent cost · Resolved: 2026-11-14 · Context: homebrew-circle-adv
+
+NOTE: Q007's line numbers for this region (18183-18299) are stale; the real lines are 17118-17234 in text-RB-players-guide.txt (the extract was restored/re-flowed). Page numbers in Q007 are right.
+
+**Verbatim rule text (PG p. 453, lines 17139-17156):**
+"Using All Talents To Advance — Optional Rule: Instead of being required to know all his Discipline Talents at a rank equal to the next Circle, a character can know a certain number of talents available to his Discipline at a minimum rank (either Discipline Talents or Talent Options), and one of those talents must be from his current Circle. The requirements are summarized on the Optional Advancement Table."
+Example (Mica, Swordmaster, to Third Circle): "...must know 6 talents at Rank 3, and that one of those 6 talents must be one of the talents he learned at Second Circle. ... all of his First Circle talents to Rank 3, both of his Second Circle talents are only at Rank 2. He needs to raise his rank in either Second Circle talent to Rank 3 to be eligible to advance to Third Circle."
+Legend guidance: "When using this optional rule, the recommended Legend Awards on the Legend Award Table in the Gamemaster's Guide, p.120 are too high to produce a stable Circle advancement from Circle 11 on. Only award half of what is recommended in Circles 11 and 12, and only award a third of what is recommended in Circles 13 through 15."
+
+**Optional Advancement Table (p. 453, lines 17157-17176)** — columns: New Circle | Min. # of Talents | Min. Talent Rank | Single Talent from Circle. It is keyed ONLY by the new Circle being attained; there is NO column or row for number of Disciplines.
+| New Circle | Min # Talents | Min Rank | Single Talent from Circle |
+| 2 | 5 | 2 | 1 |
+| 3 | 6 | 3 | 2 |
+| 4 | 7 | 4 | 3 |
+| 5 | 8 | 5 | 4 |
+| 6 | 9 | 6 | 5 |
+| 7 | 10 | 7 | 6 |
+| 8 | 11 | 8 | 7 |
+| 9 | 12 | 9 | 8 |
+| 10 | 13 | 10 | 9 |
+| 11 | 14 | 11 | 10 |
+| 12 | 15 | 11 | 11 |
+| 13 | 16 | 12 | 12 |
+| 14 | 17 | 12 | 13 |
+| 15 | 18 | 13 | 14 |
+The 4th column's header reads "Single Talent from Circle"; its value is always New Circle minus 1, i.e. the adept's current Circle (matches the rule text "one of those talents must be from his current Circle" and the example: Third Circle target -> "2", a talent learned at Second Circle). So: at least one counted talent must be a talent gained at the Circle you are leaving.
+
+**What it replaces:** only the "Minimum Talent Requirements" gate (standard rule, p. 452, lines 17127-17137: all Discipline Talents of lower Circles at rank = target Circle; Talent Options play no role). The optional rule text says "Instead of being required to know all his Discipline Talents at a rank equal to the next Circle". Under it Talent Options DO count ("either Discipline Talents or Talent Options"). Nothing in the rule touches the other condition (train with a higher-Circle member of the Discipline, p. 452 lines 17129-17130), the 40 hours in a three-week period, the restart on lapse, the negotiated fee / Circle Training Cost Table, or "Reaching the Next Circle" (buy the new Discipline Talent and one Talent Option) (p. 454, lines 17177-17208, 17216-17234). Those are stated separately and the optional rule does not mention them, so they stand unchanged. Optional rule "Specific Training for Talent Options" (p. 454, 17209-17215) is a separate option.
+
+**Multiple Disciplines:** the optional rule text and table say nothing about multi-Discipline characters; they speak of "talents available to his Discipline" and "his current Circle" (singular Discipline). Read literally and per Q007's per-Discipline framing, advancement is evaluated per Discipline: count talents available to that Discipline, with one from that Discipline's current Circle. The book does not say whether talents from OTHER Disciplines (other than shared ones, below) count toward the N talents; this is not covered. What the multi-Discipline section does say (p. 457, lines 17345-17350): Discipline Talents available through several Disciplines "count as Discipline Talents for all applicable Disciplines and are used to qualify for advancement in all applicable Disciplines"; Disciplinary variants such as Thread Weaving count as different talents per Discipline. A Talent Option that is also a Discipline Talent of a new Discipline becomes a Discipline Talent for it once the character qualifies by Circle (17355-17360). Versatility talents (and Versatility itself) do not count toward advancement (p. 6410-6415 of the extract; PG text at line 6410-6415). Thread-rank bonuses do not count (see Q007).
+
+**Interactions:** Legend costs: none altered by the optional rule; talent LP costs are unchanged (first Discipline per Talent Cost Table; additional Disciplines per the Equivalent Talent Circle Table, which is based on the number of Disciplines and the Circle of each, pp. 457-458, lines 17326-17344, 17361-17394). New-Discipline Rank 1 cost uses the lowest Circle among current Disciplines (17281-17283); fee for a new Discipline is 100 sp per Circle achieved in other Disciplines per talent (17261-17264). The only Legend-related change in the optional rule is the reduced Legend Awards for Circles 11-15 above. The Circle number used for derived values is not addressed by this rule; it is just the Circle attained (and Discipline ability/Defense/Durability bonuses come with Circle, p. 86; across multiple Disciplines Durability uses the highest rating per Circle and Defense bonuses do not stack, p. 458, 17408-17423).
+Status flag: the table is an advancement GATE; whether the app's current advancement logic implements it was not checked (no app files read).
+
+Sources:
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17118-17137 (p. 452 — standard advancement conditions)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17138-17176 (p. 453 — optional rule text, Mica example, Legend Award guidance, Optional Advancement Table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17177-17234 (p. 454 — training, reaching next Circle, specific training option, Circle Training Cost Table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17235-17423 (pp. 455-458 — Learning New Disciplines, advancing in a new Discipline, tables, Durability, Defense)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:6410-6415 (Versatility talents do not count toward advancement)
+
+### Q030 — Optional "Using All Talents To Advance": do free/automatic talents count toward the N talents; and what does "one of those talents must be from his current Circle" mean (exact Circle? Talent Options?)
+Keywords: using all talents to advance, free talents count, durability, karma ritual, call missile, air sailing, standard matrix, single talent from circle, current circle, talent option counts, learned at circle, mica example, swordmaster, optional advancement table · Resolved: 2026-11-14 · Context: homebrew-circle-adv
+
+**(1) Free talents.** The Free Talents rule says a free talent "does not count for the purposes of qualifying for the next Circle, but in all other respects behaves as a talent" (PG p. ~86, line 2908). That sentence is general and not tied to the standard gate; the optional rule does not override it (it only swaps the "all Discipline Talents" requirement for "N talents ... (either Discipline Talents or Talent Options)", lines 17139-17144). So free talents (Call Missile, Air Sailing, Standard Matrix, etc.) are excluded from the N under both gates; this is the book's text, though the optional rule itself never mentions them (mild inference: it is silent, the Free Talents rule is categorical). Durability and Karma Ritual are not talents at all: Durability is a Discipline attribute listed at First Circle (text-discipline-players.txt:332), Karma Ritual is a Discipline-header rite. They are never in the Discipline Talents / Talent Options lists, so cannot be counted. The standard gate (p. 452, 17131-17137) counts only Discipline Talents; Talent Options play no role.
+Mica example consistency: Swordmaster First Circle Discipline Talents are 5 (Avoid Blow, Maneuver, Melee Weapons, Taunt, Thread Weaving) (text-discipline-players.txt:333); Second Circle adds First Impression (:336). Third Circle needs 6 talents at Rank 3 (table 17164). The example says all First Circle talents are at Rank 3 (5) and "both" Second Circle talents are at Rank 2 (17148-17151); one more at Rank 3 makes 6. This is consistent with counting only Discipline Talents + Options and no free/Durability/Karma Ritual; Swordmaster has no free talent. The example does not by itself test whether free talents would count (Swordmaster has none), so it neither supports nor contradicts the exclusion.
+
+**(2) "From his current Circle".** The table column is "Single Talent from Circle", always New Circle minus 1 (Third -> 2). The example reads it as "one of the talents he learned at Second Circle" (17147-17148), i.e. a talent gained AT that Circle, not "at or above" (a character cannot hold talents from above his current Circle anyway, so "at or higher" never arises in practice; the book does not discuss it). Talent Options: yes, an option counts. Reaching a Circle entitles the adept to "the Discipline Talent and one of the Talent Options available at the new Circle" (17205-17206), and the example speaks of "both of his Second Circle talents" - the Discipline Talent (First Impression) plus the Novice Talent Option taken at Second Circle (Mica "can now learn ... First Impression or one of his Novice Talent Options", 17124-17125). So either Second Circle talent satisfies the single-talent condition. The book does not say explicitly how to treat an option learned later (e.g. under Specific Training / Versatility) with respect to which Circle it is "from"; the natural reading is the Circle at which the option slot was taken (not covered beyond that).
+
+Sources:
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:2905-2915 (free talents do not count toward next Circle; Air Sailor example)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17127-17137 (p. 452, standard gate)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17139-17151 (p. 453, optional rule and Mica example)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17157-17176 (p. 453, Optional Advancement Table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17203-17208 (p. 454, Reaching the Next Circle)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17123-17126 (p. 452, Mica reaches Second Circle)
+- rulebook extracts/rulebook extracts/text-discipline-players.txt:328-339 (Swordmaster talents by Circle)

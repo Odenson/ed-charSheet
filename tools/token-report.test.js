@@ -84,5 +84,12 @@ test('record: writes json + md, totals per workflow, re-run replaces same window
 });
 
 test('projectDirFor mirrors the Claude Code project folder naming', () => {
-  assert.equal(projectDirFor('/a/b.c/d', '/p'), '/p/-a-b-c-d');
+  assert.equal(projectDirFor('/a/b.c/d', '/p'), path.join('/p', '-a-b-c-d'));
+});
+
+test('projectDirFor also sanitises Windows paths (drive colon, backslashes)', () => {
+  assert.equal(
+    projectDirFor('C:\\Users\\Gary\\workspace\\EDApps\\ed-charSheet', '/p'),
+    path.join('/p', 'C--Users-Gary-workspace-EDApps-ed-charSheet'),
+  );
 });

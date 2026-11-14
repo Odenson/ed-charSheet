@@ -19,7 +19,7 @@ const targets = {
   opencode: { dir: '.opencode/agent', named: false },
 };
 
-export function render(name, target, read = (f) => fs.readFileSync(path.join(srcDir, f), 'utf8')) {
+export function render(name, target, read = (f) => fs.readFileSync(path.join(srcDir, f), 'utf8').replace(/\r\n/g, '\n')) {
   const m = read(`${name}.md`).match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!m) throw new Error(`${name}.md: missing frontmatter`);
   let body = m[2];
@@ -39,7 +39,7 @@ export function expected() {
   for (const name of names) {
     for (const [t, { dir }] of Object.entries(targets)) {
       if (!has(`${name}.${t}.yml`)) continue;
-      out[path.join(dir, `${name}.md`)] = render(name, t);
+      out[path.posix.join(dir, `${name}.md`)] = render(name, t);
     }
   }
   return out;
@@ -50,7 +50,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   let stale = 0;
   for (const [rel, text] of Object.entries(expected())) {
     const file = path.join(root, rel);
-    const cur = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+    const cur = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : null;
     if (cur === text) continue;
     stale++;
     if (check) console.error(`out of sync: ${rel}`);

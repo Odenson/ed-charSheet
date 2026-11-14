@@ -33,7 +33,7 @@
     }
   ],
   "costs": {
-    "note": "attributeIncrease: Legend to raise an attribute by THAT one +1 step (per-increase, NOT cumulative — 1st=800, 2nd=1300, 3rd=2100); the total spent on an attribute is the sum of the steps taken. base+points are the free character-creation buy, only `increases` cost Legend. tiers: the Circle band that fixes a talent's cost column, set by the Circle it was learned at. talentRank[rank][tier]: Legend to raise a talent by that one rank step at that tier — cumulative sum over ranks gives a first-Discipline talent's total. A spell costs the same as a Novice talent bought to Rank = the spell's Circle (talentRank[circle].Novice). newDisciplineRank1[ordinal][lowestCircle]: Rank-1 cost of a talent in an additional Discipline (ED4 New Discipline Talent Cost Table), row = the character's lowest Discipline Circle (clamped 1..5+). equivalentTier[ordinal]: for ranks 2+ of an additional-Discipline talent, the higher effective cost tier by the talent's real Circle (ED4 Equivalent Talent Circle Table). ordinal is 2/3/4 where 4 means fourth-or-later Discipline. skillRank[rank][tier]: Legend to raise a skill by that one rank step (ED4 Skill Training Table Novice/Journeyman Legend columns — per Player's Guide 'Improving Skill Ranks'); cumulative sum over ranks gives a skill's total. Skills only reach Rank 10 and only Novice/Journeyman tiers. skillTraining[rank]: the silver training fee to raise a skill to that rank (ED4 Skill Training silver cost — new Rank × 10 sp per Player's Guide 'Training a skill costs money'; an average, negotiable, so the app seeds it as an editable default like circleTraining; only silver is tracked, not the tutor or training/wait time). circleTraining[circle]: the silver training fee to advance to that Circle (ED4 Circle Training Cost Table p.454, an average cost — negotiable, so the app seeds it as an editable default; only silver is tracked, not the tutor or the 40-hour training time). knackTraining[rank]: the silver training fee to learn a knack of that required Rank (ED4 Companion 'Learning Talent Knacks' — Rank days of training at ~50 sp/day = requiredRank × 50 sp; an average, negotiable, so the app seeds it as an editable default like skillTraining/circleTraining; only silver is tracked, not the tutor or the one-knack-at-a-time training time).",
+    "note": "attributeIncrease: Legend to raise an attribute by THAT one +1 step (per-increase, NOT cumulative — 1st=800, 2nd=1300, 3rd=2100); the total spent on an attribute is the sum of the steps taken. base+points are the free character-creation buy, only `increases` cost Legend. tiers: the Circle band that fixes a talent's cost column, set by the Circle it was learned at. talentRank[rank][tier]: Legend to raise a talent by that one rank step at that tier — cumulative sum over ranks gives a first-Discipline talent's total. A spell costs the same as a Novice talent bought to Rank = the spell's Circle (talentRank[circle].Novice). newDisciplineRank1[ordinal][lowestCircle]: Rank-1 cost of a talent in an additional Discipline (ED4 New Discipline Talent Cost Table), row = the character's lowest Discipline Circle (clamped 1..5+). equivalentTier[ordinal]: for ranks 2+ of an additional-Discipline talent, the higher effective cost tier by the talent's real Circle (ED4 Equivalent Talent Circle Table). ordinal is 2/3/4 where 4 means fourth-or-later Discipline. skillRank[rank][tier]: Legend to raise a skill by that one rank step (ED4 Skill Training Table Novice/Journeyman Legend columns — per Player's Guide 'Improving Skill Ranks'); cumulative sum over ranks gives a skill's total. Skills only reach Rank 10 and only Novice/Journeyman tiers. skillTraining[rank]: the silver training fee to raise a skill to that rank (ED4 Skill Training silver cost — new Rank × 10 sp per Player's Guide 'Training a skill costs money'; an average, negotiable, so the app seeds it as an editable default like circleTraining; only silver is tracked, not the tutor or training/wait time). optionalAdvancement[newCircle]: the homebrew-only (hb-optional-circle-advancement) PG p.453 'Using All Talents To Advance' table — minTalents talents (Discipline Talents or Talent Options) at rank >= minRank, one from fromCircle (the Circle being left); read only when that rule is enabled. circleTraining[circle]: the silver training fee to advance to that Circle (ED4 Circle Training Cost Table p.454, an average cost — negotiable, so the app seeds it as an editable default; only silver is tracked, not the tutor or the 40-hour training time). knackTraining[rank]: the silver training fee to learn a knack of that required Rank (ED4 Companion 'Learning Talent Knacks' — Rank days of training at ~50 sp/day = requiredRank × 50 sp; an average, negotiable, so the app seeds it as an editable default like skillTraining/circleTraining; only silver is tracked, not the tutor or the one-knack-at-a-time training time).",
     "attributeIncrease": { "1": 800, "2": 1300, "3": 2100 },
     "tiers": [
       { "label": "Novice", "minCircle": 1, "maxCircle": 4 },
@@ -95,6 +95,22 @@
     "circleTraining": {
       "2": 200, "3": 300, "4": 500, "5": 800, "6": 1000, "7": 1500, "8": 2000,
       "9": 2500, "10": 3500, "11": 5000, "12": 7500, "13": 10000, "14": 15000, "15": 20000
+    },
+    "optionalAdvancement": {
+      "2": { "minTalents": 5, "minRank": 2, "fromCircle": 1 },
+      "3": { "minTalents": 6, "minRank": 3, "fromCircle": 2 },
+      "4": { "minTalents": 7, "minRank": 4, "fromCircle": 3 },
+      "5": { "minTalents": 8, "minRank": 5, "fromCircle": 4 },
+      "6": { "minTalents": 9, "minRank": 6, "fromCircle": 5 },
+      "7": { "minTalents": 10, "minRank": 7, "fromCircle": 6 },
+      "8": { "minTalents": 11, "minRank": 8, "fromCircle": 7 },
+      "9": { "minTalents": 12, "minRank": 9, "fromCircle": 8 },
+      "10": { "minTalents": 13, "minRank": 10, "fromCircle": 9 },
+      "11": { "minTalents": 14, "minRank": 11, "fromCircle": 10 },
+      "12": { "minTalents": 15, "minRank": 11, "fromCircle": 11 },
+      "13": { "minTalents": 16, "minRank": 12, "fromCircle": 12 },
+      "14": { "minTalents": 17, "minRank": 12, "fromCircle": 13 },
+      "15": { "minTalents": 18, "minRank": 13, "fromCircle": 14 }
     },
     "knackTraining": {
       "1": 50, "2": 100, "3": 150, "4": 200, "5": 250, "6": 300, "7": 350, "8": 400,

@@ -170,8 +170,8 @@ rules/
   skills.json
   races.json          # racial abilities, each carrying effects[] (+ movement, karma)
   spells.json         # (loaded only when the Magic view opens)
-  homebrew.json       # OPTIONAL campaign rules (ed-homebrew/1): data-only `formula`
-                      #   overrides + effects. Loaded only when present; each rule
+  homebrew.json       # OPTIONAL campaign rules (ed-homebrew/3): data-only `formula`
+                      #   overrides, effects, `set` targets, `knackParents`. Loaded only when present; each rule
                       #   ships `enabled: false`. docs/HOMEBREW-RULES.md
 ```
 
@@ -193,9 +193,11 @@ data is the table; a thin code module (`engine/characteristics.js`) holds the
 and applying the taxonomy `effects` on top. **Table as data, logic as code.**
 
 **Homebrew rules are data, not code.** An optional `rules/homebrew.json` (loaded
-only when present, `ed-homebrew/1`) lets a campaign rule override a rating's
+only when present, `ed-homebrew/3`) lets a campaign rule override a rating's
 computed base with a data-only `formula` — a flat list of signed monomials whose
-refs resolve against the character — and/or layer taxonomy `effects`. Evaluation
+refs resolve against the character — and/or layer taxonomy `effects`, override a
+registered engine target with `set` (HOMEBREW-RULES §5.5), or relax knack parents
+(§5.6). Evaluation
 lives in `engine/formula.js` (pure, DOM-free): an unresolvable ref makes the
 rating `null` (placeholder pill), never a fabricated number. Format authority:
 [docs/HOMEBREW-RULES.md](docs/HOMEBREW-RULES.md).
@@ -479,6 +481,47 @@ constraint (§2, goal 1) — deliberate, and the app still ships no server of it
 own. Full design, build, and rollout: [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md)
 and its runbook.
 
+### 7.6 Discord die reports — device-local webhook (opt-in)
+A per-character Discord webhook, set in Settings, receives one message
+per finished roll, plain text (default) or a Discord embed (per-character choice).
+- **Storage.** `{url, enabled, format}` (`format` is `'plain'|'embed'`, default plain) lives in localStorage `ed-discord:<characterId>`
+  (`store-discord.js`), like the Roll Log. It is never part of character data,
+  the edits overlay, an Export or a GitHub save. "Store only inputs" holds:
+  nothing derived is stored. Corrupt or blocked storage fails open to
+  `{url:'', enabled:false, format:'plain'}`.
+- **The URL is a secret.** Anyone holding it can post to the channel. It stays
+  only in this browser: masked once saved, never put in toasts, inline errors or
+  console output. `postWebhook` returns only "HTTP <status>" or "Network error".
+  Each browser or device is configured separately.
+- **Layers.** `engine/discord-roll.js` formats the message (pure, DOM-free).
+  `discord-send.js` is the only I/O (`fetch` injected). `ed-settings`
+  dispatches `ed-settings` / `ed-discord-test` up. `ed-app` persists the config,
+  captures the latest `ed-roll-logged` landing per `rollId` and flushes exactly
+  one message when the interaction ends (modal close or apply, day-reset embedded
+  roll dismiss/apply, a new roll, or a character switch). The character id and
+  name are captured when the roll lands.
+- **Plain-text message (default).** Sender `username` = character name (≤80
+  chars, "Character" if blank, "discord"/"clyde" defused; same for both formats). Body lines, omitted when not applicable:
+  `🎲 **Label** — Step N (dice)`; dice groups `D10 [10↦7] = 17` joined by ` · `
+  (+ ` · Modifier +n`); `✦ Karma …`; `Bonus dice … = n`; `Mods: label +v [Step] · …`;
+  `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
+  is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
+  content capped at 2000 chars, keeping the header and Total.
+- **Embed format.** `{username, embeds:[{title, description?, color, fields}],
+  allowed_mentions:{parse:[]}}`, no `content`/footer. Optional `thumbnail:{url}` (embed
+  format only, incl. the test message): `store.js` `discordThumbnailUrl(portrait)` gives the
+  raw portrait URL on Pages, `data/discord-no-image.png` (production Pages URL) on Pages
+  without a portrait, `data/discord-local-test.png` on a local run, `null` on error; the
+  engine only emits the passed URL. Title
+  `🎲 Label — Step N · Total T`; description `vs … D — **word** ✅|❌`; colour
+  green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
+  dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
+  then Mods, Bonus dice, Karma). `buildPayload` picks the format; unknown is plain.
+  The Settings test message follows the draft format; as an embed it is title
+  `✅ Test message`, description `Discord die reports are connected.`, green, no fields.
+- **No retry or queue.** A failed send shows a brief toast. The roll, the Roll
+  Log and Karma are unaffected.
+
 ---
 
 ## 8. Repository layout
@@ -487,9 +530,12 @@ and its runbook.
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
-  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure)
+  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
+  store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
+  store-discord.js    # device-local per-character Discord webhook config {url, enabled, format} (localStorage `ed-discord:<id>`); webhook-URL validator
+  discord-send.js     # the one Discord I/O call: POST JSON to the webhook; never throws, never logs, never echoes the URL
   store-server.test.js# node --test (see `npm test`)
   ui/                 # Lit components (Web Components)
     ed-app.js         # root: loads the model, renders the tab shell, routes tabs
@@ -499,7 +545,7 @@ and its runbook.
     ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, self-cast active effects / target effects; weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
     ed-equipment.js   # Equipment tab (items grouped by function)
     ed-notes.js       # Notes tab (running character log)
-    ed-settings.js    # settings modal
+    ed-settings.js    # settings modal (autosave; per-character Discord die reports)
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
@@ -526,6 +572,7 @@ and its runbook.
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
+    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url}; markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve
@@ -535,7 +582,7 @@ and its runbook.
     spells.js                # spell/matrix fold (grandfathered display parser, §5.5)
     legend.js                # Legend Point totals
     legend-spent.js          # Legend-spent reconciliation audit
-    advancement.js           # talent/skill advancement costs
+    advancement.js           # Circle-advancement status (supported Circle, eligibility, next requirement; no costs): gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
     potions.js               # potion/consumable effects
     formula.js               # rule-expression evaluator (§4.2)
     ability-ranks.js         # ability rank resolution
@@ -548,6 +595,7 @@ and its runbook.
     # planned: dddice.js (optional 3D dice adapter)
   data/
     changelog.json    # feature changelog (shipped history)
+    discord-local-test.png, discord-no-image.png   # Discord embed thumbnail placeholders (§7.6); bundle files, served from the production Pages base
     # data/characters/ (one <id>.json per character + index.json) and the
     # portraits (chakka.jpg …) are NOT bundle files: they live on the
     # character-data branch and are read live on the Pages

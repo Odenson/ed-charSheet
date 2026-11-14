@@ -22,7 +22,7 @@ function planFiles() {
 }
 
 function frontmatter(file) {
-  const m = fs.readFileSync(file, 'utf8').match(/^---\n([\s\S]*?)\n---\n/);
+  const m = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) return null;
   const fm = {};
   for (const line of m[1].split('\n')) {

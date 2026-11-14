@@ -78,6 +78,21 @@ to ensure save uses local data remember to pass the url params:
 http://localhost:8000/dev/?save=http://localhost:8000/save&save-items=http://localhost:8000/save-items
 ```
 
+> **Windows — one-time setup on a fresh machine.** The npm scripts are bash
+> (`scripts/start-local.sh`), so plain `npm start` can end up in the broken WSL
+> launcher. Install [Git for Windows](https://git-scm.com/download/win), then
+> run both once (admin or Developer Mode is needed for symlinks; open a new
+> terminal afterwards):
+>
+> ```powershell
+> npm config set script-shell "C:\Program Files\Git\bin\bash.exe"
+> setx MSYS winsymlinks:nativestrict
+> ```
+>
+> The first makes npm run scripts under Git Bash; the second makes Git Bash's
+> `ln` create a real `/dev` symlink instead of deep-copying the repo. macOS and
+> Linux need neither — they work out of the box.
+
 `scripts/start-local.sh` boots `tools/dev-server.mjs` on port 8000 (`PORT=9000 npm start`
 to override), syncing the gitignored working copies in `data/` from
 `origin/character-data` first if they're missing (`npm run dev:sync` forces a
