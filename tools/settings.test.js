@@ -21,8 +21,17 @@ test('shared permission baseline: build-feature git is pre-allowed, nothing broa
     assert.ok(!s.permissions.ask.includes(p), `ask must not contain ${p}`);
   assert.ok(!s.permissions.allow.some((p) => /git push/.test(p) && !/ dev/.test(p)),
     'allow may grant git push to dev only');
-  for (const p of ['Bash(git merge*)', 'Bash(git pull*)', 'Bash(gh pr create*)', 'Bash(gh pr merge*)'])
-    assert.ok(s.permissions.ask.includes(p), `ask is missing ${p}`);
+  assert.ok(s.permissions.ask.includes('Bash(git pull*)'), 'ask is missing Bash(git pull*)');
+});
+
+test('shared permission baseline: release-feature git/gh is pre-allowed, narrowly', () => {
+  for (const p of ['Bash(git merge origin/main*)', 'Bash(gh pr create --base main --head dev*)',
+    'Bash(gh pr merge * --squash*)', 'Bash(node tools/release.mjs*)'])
+    assert.ok(s.permissions.allow.includes(p), `allow is missing ${p}`);
+  // Ask outranks allow: broad asks would re-prompt the release. Other merges still prompt (no allow).
+  for (const p of ['Bash(git merge*)', 'Bash(gh pr create*)', 'Bash(gh pr merge*)'])
+    assert.ok(!s.permissions.ask.includes(p), `ask must not contain ${p}`);
+  assert.ok(!s.permissions.allow.includes('Bash(git merge*)'), 'allow may merge origin/main only');
 });
 
 test('guardrail hook stays wired', () => {

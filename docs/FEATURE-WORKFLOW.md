@@ -109,8 +109,8 @@ are verified by the owner on `dev`, from the manual checklist the Dev Lead puts 
   tests; the Dev Lead diffs against the snapshot before shipping.
 - **Git.** The shared permission baseline (`.claude/settings.json`) allows
   `git add`, `git commit` and `git push origin dev`, so a `/build-feature` run
-  proceeds without prompts; `git merge`/`pull` and `gh pr create`/`merge` still
-  ask. Only inside `/build-feature`: `feature-dev` commits, only the Dev Lead
+  proceeds without prompts; `git pull` still asks (the release commands are
+  pre-allowed narrowly, see Flow 3). Only inside `/build-feature`: `feature-dev` commits, only the Dev Lead
   pushes to `dev`; stage by explicit path (never `git add -A`), scoped to the
   feature. No PR at build time; the release PR is `/release-feature`'s.
   `/new-feature` never commits.
@@ -139,8 +139,8 @@ cannot carve out one feature. There are no subagents; file logic is in
 
 Running the command is the owner's authorization for exactly these git actions
 (changelog commit, push `dev`, release PR, squash-merge, sync). Never a direct push
-to `main`, never `git add -A`, never force. The shared permission baseline still
-prompts for push and merge; the owner approves those prompts. The only files it
+to `main`, never `git add -A`, never force. The shared permission baseline pre-allows
+exactly these commands, so the Phase 1 version confirmation is the only stop. The only files it
 edits are `data/changelog.json`, plan `shipped:` lines and the token-usage report.
 
 ## Token usage report

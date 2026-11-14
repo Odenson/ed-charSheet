@@ -30,8 +30,11 @@ Running this command is the owner's authorization, for **this workflow only**, t
 commit the changelog and the token-usage report on `dev`, push `dev`, open the `dev → main` release PR,
 **squash-merge it**, and merge `origin/main` back into `dev`. Never push to `main`
 directly; never use `git add -A` / `git add .` (stage by explicit path); never
-force-push. The shared permission baseline allows the push to `dev` but still prompts for
-`git merge`, `gh pr create` and `gh pr merge` — the owner approves those prompts. Outside this workflow the usual rule stands.
+force-push. The shared permission baseline pre-allows exactly these commands (push to `dev`,
+`git merge origin/main`, `gh pr create --base main --head dev`, `gh pr merge --squash`, the
+read-only `gh`/`git` checks), so **the only stop is the Phase 1 confirmation of the
+release version/tag** — do not ask for any other approval or pause between phases.
+Outside this workflow the usual rule stands.
 
 ## Phase 0 — Preflight (stop on any failure)
 
