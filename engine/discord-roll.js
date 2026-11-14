@@ -100,12 +100,12 @@ const GREEN = 0x2ecc71;
 const RED = 0xe74c3c;
 const GREY = 0x95a5a6;
 
-/** Embed variant of the report (plans/embedded-die-roll). Pure; same details as plain. */
 function withThumbnail(embed, url) {
   if (typeof url === 'string' && url.trim()) embed.thumbnail = { url: url.trim() };
   return embed;
 }
 
+/** Embed variant of the report (plans/embedded-die-roll). Pure; same details as plain. */
 export function formatRollEmbed(report, { name, thumbnailUrl } = {}) {
   const r = report ?? {};
   let label = escapeDiscord(r.label);

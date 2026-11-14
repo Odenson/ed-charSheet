@@ -530,7 +530,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
-  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure)
+  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
   store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
@@ -572,7 +572,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
-    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
+    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url}; markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve
@@ -595,6 +595,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     # planned: dddice.js (optional 3D dice adapter)
   data/
     changelog.json    # feature changelog (shipped history)
+    discord-local-test.png, discord-no-image.png   # Discord embed thumbnail placeholders (§7.6); bundle files, served from the production Pages base
     # data/characters/ (one <id>.json per character + index.json) and the
     # portraits (chakka.jpg …) are NOT bundle files: they live on the
     # character-data branch and are read live on the Pages
