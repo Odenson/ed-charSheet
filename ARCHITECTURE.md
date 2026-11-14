@@ -500,8 +500,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   one message when the interaction ends (modal close or apply, day-reset embedded
   roll dismiss/apply, a new roll, or a character switch). The character id and
   name are captured when the roll lands.
-- **Message.** Sender `username` = character name (≤80 chars, "Character" if
-  blank, "discord"/"clyde" defused). Body lines, omitted when not applicable:
+- **Plain-text message (default).** Sender `username` = character name (≤80
+  chars, "Character" if blank, "discord"/"clyde" defused; same for both formats). Body lines, omitted when not applicable:
   `🎲 **Label** — Step N (dice)`; dice groups `D10 [10↦7] = 17` joined by ` · `
   (+ ` · Modifier +n`); `✦ Karma …`; `Bonus dice … = n`; `Mods: label +v [Step] · …`;
   `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
@@ -513,6 +513,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
   dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
   then Mods, Bonus dice, Karma). `buildPayload` picks the format; unknown is plain.
+  The Settings test message follows the draft format; as an embed it is title
+  `✅ Test message`, description `Discord die reports are connected.`, green, no fields.
 - **No retry or queue.** A failed send shows a brief toast. The roll, the Roll
   Log and Karma are unaffected.
 
@@ -566,7 +568,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
-    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text webhook message; markdown/mention escaping, 2000-char cap, username sanitising, allowed_mentions:{parse:[]})
+    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve

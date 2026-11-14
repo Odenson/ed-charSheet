@@ -1,6 +1,6 @@
 // engine/discord-roll.js — pure, DOM-free formatter for the Discord die report
 // (plans/discord-die-report). Turns a completed roll's report object into a
-// plain-text webhook message. No Earthdawn rules live here; it only reports
+// Discord webhook payload (plain text or embed; plans/embedded-die-roll). No Earthdawn rules live here; it only reports
 // values the app already computed.
 
 import { isDiscordWebhookUrl, normalizeFormat } from '../store-discord.js';

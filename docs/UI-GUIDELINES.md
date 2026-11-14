@@ -154,7 +154,7 @@ a **Discord die reports** section for that character:
   console output (see ARCHITECTURE §7.6).
 
 When the switch is on and the URL is valid, each finished roll interaction posts
-**one** plain-text message, sent once the roll modal closes or applies, so it
+**one** message in the character's chosen format (plain text by default, or a Discord embed), sent once the roll modal closes or applies, so it
 carries the final total after any Karma or optional-mod toggles. A failed send
 shows a ~4 s error toast "Discord report failed: <HTTP status | Network error>"
 with no retry; the roll, the Roll Log and Karma are unaffected.
