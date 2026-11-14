@@ -3,9 +3,21 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": ["New optional homebrew rule: advance Circles using the Player's Guide 'Using All Talents To Advance' table (N talents at a minimum rank, one from your current Circle), enabled for the current campaign.", "Shadow Meld now matches the Player's Guide: it has a +2 minutes duration option on extra successes and extra threads, an Increase Effect thread that raises the Stealthy Stride bonus by 2, and a note that Stealthy Stride works as a default skill.", "Discord die reports: post each finished roll to a Discord channel through a per-character webhook, configured in Settings (stored only in this browser).", "Discord die reports can now be sent as a Discord embed instead of plain text, chosen per character in Settings.", "Discord Embed die reports now show a thumbnail: the character's portrait, or a placeholder image when there is none or on a local run."]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.33.0",
+      "date": "2026-11-14",
+      "summary": "Discord die reports: post each finished roll to a channel via a per-character webhook, as plain text or an embed with a portrait/placeholder thumbnail; plus a homebrew Circle-advancement rule and Shadow Meld fixes.",
+      "changes": [
+        "New optional homebrew rule: advance Circles using the Player's Guide 'Using All Talents To Advance' table (N talents at a minimum rank, one from your current Circle), enabled for the current campaign.",
+        "Shadow Meld now matches the Player's Guide: it has a +2 minutes duration option on extra successes and extra threads, an Increase Effect thread that raises the Stealthy Stride bonus by 2, and a note that Stealthy Stride works as a default skill.",
+        "Discord die reports: post each finished roll to a Discord channel through a per-character webhook, configured in Settings (stored only in this browser).",
+        "Discord die reports can now be sent as a Discord embed instead of plain text, chosen per character in Settings.",
+        "Discord Embed die reports now show a thumbnail: the character's portrait, or a placeholder image when there is none or on a local run."
+      ]
+    },
     {
       "version": "1.32.0",
       "date": "2026-10-05",

@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.33.0
 ---
 # Delivery Plan: Thumbnail in roll (thumbnail-in-roll)
 

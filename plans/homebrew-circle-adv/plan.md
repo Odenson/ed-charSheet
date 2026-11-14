@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.33.0
 ---
 # Delivery Plan: Homebrew optional circle advancement (homebrew-circle-adv)
 
