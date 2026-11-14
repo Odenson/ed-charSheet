@@ -506,7 +506,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   (+ ` · Modifier +n`); `✦ Karma …`; `Bonus dice … = n`; `Mods: label +v [Step] · …`;
   `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
   is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
-  content capped at 2000 chars, keeping the header and Total.
+  content capped at 2000 chars, keeping the header and Total. Optional top-level
+  `avatar_url` as described under Embed format.
 - **Embed format.** `{username, embeds:[{title, description?, color, fields}],
   allowed_mentions:{parse:[]}}`, no `content`/footer. Optional `thumbnail:{url}` (embed
   format only, incl. the test message): `store.js` `discordThumbnailUrl(portrait)` gives the
@@ -517,6 +518,10 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
   dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
   then Mods, Bonus dice, Karma). `buildPayload` picks the format; unknown is plain.
+  Both formats (and the test message) also carry an optional top-level `avatar_url`
+  (never inside the embed): `store.js` `discordAvatarUrl(portrait)` gives the raw portrait
+  URL on Pages only when a portrait exists, else `null` (no placeholder, local run, or
+  error) and the key is omitted so Discord shows the webhook's default icon.
   The Settings test message follows the draft format; as an embed it is title
   `✅ Test message`, description `Discord die reports are connected.`, green, no fields.
 - **No retry or queue.** A failed send shows a brief toast. The roll, the Roll
@@ -530,7 +535,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
-  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl
+  store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl / discordAvatarUrl
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
   store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
@@ -572,7 +577,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
-    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url}; markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
+    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url} and top-level avatar_url (both formats + test message); markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve

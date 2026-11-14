@@ -87,6 +87,7 @@ character store (the bundle ships no character data), referenced by
 (e.g. `data/chakka.jpg`). On the Pages site the app reads it live from that
 branch's raw CDN; locally it uses the gitignored working copy. If the field is
 absent **or the image fails to load** the UI falls back to a placeholder icon.
+The same public portrait URL is used as the Discord embed thumbnail and, on the Pages site, as the Discord message avatar (§8a).
 
 ## 6a. Character chooser (first-run picker + load icon)
 The header row carries a **load icon** (always visible, before the theme toggle)
@@ -155,7 +156,15 @@ a **Discord die reports** section for that character:
 
 When the switch is on and the URL is valid, each finished roll interaction posts
 **one** message in the character's chosen format (plain text by default, or a Discord embed), sent once the roll modal closes or applies, so it
-carries the final total after any Karma or optional-mod toggles. A failed send
+carries the final total after any Karma or optional-mod toggles. An embed (including
+the Embed test message) carries an automatic thumbnail: the character's portrait on
+the Pages site, a shipped "no image" placeholder on Pages when the character has no
+portrait, or a shipped "local test" placeholder on a local run. Every message in either
+format, including the test message, also uses the character's portrait as its Discord
+avatar, but only on the Pages site and only when a portrait exists; no placeholder is
+used as the avatar, so otherwise Discord shows the webhook's default icon. There is no
+Settings control for the thumbnail or the avatar, and the text of plain-text messages
+is unchanged. A failed send
 shows a ~4 s error toast "Discord report failed: <HTTP status | Network error>"
 with no retry; the roll, the Roll Log and Karma are unaffected.
 

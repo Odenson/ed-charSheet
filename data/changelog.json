@@ -7,6 +7,14 @@
   },
   "releases": [
     {
+      "version": "1.34.0",
+      "date": "2026-11-14",
+      "summary": "Discord die reports now use your character's portrait as the message avatar, on every roll and the test message in both Plain and Embed formats.",
+      "changes": [
+        "Discord die reports now use your character's portrait as the message avatar (when a portrait is set)."
+      ]
+    },
+    {
       "version": "1.33.0",
       "date": "2026-11-14",
       "summary": "Discord die reports: post each finished roll to a channel via a per-character webhook, as plain text or an embed with a portrait/placeholder thumbnail; plus a homebrew Circle-advancement rule and Shadow Meld fixes.",
