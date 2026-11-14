@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.34.0
 ---
 # Delivery Plan: User image on Discord messages (user-image-discord)
 
