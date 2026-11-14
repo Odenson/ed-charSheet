@@ -481,6 +481,35 @@ constraint (§2, goal 1) — deliberate, and the app still ships no server of it
 own. Full design, build, and rollout: [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITHUB-SERVERLESS-SAVE.md)
 and its runbook.
 
+### 7.6 Discord die reports — device-local webhook (opt-in)
+A per-character Discord webhook, set in Settings, receives one plain-text message
+per finished roll.
+- **Storage.** `{url, enabled}` lives in localStorage `ed-discord:<characterId>`
+  (`store-discord.js`), like the Roll Log. It is never part of character data,
+  the edits overlay, an Export or a GitHub save. "Store only inputs" holds:
+  nothing derived is stored. Corrupt or blocked storage fails open to
+  `{url:'', enabled:false}`.
+- **The URL is a secret.** Anyone holding it can post to the channel. It stays
+  only in this browser: masked once saved, never put in toasts, inline errors or
+  console output. `postWebhook` returns only "HTTP <status>" or "Network error".
+  Each browser or device is configured separately.
+- **Layers.** `engine/discord-roll.js` formats the message (pure, DOM-free).
+  `discord-send.js` is the only I/O (`fetch` injected). `ed-settings`
+  dispatches `ed-settings` / `ed-discord-test` up. `ed-app` persists the config,
+  captures the latest `ed-roll-logged` landing per `rollId` and flushes exactly
+  one message when the interaction ends (modal close or apply, day-reset embedded
+  roll dismiss/apply, a new roll, or a character switch). The character id and
+  name are captured when the roll lands.
+- **Message.** Sender `username` = character name (≤80 chars, "Character" if
+  blank, "discord"/"clyde" defused). Body lines, omitted when not applicable:
+  `🎲 **Label** — Step N (dice)`; dice groups `D10 [10↦7] = 17` joined by ` · `
+  (+ ` · Modifier +n`); `✦ Karma …`; `Bonus dice … = n`; `Mods: label +v [Step] · …`;
+  `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
+  is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
+  content capped at 2000 chars, keeping the header and Total.
+- **No retry or queue.** A failed send shows a brief toast. The roll, the Roll
+  Log and Karma are unaffected.
+
 ---
 
 ## 8. Repository layout
@@ -492,6 +521,9 @@ and its runbook.
   store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure)
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
+  store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
+  store-discord.js    # device-local per-character Discord webhook config {url, enabled} (localStorage `ed-discord:<id>`); webhook-URL validator
+  discord-send.js     # the one Discord I/O call: POST JSON to the webhook; never throws, never logs, never echoes the URL
   store-server.test.js# node --test (see `npm test`)
   ui/                 # Lit components (Web Components)
     ed-app.js         # root: loads the model, renders the tab shell, routes tabs
@@ -501,7 +533,7 @@ and its runbook.
     ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, self-cast active effects / target effects; weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
     ed-equipment.js   # Equipment tab (items grouped by function)
     ed-notes.js       # Notes tab (running character log)
-    ed-settings.js    # settings modal
+    ed-settings.js    # settings modal (autosave; per-character Discord die reports)
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
@@ -528,6 +560,7 @@ and its runbook.
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
+    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text webhook message; markdown/mention escaping, 2000-char cap, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve

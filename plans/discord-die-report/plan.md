@@ -1,5 +1,6 @@
 ---
-status: building
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: Discord die report (discord-die-report)
 
