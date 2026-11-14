@@ -3,14 +3,20 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      {
-        "type": "fixed",
-        "text": "What's new: the Discord avatar (1.34), Discord die report (1.33) and Night's Edge (1.28) entries now show their tags and list as proper bullet points."
-      }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.34.1",
+      "date": "2026-11-14",
+      "summary": "What's new now lists the Discord avatar, Discord die report and Night's Edge entries with their tags as proper bullet points.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "What's new: the Discord avatar (1.34), Discord die report (1.33) and Night's Edge (1.28) entries now show their tags and list as proper bullet points."
+        }
+      ]
+    },
     {
       "version": "1.34.0",
       "date": "2026-11-14",
