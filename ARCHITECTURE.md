@@ -557,6 +557,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-edit-meta.js   # meta edit modal
     ed-add-legend.js  # add Legend Points modal
     ed-day-reset.js   # new-day / recovery reset modal
+    ed-damage-modal.js # shared Take-damage modal (Overview Damage row + Combat Damage taken); applies a hit via engine resolveHit, dispatches ed-edit-health and the Knockdown ed-roll
     ed-custom-item.js # player-created custom item modal
     ed-save-key.js    # GitHub save key prompt
     ed-confirm.js     # reusable confirmation modal
@@ -581,7 +582,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve
-    health.js                # health ratings (Unconscious/Death/wound/recovery)
+    health.js                # health ratings (Unconscious/Death/wound/recovery), damageState, healthDanger (Overview Health card danger levels + gauge geometry; amber margin is an owner UI choice, not a rule), resolveHit (Wound/Knockdown from one hit)
     encumbrance.js           # carry/lift capacity + encumbrance
     weight.js                # item-weight totals
     spells.js                # spell/matrix fold (grandfathered display parser, §5.5)
