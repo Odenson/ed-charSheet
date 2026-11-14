@@ -115,7 +115,7 @@ are verified by the owner on `dev`, from the manual checklist the Dev Lead puts 
   feature. No PR at build time; the release PR is `/release-feature`'s.
   `/new-feature` never commits.
 - **Changelog.** User-visible features add one line to `data/changelog.json`
-  `unreleased.changes`; `/release-feature` turns them into the release entry.
+  `unreleased.changes`, as a `{type, text}` object (`added|improved|changed|fixed`; `tools/release.mjs` rejects bare strings); `/release-feature` turns them into the release entry.
 - **Guardrails.** Subagents load `ed-change-guardrail` before touching a
   protected surface, so the first-edit hook does not stall a build.
 

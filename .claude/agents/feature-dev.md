@@ -52,7 +52,8 @@ writing).
    source, data and docs** — never the tester's test files.
 2. Keep docs current where the change affects them (the owning doc in `docs/`,
    `ARCHITECTURE.md`), and add the spec's changelog line to `data/changelog.json`
-   `unreleased.changes` when the change is user-visible. Do not bump versions or
+   `unreleased.changes` as a `{"type": "added|improved|changed|fixed", "text": "…"}`
+   object (never a bare string) when the change is user-visible. Do not bump versions or
    cut a release entry.
 3. Run the tester's tests and the full gate (`npm test`) until green. Do **not**
    reach green by touching a tester test — if one seems wrong, dispute it.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { check, apply, nextVersion } from './release.mjs';
+import { check, apply, nextVersion , badChanges } from './release.mjs';
 
 function fixture({ changes = [{ type: 'added', text: 'a' }], plans = {} } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rel-'));
@@ -76,4 +76,18 @@ test('apply: rejects bad input and duplicate versions', () => {
   assert.throws(() => apply({ root, version: '1.3.0', summary: ' ', date: '2026-10-02' }), /summary/);
   assert.throws(() => apply({ root, version: '1.2.3', summary: 's', date: '2026-10-02' }), /already released/);
   assert.throws(() => apply({ root: fixture({ changes: [] }), version: '1.3.0', summary: 's', date: '2026-10-02' }), /nothing unreleased/);
+});
+
+test('check/apply: plain-string changelog entries are rejected (must be {type, text})', () => {
+  const root = fixture({ changes: ['just a string'] });
+  const r = check({ root });
+  assert.equal(r.ok, false);
+  assert.ok(r.stops.some((s) => /Malformed unreleased changelog entry/.test(s)));
+  assert.throws(() => apply({ root, version: '1.3.0', summary: 's', date: '2026-10-02' }), /malformed unreleased changes/);
+});
+
+test('data/changelog.json: every entry in unreleased and releases is {type, text}', () => {
+  const log = JSON.parse(fs.readFileSync(new URL('../data/changelog.json', import.meta.url), 'utf8'));
+  assert.deepEqual(badChanges(log.unreleased.changes), []);
+  for (const r of log.releases) assert.deepEqual(badChanges(r.changes), [], `release ${r.version}`);
 });

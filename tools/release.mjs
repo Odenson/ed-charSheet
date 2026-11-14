@@ -39,6 +39,18 @@ export function frontmatter(text) {
   return fm;
 }
 
+const CHANGE_TYPES = ['added', 'improved', 'changed', 'fixed'];
+
+/** Problems with changelog entries: each must be {type, text} (the in-app list renders c.type / c.text). */
+export function badChanges(changes) {
+  const bad = [];
+  (changes ?? []).forEach((c, i) => {
+    if (!c || typeof c !== 'object' || !CHANGE_TYPES.includes(c.type) || typeof c.text !== 'string' || !c.text.trim())
+      bad.push(`change #${i + 1} must be {"type": ${CHANGE_TYPES.map((t) => `"${t}"`).join('|')}, "text": "…"}, got ${JSON.stringify(c)}`);
+  });
+  return bad;
+}
+
 export function nextVersion(latest, types) {
   const [maj, min, pat] = latest.split('.').map(Number);
   const fixesOnly = types.length > 0 && types.every((t) => t === 'fixed');
@@ -59,6 +71,7 @@ export function check({ root = defaultRoot, slug = null } = {}) {
   const warnings = [];
 
   if (changes.length === 0) stops.push('Nothing to release: data/changelog.json `unreleased.changes` is empty.');
+  for (const b of badChanges(changes)) stops.push(`Malformed unreleased changelog entry: ${b}`);
 
   let headline = null;
   if (slug) {
@@ -95,6 +108,8 @@ export function apply({ root = defaultRoot, version, summary, date }) {
   const raw = fs.readFileSync(file, 'utf8');
   const log = JSON.parse(raw);
   if (!(log.unreleased?.changes?.length > 0)) throw new Error('nothing unreleased');
+  const bad = badChanges(log.unreleased.changes);
+  if (bad.length) throw new Error(`malformed unreleased changes: ${bad.join('; ')}`);
   if (log.releases.some((r) => r.version === version)) throw new Error(`version ${version} already released`);
   log.releases.unshift({ version, date, summary: summary.trim(), changes: log.unreleased.changes });
   log.unreleased = { summary: '', changes: [] };
