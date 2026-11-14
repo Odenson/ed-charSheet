@@ -7,7 +7,8 @@ Estimated from list prices in `tools/token-pricing.json` (as of 2026-09-25); a s
 | Workflow | Runs | Input | Output | Cache read | Cache write | Total tokens | Est. cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | /new-feature | 1 | 94 | 43,872 | 3,327,574 | 195,422 | 3,566,962 | $1.66 |
-| **All workflows** | 1 | 94 | 43,872 | 3,327,574 | 195,422 | 3,566,962 | $1.66 |
+| /build-feature | 1 | 146 | 55,613 | 4,385,173 | 245,737 | 4,686,669 | $2.36 |
+| **All workflows** | 2 | 240 | 99,485 | 7,712,747 | 441,159 | 8,253,631 | $4.01 |
 
 ## Run 1: /new-feature — 2026-11-14 23:21Z
 
@@ -28,4 +29,26 @@ Window: 2026-11-14T23:02:19.000Z → 2026-11-14T23:21:05.648Z. Main-session mode
 | feature-planner | 2 | 20 | 18,527 | 227,035 | 80,347 | 325,929 | $0.432 |
 | rule-agent | 1 | 22 | 6,399 | 212,134 | 32,632 | 251,187 | $0.188 |
 | **Workflow total** |  | 94 | 43,872 | 3,327,574 | 195,422 | 3,566,962 | $1.66 |
+
+## Run 2: /build-feature — 2026-11-14 23:33Z
+
+Window: 2026-11-14T23:25:38.000Z → 2026-11-14T23:33:18.857Z. Main-session model(s): claude-sonnet-5-5.
+
+### By model (mode)
+
+| Model | Input | Output | Cache read | Cache write | Total tokens | Est. cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| claude-sonnet-5-5 | 124 | 46,833 | 4,051,266 | 199,198 | 4,297,421 | $1.88 |
+| claude-opus-5-5 | 22 | 8,780 | 333,907 | 46,539 | 389,248 | $0.475 |
+
+### By participant
+
+| Participant | Spawns | Input | Output | Cache read | Cache write | Total tokens | Est. cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| orchestrator | 1 | 48 | 9,935 | 2,776,170 | 69,015 | 2,855,168 | $0.931 |
+| feature-tester | 1 | 16 | 10,097 | 162,555 | 31,559 | 204,227 | $0.212 |
+| design-agent | 1 | 22 | 8,780 | 333,907 | 46,539 | 389,248 | $0.475 |
+| feature-dev | 1 | 46 | 19,682 | 979,242 | 66,190 | 1,065,160 | $0.558 |
+| feature-designer | 1 | 14 | 7,119 | 133,299 | 32,434 | 172,866 | $0.179 |
+| **Workflow total** |  | 146 | 55,613 | 4,385,173 | 245,737 | 4,686,669 | $2.36 |
 
