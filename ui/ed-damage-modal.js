@@ -20,14 +20,14 @@ export class EdDamageModal extends LitElement {
   static styles = css`
     :host { display: contents; }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .modal { background: var(--card, light-dark(#ffffff, #232833)); color: var(--fg, light-dark(#111418, #f0f3f7)); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
     .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     .mpara { font-size: var(--fs-small); line-height: 1.5; margin: 0; }
     .mpara b { font-weight: 500; }
     .mpara.hint { font-size: var(--fs-fine); color: var(--muted); }
     .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-body); }
-    .hrow input { font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 6rem; text-align: right; }
+    .hrow input { font: inherit; font-size: var(--fs-body); color: var(--fg, light-dark(#111418, #f0f3f7)); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 6rem; text-align: right; }
     .hrow input:focus { outline: none; border-color: var(--accent); }
     .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
