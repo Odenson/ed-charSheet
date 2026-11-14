@@ -180,6 +180,22 @@ export function portraitUrlFor(portrait) {
   return `./${portrait}`;
 }
 
+// Discord embed thumbnail (plans/thumbnail-in-roll). Discord fetches the URL, so
+// it must be absolute: the portrait on Pages, else a shipped placeholder served
+// from the production site (404 until first release to main).
+const PLACEHOLDER_BASE = 'https://odenson.github.io/ed-charSheet/';
+export const LOCAL_TEST_IMAGE = 'data/discord-local-test.png';
+export const NO_IMAGE_IMAGE = 'data/discord-no-image.png';
+export function discordThumbnailUrl(portrait) {
+  try {
+    if (!onPages()) return PLACEHOLDER_BASE + LOCAL_TEST_IMAGE;
+    const p = typeof portrait === 'string' && portrait.trim() ? portrait : null;
+    return portraitUrlFor(p) ?? PLACEHOLDER_BASE + NO_IMAGE_IMAGE;
+  } catch {
+    return null;
+  }
+}
+
 // Resolve an item/weapon image path (e.g. `data/spear.png`) to a loadable URL.
 // Unlike a character portrait — runtime data written to the character-data branch
 // at save time and therefore read live from it — an item image is a STATIC rule

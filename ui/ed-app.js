@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -1694,6 +1694,7 @@ export class EdApp extends LitElement {
       rollId,
       characterId: this._characterId,
       name: this._character?.meta?.name ?? '',
+      portrait: this._character?.meta?.portrait ?? null,
       report: {
         label: cfg.label,
         step: result.step,
@@ -1719,7 +1720,8 @@ export class EdApp extends LitElement {
     try {
       const cfg = loadDiscordConfig(pending.characterId);
       if (!discordReady(cfg)) return;
-      postWebhook(cfg.url, buildPayload(pending.report, { name: pending.name, format: cfg.format }))
+      const thumbnailUrl = cfg.format === 'embed' ? discordThumbnailUrl(pending.portrait) : undefined;
+      postWebhook(cfg.url, buildPayload(pending.report, { name: pending.name, format: cfg.format, thumbnailUrl }))
         .then((r) => { if (!r.ok) this._showDiscordError(r.message); })
         .catch(() => {});
     } catch {
@@ -1735,7 +1737,8 @@ export class EdApp extends LitElement {
 
   async _discordSendTest(url, format) {
     this._discordTest = { state: 'sending' };
-    const r = await postWebhook(url, buildTestPayload({ name: this._character?.meta?.name ?? '', format }));
+    const thumbnailUrl = format === 'embed' ? discordThumbnailUrl(this._character?.meta?.portrait) : undefined;
+    const r = await postWebhook(url, buildTestPayload({ name: this._character?.meta?.name ?? '', format, thumbnailUrl }));
     this._discordTest = r.ok ? { state: 'ok', message: 'Test message sent' } : { state: 'error', message: r.message };
   }
 

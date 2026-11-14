@@ -101,7 +101,12 @@ const RED = 0xe74c3c;
 const GREY = 0x95a5a6;
 
 /** Embed variant of the report (plans/embedded-die-roll). Pure; same details as plain. */
-export function formatRollEmbed(report, { name } = {}) {
+function withThumbnail(embed, url) {
+  if (typeof url === 'string' && url.trim()) embed.thumbnail = { url: url.trim() };
+  return embed;
+}
+
+export function formatRollEmbed(report, { name, thumbnailUrl } = {}) {
   const r = report ?? {};
   let label = escapeDiscord(r.label);
   if (!label.trim()) label = 'Roll';
@@ -162,6 +167,7 @@ export function formatRollEmbed(report, { name } = {}) {
 
   const embed = { title, color, fields };
   if (description !== undefined) embed.description = description;
+  withThumbnail(embed, thumbnailUrl);
   return { username: safeUsername(name), embed };
 }
 
@@ -171,15 +177,15 @@ export function buildEmbedPayload(report, opts) {
 }
 
 /** Single entry point: embed when format === 'embed', else the plain payload. */
-export function buildPayload(report, { name, format } = {}) {
-  return normalizeFormat(format) === 'embed' ? buildEmbedPayload(report, { name }) : buildWebhookPayload(report, { name });
+export function buildPayload(report, { name, format, thumbnailUrl } = {}) {
+  return normalizeFormat(format) === 'embed' ? buildEmbedPayload(report, { name, thumbnailUrl }) : buildWebhookPayload(report, { name });
 }
 
-export function buildTestPayload({ name, format } = {}) {
+export function buildTestPayload({ name, format, thumbnailUrl } = {}) {
   if (normalizeFormat(format) === 'embed') {
     return {
       username: safeUsername(name),
-      embeds: [{ title: '✅ Test message', description: 'Discord die reports are connected.', color: GREEN, fields: [] }],
+      embeds: [withThumbnail({ title: '✅ Test message', description: 'Discord die reports are connected.', color: GREEN, fields: [] }, thumbnailUrl)],
       allowed_mentions: { parse: [] },
     };
   }

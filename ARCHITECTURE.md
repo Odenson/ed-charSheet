@@ -508,7 +508,11 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
   content capped at 2000 chars, keeping the header and Total.
 - **Embed format.** `{username, embeds:[{title, description?, color, fields}],
-  allowed_mentions:{parse:[]}}`, no `content`/footer/thumbnail. Title
+  allowed_mentions:{parse:[]}}`, no `content`/footer. Optional `thumbnail:{url}` (embed
+  format only, incl. the test message): `store.js` `discordThumbnailUrl(portrait)` gives the
+  raw portrait URL on Pages, `data/discord-no-image.png` (production Pages URL) on Pages
+  without a portrait, `data/discord-local-test.png` on a local run, `null` on error; the
+  engine only emits the passed URL. Title
   `🎲 Label — Step N · Total T`; description `vs … D — **word** ✅|❌`; colour
   green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
   dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
