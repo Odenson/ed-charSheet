@@ -79,7 +79,7 @@ testing easy. UI behavior that cannot be unit-tested is listed for the owner's
 manual verification.>
 
 ## Changelog entry
-<One user-facing line for data/changelog.json `unreleased.changes`, or "none"
+<One user-facing line for data/changelog.json `unreleased.changes`, written as an object `{"type": "added|improved|changed|fixed", "text": "…"}` (never a bare string: the in-app list reads `type` and `text`), or "none"
 if the change is not user-visible.>
 
 ## Out of scope

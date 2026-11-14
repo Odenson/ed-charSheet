@@ -11,7 +11,10 @@
       "date": "2026-11-14",
       "summary": "Discord die reports now use your character's portrait as the message avatar, on every roll and the test message in both Plain and Embed formats.",
       "changes": [
-        "Discord die reports now use your character's portrait as the message avatar (when a portrait is set)."
+        {
+          "type": "added",
+          "text": "Discord die reports now use your character's portrait as the message avatar (when a portrait is set)."
+        }
       ]
     },
     {
@@ -19,11 +22,26 @@
       "date": "2026-11-14",
       "summary": "Discord die reports: post each finished roll to a channel via a per-character webhook, as plain text or an embed with a portrait/placeholder thumbnail; plus a homebrew Circle-advancement rule and Shadow Meld fixes.",
       "changes": [
-        "New optional homebrew rule: advance Circles using the Player's Guide 'Using All Talents To Advance' table (N talents at a minimum rank, one from your current Circle), enabled for the current campaign.",
-        "Shadow Meld now matches the Player's Guide: it has a +2 minutes duration option on extra successes and extra threads, an Increase Effect thread that raises the Stealthy Stride bonus by 2, and a note that Stealthy Stride works as a default skill.",
-        "Discord die reports: post each finished roll to a Discord channel through a per-character webhook, configured in Settings (stored only in this browser).",
-        "Discord die reports can now be sent as a Discord embed instead of plain text, chosen per character in Settings.",
-        "Discord Embed die reports now show a thumbnail: the character's portrait, or a placeholder image when there is none or on a local run."
+        {
+          "type": "added",
+          "text": "New optional homebrew rule: advance Circles using the Player's Guide 'Using All Talents To Advance' table (N talents at a minimum rank, one from your current Circle), enabled for the current campaign."
+        },
+        {
+          "type": "fixed",
+          "text": "Shadow Meld now matches the Player's Guide: it has a +2 minutes duration option on extra successes and extra threads, an Increase Effect thread that raises the Stealthy Stride bonus by 2, and a note that Stealthy Stride works as a default skill."
+        },
+        {
+          "type": "added",
+          "text": "Discord die reports: post each finished roll to a Discord channel through a per-character webhook, configured in Settings (stored only in this browser)."
+        },
+        {
+          "type": "added",
+          "text": "Discord die reports can now be sent as a Discord embed instead of plain text, chosen per character in Settings."
+        },
+        {
+          "type": "added",
+          "text": "Discord Embed die reports now show a thumbnail: the character's portrait, or a placeholder image when there is none or on a local run."
+        }
       ]
     },
     {
@@ -131,7 +149,10 @@
       "date": "2026-10-04",
       "summary": "Night's Edge now works end to end: pick an equipped weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration, backed by taxonomy v6 (dice values and an object selector).",
       "changes": [
-        "Night's Edge now works end to end: pick a weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration."
+        {
+          "type": "improved",
+          "text": "Night's Edge now works end to end: pick a weapon when you cast it and its Damage tests gain a D4 Bonus Die for the spell's duration."
+        }
       ]
     },
     {
