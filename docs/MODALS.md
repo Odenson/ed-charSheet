@@ -53,7 +53,7 @@ focus still rings. No global CSS, no per-component change needed.
 ## Adoption recipe (inline-state modal)
 
 For a component that renders a modal from its own reactive state (the common
-case — `ed-disciplines`, `ed-equipment`, …):
+case — `ed-disciplines`, `ed-equipment`, …; `ed-damage-modal` is the shared Take-damage modal opened from both the Overview Damage row and Combat via its `show(trigger)` method):
 
 ```js
 import { ModalController } from './modal-controller.js';

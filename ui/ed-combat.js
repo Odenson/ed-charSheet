@@ -22,7 +22,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { weaponOccurrence } from '../engine/spells.js';
 import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, UNARMED_WEAPON, successDamageSteps, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
-import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
+import { recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { itemImageUrl } from '../store.js';
@@ -30,6 +30,7 @@ import { unequipSpentCharms } from './item-equip-state.js';
 import { MOD_TABS, modTabCounts, normalizeModTab, localSituationNames } from './combat-mods-state.js';
 import { logRowCells } from './combat-log-rows.js';
 import './ed-confirm.js';
+import './ed-damage-modal.js';
 
 // Per-character combat-tab scratchpad, kept in module memory so the player's
 // picks survive a tab switch (ed-app renders only the active tab, so this element
@@ -82,7 +83,6 @@ export class EdCombat extends LitElement {
     _charmsOn: { state: true },
     _target: { state: true },
     _modTab: { state: true },
-    _damageModal: { state: true },
     // The step-audit modal: which pool's breakdown to show ('attack' | 'damage'
     // | null). And the manually-entered success count used to buff the Damage
     // step when an attack was rolled with no target number (GM adjudicates).
@@ -284,15 +284,11 @@ export class EdCombat extends LitElement {
     .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
     .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     form { display: flex; flex-direction: column; gap: 0.6rem; }
-    .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-body); }
-    .hrow input { font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 6rem; text-align: right; }
-    .hrow input:focus { outline: none; border-color: var(--accent); }
     .mpara { font-size: var(--fs-small); line-height: 1.5; margin: 0; }
     .mpara b { font-weight: 500; }
     .mpara.hint { font-size: var(--fs-fine); color: var(--muted); }
     .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
-    .hbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); }
     /* Step-audit: a small info button on the Attack/Damage rows + its modal. */
     .info { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); flex: none; padding: 0; line-height: 1; }
     .info:hover { border-color: var(--accent); color: var(--accent); }
@@ -315,7 +311,6 @@ export class EdCombat extends LitElement {
     this._charmsOn = [];
     this._target = '';
     this._modTab = 'opts';
-    this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
     this._confirmClear = false;
@@ -330,7 +325,6 @@ export class EdCombat extends LitElement {
     this._onKeydown = (e) => {
       if (e.key !== 'Escape') return;
       if (this._stepAudit) { this._stepAudit = null; return; }
-      if (this._damageModal) { this._damageModal = false; return; }
       if (this._confirmClear) { this._confirmClear = false; return; }
     };
     document.addEventListener('keydown', this._onKeydown);
@@ -431,7 +425,6 @@ export class EdCombat extends LitElement {
     this._charmsOn = [];
     this._target = '';
     this._modTab = 'opts';
-    this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
     this._confirmClear = false;
@@ -445,7 +438,6 @@ export class EdCombat extends LitElement {
     this._charmsOn = [];
     this._target = '';
     this._modTab = 'opts';
-    this._damageModal = false;
     this._stepAudit = null;
     this._manualSuccesses = '';
     this._confirmClear = false;
@@ -1359,7 +1351,7 @@ export class EdCombat extends LitElement {
         <div class="thr rec">Recoveries <b>${h.recoveriesUsed ?? 0} / ${maxRec ?? this._rating(maxRec)}</b> used</div>
         ${this._standUpLine()}
         <div class="dtbtns">
-          <button class="roll dmg" @click=${this._openDamage} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✗</button>
+          <button class="roll dmg" @click=${(e) => this._openDamage(e)} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✗</button>
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
             title=${recTitle}
             aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>⚄</button>
@@ -1367,33 +1359,8 @@ export class EdCombat extends LitElement {
         </div>
       </div>`;
   }
-  _openDamage() {
-    this._damageDraft = { take: 0 };
-    this._damageModal = true;
-  }
-  _applyDamage() {
-    const d = this._damageDraft ?? {};
-    const cur = this.model?.resources?.health ?? {};
-    const take = d.take ?? 0;
-    const wt = this.model?.characteristics?.woundThreshold?.value;
-    // The Wound is derived from the hit vs. the Wound Threshold — never typed
-    // in (store only inputs), and the engine decides it like the Overview tab.
-    // Healing is done through a Recovery test, not here.
-    const wound = take > 0 ? woundsFromHit(take, wt) : 0;
-    const next = applyHealth(cur, { damage: take, wounds: wound, recoveriesUsed: 0 });
-    this._dispatchHealth(next);
-    this._damageModal = false;
-    // A hit five or more over the Wound Threshold forces a Knockdown test.
-    const kd = this.model?.characteristics?.knockdown;
-    if (take > 0 && kd?.value != null && knockdownTriggered(take, wt)) {
-      this._roll(
-        'Knockdown test',
-        kd.value,
-        null,
-        'knockdown',
-        { difficulty: { value: knockdownDifficulty(take, wt) }, apply: { action: 'knockdown-result' } },
-      );
-    }
+  _openDamage(e) {
+    this.renderRoot.querySelector('ed-damage-modal')?.show(e.currentTarget);
   }
   _recoveryTest() {
     const tou = (this.model?.attributes ?? []).find((a) => a.name === 'Toughness');
@@ -1519,9 +1486,7 @@ export class EdCombat extends LitElement {
       </div>
 
       ${this._stepAudit ? this._stepAuditTpl() : ''}
-      ${this._damageModal
-        ? this._damageModalTpl()
-        : ''}
+      <ed-damage-modal .model=${this.model}></ed-damage-modal>
       ${this._confirmClear
         ? html`<ed-confirm
             heading="Clear the Combat log?"
@@ -1609,34 +1574,6 @@ export class EdCombat extends LitElement {
       </div>`;
   }
 
-  _damageModalTpl() {
-    const h = this.model?.resources?.health ?? {};
-    const st = this.model?.healthState;
-    const d = this._damageDraft ?? {};
-    const stateWord =
-      st?.state && st.state !== 'unhurt'
-        ? html` · <b>${st.state === 'dead' ? 'Dead' : st.state === 'unconscious' ? 'Unconscious' : 'Conscious'}</b>`
-        : '';
-    const wt = this.model?.characteristics?.woundThreshold?.value;
-    return html`
-      <div class="overlay" @click=${() => (this._damageModal = false)}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Take damage" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>Take damage</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._damageModal = false)}>✕</button>
-          </div>
-          <p class="mpara">Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious ${this._rating(this.model?.characteristics?.unconsciousness?.value)} · Death ${this._rating(this.model?.characteristics?.death?.value)}</p>
-          <form @submit=${(e) => { e.preventDefault(); this._applyDamage(); }}>
-            <div class="hrow"><span>Take damage</span><input type="number" min="0" step="1" .value=${d.take ?? 0} aria-label="Damage to take" @input=${(e) => (d.take = Math.max(0, Number(e.target.value) || 0))} /></div>
-            <p class="mpara hint">A hit at or above the Wound Threshold ${this._rating(wt)} records one Wound; a hit five or more over it triggers a Knockdown test. Healing is done through a Recovery test.</p>
-            <div class="hfoot">
-              <span class="hint">Enter applies · Escape closes</span>
-              <button type="submit" class="hbtn">Apply</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
-  }
 }
 
 customElements.define('ed-combat', EdCombat);

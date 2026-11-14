@@ -456,13 +456,14 @@ Blood Wounds "are otherwise treated as normal Wounds, affecting the character's 
 Wounds and Damage Points are separate tracked quantities. Wounds do not "stack with" Damage — they are a *consequence* of Damage (single-attack ≥ Wound Threshold). Damage itself causes no direct penalties until it reaches the Unconsciousness Rating. Wounds then impose their cumulative –1 penalty and recovery reduction independently.
 
 Sources:
-- text-RB-players-guide.txt:3126–3128 (p. 65 — Wound Threshold definition)
-- text-RB-players-guide.txt:15404–15413 (p. 381 — Wounds: recovery reduction)
-- text-RB-players-guide.txt:15414–15419 (p. 381 — Wound Penalties: cumulative –1 per Wound)
-- text-RB-players-guide.txt:15330–15338 (p. 380 — Step 5: Check For Wounds in attack resolution)
-- text-RB-players-guide.txt:15339–15351 (p. 380 — Step 6: Knockdown from Wounds)
-- text-RB-players-guide.txt:15420–15429 (p. 382 — Healing Wounds)
-- text-RB-players-guide.txt:15355–15372 (pp. 380–381 — Unconsciousness and Death)
+- (line refs corrected 2026-11-15; earlier ones were stale; file is rulebook extracts/rulebook extracts/text-RB-players-guide.txt) see also Q031
+- text-RB-players-guide.txt:2061–2063 (p. 65 — Wound Threshold definition)
+- text-RB-players-guide.txt:14339–14348 (p. 381 — Wounds: recovery reduction)
+- text-RB-players-guide.txt:14349–14354 (p. 381 — Wound Penalties: cumulative –1 per Wound)
+- text-RB-players-guide.txt:14265–14273 (p. 379/380 — Step 5: Check For Wounds)
+- text-RB-players-guide.txt:14274–14286 (p. 380 — Step 6: Knockdown)
+- text-RB-players-guide.txt:14355–14364 (p. 382 — Healing Wounds)
+- text-RB-players-guide.txt:14290–14307 (p. 380 — Unconsciousness and Death)
 - text-RB-players-guide.txt:8336–8351 (p. 253 — Physician: treating Wounds)
 - text-RB-players-guide.txt:9964–9975 (p. 240 — Blood Wounds treated as normal Wounds)
 
@@ -796,3 +797,22 @@ Sources:
 - rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17203-17208 (p. 454, Reaching the Next Circle)
 - rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17123-17126 (p. 452, Mica reaches Second Circle)
 - rulebook extracts/rulebook extracts/text-discipline-players.txt:328-339 (Swordmaster talents by Circle)
+
+### Q031 — Damage/health mechanics for the Health card: Wound, Knockdown, Unconsciousness/Death, Recovery test, healing Wounds
+Keywords: health, damage, wound threshold, knockdown, knockdown test, difficulty, unconscious, unconsciousness rating, death rating, recovery test, recovery step, toughness step, recoveries per day, heal, healing wounds, one wound per day, full night's rest, current damage, strain · Resolved: 2026-11-15 · Context: update-health-overview
+
+(1) Wound: if the damage from a *single attack* (after armor) equals or exceeds the Wound Threshold, the character takes one Wound (one per attack, not multiple). The Wound is recorded even if the hit also renders him unconscious or dead.
+(2) Knockdown: if damage exceeds the Wound Threshold by five or more, the player makes a Strength test against Difficulty = damage minus Wound Threshold (example: WT 8, 15 damage -> Knockdown (7)). Failure = knocked down. Other effects (Attacking to Knockdown, dismount) can force a Knockdown test regardless.
+(3) Unconscious when Current Damage >= Unconsciousness Rating but < Death Rating; dead (barring Life Check, Last Chance Salve etc.) when Current Damage >= Death Rating. Unconsciousness Rating = 2 x Toughness value; Death Rating = Unconsciousness Rating + Toughness Step (+ Circle for adepts; highest Circle if multi-Discipline). Unconscious characters can only make Recovery tests and count as Blindsided and Knocked Down; they wake when Current Damage drops below the Unconsciousness Rating.
+(4) Recovery test: a Toughness Step test; result is typically subtracted from Current Damage. Number of tests per day is determined by Toughness (talents/spells may add extras; unused tests do not carry over). Conditions: on waking from a full night's rest an injured character must make one; at least 1 hour between tests; one minute of no physical activity/damage; wait 1 hour after combat (exception: unconscious characters, who may test 1 minute after falling unconscious, or immediately if revived by another's Standard action). Wounds reduce the result by the number of Wounds (minimum 1 recovered). Wound penalties (-1 per Wound to all tests) do not apply to Recovery tests. Healing without a Recovery test is possible only via "certain talents and spells, or the use of healing aids" (not detailed in this section); the book gives no other natural healing of damage.
+(5) Healing Wounds: one Wound per day, only if the character has zero Current Damage (even 1 point, including Strain but excluding Blood Magic damage, blocks it) and uses a Recovery test after a full night's rest. Curses preventing the morning Recovery test block it; some healing aids, spells, abilities also heal Wounds. See also Q010.
+App comparison: owner-stated app rules (1 Wound when hit >= WT; Knockdown when hit >= WT+5, Difficulty = damage - WT) match the book.
+
+Sources:
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14265-14273 (p. 379/380, Check For Wounds)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14274-14289 (p. 380, Knockdown)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14290-14307 (p. 380, Unconsciousness and Death)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14312-14338 (pp. 380-381, Recovering From Damage, Regaining Consciousness)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14339-14354 (p. 381, Wounds)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14355-14364 (p. 382, Healing Wounds)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:2050-2067 (p. 65, Health Ratings formulas)

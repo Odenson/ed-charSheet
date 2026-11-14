@@ -4,10 +4,11 @@
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
 import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
-import { applyHealth, woundsFromHit, knockdownTriggered, knockdownDifficulty, recoveriesRemaining } from '../engine/health.js';
+import { recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
 import './ed-add-legend.js';
+import './ed-damage-modal.js';
 import { humanize, cap } from './format.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
@@ -22,7 +23,6 @@ export class EdOverview extends LitElement {
     _lightbox: { state: true },
     _edit: { state: true },
     _portraitBroken: { state: true },
-    _healthModal: { state: true },
     _addLegend: { state: true },
     _karmaRitual: { state: true }, // paid Karma-Ritual modal open?
     _karmaBuy: { state: true },    // draft: points to buy
@@ -116,15 +116,32 @@ export class EdOverview extends LitElement {
     .hstate.bad { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
     .hfield { width: 46px; font: inherit; font-size: var(--fs-body); font-weight: 500; color: light-dark(#111418, #f0f3f7); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
     .hfield:focus { border-bottom-color: var(--accent); }
-    .hrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; }
-    .hnum { width: 72px; font: inherit; font-size: var(--fs-body); font-weight: 500; color: light-dark(#111418, #f0f3f7); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; outline: none; text-align: right; }
-    .hnum:focus { border-color: var(--accent); }
     .hbtn { font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
-    .hbtn.plain { border-color: var(--border); background: none; color: var(--muted); }
-    .hrec { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 9px; width: 100%; }
-    .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
     .val { font-weight: 500; }
+    /* Health card (V1): Damage / Wounds highlighted rows, a damage gauge, then
+       quiet stats. Levels come from model.healthDanger (engine); amber = owner
+       UI choice, red = at/over Unconscious or any Wound. Colour is never the only
+       signal: the chip and the row title carry the headroom text. */
+    .hl { --warn: light-dark(#8a5a00, #e0b35c); --warn-bg: light-dark(#f6ecd6, #33290f); --bad: light-dark(#a63a2b, #e0846f); display: flex; gap: 12px; justify-content: space-between; align-items: center; border-radius: 7px; padding: 0 10px; height: 25px; margin-bottom: 3px; font: inherit; font-size: var(--fs-body); font-weight: 500; background: var(--bg-chip); color: inherit; border: 1px solid transparent; width: 100%; box-sizing: border-box; text-align: left; }
+    button.hl { cursor: pointer; }
+    button.hl:hover { border-color: var(--border); }
+    button.hl:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .hl .l { width: 50px; color: var(--muted); font-weight: 400; flex: none; }
+    .hl .v { font-size: var(--fs-title); font-weight: 500; min-width: 22px; text-align: right; }
+    .hl .v.lvl-warn { color: var(--warn); }
+    .hl .v.lvl-bad { color: var(--bad); }
+    .hl .track { flex: 1; min-width: 0; position: relative; height: 6px; border-radius: 3px; background: var(--bg-card, light-dark(#fff, #12151b)); }
+    .hl .fill { position: absolute; left: 0; top: 0; bottom: 0; min-width: 5px; border-radius: 3px; background: var(--muted); }
+    .hl .fill.lvl-warn { background: var(--warn); }
+    .hl .fill.lvl-bad { background: var(--bad); }
+    .hl .tick { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--muted); opacity: 0.8; }
+    .hl .spacer { flex: 1; }
+    .hstats { border-top: 1px solid var(--border); padding-top: 3px; margin-top: auto; }
+    .hstats .line { font-size: var(--fs-small); padding: 0.5px 0; }
+    .hstats .line > span:first-child { color: var(--muted); }
+    .rdice { flex: none; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-eyebrow); line-height: 1; padding: 0; }
+    .rdice:disabled { opacity: 0.35; cursor: default; border-color: var(--border); background: none; color: var(--muted); }
     /* A stat currently reduced/buffed by a live condition (e.g. Knocked Down):
        the number takes the condition colour and a signed badge shows the net
        amount. Both are presentation only — the value stays the engine's real
@@ -465,6 +482,8 @@ export class EdOverview extends LitElement {
     const parts = [];
     if (u != null) parts.push(`Unconscious at ${u}`);
     if (d != null) parts.push(`Death at ${d}`);
+    const left = this.model?.healthState?.toUnconscious;
+    if (left != null) parts.push(`${left} to Unconscious`);
     return parts.join(' · ');
   }
 
@@ -511,124 +530,60 @@ export class EdOverview extends LitElement {
         <span>/ ${max ?? this._pend()}</span>
       </span>`;
     }
+    const remaining = recoveriesRemaining(used, max ?? null);
+    const none = remaining != null && remaining <= 0;
+    const boost = armedRecoveryBonus(this.arming?.pending).stepBonus;
+    const title = none
+      ? 'No Recovery Tests left today — reset for a new day'
+      : boost ? `Recovery test (+${boost} step armed) — heals the result, uses one` : 'Recovery test — heals the result, uses one';
     return html`<span class="rl">
       <span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>
+      <button class="rdice" ?disabled=${none} title=${title}
+        aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}
+        @click=${() => this._recoveryTest()}>⚄</button>
     </span>`;
-  }
-
-  // --- Damage modal (mid-session take/heal) -----------------------------------
-
-  // Mid-session damage entry: the sheet takes a hit amount and applies damage and
-  // any Wound itself (the Wound is derived from the hit vs. the Wound Threshold —
-  // never typed in, and never stored unless the engine says one is inflicted).
-  _openHealth() {
-    const h = this.model?.resources?.health ?? {};
-    // Draft carries the signed actions (take/heal) plus the absolute current
-    // recovery-tests-used; open fresh each time. Wounds are NOT in the draft:
-    // a hit auto-records its Wound (or not) via the engine at apply time.
-    this._healthDraft = { take: 0, heal: 0, used: h.recoveriesUsed ?? 0 };
-    this._healthModal = true;
-  }
-
-  _applyHealthDraft() {
-    const d = this._healthDraft ?? {};
-    const cur = this.model?.resources?.health ?? {};
-    const take = d.take ?? 0;
-    const wt = this.model?.characteristics?.woundThreshold?.value;
-    // The hit inflicts one Wound only when it clears the Wound Threshold — the
-    // engine decides (store only inputs: the hit amount, not the wound).
-    const wound = take > 0 ? woundsFromHit(take, wt) : 0;
-    const next = applyHealth(cur, {
-      damage: take - (d.heal ?? 0),
-      wounds: wound - 0,
-      recoveriesUsed: (d.used ?? 0) - (cur.recoveriesUsed ?? 0),
-    });
-    this.dispatchEvent(new CustomEvent('ed-edit-health', { detail: next, bubbles: true, composed: true }));
-    this._healthModal = false;
-    // A hit that lands five or more over the Wound Threshold forces a Knockdown
-    // test (Strength vs. Difficulty = hit − threshold) before the hit is fully
-    // resolved. Only offered when the sheet can roll it (a computed Knockdown
-    // step exists — no fabricated roll otherwise). The hit's damage/wound are
-    // already applied above; the test only decides the knocked-down state.
-    const kd = this.model?.characteristics?.knockdown;
-    if (take > 0 && kd?.value != null && knockdownTriggered(take, wt)) {
-      this.dispatchEvent(
-        new CustomEvent('ed-roll', {
-          detail: {
-            label: 'Knockdown test',
-            step: kd.value,
-            kind: 'knockdown', // PG p.389: the −3 hits every test, this one included, while prone
-            difficulty: { value: knockdownDifficulty(take, wt) },
-            apply: { action: 'knockdown-result' },
-          },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-    }
   }
 
   // One-tap Recovery test: roll the open-ended Effect test at Toughness step
   // (reusing the roll modal) with an apply context; the app applies the result
-  // to damage and records +1 Recovery test used. Close this modal to show the roll.
+  // to damage and records +1 Recovery test used. Same detail Combat dispatches.
   _recoveryTest() {
+    if (this.editMode) return;
     const tou = (this.model?.attributes ?? []).find((a) => a.name === 'Toughness');
     if (tou?.step == null) return;
-    // Defence-in-depth: the button is disabled at 0, but never roll a test the
-    // character has no budget for (the apply site refuses it anyway).
     const h = this.model?.resources?.health ?? {};
     const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
     const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
     if (remaining != null && remaining <= 0) return;
     this.dispatchEvent(
       new CustomEvent('ed-roll', {
-        detail: { label: 'Recovery test', step: tou.step, apply: { action: 'recovery-heal', label: 'Heal this amount' } },
+        detail: { label: 'Recovery test', step: tou.step, karma: null, kind: undefined, apply: { action: 'recovery-heal', label: 'Heal this amount' } },
         bubbles: true,
         composed: true,
       }),
     );
-    this._healthModal = false;
   }
 
-  _healthModalBody() {
-    const h = this.model?.resources?.health ?? {};
-    const st = this.model?.healthState;
-    const d = this._healthDraft ?? {};
-    const rating = (n) => (n == null ? this._pend() : html`${n}`);
-    const stateWord =
-      st?.state && st.state !== 'unhurt' ? html` · <b>${st.state === 'dead' ? 'Dead' : st.state === 'unconscious' ? 'Unconscious' : 'Conscious'}</b>` : '';
-    const set = (k) => (e) => {
-      d[k] = Math.max(0, Number(e.target.value) || 0);
-    };
-    const wt = this.model?.characteristics?.woundThreshold?.value;
-    const maxRec = this.model?.characteristics?.recoveries?.value ?? null;
-    const remaining = recoveriesRemaining(h?.recoveriesUsed, maxRec);
-    const noRecoveries = remaining != null && remaining <= 0;
-    return html`
-      <p class="mpara">
-        Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious
-        ${rating(this.model?.characteristics?.unconsciousness?.value)} · Death
-        ${rating(this.model?.characteristics?.death?.value)}
-      </p>
-      <div class="hrow"><span>Take damage</span><input class="hnum" type="number" min="0" step="1" .value=${d.take} aria-label="Damage to take" @input=${set('take')} /></div>
-      <div class="hrow"><span>Heal</span><input class="hnum" type="number" min="0" step="1" .value=${d.heal} aria-label="Damage to heal" @input=${set('heal')} /></div>
-      <div class="hrow"><span>Recovery tests used</span><input class="hnum" type="number" min="0" step="1" .value=${d.used} aria-label="Recovery tests used today" @input=${set('used')} /></div>
-      <p class="mpara hint">
-        A hit at or above the Wound Threshold ${rating(wt)} records one Wound; a
-        hit five or more over it triggers a Knockdown test.
-      </p>
-      ${(() => {
-        const boost = armedRecoveryBonus(this.arming?.pending).stepBonus;
-        return html`<button class="hbtn hrec" ?disabled=${noRecoveries} @click=${this._recoveryTest}
-          title=${noRecoveries ? 'No Recovery Tests left today — reset for a new day' : boost ? `Recovery test (+${boost} step armed) — heals the result, uses one` : 'Recovery test — heals the result, uses one'}
-          >⚄ Recovery test — heals the result, uses one${boost ? html` <b>(+${boost} step)</b>` : ''}</button>`;
-      })()}
-      ${noRecoveries ? html`<p class="mpara hint">No Recovery Tests left today — reset Recoveries to start a new day.</p>` : ''}
-      <div class="hfoot">
-        <span class="hint">Enter applies · Escape closes</span>
-        <button class="hbtn" @click=${this._applyHealthDraft}>Apply</button>
-      </div>
-    `;
+  // The gauge: track + fill + Unconscious tick, geometry straight from the engine
+  // (`*100` is unit conversion only). Missing Death -> placeholder pill.
+  _gauge(hd, lvl) {
+    if (hd?.fill == null) return html`<span class="spacer"><span class="pend">—</span></span>`;
+    return html`<div class="track">
+      <div class="fill ${lvl}" style="width:${hd.fill * 100}%"></div>
+      ${hd.tick == null ? '' : html`<div class="tick" style="left:${hd.tick * 100}%"></div>`}
+    </div>`;
+  }
+
+  // Damage row: read mode is a button that opens the shared Take-damage modal;
+  // edit mode is a plain row with a number field.
+  _damageRow(h) {
+    const hd = this.model?.healthDanger;
+    const lvl = hd?.damage === 'warn' ? 'lvl-warn' : hd?.damage === 'bad' ? 'lvl-bad' : '';
+    const inner = html`<span class="l">Damage</span>${this._gauge(hd, lvl)}<span class="v ${lvl}">${this._healthField('damage', h.damage, 'Current damage')}</span>`;
+    if (this.editMode) return html`<div class="hl">${inner}</div>`;
+    const t = this._healthTitle();
+    return html`<button class="hl dmg" type="button" aria-label="Take damage" title=${t ? `Take damage — ${t}` : 'Take damage'}
+      @click=${(e) => this.renderRoot.querySelector('ed-damage-modal')?.show(e.currentTarget)}>${inner}</button>`;
   }
 
   connectedCallback() {
@@ -637,7 +592,6 @@ export class EdOverview extends LitElement {
       if (e.key !== 'Escape') return;
       if (this._addLegend) this._addLegend = false;
       if (this._karmaRitual) this._karmaRitual = false;
-      if (this._healthModal) this._closeHealthModal();
       if (this._modal) this._closeModal();
       if (this._lightbox) this._lightbox = false;
     };
@@ -660,13 +614,6 @@ export class EdOverview extends LitElement {
     // blue ring) and stays hover-revealed after the modal is gone.
     this.renderRoot.activeElement?.blur();
     this._modal = null;
-  }
-
-  // The damage modal closes the same way as any other: drop focus from the ✚
-  // trigger so an Escape close doesn't leave its :focus-visible ring behind.
-  _closeHealthModal() {
-    this.renderRoot.activeElement?.blur();
-    this._healthModal = false;
   }
 
   // Modal body listing all character metadata (any field added to meta shows up).
@@ -1018,7 +965,6 @@ export class EdOverview extends LitElement {
                 <h4 class="hhead">
                   <span>Health</span>
                   ${this._healthChip()}
-                  <button class="info" title="Take damage or heal" aria-label="Take damage or heal" @click=${() => this._openHealth()}>✚</button>
                   ${this.editMode
                     ? ''
                     : html`<button
@@ -1032,14 +978,13 @@ export class EdOverview extends LitElement {
                         }}
                       ><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16h18"/><path d="M8 16a4 4 0 0 1 8 0"/><path d="M12 3.5v2"/><path d="M5.2 6.7l1.4 1.4"/><path d="M18.8 6.7l-1.4 1.4"/><path d="M12 20l-2-2h4z" fill="currentColor" stroke="none"/></svg></button>`}
                 </h4>
-                <div class="line"><span>Damage</span>${this._healthField('damage', h.damage, 'Current damage')}</div>
-                <div class="line"><span>Unconscious</span>${this._char('unconsciousness')}</div>
-                <div class="line"><span>Death</span>${this._char('death')}</div>
-                <div class="line"><span>Wound Threshold</span>${this._char('woundThreshold')}</div>
-                <div class="line"><span>Wounds</span>${this._healthField('wounds', h.wounds, 'Current wounds')}</div>
-                <div class="line">
-                  <span>Recoveries</span>
-                  ${this._recoveries(h)}
+                ${this._damageRow(h)}
+                <div class="hl"><span class="l">Wounds</span><span class="spacer"></span><span class="v ${this.model?.healthDanger?.wounds === 'bad' ? 'lvl-bad' : ''}">${this._healthField('wounds', h.wounds, 'Current wounds')}</span></div>
+                <div class="hstats">
+                  <div class="line"><span>Unconscious</span>${this._char('unconsciousness')}</div>
+                  <div class="line"><span>Death</span>${this._char('death')}</div>
+                  <div class="line"><span>Wound Threshold</span>${this._char('woundThreshold')}</div>
+                  <div class="line"><span>Recoveries</span>${this._recoveries(h)}</div>
                 </div>
               </div>
               <div class="blk">
@@ -1061,24 +1006,7 @@ export class EdOverview extends LitElement {
           </div>
         </div>
       </div>
-      ${this._healthModal
-        ? html`
-            <div class="overlay" @click=${this._closeHealthModal} @keydown=${(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                this._applyHealthDraft();
-              }
-            }}>
-              <div class="modal" @click=${(e) => e.stopPropagation()}>
-                <div class="mhead">
-                  <span>Damage</span>
-                  <button class="mclose" aria-label="Close" @click=${this._closeHealthModal}>✕</button>
-                </div>
-                <div class="mbody">${this._healthModalBody()}</div>
-              </div>
-            </div>
-          `
-        : ''}
+      <ed-damage-modal .model=${this.model}></ed-damage-modal>
       ${this._modal
         ? html`
             <div class="overlay" @click=${this._closeModal}>
