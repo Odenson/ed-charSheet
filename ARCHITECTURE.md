@@ -506,7 +506,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   (+ ` · Modifier +n`); `✦ Karma …`; `Bonus dice … = n`; `Mods: label +v [Step] · …`;
   `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
   is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
-  content capped at 2000 chars, keeping the header and Total.
+  content capped at 2000 chars, keeping the header and Total. Optional top-level
+  `avatar_url` as described under Embed format.
 - **Embed format.** `{username, embeds:[{title, description?, color, fields}],
   allowed_mentions:{parse:[]}}`, no `content`/footer. Optional `thumbnail:{url}` (embed
   format only, incl. the test message): `store.js` `discordThumbnailUrl(portrait)` gives the
@@ -576,7 +577,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     derive.js                # attribute value/step, talent step, step→dice map
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
-    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url}; markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
+    discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url} and top-level avatar_url (both formats + test message); markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve
