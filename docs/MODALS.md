@@ -94,7 +94,7 @@ _openModal(entry, event) {
 | `dialogSelector` | `'[role="dialog"]'` | The dialog element inside the host's `renderRoot`. |
 | `initialFocus` | first focusable | Selector (within the dialog) to focus on open — set this to the primary button when Enter should confirm. |
 
-`ctl.close({ restoreFocus: false })` closes without returning focus to the trigger. Use it only for a hand-off to another modal that takes focus and returns it itself: the Spells tab's cast modal (weapon + target number for an object-bearing self-cast such as Night's Edge) does this on Confirm because the roll modal opens next. "Cast on nothing" (no equipped weapon) opens no further modal, so it closes normally and restores focus to Cast, as do Escape, ✕, backdrop and Close.
+`ctl.close({ restoreFocus: false })` closes without returning focus to the trigger. Use it only for a hand-off to another modal that takes focus and returns it itself: the Spells tab's cast modal (weapon + target number for an object-bearing self-cast such as Night's Edge) does this on Confirm because the roll modal opens next. "Cast on nothing" (no equipped weapon) opens no further modal, so it closes normally and restores focus to Cast, as do Escape, ✕, backdrop and Close. The shared Take-damage modal does the same on Apply when the hit is five or more over the Wound Threshold, because the Knockdown roll modal opens next; any other Apply closes normally.
 
 ## Separate-component modals
 
@@ -131,6 +131,8 @@ one place. `returnFocusToTrigger(el, { openedByKeyboard })` is safe to call even
 when focus never left the trigger: it re-focuses with the ring suppressed.
 Result-apply closes (an in-modal button click that removes the modal) need no
 restore — focus falls away from the trigger on its own, with no ring.
+
+**Self-contained modal element.** `ed-damage-modal` (the shared Take-damage modal, rendered at the root of both `ed-overview` and `ed-combat`) is its own element but owns its `ModalController`. A host opens it with `el.show(trigger)`, which resets the draft and calls `ctl.opened(trigger)`. Escape, ✕ and backdrop close through `ctl.close()`, and focus returns to the trigger. There is no parent `close` event. Render it at the host's root, not inside a card, because `.overlay` is `position: fixed`.
 
 ## Checklist for a touched modal
 

@@ -225,3 +225,56 @@ export const KNOCKED_DOWN_DEFENSE_EFFECTS = [
     summary: '−3 Mystic Defense while knocked down.',
   },
 ];
+
+// Amber warning margin: damage within this many points of Unconsciousness.
+// An owner UI choice (qa-log 2026-11-15), NOT an Earthdawn rule.
+const WARN_MARGIN = 10;
+
+const clamp01 = (n) => Math.min(1, Math.max(0, n));
+
+/**
+ * Classify the Overview Health card: danger levels and gauge geometry.
+ * Pure; never mutates. Per-field null shape (never a bare null):
+ *  - `wounds`: 'none' | 'bad' (always available)
+ *  - `damage`: 'none' | 'warn' | 'bad', null when Unconsciousness is missing
+ *  - `fill`:   0..1 (damage / Death), null when Death is missing or <= 0
+ *  - `tick`:   0..1 (Unconsciousness / Death), null when either is missing or Death <= 0
+ *
+ * @param {object} inputs  `{ damage, wounds }` stored health inputs
+ * @param {object} ratings `{ unconsciousness, death }` derived ratings (objects or numbers)
+ * @returns {{damage:('none'|'warn'|'bad'|null), wounds:('none'|'bad'), fill:(number|null), tick:(number|null)}}
+ */
+export function healthDanger(inputs, ratings) {
+  const damage = Math.max(0, Number(inputs?.damage) || 0);
+  const wounds = Math.max(0, Number(inputs?.wounds) || 0);
+  const unc = ratingValue(ratings?.unconsciousness);
+  const death = ratingValue(ratings?.death);
+  let level = null;
+  if (unc != null) {
+    if (damage >= unc) level = 'bad';
+    else if (damage > 0 && damage >= unc - WARN_MARGIN) level = 'warn';
+    else level = 'none';
+  }
+  const deathOk = death != null && death > 0;
+  return {
+    damage: level,
+    wounds: wounds >= 1 ? 'bad' : 'none',
+    fill: deathOk ? clamp01(damage / death) : null,
+    tick: unc != null && deathOk ? clamp01(unc / death) : null,
+  };
+}
+
+/**
+ * Resolve a damage hit: new health inputs plus any Knockdown test required.
+ * Pure. `take <= 0` changes nothing.
+ *
+ * @returns {{next:{damage:number,wounds:number,recoveriesUsed:number}, knockdown:({difficulty:number}|null)}}
+ */
+export function resolveHit(health, take, woundThreshold) {
+  const t = Math.max(0, Number(take) || 0);
+  if (t <= 0) return { next: applyHealth(health, {}), knockdown: null };
+  const wound = woundsFromHit(t, woundThreshold);
+  const next = applyHealth(health, { damage: t, wounds: wound, recoveriesUsed: 0 });
+  const d = knockdownDifficulty(t, woundThreshold);
+  return { next, knockdown: d != null ? { difficulty: d } : null };
+}

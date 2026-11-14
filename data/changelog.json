@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.35.0",
+      "date": "2026-11-14",
+      "summary": "Redesigned Overview Health card with a damage gauge and amber/red warnings, a shared Take damage modal (Overview and Combat), and healing only through Recovery tests.",
+      "changes": [
+        {
+          "type": "changed",
+          "text": "Overview Health card redesigned: Damage and Wounds are highlighted rows with a damage gauge, amber/red warnings, click Damage to take a hit (shared with Combat), and healing now only through a Recovery test (the free-entry Heal and Recovery-used entry are removed; fix a miscount in edit mode)."
+        }
+      ]
+    },
+    {
       "version": "1.34.1",
       "date": "2026-11-14",
       "summary": "What's new now lists the Discord avatar, Discord die report and Night's Edge entries with their tags as proper bullet points.",

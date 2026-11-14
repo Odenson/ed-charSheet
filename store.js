@@ -11,7 +11,7 @@ import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle, tierForCircle } from './engine/legend-spent.js';
-import { damageState, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
+import { damageState, healthDanger, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
   defense,
@@ -1779,6 +1779,7 @@ export function deriveModel(character, rules, session = {}) {
     // engine (engine/health.js) against the derived Unconsciousness/Death ratings
     // — conscious/unconscious/dead state + headroom. Derived, never stored.
     healthState: damageState(character.resources?.health ?? {}, characteristics),
+    healthDanger: healthDanger(character.resources?.health ?? {}, characteristics),
     // Combat surface (PLAN-COMBAT-TAB Phase C): attack talents, equipped weapons,
     // Strength step, live combat conditions and the Damage-test karma grant for
     // the Combat tab (derived, never stored). Initiative/P-M Defense/Armor/Health
