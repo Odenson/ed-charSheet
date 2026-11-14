@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.35.0
 ---
 # Delivery Plan: Update Health overview (update-health-overview)
 
