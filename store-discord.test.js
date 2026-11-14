@@ -9,6 +9,7 @@ import {
   clearDiscordConfig,
   isDiscordWebhookUrl,
   discordReady,
+  normalizeFormat,
 } from './store-discord.js';
 import { hasPendingEdits } from './store.js';
 
@@ -26,7 +27,7 @@ const stubStorage = {
 globalThis.localStorage = stubStorage;
 
 const GOOD = 'https://discord.com/api/webhooks/123456789/abc_DEF-123';
-const EMPTY = { url: '', enabled: false };
+const EMPTY = { url: '', enabled: false, format: 'plain' };
 
 test('isDiscordWebhookUrl accepts the documented hosts', () => {
   for (const u of [
@@ -78,7 +79,7 @@ test('absent config loads as not configured', () => {
 test('round-trips per character under ed-discord:<id>', () => {
   memory.clear();
   assert.deepEqual(saveDiscordConfig('c1', { url: GOOD, enabled: true }), { ok: true });
-  assert.deepEqual(loadDiscordConfig('c1'), { url: GOOD, enabled: true });
+  assert.deepEqual(loadDiscordConfig('c1'), { url: GOOD, enabled: true, format: 'plain' });
   assert.ok(memory.has('ed-discord:c1'));
 });
 
@@ -87,8 +88,8 @@ test('one character never sees another character config', () => {
   const other = 'https://discord.com/api/webhooks/999/zzz';
   saveDiscordConfig('chakka', { url: GOOD, enabled: true });
   saveDiscordConfig('rook', { url: other, enabled: false });
-  assert.deepEqual(loadDiscordConfig('chakka'), { url: GOOD, enabled: true });
-  assert.deepEqual(loadDiscordConfig('rook'), { url: other, enabled: false });
+  assert.deepEqual(loadDiscordConfig('chakka'), { url: GOOD, enabled: true, format: 'plain' });
+  assert.deepEqual(loadDiscordConfig('rook'), { url: other, enabled: false, format: 'plain' });
   assert.deepEqual(loadDiscordConfig('nobody'), EMPTY);
 });
 
@@ -102,13 +103,13 @@ test('invalid non-blank URL is rejected and nothing is written', () => {
   // an existing good config is not overwritten by a rejected save
   saveDiscordConfig('c1', { url: GOOD, enabled: true });
   saveDiscordConfig('c1', { url: 'bad', enabled: false });
-  assert.deepEqual(loadDiscordConfig('c1'), { url: GOOD, enabled: true });
+  assert.deepEqual(loadDiscordConfig('c1'), { url: GOOD, enabled: true, format: 'plain' });
 });
 
 test('blank URL is allowed (means not configured); enabled is coerced to boolean', () => {
   memory.clear();
   assert.deepEqual(saveDiscordConfig('c1', { url: '', enabled: 1 }), { ok: true });
-  assert.deepEqual(loadDiscordConfig('c1'), { url: '', enabled: true });
+  assert.deepEqual(loadDiscordConfig('c1'), { url: '', enabled: true, format: 'plain' });
   saveDiscordConfig('c1', { url: GOOD, enabled: 0 });
   assert.strictEqual(loadDiscordConfig('c1').enabled, false);
   saveDiscordConfig('c1', { url: GOOD, enabled: 'yes' });
@@ -171,4 +172,110 @@ test('config is device-local only: it never flags the Save button', () => {
     [...memory.keys()].filter((k) => !k.startsWith('ed-discord:')),
     [],
   );
+});
+
+test('normalizeFormat: embed only for exactly "embed"', () => {
+  assert.equal(normalizeFormat('embed'), 'embed');
+  assert.equal(normalizeFormat('plain'), 'plain');
+  for (const v of ['Embed', 'EMBED', ' embed', '', 'x', null, undefined, 1, true, {}, ['embed']]) {
+    assert.equal(normalizeFormat(v), 'plain', String(v));
+  }
+});
+
+test('format round-trips per character', () => {
+  memory.clear();
+  assert.deepEqual(saveDiscordConfig('a', { url: GOOD, enabled: true, format: 'embed' }), { ok: true });
+  saveDiscordConfig('b', { url: GOOD, enabled: true, format: 'plain' });
+  assert.equal(loadDiscordConfig('a').format, 'embed');
+  assert.equal(loadDiscordConfig('b').format, 'plain');
+  assert.equal(loadDiscordConfig('nobody').format, 'plain');
+  assert.deepEqual(loadDiscordConfig('a'), { url: GOOD, enabled: true, format: 'embed' });
+  assert.equal(JSON.parse(memory.get('ed-discord:a')).format, 'embed');
+});
+
+test('legacy {url, enabled} entries load as plain', () => {
+  memory.clear();
+  localStorage.setItem('ed-discord:old', JSON.stringify({ url: GOOD, enabled: true }));
+  assert.deepEqual(loadDiscordConfig('old'), { url: GOOD, enabled: true, format: 'plain' });
+});
+
+test('invalid or absent format is stored and loaded as plain', () => {
+  memory.clear();
+  for (const f of ['bogus', 7, null, undefined, {}]) {
+    saveDiscordConfig('c1', { url: GOOD, enabled: true, format: f });
+    assert.equal(JSON.parse(memory.get('ed-discord:c1')).format, 'plain', String(f));
+    assert.equal(loadDiscordConfig('c1').format, 'plain');
+  }
+  saveDiscordConfig('c1', { url: GOOD, enabled: true });
+  assert.equal(loadDiscordConfig('c1').format, 'plain');
+  localStorage.setItem('ed-discord:c1', JSON.stringify({ url: GOOD, enabled: true, format: 'weird' }));
+  assert.equal(loadDiscordConfig('c1').format, 'plain');
+});
+
+test('rejected invalid-URL save does not change a stored format', () => {
+  memory.clear();
+  saveDiscordConfig('c1', { url: GOOD, enabled: true, format: 'embed' });
+  assert.deepEqual(saveDiscordConfig('c1', { url: 'bad', enabled: true, format: 'plain' }), {
+    ok: false,
+    error: 'invalid-url',
+  });
+  assert.equal(loadDiscordConfig('c1').format, 'embed');
+});
+
+test('discordReady ignores format', () => {
+  assert.equal(discordReady({ url: GOOD, enabled: true, format: 'embed' }), true);
+  assert.equal(discordReady({ url: GOOD, enabled: false, format: 'embed' }), false);
+});
+
+test('normalizeFormat: embed only for exactly "embed"', () => {
+  assert.equal(normalizeFormat('embed'), 'embed');
+  assert.equal(normalizeFormat('plain'), 'plain');
+  for (const v of ['Embed', 'EMBED', ' embed', '', 'x', null, undefined, 1, true, {}, ['embed']]) {
+    assert.equal(normalizeFormat(v), 'plain', String(v));
+  }
+});
+
+test('format round-trips per character', () => {
+  memory.clear();
+  assert.deepEqual(saveDiscordConfig('a', { url: GOOD, enabled: true, format: 'embed' }), { ok: true });
+  saveDiscordConfig('b', { url: GOOD, enabled: true, format: 'plain' });
+  assert.equal(loadDiscordConfig('a').format, 'embed');
+  assert.equal(loadDiscordConfig('b').format, 'plain');
+  assert.equal(loadDiscordConfig('nobody').format, 'plain');
+  assert.deepEqual(loadDiscordConfig('a'), { url: GOOD, enabled: true, format: 'embed' });
+  assert.equal(JSON.parse(memory.get('ed-discord:a')).format, 'embed');
+});
+
+test('legacy {url, enabled} entries load as plain', () => {
+  memory.clear();
+  localStorage.setItem('ed-discord:old', JSON.stringify({ url: GOOD, enabled: true }));
+  assert.deepEqual(loadDiscordConfig('old'), { url: GOOD, enabled: true, format: 'plain' });
+});
+
+test('invalid or absent format is stored and loaded as plain', () => {
+  memory.clear();
+  for (const f of ['bogus', 7, null, undefined, {}]) {
+    saveDiscordConfig('c1', { url: GOOD, enabled: true, format: f });
+    assert.equal(JSON.parse(memory.get('ed-discord:c1')).format, 'plain', String(f));
+    assert.equal(loadDiscordConfig('c1').format, 'plain');
+  }
+  saveDiscordConfig('c1', { url: GOOD, enabled: true });
+  assert.equal(loadDiscordConfig('c1').format, 'plain');
+  localStorage.setItem('ed-discord:c1', JSON.stringify({ url: GOOD, enabled: true, format: 'weird' }));
+  assert.equal(loadDiscordConfig('c1').format, 'plain');
+});
+
+test('rejected invalid-URL save does not change a stored format', () => {
+  memory.clear();
+  saveDiscordConfig('c1', { url: GOOD, enabled: true, format: 'embed' });
+  assert.deepEqual(saveDiscordConfig('c1', { url: 'bad', enabled: true, format: 'plain' }), {
+    ok: false,
+    error: 'invalid-url',
+  });
+  assert.equal(loadDiscordConfig('c1').format, 'embed');
+});
+
+test('discordReady ignores format', () => {
+  assert.equal(discordReady({ url: GOOD, enabled: true, format: 'embed' }), true);
+  assert.equal(discordReady({ url: GOOD, enabled: false, format: 'embed' }), false);
 });

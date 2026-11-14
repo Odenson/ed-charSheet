@@ -482,13 +482,13 @@ own. Full design, build, and rollout: [docs/GITHUB-SERVERLESS-SAVE.md](docs/GITH
 and its runbook.
 
 ### 7.6 Discord die reports — device-local webhook (opt-in)
-A per-character Discord webhook, set in Settings, receives one plain-text message
-per finished roll.
-- **Storage.** `{url, enabled}` lives in localStorage `ed-discord:<characterId>`
+A per-character Discord webhook, set in Settings, receives one message
+per finished roll, plain text (default) or a Discord embed (per-character choice).
+- **Storage.** `{url, enabled, format}` (`format` is `'plain'|'embed'`, default plain) lives in localStorage `ed-discord:<characterId>`
   (`store-discord.js`), like the Roll Log. It is never part of character data,
   the edits overlay, an Export or a GitHub save. "Store only inputs" holds:
   nothing derived is stored. Corrupt or blocked storage fails open to
-  `{url:'', enabled:false}`.
+  `{url:'', enabled:false, format:'plain'}`.
 - **The URL is a secret.** Anyone holding it can post to the channel. It stays
   only in this browser: masked once saved, never put in toasts, inline errors or
   console output. `postWebhook` returns only "HTTP <status>" or "Network error".
@@ -507,6 +507,12 @@ per finished roll.
   `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
   is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
   content capped at 2000 chars, keeping the header and Total.
+- **Embed format.** `{username, embeds:[{title, description?, color, fields}],
+  allowed_mentions:{parse:[]}}`, no `content`/footer/thumbnail. Title
+  `🎲 Label — Step N · Total T`; description `vs … D — **word** ✅|❌`; colour
+  green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
+  dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
+  then Mods, Bonus dice, Karma). `buildPayload` picks the format; unknown is plain.
 - **No retry or queue.** A failed send shows a brief toast. The roll, the Roll
   Log and Karma are unaffected.
 
@@ -522,7 +528,7 @@ per finished roll.
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
   store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
-  store-discord.js    # device-local per-character Discord webhook config {url, enabled} (localStorage `ed-discord:<id>`); webhook-URL validator
+  store-discord.js    # device-local per-character Discord webhook config {url, enabled, format} (localStorage `ed-discord:<id>`); webhook-URL validator
   discord-send.js     # the one Discord I/O call: POST JSON to the webhook; never throws, never logs, never echoes the URL
   store-server.test.js# node --test (see `npm test`)
   ui/                 # Lit components (Web Components)

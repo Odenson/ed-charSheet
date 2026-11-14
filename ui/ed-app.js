@@ -37,7 +37,7 @@ import './ed-settings.js';
 import { saveRollLog } from '../store-rolllog.js';
 import { loadDiscordConfig, saveDiscordConfig, discordReady } from '../store-discord.js';
 import { postWebhook } from '../discord-send.js';
-import { buildWebhookPayload, buildTestPayload } from '../engine/discord-roll.js';
+import { buildPayload, buildTestPayload } from '../engine/discord-roll.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '▤' },
@@ -286,7 +286,7 @@ export class EdApp extends LitElement {
     // and saves one Log entry per interaction, upserted by rollId — so
     // Karma toggles replace the row, never duplicate it. The log is
     // device-local (decision #2) and never rides the overlay or an export.
-    this.addEventListener('ed-discord-test', (e) => this._discordSendTest(e.detail?.url));
+    this.addEventListener('ed-discord-test', (e) => this._discordSendTest(e.detail?.url, e.detail?.format));
     this.addEventListener('ed-roll-logged', (e) => {
       this._captureRollReport(e.detail);
       if (!this._roll || !this._characterId) return;
@@ -1719,7 +1719,7 @@ export class EdApp extends LitElement {
     try {
       const cfg = loadDiscordConfig(pending.characterId);
       if (!discordReady(cfg)) return;
-      postWebhook(cfg.url, buildWebhookPayload(pending.report, { name: pending.name }))
+      postWebhook(cfg.url, buildPayload(pending.report, { name: pending.name, format: cfg.format }))
         .then((r) => { if (!r.ok) this._showDiscordError(r.message); })
         .catch(() => {});
     } catch {
@@ -1733,9 +1733,9 @@ export class EdApp extends LitElement {
     this._discordErrorTimer = setTimeout(() => { this._discordError = null; }, 4000);
   }
 
-  async _discordSendTest(url) {
+  async _discordSendTest(url, format) {
     this._discordTest = { state: 'sending' };
-    const r = await postWebhook(url, buildTestPayload({ name: this._character?.meta?.name ?? '' }));
+    const r = await postWebhook(url, buildTestPayload({ name: this._character?.meta?.name ?? '', format }));
     this._discordTest = r.ok ? { state: 'ok', message: 'Test message sent' } : { state: 'error', message: r.message };
   }
 

@@ -7,7 +7,12 @@ const discordKey = (id) => `ed-discord:${id}`;
 
 const WEBHOOK_RE = /^https:\/\/(?:(?:ptb|canary)\.)?(?:discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+(?:\?.*)?$/;
 
-const EMPTY = () => ({ url: '', enabled: false });
+const EMPTY = () => ({ url: '', enabled: false, format: 'plain' });
+
+/** Message format: 'embed' only when exactly 'embed'; anything else is 'plain'. */
+export function normalizeFormat(v) {
+  return v === 'embed' ? 'embed' : 'plain';
+}
 
 export function isDiscordWebhookUrl(url) {
   return typeof url === 'string' && WEBHOOK_RE.test(url);
@@ -22,18 +27,18 @@ export function loadDiscordConfig(id) {
   try {
     const raw = JSON.parse(localStorage.getItem(discordKey(id)) || 'null');
     if (!raw || typeof raw !== 'object') return EMPTY();
-    return { url: typeof raw.url === 'string' ? raw.url : '', enabled: !!raw.enabled };
+    return { url: typeof raw.url === 'string' ? raw.url : '', enabled: !!raw.enabled, format: normalizeFormat(raw.format) };
   } catch {
     return EMPTY();
   }
 }
 
-/** Persist `{url, enabled}` for `id`. A non-blank invalid URL is rejected unwritten. */
-export function saveDiscordConfig(id, { url, enabled } = {}) {
+/** Persist `{url, enabled, format}` for `id`. A non-blank invalid URL is rejected unwritten. */
+export function saveDiscordConfig(id, { url, enabled, format } = {}) {
   const u = typeof url === 'string' ? url.trim() : '';
   if (u !== '' && !isDiscordWebhookUrl(u)) return { ok: false, error: 'invalid-url' };
   try {
-    localStorage.setItem(discordKey(id), JSON.stringify({ url: u, enabled: !!enabled }));
+    localStorage.setItem(discordKey(id), JSON.stringify({ url: u, enabled: !!enabled, format: normalizeFormat(format) }));
   } catch {
     /* storage full/unavailable — fail open */
   }

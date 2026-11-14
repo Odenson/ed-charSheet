@@ -140,7 +140,11 @@ a **Discord die reports** section for that character:
   and `discordapp.com` are also accepted). Once a URL is saved the field is
   masked (`type=password`) and typing replaces it. A non-blank invalid URL shows
   "Not a Discord webhook URL." inline and blocks Save. Blank is allowed.
-- A **Send test message** button, disabled while the URL is blank, invalid or a
+- A **Message format** radio group ("Plain text" default / "Embed"), between the
+  URL field and the test button. It is per character, saved with the webhook
+  config, and wraps on the narrow modal. Arrow keys move the selection; Enter
+  still saves; Escape and backdrop discard the draft.
+- A **Send test message** button (sends in the draft format), disabled while the URL is blank, invalid or a
   test is sending. The inline result (`role="status"`) is "Sending…",
   "✅ Test message sent" or "❌ <HTTP status | Network error>".
 - Standard modal contract: **Escape / Cancel / backdrop close** with no change,

@@ -11,7 +11,7 @@
 // and re-schedules the autosave. Escape / Cancel / backdrop close without change;
 // Enter (the form submit) saves. Theme-aware via light-dark(); two font weights.
 import { LitElement, html } from 'lit';
-import { isDiscordWebhookUrl } from '../store-discord.js';
+import { isDiscordWebhookUrl, normalizeFormat } from '../store-discord.js';
 
 const MIN_SECONDS = 10;
 const MAX_SECONDS = 3600;
@@ -30,6 +30,7 @@ export class EdSettings extends LitElement {
     _dUrl: { state: true },
     _dEnabled: { state: true },
     _dMasked: { state: true },
+    _dFormat: { state: true },
     _enabled: { state: true },
     _seconds: { state: true },
   };
@@ -64,13 +65,14 @@ export class EdSettings extends LitElement {
   _loadDiscordDraft() {
     this._dUrl = this.discord?.url ?? '';
     this._dEnabled = !!this.discord?.enabled;
+    this._dFormat = normalizeFormat(this.discord?.format);
     this._dMasked = !!this._dUrl; // masked once a URL is saved; typing replaces it
   }
 
   willUpdate(changed) {
     // ed-app passes a fresh object each render: reload only on a real change.
     const prev = changed.get('discord');
-    const moved = changed.has('discord') && (prev?.url !== this.discord?.url || prev?.enabled !== this.discord?.enabled);
+    const moved = changed.has('discord') && (prev?.url !== this.discord?.url || prev?.enabled !== this.discord?.enabled || prev?.format !== this.discord?.format);
     if (this.hasUpdated && (moved || changed.has('characterId'))) this._loadDiscordDraft();
   }
 
@@ -82,7 +84,7 @@ export class EdSettings extends LitElement {
   _sendTest = () => {
     const url = (this._dUrl ?? '').trim();
     if (!isDiscordWebhookUrl(url)) return;
-    this.dispatchEvent(new CustomEvent('ed-discord-test', { detail: { url }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('ed-discord-test', { detail: { url, format: this._dFormat }, bubbles: true, composed: true }));
   };
 
   firstUpdated() {
@@ -104,7 +106,7 @@ export class EdSettings extends LitElement {
     if (this.hasCharacter && this._discordInvalid()) return; // inline message blocks Save
     const seconds = this._clampSeconds(this._seconds);
     const detail = { enabled: !!this._enabled, seconds };
-    if (this.hasCharacter) detail.discord = { url: (this._dUrl ?? '').trim(), enabled: !!this._dEnabled };
+    if (this.hasCharacter) detail.discord = { url: (this._dUrl ?? '').trim(), enabled: !!this._dEnabled, format: this._dFormat };
     this.dispatchEvent(new CustomEvent('ed-settings', { detail, bubbles: true, composed: true }));
     this._close();
   };
@@ -129,6 +131,11 @@ export class EdSettings extends LitElement {
       <div>
         <input class="eds-url" type=${this._dMasked ? 'password' : 'text'} name="discord-hook" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/…" aria-label="Discord webhook URL" .value=${this._dUrl ?? ''} @input=${(e) => { this._dUrl = e.target.value; }} />
         ${invalid ? html`<div class="eds-err" role="alert">Not a Discord webhook URL.</div>` : ''}
+      </div>
+      <div class="eds-fmt" role="radiogroup" aria-label="Discord message format">
+        <span class="lbl">Message format</span>
+        <label><input type="radio" name="discord-format" value="plain" .checked=${this._dFormat !== 'embed'} @change=${() => (this._dFormat = 'plain')} /> Plain text</label>
+        <label><input type="radio" name="discord-format" value="embed" .checked=${this._dFormat === 'embed'} @change=${() => (this._dFormat = 'embed')} /> Embed</label>
       </div>
       <div class="eds-test">
         <button type="button" class="eds-btn" ?disabled=${invalid || !(this._dUrl ?? '').trim() || sending} @click=${this._sendTest}>Send test message</button>
@@ -170,6 +177,10 @@ export class EdSettings extends LitElement {
         .eds-url:focus { outline: none; border-color: var(--accent); }
         .eds-err { font-size: var(--fs-small); color: light-dark(#a3281d, #f08a80); margin-top: 4px; }
         .eds-test { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: var(--fs-small); }
+        .eds-fmt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 0; font-size: var(--fs-body); }
+        .eds-fmt .lbl { font-weight: 500; }
+        .eds-fmt label { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer; }
+        .eds-fmt input { accent-color: var(--accent); margin: 0; }
         .eds-btn:disabled { opacity: 0.5; cursor: default; }
         /* Switch */
         .eds-switch { position: relative; width: 40px; height: 22px; flex: none; }
