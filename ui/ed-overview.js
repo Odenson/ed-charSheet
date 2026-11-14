@@ -131,7 +131,7 @@ export class EdOverview extends LitElement {
     .hl .v { font-size: var(--fs-title); font-weight: 500; min-width: 22px; text-align: right; }
     .hl .v.lvl-warn { color: var(--warn); }
     .hl .v.lvl-bad { color: var(--bad); }
-    .hl .track { flex: 1; min-width: 0; position: relative; height: 6px; border-radius: 3px; background: var(--bg-card, light-dark(#fff, #12151b)); }
+    .hl .track { flex: 1; min-width: 0; position: relative; height: 6px; border-radius: 3px; background: light-dark(#d5d9e0, #3a4150); }
     .hl .fill { position: absolute; left: 0; top: 0; bottom: 0; min-width: 5px; border-radius: 3px; background: var(--muted); }
     .hl .fill.lvl-warn { background: var(--warn); }
     .hl .fill.lvl-bad { background: var(--bad); }
