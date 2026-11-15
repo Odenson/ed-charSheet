@@ -3,6 +3,7 @@
 // collapses to one column on mobile. Derived stats show as placeholder pills
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
+import { diceIcon, diceIconCss } from './dice-icon.js';
 import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
@@ -29,6 +30,7 @@ export class EdOverview extends LitElement {
   };
 
   static styles = [
+    diceIconCss,
     legendSpentStyles,
     css`
     :host {
@@ -459,7 +461,7 @@ export class EdOverview extends LitElement {
         e.stopPropagation();
         this.dispatchEvent(new CustomEvent('ed-roll', { detail: { label, step, karma: karmaCtx, kind }, bubbles: true, composed: true }));
       }}
-    >⚄</button>`;
+    >${diceIcon}</button>`;
   }
 
   // --- Health (damage / wounds / recovery) ------------------------------------
@@ -539,7 +541,7 @@ export class EdOverview extends LitElement {
     return html`<span class="rl">
       <button class="rdice" ?disabled=${none} title=${title}
       aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}
-      @click=${() => this._recoveryTest()}>⚄</button>
+      @click=${() => this._recoveryTest()}>${diceIcon}</button>
       <span class="val" title="Recovery tests used today, of ${max ?? '?'} per day">${used} / ${max ?? this._pend()}</span>
     </span>`;
   }
@@ -772,7 +774,7 @@ export class EdOverview extends LitElement {
                       bubbles: true,
                       composed: true,
                     }))}
-                >⚄ Roll</button>
+                >${diceIcon} Roll</button>
               </div>`
             : ''}
           ${grouped.map(

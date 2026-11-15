@@ -9,6 +9,7 @@
 // where the detail is a tap away). All talent wording is our own generic
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
 import { LitElement, html, css, nothing } from 'lit';
+import { diceIcon, diceIconCss } from './dice-icon.js';
 import { ModalController } from './modal-controller.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
@@ -36,6 +37,7 @@ export class EdDisciplines extends LitElement {
   };
 
   static styles = css`
+    ${diceIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -291,7 +293,7 @@ export class EdDisciplines extends LitElement {
           title=${t.step == null ? 'No step to roll' : `Roll ${t.name}${karmaCtx ? ' (Karma available)' : ''}`}
           aria-label="Roll ${t.name}"
           @click=${() => this.dispatchEvent(new CustomEvent('ed-roll', { detail: this._rollDetail(t, karmaCtx), bubbles: true, composed: true }))}
-        >⚄</button>
+        >${diceIcon}</button>
       </div>
     `;
   }
@@ -422,7 +424,7 @@ export class EdDisciplines extends LitElement {
             this.dispatchEvent(
               new CustomEvent('ed-roll', { detail: { label: s.name, step: s.step, karma: null, mods: s.resultMods ?? [] }, bubbles: true, composed: true }),
             )}
-        >⚄</button>
+        >${diceIcon}</button>
       </div>
     `;
   }
@@ -717,7 +719,7 @@ export class EdDisciplines extends LitElement {
             this.dispatchEvent(
               new CustomEvent('ed-roll', { detail: { label: g.name, step: g.step, karma: null }, bubbles: true, composed: true }),
             )}
-        >⚄</button>
+        >${diceIcon}</button>
       </div>
     `;
   }
@@ -757,7 +759,7 @@ export class EdDisciplines extends LitElement {
           title=${r ? 'Choose an attribute for the Half-Magic test' : 'No step to roll'}
           aria-label="Choose attribute for Half-Magic test"
           @click=${(e) => r && this._openModal({ type: 'halfmagic', roll: r }, e)}
-        >⚄</button>
+        >${diceIcon}</button>
       </span>
     `;
   }

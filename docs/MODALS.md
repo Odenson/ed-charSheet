@@ -126,7 +126,7 @@ _closeRoll() {
 ```
 
 This is exactly what `ed-app` does for `ed-roll-modal` — it fixes the focus ring
-left on **every** roll button (the ⚄ on talents, skills, half-magic, combat) in
+left on **every** roll button (the dice icon on talents, skills, half-magic, combat) in
 one place. `returnFocusToTrigger(el, { openedByKeyboard })` is safe to call even
 when focus never left the trigger: it re-focuses with the ring suppressed.
 Result-apply closes (an in-modal button click that removes the modal) need no

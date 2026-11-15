@@ -13,6 +13,7 @@
 // healing-aid / thread-item); it is never a stored per-item flag. Item detail
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
+import { diceIcon, diceIconCss } from './dice-icon.js';
 import { pickItemKeys, PICKER_LABELS } from './picker.js';
 import { equipArmour, applyArmourSwap, bumpQuantity, nextTradeItems } from './item-equip-state.js';
 import { boostHasNoEffect } from '../engine/potions.js';
@@ -193,6 +194,7 @@ export class EdEquipment extends LitElement {
   }
 
   static styles = css`
+    ${diceIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -708,7 +710,7 @@ export class EdEquipment extends LitElement {
       <span class="ptxt">${this._pendingText(p)}</span>
       ${emergency
         ? html`<button class="proll" title="Roll the Step ${p.step} heal — no Recovery test used" aria-label="Roll emergency heal"
-            @click=${() => this._rollEmergency(p)}>⚄ Roll</button>`
+            @click=${() => this._rollEmergency(p)}>${diceIcon} Roll</button>`
         : ''}
       <button class="pclear" aria-label="Clear pending ${p.name}" title="Clear"
         @click=${() => this.dispatchEvent(new CustomEvent('ed-clear-pending-use', { bubbles: true, composed: true }))}>✕</button>

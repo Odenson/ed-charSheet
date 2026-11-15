@@ -8,6 +8,7 @@
 // Discipline + Circle, the detail modal, matrix place/release (any time), and
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
+import { diceIcon, diceIconCss } from './dice-icon.js';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
   learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell,
   spellObjectRequirement, castWeaponChoices, weaponMysticDefense, nextCastNumber } from '../engine/spells.js';
@@ -44,6 +45,7 @@ export class EdSpells extends LitElement {
   };
 
   static styles = css`
+    ${diceIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -847,7 +849,7 @@ export class EdSpells extends LitElement {
         </div>
         ${learn.teacherOn ? html`
           <div class="trow">
-            <button class="rollbtn" ?disabled=${!teacherOk} @click=${() => this._rollTeacher(spell)}>⚄ Spellcasting (precursor)</button>
+            <button class="rollbtn" ?disabled=${!teacherOk} @click=${() => this._rollTeacher(spell)}>${diceIcon} Spellcasting (precursor)</button>
             ${learn.teacher ? (armed
               ? html`<span class="armedchip">+${learn.teacherRank} armed</span><span class="gsub" style="color:var(--muted);">rolled ${learn.teacher.total}</span>`
               : html`<span class="totbg miss">Miss</span><span class="gsub" style="color:var(--muted);">rolled ${learn.teacher.total} — no assist</span>`) : ''}
@@ -855,7 +857,7 @@ export class EdSpells extends LitElement {
       </div>
 
       <div class="pcrow">
-        <button class="rollbtn" ?disabled=${!pcReady} @click=${() => this._rollPatterncraft(spell)}>⚄ Roll Patterncraft</button>
+        <button class="rollbtn" ?disabled=${!pcReady} @click=${() => this._rollPatterncraft(spell)}>${diceIcon} Roll Patterncraft</button>
         ${result
           ? result.ok
             ? html`<span class="armedchip">Learned${result.learntSuccess > 0 ? ` — ${result.learntSuccess} extra success${result.learntSuccess > 1 ? 'es' : ''}` : ''} (rolled ${result.total})</span>`
@@ -1324,7 +1326,7 @@ export class EdSpells extends LitElement {
         </div>
         ${this._initiative
           ? html`<div class="initpill">Initiative <b>${this._initiative.value ?? '—'}</b>
-              <button class="initbtn" ?disabled=${!this._initiative.value} title="Roll initiative — starts a new round" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+              <button class="initbtn" ?disabled=${!this._initiative.value} title="Roll initiative — starts a new round" aria-label="Roll initiative" @click=${this._rollInitiative}>${diceIcon}</button>
               ${this._lastInitTotal() != null ? html`<b class="initres" title="Last Initiative roll result">${this._lastInitTotal()}</b>` : ''}
             </div>`
           : ''}
@@ -1349,14 +1351,14 @@ export class EdSpells extends LitElement {
         <div class="step ${forge ? '' : 'skip'}">
           <span class="lab">Weave ${forge ? html`<span class="threads" title=${plan.threadsToWeave > 0 ? 'Threads woven / required' : 'Threads woven / required (0)'}>${prog.threadsWoven}/${plan.threadsToWeave}</span>` : ''}</span>
           ${forge
-            ? html`<button class="rollbtn" ?disabled=${weaveMaxed || prog.pendingPick} @click=${() => this._rollWeave(plan)}>⚄ Roll</button>
+            ? html`<button class="rollbtn" ?disabled=${weaveMaxed || prog.pendingPick} @click=${() => this._rollWeave(plan)}>${diceIcon} Roll</button>
                    <span class="stepnote">Step ${plan.weavingStep ?? '—'} vs ${plan.weavingDifficulty ?? '—'}</span>
                    ${this._rollRes(prog.weave)}`
             : html`<span class="readout">—</span><span class="stepnote">No threads to forge</span>`}
         </div>
         <div class="step ${!threadsMet || prog.pendingPick ? 'skip' : ''}">
           <span class="lab">Cast</span>
-          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet || prog.pendingPick} @click=${(e) => this._rollCast(plan, { event: e })}>⚄ Roll</button>
+          <button class="rollbtn" ?disabled=${prog.castDone || !threadsMet || prog.pendingPick} @click=${(e) => this._rollCast(plan, { event: e })}>${diceIcon} Roll</button>
           <span class="stepnote">${prog.pendingPick
             ? 'Assign the extra thread first'
             : !threadsMet
@@ -1379,7 +1381,7 @@ export class EdSpells extends LitElement {
         <div class="step ${!prog.castDone && !prog.effect ? 'skip' : ''}">
           <span class="lab">Effect</span>
           ${plan.effect.kind === 'step'
-            ? html`<button class="rollbtn" ?disabled=${!prog.castDone} @click=${() => this._doEffect(plan)}>⚄ Roll</button>`
+            ? html`<button class="rollbtn" ?disabled=${!prog.castDone} @click=${() => this._doEffect(plan)}>${diceIcon} Roll</button>`
             : ''}
           <span class="stepnote">${plan.effect.kind === 'step'
             ? (effBonus > 0 ? `Step ${plan.effect.step} +${effBonus} = ${plan.effect.step + effBonus}` : `Step ${plan.effect.step ?? '—'}`)
