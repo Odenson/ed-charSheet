@@ -625,7 +625,6 @@ export class EdRollModal extends LitElement {
             ${this.apply && this.apply.action !== 'knockdown-result'
               ? html`<span class="appfoot">
                   <button class="appbtn" @click=${this._apply}>${this._applyLabel()}</button>
-                  <button class="ok" @click=${this._close}>OK</button>
                 </span>`
               : html`<button class="ok" @click=${this._close}>OK</button>`}
           </div>
