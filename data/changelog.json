@@ -4,7 +4,8 @@
   "unreleased": {
     "summary": "",
     "changes": [
-      {"type": "added", "text": "Orks can now edit their Gahad trigger (summary and description) from the Edit character details modal."}
+      {"type": "added", "text": "Orks can now edit their Gahad trigger (summary and description) from the Edit character details modal."},
+      {"type": "fixed", "text": "When saving to GitHub fails, the app now says why (for example an expired save token or a missing data branch) instead of showing a raw error."}
     ]
   },
   "releases": [
