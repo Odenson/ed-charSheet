@@ -12,6 +12,7 @@
 // (decision #2), read/written here directly through store-rolllog.js; it never
 // rides the overlay, an export, or a GitHub save.
 import { LitElement, html, css } from 'lit';
+import { infoIconCss } from './info-icon.js';
 import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { loadRollLog, setRollLogMax, clearRollLog, DEFAULT_MAX, MAX_OPTIONS } from '../store-rolllog.js';
 import './ed-confirm.js';
@@ -48,6 +49,7 @@ export class EdNotes extends LitElement {
   };
 
   static styles = [
+    infoIconCss,
     legendSpentStyles,
     css`
     :host {
@@ -571,7 +573,7 @@ export class EdNotes extends LitElement {
       <div class="headline">
         <span class="hbig"
           >Legend earned${spent
-            ? html`<button class="info" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => (this._spentModal = true)}>ⓘ</button>`
+            ? html`<button class="info ibadge" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => (this._spentModal = true)}>i</button>`
             : ''}</span
         >
         <span class="htotal">

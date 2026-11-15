@@ -20,6 +20,8 @@
 // (store-rolllog.js, shared with the Notes tab): every roll lands here, and the
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css, nothing } from 'lit';
+import { diceIcon, diceIconCss } from './dice-icon.js';
+import { infoIconCss } from './info-icon.js';
 import { weaponOccurrence } from '../engine/spells.js';
 import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, UNARMED_WEAPON, successDamageSteps, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
 import { recoveriesRemaining } from '../engine/health.js';
@@ -98,6 +100,8 @@ export class EdCombat extends LitElement {
   };
 
   static styles = css`
+    ${diceIconCss}
+    ${infoIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#f7f8fa, #1b1f27);
@@ -158,6 +162,9 @@ export class EdCombat extends LitElement {
     select { font: inherit; font-size: var(--fs-body); width: 100%; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-chip); color: inherit; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
 
+    .fld { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .fld .fl { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .noval { font-weight: 400; color: var(--muted); }
     .statline { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: var(--fs-body); border-top: 1px solid var(--border); }
     .statline .k { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 54px; flex: none; }
     .statline .v { flex: 1; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1147,7 +1154,7 @@ export class EdCombat extends LitElement {
         <span class="item"><span class="k">Defence</span>PD ${this._combatRating(r.defence.Physical)}<span class="sep">·</span>MD ${this._combatRating(r.defence.Mystic)}<span class="sep">·</span>SD ${this._combatRating(r.defence.Social)}</span>
         <span class="item"><span class="k">Armour</span>Phys ${this._combatRating(r.armour.Physical)}<span class="sep">·</span>Myst ${this._combatRating(r.armour.Mystic)}</span>
         <span class="item ctl"><span class="k">Initiative</span><b>${init?.value ?? this._pend()}</b>
-          <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>⚄</button>
+          <button class="roll" ?disabled=${!init?.value} title="Roll initiative" aria-label="Roll initiative" @click=${this._rollInitiative}>${diceIcon}</button>
           ${this._lastInitTotal() != null ? html`<b class="initres" title="Last Initiative roll result">${this._lastInitTotal()}</b>` : ''}
         </span>
         ${karma != null ? html`<span class="kchip">Available Karma <b>${karma}</b></span>` : ''}
@@ -1191,7 +1198,7 @@ export class EdCombat extends LitElement {
       <span class="ptxt">${txt}</span>
       ${emergency
         ? html`<button class="proll" title="Roll the Step ${p.step} heal — no Recovery test used" aria-label="Roll emergency heal"
-            @click=${() => this._rollEmergency(p)}>⚄ Roll</button>`
+            @click=${() => this._rollEmergency(p)}>${diceIcon} Roll</button>`
         : ''}
       <button class="pclear" aria-label="Clear pending ${p.name}" title="Clear"
         @click=${() => this.dispatchEvent(new CustomEvent('ed-clear-pending-use', { bubbles: true, composed: true }))}>✕</button>
@@ -1354,7 +1361,7 @@ export class EdCombat extends LitElement {
           <button class="roll dmg" @click=${(e) => this._openDamage(e)} title="Take damage — wounds and Knockdown resolve via the engine" aria-label="Take damage">✗</button>
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
             title=${recTitle}
-            aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>⚄</button>
+            aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>${diceIcon}</button>
           <button class="roll reset" style="margin-left:auto" @click=${() => this.dispatchEvent(new CustomEvent('ed-day-reset', { detail: { source: 'combat' }, bubbles: true, composed: true }))} title="Start a new day — reset recoveries, clear combat state, and spend any remaining recoveries" aria-label="Reset the day"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16h18"/><path d="M8 16a4 4 0 0 1 8 0"/><path d="M12 3.5v2"/><path d="M5.2 6.7l1.4 1.4"/><path d="M18.8 6.7l-1.4 1.4"/><path d="M12 20l-2-2h4z" fill="currentColor" stroke="none"/></svg></button>
         </div>
       </div>`;
@@ -1445,31 +1452,33 @@ export class EdCombat extends LitElement {
               ${this._artBox()}
               <div class="attackrows">
                 <div class="row2">
+                  <label class="fld"><span class="fl">Weapon</span>
                   <select aria-label="Weapon" .value=${w.key} @change=${(e) => { this._weapon = e.target.value; this._talent = null; this._opts = null; this._artOk = true; }}>
                     ${this._weapons().map((x) => html`<option value=${x.key}>${x.name}${x.index > 0 ? ` (${x.index + 1})` : ''}${x.damageStep != null ? html` · dmg ${x.damageStep}` : ''}</option>`)}
-                  </select>
+                  </select></label>
+                  <label class="fld"><span class="fl">Talent / Skill</span>
                   <select aria-label="Attack talent or skill" class=${talent?.actionBase != null ? 'chg' : nothing} .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
                     ${this._attackOptions().length
                       ? this._attackOptions().map((o) => html`<option value=${o.id} class=${o.actionBase != null ? 'chg' : nothing}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
                       : html`<option value="">${w.category == null ? 'No talents or skills' : 'No matching talent/skill'}</option>`}
-                  </select>
+                  </select></label>
                 </div>
                 <div class="statline">
-                  <button class="info" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>ⓘ</button>
+                  <button class="info ibadge" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>i</button>
                   <span class="k">Attack</span>
                   <span class="v">${this._stepVal(ap.step)}</span>
                   <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
-                  <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>⚄</button>
+                  <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>${diceIcon}</button>
                 </div>
                 <div class="statline">
-                  <button class="info" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>ⓘ</button>
+                  <button class="info ibadge" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>i</button>
                   <span class="k">Damage</span>
-                  <span class="v">${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}</span>
+                  <span class="v">${w.key === 'None' ? html`<span class="noval">— No Weapon —</span>` : html`${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}`}</span>
                   ${this._damageBonusBadge()}
                   ${this._showManualSuccesses()
                     ? html`<span class="vs" title="No target was set — enter the GM-adjudicated successes to buff the Damage step (each adds +2 Damage steps)">succ <input type="number" min="0" step="1" placeholder="0" .value=${this._manualSuccesses ?? ''} aria-label="Successes (GM-adjudicated, no target set)" @input=${(e) => (this._manualSuccesses = e.target.value)} /></span>`
                     : ''}
-                  <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>⚄</button>
+                  <button class="roll" ?disabled=${dp.step == null} title="Roll damage" aria-label="Roll damage" @click=${this._rollDamage}>${diceIcon}</button>
                   <span class="strain-k">Strain</span><span class="strain">${ap.strain}</span>
                 </div>
               </div>

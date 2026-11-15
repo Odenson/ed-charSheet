@@ -1,6 +1,7 @@
 // ui/ed-roll-modal.js — modal showing a step dice roll: the dice used, each
 // die's result, exploding dice chained as the same die again, and the total.
 import { LitElement, html, css } from 'lit';
+import { diceIcon, diceIconCss } from './dice-icon.js';
 import { rollStep, rollKarmaDice, rollDiceList, rollTotal } from '../engine/dice.js';
 import { knockdownOutcome } from '../engine/health.js';
 import { successCount } from '../engine/combat.js';
@@ -37,6 +38,7 @@ export class EdRollModal extends LitElement {
   };
 
   static styles = css`
+    ${diceIconCss}
     :host {
       color-scheme: light dark;
       /* Karma semantic colour (Sage) — distinct from the amber general accent. */
@@ -456,7 +458,7 @@ export class EdRollModal extends LitElement {
         <div class="dm" @click=${(e) => e.stopPropagation()}>
           <div class="head">
             <div>
-              <div class="title">⚄ ${this.label}</div>
+              <div class="title">${diceIcon} ${this.label}</div>
               <div class="sub">Step ${this.stepRow.step} · ${this.stepRow.dice ?? ''} · exploding${this.difficulty?.value != null ? html` · vs Difficulty ${this.difficulty.value}` : ''}</div>
             </div>
             <button class="x" @click=${this._close} aria-label="Close">✕</button>
@@ -487,7 +489,7 @@ export class EdRollModal extends LitElement {
         <div class="dm" @click=${(e) => e.stopPropagation()}>
           <div class="head">
             <div>
-              <div class="title">⚄ ${this.label}</div>
+              <div class="title">${diceIcon} ${this.label}</div>
               <div class="sub">Step ${this.stepRow.step} · ${this.stepRow.dice ?? ''} · exploding · vs the target's ${this._aimVsLabel()}</div>
             </div>
             <button class="x" @click=${this._close} aria-label="Close">✕</button>
@@ -516,7 +518,7 @@ export class EdRollModal extends LitElement {
         <div class="dm" @click=${(e) => e.stopPropagation()}>
           <div class="head">
             <div>
-              <div class="title">⚄ ${this.label}</div>
+              <div class="title">${diceIcon} ${this.label}</div>
               <div class="sub">Step ${r.step} · ${r.dice ?? ''} · exploding${this._difficultyLabel() ? html` · ${this._difficultyLabel()}` : ''}</div>
             </div>
             <button class="x" @click=${this._close} aria-label="Close">✕</button>
@@ -623,7 +625,6 @@ export class EdRollModal extends LitElement {
             ${this.apply && this.apply.action !== 'knockdown-result'
               ? html`<span class="appfoot">
                   <button class="appbtn" @click=${this._apply}>${this._applyLabel()}</button>
-                  <button class="ok" @click=${this._close}>OK</button>
                 </span>`
               : html`<button class="ok" @click=${this._close}>OK</button>`}
           </div>

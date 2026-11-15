@@ -7,6 +7,25 @@
   },
   "releases": [
     {
+      "version": "1.36.0",
+      "date": "2026-11-15",
+      "summary": "New shared die and info icons, plus Combat and roll-modal clarity fixes.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Roll buttons now use a new shared pip-face die icon (recolourable, centred on every roll button and roll modal title), and every info icon uses the same outlined italic-i badge."
+        },
+        {
+          "type": "fixed",
+          "text": "Roll modals with a Heal button (Recovery test, emergency heal) no longer show a misleading OK button; only \"Heal this amount\" applies the recovery."
+        },
+        {
+          "type": "fixed",
+          "text": "Combat attack card: the weapon and talent/skill dropdowns are labelled, and the Damage line reads \"No Weapon\" instead of an odd empty pill when no weapon is selected."
+        }
+      ]
+    },
+    {
       "version": "1.35.0",
       "date": "2026-11-14",
       "summary": "Redesigned Overview Health card with a damage gauge and amber/red warnings, a shared Take damage modal (Overview and Combat), and healing only through Recovery tests.",
