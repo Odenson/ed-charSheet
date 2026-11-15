@@ -99,3 +99,63 @@ test('no plural weapon-talent stubs in the talent catalog', () => {
     assert.ok(!(n in talents), `${n} stub must not exist (use the singular discipline talent)`);
   }
 });
+
+// --- roll-knacks: structured attribute + plain-number strain (plans/roll-knacks I1) ----
+// A TEST may parse the display step string to cross-check the structured data; the
+// engine must not (it reads `attribute`).
+
+const ABBR = { STR: 'Strength', DEX: 'Dexterity', TOU: 'Toughness', PER: 'Perception', WIL: 'Willpower', CHA: 'Charisma' };
+const rollableAbbr = (step) => {
+  const m = /^(?:Rank\+([A-Z]{3})|([A-Z]{3})\+Rank)$/.exec(String(step ?? '').trim());
+  const a = m && (m[1] ?? m[2]);
+  return a && ABBR[a] ? a : null;
+};
+
+test('roll-knacks: every rollable-step knack has a full-name attribute agreeing with its step', () => {
+  const bad = [];
+  let count = 0;
+  for (const [name, e] of Object.entries(knacks)) {
+    const abbr = rollableAbbr(e.step);
+    if (!abbr) continue;
+    count++;
+    if (e.attribute !== ABBR[abbr]) bad.push(`${name}: step ${e.step} attribute ${e.attribute}`);
+  }
+  assert.equal(count, 100, 'rollable knack count');
+  assert.deepEqual(bad, []);
+});
+
+test('roll-knacks: every rollable-step knack has a plain-number strain', () => {
+  const bad = [];
+  for (const [name, e] of Object.entries(knacks)) {
+    if (rollableAbbr(e.step) && !/^\d+$/.test(String(e.strain))) bad.push(`${name}: ${e.strain}`);
+  }
+  assert.deepEqual(bad, []);
+});
+
+test('roll-knacks: Swinging Move strain is "0" and Take the Hit strain is "2" (summaries keep the extra-Strain text)', () => {
+  assert.equal(knacks['Swinging Move'].strain, '0');
+  assert.equal(knacks['Take the Hit'].strain, '2');
+  assert.match(knacks['Swinging Move'].summary, /strain/i);
+  assert.match(knacks['Take the Hit'].summary, /strain/i);
+});
+
+test('roll-knacks: N/A, NA and null-step knacks gain no attribute and keep their strain strings', () => {
+  const bad = [];
+  for (const [name, e] of Object.entries(knacks)) {
+    if (rollableAbbr(e.step)) continue;
+    if (e.attribute != null) bad.push(`${name} has attribute`);
+  }
+  assert.deepEqual(bad, []);
+  assert.equal(knacks['Improvised Pattern'].step, 'NA');
+  assert.equal(knacks['Improvised Pattern'].strain, '1+ (see below)');
+  assert.equal(knacks['Make Concession'].step, 'N/A');
+});
+
+test('roll-knacks: Bribery (CHA+Rank) maps to Charisma; Lip Reading to Perception', () => {
+  assert.equal(knacks['Bribery'].attribute, 'Charisma');
+  assert.equal(knacks['Lip Reading'].attribute, 'Perception');
+});
+
+test('roll-knacks: knacks.json notes document the attribute convention', () => {
+  assert.ok(JSON.stringify(knacksFile.notes).includes('attribute'));
+});

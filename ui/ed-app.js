@@ -316,6 +316,7 @@ export class EdApp extends LitElement {
           ...(bonusResult ? { bonusResult: { dice: bonusResult.dice, total: bonusResult.total } } : {}),
           mods: e.detail.mods ?? this._roll.mods ?? [],
           ...(this._roll.unapplied?.length ? { unapplied: this._roll.unapplied } : {}),
+          ...(this._strainCharged(this._roll) > 0 ? { strain: this._strainCharged(this._roll) } : {}),
         },
         this._characterId,
       );
@@ -1720,8 +1721,18 @@ export class EdApp extends LitElement {
         difficulty: cfg.difficulty?.value ?? detail.difficulty ?? null,
         outcome: outcome ?? null,
         aim: cfg.aim ?? null,
+        ...(this._strainCharged(cfg) > 0 ? { strain: this._strainCharged(cfg) } : {}),
       },
     };
+  }
+
+  // Strain a roll charged on open, for the Log / Discord line. Only ordinary talent and
+  // knack rolls: Mystic Aim (aim) and True Shot (set-dice, karma.rank) charge elsewhere
+  // and get no Strain line.
+  _strainCharged(cfg) {
+    if (!cfg || cfg.aim || cfg.karma?.rank != null) return 0;
+    const n = Number(cfg.strain);
+    return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
   _flushRollReport() {

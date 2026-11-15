@@ -64,6 +64,7 @@ export function formatRollForDiscord(report, { name } = {}) {
         .join(' · ')}`,
     );
   }
+  if (r.strain > 0) body.push(`Strain ${r.strain}`);
 
   let total = `**Total ${r.total}**`;
   if (r.difficulty != null) {
@@ -161,6 +162,7 @@ export function formatRollEmbed(report, { name, thumbnailUrl } = {}) {
       false,
     );
   }
+  if (r.strain > 0) push('Strain', String(r.strain), true);
 
   const size = () =>
     title.length + (description?.length ?? 0) + fields.reduce((a, f) => a + f.name.length + f.value.length, 0);

@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolveKnack, deriveModel } from './store.js';
+import { talentStep } from './engine/derive.js';
 
 const realCatalog = JSON.parse(readFileSync(new URL('./rules/knacks.json', import.meta.url))).knacks;
 
@@ -248,4 +249,64 @@ test('deriveModel: only the character’s own-discipline Spellcasting knacks sur
   assert.ok(!names.includes('Acid Splash'), 'Elementalist-gated Spellcasting knack excluded for a Nethermancer');
   assert.ok(!names.includes('Fortify Armor'), 'Elementalist-gated knack excluded');
   assert.ok(!names.includes('Befuddle'), 'Illusionist-gated knack excluded');
+});
+
+// --- roll-knacks: model.knacks[i].roll and talent.rollStrain --------------------
+
+const attrStep = (model, name) => model.attributes.find((a) => a.name === name).step;
+const talentChar = (knacks, talents = [{ name: 'Awareness', rank: 4 }]) => ({
+  schema: 'ed-character/1',
+  meta: { name: 'Scout' },
+  attributes: { Perception: { base: 14 }, Dexterity: { base: 10 } },
+  resources: { health: { damage: 0, wounds: 0, recoveriesUsed: 0 } },
+  disciplines: [{ name: 'Warrior', circle: 1, talents }],
+  skills: [],
+  knacks,
+  items: [],
+});
+
+test('roll-knacks model: Lip Reading rolls at Awareness rank + PER step, with its own strain', () => {
+  const model = deriveModel(talentChar([{ name: 'Lip Reading' }]), baseRules);
+  const k = model.knacks.find((x) => x.name === 'Lip Reading');
+  const aw = model.disciplines.flatMap((d) => d.talents).find((t) => t.name === 'Awareness');
+  assert.ok(k.roll, 'roll present');
+  assert.equal(k.roll.step, talentStep(attrStep(model, 'Perception'), 4));
+  assert.equal(k.roll.step, aw.step);
+  assert.equal(typeof k.roll.dice, 'string');
+  assert.ok(k.roll.dice.length > 0);
+  assert.equal(k.roll.strain, 1);
+  assert.ok(Array.isArray(k.roll.resultMods));
+  assert.ok(k.roll.karma, 'Awareness is Karma-eligible, so the knack is too');
+});
+
+test('roll-knacks model: Make Concession (N/A step) has roll === null', () => {
+  const model = deriveModel(talentChar([{ name: 'Make Concession' }], [{ name: 'Resist Taunt', rank: 6 }]), baseRules);
+  const k = model.knacks.find((x) => x.name === 'Make Concession');
+  assert.ok(k);
+  assert.equal(k.roll, null);
+});
+
+test('roll-knacks model: skill-learned knack uses the skill rank, no karma, with knackParents on', () => {
+  const base = skillChar();
+  const char = { ...base, attributes: { ...base.attributes, Perception: { base: 14 } }, knacks: [{ name: 'Hunting', via: 'Wilderness Survival' }] };
+  const model = deriveModel(char, { ...baseRules, homebrewFile: knackRule() });
+  const k = model.knacks.find((x) => x.name === 'Hunting');
+  assert.ok(k.roll);
+  assert.equal(k.roll.step, talentStep(attrStep(model, 'Perception'), 2));
+  assert.equal(k.roll.karma, null);
+});
+
+test('roll-knacks model: talent.rollStrain is the catalog numeric strain, else null', () => {
+  const char = talentChar([], [
+    { name: 'Anticipate Blow', rank: 2 },
+    { name: 'Awareness', rank: 2 },
+  ]);
+  const model = deriveModel(char, baseRules);
+  const talents = model.disciplines.flatMap((d) => d.talents);
+  const ab = talents.find((t) => t.name === 'Anticipate Blow');
+  const aw = talents.find((t) => t.name === 'Awareness');
+  const cat = read('talents.json').talents;
+  assert.equal(ab.rollStrain, cat['Anticipate Blow'].strain);
+  assert.equal(aw.rollStrain, cat['Awareness'].strain);
+  for (const t of talents) assert.ok(t.rollStrain === null || Number.isFinite(t.rollStrain), t.name);
 });

@@ -527,7 +527,8 @@ export class EdCombat extends LitElement {
   _attackScopes() {
     const w = this._selWeapon();
     if (w?.category) return [w.category];
-    const name = this._selTalent()?.name;
+    const sel = this._selTalent();
+    const name = sel?.parentName ?? sel?.name;
     if (!name) return [];
     return ['melee', 'missile', 'throwing', 'unarmed'].filter((c) => attackTalentNamesFor(c).includes(name));
   }
@@ -564,6 +565,7 @@ export class EdCombat extends LitElement {
           // Arming descriptor (Mystic Aim): surfaced so picking the talent as the
           // action (weapon None) routes its roll through the aim flow and arms it.
           arms: t.arms ?? null,
+          rollStrain: t.rollStrain ?? 0, // printed Strain, charged when the modal opens
         });
       }
     }
@@ -582,6 +584,25 @@ export class EdCombat extends LitElement {
         rollMods: s.rollMods ?? [],
       });
     }
+    // Knacks with a real step (model.knacks[].roll), rolled at the knack's own step and
+    // carrying the parent's Karma and result mods (plans/roll-knacks). `parentName`
+    // lets the weapon filter match a knack through the talent that governs it.
+    for (const k of this.model?.knacks ?? []) {
+      if (k.roll == null) continue;
+      push({
+        id: `knack:${k.name}`,
+        kind: 'knack',
+        name: k.name,
+        parentName: k.parent?.name ?? null,
+        step: k.roll.step,
+        karma: k.roll.karma ?? null,
+        action: k.action ?? null,
+        resultMods: k.roll.resultMods ?? [],
+        rollStrain: k.roll.strain ?? 0,
+        rollMods: [],
+        grantSources: [],
+      });
+    }
     return [...byId.values()];
   }
   // The picker's options for the selected weapon: unfiltered for "None", else the
@@ -589,7 +610,7 @@ export class EdCombat extends LitElement {
   _attackOptions() {
     const all = this._allActions();
     const allowed = attackTalentNamesFor(this._selWeapon()?.category);
-    const list = allowed == null ? all : all.filter((o) => allowed.includes(o.name));
+    const list = allowed == null ? all : all.filter((o) => allowed.includes(o.parentName ?? o.name));
     // Alphabetical by name (locale-aware).
     return list.sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -687,7 +708,7 @@ export class EdCombat extends LitElement {
     // same +6 (global activeEffects + combat selectedCharms). Other active mods
     // (sustained spells) still merge.
     const charmSet = new Set(this._activeCharmNames());
-    const testMods = this._talentResultMods(t?.name).filter((m) => !charmSet.has(m.source));
+    const testMods = (t?.kind === 'knack' ? t.resultMods ?? [] : this._talentResultMods(t?.name)).filter((m) => !charmSet.has(m.source));
     return testMods.length ? { ...ap, resultMods: [...ap.resultMods, ...testMods] } : ap;
   }
 
@@ -850,7 +871,9 @@ export class EdCombat extends LitElement {
         unapplied: ap.unapplied,
         // Deferred Strain: charged at the modal's commit for a set-dice roll (0
         // otherwise — an ordinary roll already paid it above).
-        strain: setDice ? ap.strain : 0,
+        // An ordinary talent/knack pick passes its own printed Strain: the modal charges
+        // it once as it opens and shows it (hint, Log, Discord), like the Disciplines tab.
+        strain: setDice ? ap.strain : (opt?.rollStrain ?? 0),
       },
     );
   }
@@ -1459,7 +1482,7 @@ export class EdCombat extends LitElement {
                   <label class="fld"><span class="fl">Talent / Skill</span>
                   <select aria-label="Attack talent or skill" class=${talent?.actionBase != null ? 'chg' : nothing} .value=${talent?.id ?? ''} @change=${(e) => { this._talent = e.target.value; this._attackArmed = false; this._lastAttack = null; }}>
                     ${this._attackOptions().length
-                      ? this._attackOptions().map((o) => html`<option value=${o.id} class=${o.actionBase != null ? 'chg' : nothing}>${o.name}${o.kind === 'skill' ? ' · Skill' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
+                      ? this._attackOptions().map((o) => html`<option value=${o.id} class=${o.actionBase != null ? 'chg' : nothing}>${o.name}${o.kind === 'skill' ? ' · Skill' : o.kind === 'knack' ? ' · Knack' : ' · Talent'}${o.action ? ` · ${o.action}` : ''} · ${o.step}</option>`)
                       : html`<option value="">${w.category == null ? 'No talents or skills' : 'No matching talent/skill'}</option>`}
                   </select></label>
                 </div>

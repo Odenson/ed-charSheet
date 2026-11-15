@@ -11,6 +11,7 @@ import {
   buildPayload,
   buildTestPayload,
   buildWebhookPayload,
+  escapeDiscord,
 } from './discord-roll.js';
 
 const ZWSP = '​';
@@ -322,4 +323,36 @@ test('buildTestPayload plain variant is the exact existing payload', () => {
     assert.deepEqual(buildTestPayload({ name: 'Chakka', format: f }), today, String(f));
   }
   assert.equal(buildTestPayload().username, 'Character');
+});
+
+// --- roll-knacks: Strain field (plans/roll-knacks I6) --------------------------
+
+test('Strain field: absent when strain is missing or 0', () => {
+  for (const strain of [undefined, 0]) {
+    const { embed } = formatRollEmbed(base({ strain }), { name: 'Chakka' });
+    assert.ok(!embed.fields.some((f) => f.name === 'Strain'), String(strain));
+  }
+});
+
+test('Strain field: present, inline, numeric string when strain > 0', () => {
+  const { embed } = formatRollEmbed(base({ strain: 2 }), { name: 'Chakka' });
+  assert.deepEqual(
+    embed.fields.find((f) => f.name === 'Strain'),
+    { name: 'Strain', value: '2', inline: true },
+  );
+});
+
+test('Strain field: knack name with markdown is escaped in the title; payload stays valid', () => {
+  const { embed } = formatRollEmbed(base({ label: 'Lip *Reading*', strain: 1 }), { name: 'Chakka' });
+  assert.ok(embed.title.includes(escapeDiscord('Lip *Reading*')));
+  assert.ok(embed.fields.some((f) => f.name === 'Strain'));
+});
+
+test('Strain field: survives a long-detail embed (6000-char guard) and the total stays within limits', () => {
+  const longMods = Array.from({ length: 200 }, (_, i) => ({ label: `Long modifier label ${i}`, value: 1, measure: 'result' }));
+  const { embed } = formatRollEmbed(base({ strain: 3, mods: longMods }), { name: 'Chakka' });
+  const size =
+    embed.title.length + (embed.description?.length ?? 0) + embed.fields.reduce((a, f) => a + f.name.length + f.value.length, 0);
+  assert.ok(size <= 6000);
+  assert.equal(embed.fields.find((f) => f.name === 'Strain')?.value, '3');
 });

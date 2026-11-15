@@ -199,8 +199,9 @@ export class EdDisciplines extends LitElement {
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
        row beneath the row that governs them. */
-    .knrow { display: flex; align-items: center; padding: 3px 0 3px 24px; font-size: var(--fs-small); color: var(--muted); border-bottom: 1px solid var(--border); }
-    .knrow:last-child { border-bottom: none; }
+    .trow.knrow { padding: 3px 0; font-size: var(--fs-small); color: var(--muted); }
+    .knrow .kname { display: flex; align-items: center; min-width: 0; padding-left: 24px; }
+    .knrow .eff, .knrow .num { color: var(--muted); }
     .knrow .arr { color: var(--accent); margin-right: 6px; }
     .kninfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
@@ -266,13 +267,7 @@ export class EdDisciplines extends LitElement {
     // Karma context for the roll modal: talents are Karma-eligible by default, so
     // t.karma carries the grant. Pull the pool's amount/die step from the derived
     // Karma characteristic, exactly like the Overview.
-    const karmaCtx = t.karma?.grants?.length
-      ? {
-          grants: t.karma.grants,
-          available: this.model?.characteristics?.karma?.available ?? null,
-          step: this.model?.characteristics?.karma?.step ?? null,
-        }
-      : null;
+    const karmaCtx = this._karmaCtx(t.karma);
     const status = t.required ? 'required Discipline talent' : 'chosen Talent option';
     return html`
       <div class="trow ${t.required ? '' : 'opt'}${this.editMode ? ' edit' : ''}">
@@ -300,6 +295,18 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // The roll modal's Karma context for a model `karma` ({grants}), shared by talent
+  // and knack rows. Null when not Karma-eligible. No `rank` key: never set-dice.
+  _karmaCtx(karma) {
+    return karma?.grants?.length
+      ? {
+          grants: karma.grants,
+          available: this.model?.characteristics?.karma?.available ?? null,
+          step: this.model?.characteristics?.karma?.step ?? null,
+        }
+      : null;
+  }
+
   // The `ed-roll` detail for a talent row. An arms talent (Mystic Aim) rolls its
   // precursor test: attach `aim` (so the modal prompts for the target defence and
   // resolves Hit/Miss) and `arms` (so ed-app arms the payload into session on a
@@ -316,7 +323,7 @@ export class EdDisciplines extends LitElement {
         arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [] },
       };
     }
-    return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [] };
+    return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [], strain: t.rollStrain ?? 0 };
   }
 
   // Edit-mode rank stepper for one talent/skill row. The prices come off the
@@ -554,17 +561,36 @@ export class EdDisciplines extends LitElement {
   // One indented child row for a knack nested under the skill/talent it derives from.
   // Carries the same info control as skills/talents, opening a knack detail modal.
   _knackRow(k) {
+    const r = k.roll;
     return html`
-      <div class="knrow">
-        <span class="arr">↳</span>
-        <button
-          class="kninfo"
-          aria-label="${k.name} — view details"
-          title="${k.name} — click for details"
-          @click=${(e) => this._openModal({ type: 'knack', knack: k }, e)}
-        >i</button>
-        <span class="knlbl">${k.name}</span>
-        <span class="ktag">knack</span>
+      <div class="trow knrow${this.editMode ? ' edit' : ''}">
+        <span class="kname">
+          <span class="arr">↳</span>
+          <button
+            class="kninfo"
+            aria-label="${k.name} — view details"
+            title="${k.name} — click for details"
+            @click=${(e) => this._openModal({ type: 'knack', knack: k }, e)}
+          >i</button>
+          <span class="knlbl">${k.name}</span>
+          <span class="ktag">knack</span>
+        </span>
+        <span class="effcol eff" title=${k.brief ?? k.detail?.summary ?? ''}>${k.brief ?? k.detail?.summary ?? ''}</span>
+        <span class="num" title="Governing rank">${k.parentRank ?? ''}</span>
+        <span class="sd">${r ? html`${r.step} · ${r.dice}` : '—'}</span>
+        <span class="action sd">${k.action ?? ''}</span>
+        ${r != null
+          ? html`<button
+              class="roll"
+              title=${`Roll ${k.name}${r.karma ? ' (Karma available)' : ''}`}
+              aria-label="Roll ${k.name}"
+              @click=${() => this.dispatchEvent(new CustomEvent('ed-roll', {
+                detail: { label: k.name, step: r.step, karma: this._karmaCtx(r.karma), mods: r.resultMods, strain: r.strain },
+                bubbles: true,
+                composed: true,
+              }))}
+            >${diceIcon}</button>`
+          : html`<span></span>`}
       </div>
     `;
   }

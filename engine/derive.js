@@ -33,3 +33,35 @@ export function makeDiceForStep(stepsTable) {
   for (const row of stepsTable ?? []) map.set(row.step, row.dice ?? '');
   return (step) => map.get(step) ?? '';
 }
+
+/**
+ * Derive a knack's roll (plans/roll-knacks). Pure; the caller gathers the inputs.
+ * `catalogStep` is the raw catalog step, used ONLY to check that the knack is
+ * rollable (never parsed); the attribute comes from the structured `knack.attribute`.
+ * Step = the knack's own Rank+ATTR with the governing parent's rank: the parent's
+ * folded step swaps its attribute step for the knack's, so step mods and rank grants
+ * carry. Returns null when there is nothing to roll.
+ * @returns {{step:number, dice:string, strain:number, karma:object|null, resultMods:Array}|null}
+ */
+export function knackRoll({ knack, parent, parentAttrStep, knackAttrStep, catalogStep, diceForStep }) {
+  if (!knack?.attribute || !parent) return null;
+  if (catalogStep == null || catalogStep === 'N/A' || catalogStep === 'NA') return null;
+  if (!Number.isFinite(knackAttrStep)) return null;
+  let step;
+  if (Number.isFinite(parentAttrStep)) {
+    step = parent.step - parentAttrStep + knackAttrStep;
+  } else {
+    const mods = (parent.rollMods ?? []).filter((m) => m?.measure === 'step').reduce((s, m) => s + (Number(m.value) || 0), 0);
+    step = talentStep(knackAttrStep, parent.rank) + mods;
+  }
+  step = Math.max(1, step);
+  const raw = knack.detail?.strain;
+  const n = raw === null || raw === undefined || raw === '' ? NaN : Number(raw);
+  return {
+    step,
+    dice: diceForStep(step),
+    strain: Number.isFinite(n) ? n : 0,
+    karma: parent.karma ?? null,
+    resultMods: parent.resultMods ?? [],
+  };
+}

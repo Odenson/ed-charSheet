@@ -504,6 +504,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   chars, "Character" if blank, "discord"/"clyde" defused; same for both formats). Body lines, omitted when not applicable:
   `🎲 **Label** — Step N (dice)`; dice groups `D10 [10↦7] = 17` joined by ` · `
   (+ ` · Modifier +n`); `✦ Karma …`; `Bonus dice … = n`; `Mods: label +v [Step] · …`;
+  `Strain N` (talent and knack rolls only, when > 0; not aim or set-dice);
   `**Total N** [vs Difficulty D | vs <X> Defence D] [— **word** ✅|❌]`. User text
   is markdown-escaped and mentions neutralised; `allowed_mentions: {parse: []}`;
   content capped at 2000 chars, keeping the header and Total. Optional top-level
@@ -516,7 +517,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   engine only emits the passed URL. Title
   `🎲 Label — Step N · Total T`; description `vs … D — **word** ✅|❌`; colour
   green (success), red (failure), grey (none); fields `Dice`, `✦ Karma`, `Bonus
-  dice`, `Mods`. Limits: title 256, value 1024, total 6000 (Dice shrinks first,
+  dice`, `Mods`, `Strain` (inline, only when > 0, never trimmed). Limits: title 256, value 1024, total 6000 (Dice shrinks first,
   then Mods, Bonus dice, Karma). `buildPayload` picks the format; unknown is plain.
   Both formats (and the test message) also carry an optional top-level `avatar_url`
   (never inside the embed): `store.js` `discordAvatarUrl(portrait)` gives the raw portrait
@@ -575,7 +576,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     format.js              # display formatting helpers
     # *.test.js siblings run under node --test (see `npm test`)
   engine/                    # pure, DOM-free, independently testable
-    derive.js                # attribute value/step, talent step, step→dice map
+    derive.js                # attribute value/step, talent step, step→dice map, knack roll (`knackRoll`: a knack's Rank+attribute Step from its governing parent's folded step, plus Strain, Karma and result mods)
     characteristics.js       # derived characteristics: table lookup + effects
     dice.js                  # step + dice + exploding roller; parseDice / rollDiceList for taxonomy v6 dice strings
     discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url} and top-level avatar_url (both formats + test message); markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
