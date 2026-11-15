@@ -3,12 +3,24 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      {"type": "added", "text": "Orks can now edit their Gahad trigger (summary and description) from the Edit character details modal."},
-      {"type": "fixed", "text": "When saving to GitHub fails, the app now says why (for example an expired save token or a missing data branch) instead of showing a raw error."}
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.37.0",
+      "date": "2026-11-15",
+      "summary": "Orks can now edit their Gahad trigger from the Edit character details modal, and failed GitHub saves now explain why.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Orks can now edit their Gahad trigger (summary and description) from the Edit character details modal."
+        },
+        {
+          "type": "fixed",
+          "text": "When saving to GitHub fails, the app now says why (for example an expired save token or a missing data branch) instead of showing a raw error."
+        }
+      ]
+    },
     {
       "version": "1.36.0",
       "date": "2026-11-15",

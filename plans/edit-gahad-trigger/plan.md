@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.37.0
 ---
 # Delivery Plan: Edit Gahad trigger (edit-gahad-trigger)
 
