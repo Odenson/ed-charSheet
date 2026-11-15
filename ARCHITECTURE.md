@@ -554,7 +554,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
-    ed-edit-meta.js   # meta edit modal
+    ed-edit-meta.js   # "Edit character details" modal: descriptive meta (dispatches ed-edit-meta); for Orks also the Gahad trigger summary/description (dispatches ed-edit-gahad-trigger -> traits[] via store.js applyGahadTrigger)
     ed-add-legend.js  # add Legend Points modal
     ed-day-reset.js   # new-day / recovery reset modal
     ed-damage-modal.js # shared Take-damage modal (Overview Damage row + Combat Damage taken); applies a hit via engine resolveHit, dispatches ed-edit-health and the Knockdown ed-roll
