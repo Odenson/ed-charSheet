@@ -271,7 +271,7 @@ is a **boolean** lever that lets a GM relax this to the character's **skills**:
   and passes it to `learnableKnacks` (engine/knack-options.js), which emits skill
   parents in `qualifies` with `kind: 'skill'`. The UI gates the Skills-tab knack
   rows/add-slot on `model.skillKnackEnabled`. Storing a knack learned through a
-  skill pins its `via` to the skill name so reload re-attaches correctly.
+  skill pins its `via` to the skill name so reload re-attaches correctly. A skill-governed knack with a Step rolls with the skill's rank and its own attribute (`knackRoll`, plans/roll-knacks); it offers no Karma, because skills carry no Karma context on that tab.
 
 ---
 

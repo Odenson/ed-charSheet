@@ -200,6 +200,7 @@ export class EdDisciplines extends LitElement {
        table. Knacks derive from a skill or talent and render as an indented child
        row beneath the row that governs them. */
     .knrow { display: flex; align-items: center; padding: 3px 0 3px 24px; font-size: var(--fs-small); color: var(--muted); border-bottom: 1px solid var(--border); }
+    .knrow .knsp { margin-left: auto; }
     .knrow:last-child { border-bottom: none; }
     .knrow .arr { color: var(--accent); margin-right: 6px; }
     .kninfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
@@ -266,13 +267,7 @@ export class EdDisciplines extends LitElement {
     // Karma context for the roll modal: talents are Karma-eligible by default, so
     // t.karma carries the grant. Pull the pool's amount/die step from the derived
     // Karma characteristic, exactly like the Overview.
-    const karmaCtx = t.karma?.grants?.length
-      ? {
-          grants: t.karma.grants,
-          available: this.model?.characteristics?.karma?.available ?? null,
-          step: this.model?.characteristics?.karma?.step ?? null,
-        }
-      : null;
+    const karmaCtx = this._karmaCtx(t.karma);
     const status = t.required ? 'required Discipline talent' : 'chosen Talent option';
     return html`
       <div class="trow ${t.required ? '' : 'opt'}${this.editMode ? ' edit' : ''}">
@@ -300,6 +295,18 @@ export class EdDisciplines extends LitElement {
     `;
   }
 
+  // The roll modal's Karma context for a model `karma` ({grants}), shared by talent
+  // and knack rows. Null when not Karma-eligible. No `rank` key: never set-dice.
+  _karmaCtx(karma) {
+    return karma?.grants?.length
+      ? {
+          grants: karma.grants,
+          available: this.model?.characteristics?.karma?.available ?? null,
+          step: this.model?.characteristics?.karma?.step ?? null,
+        }
+      : null;
+  }
+
   // The `ed-roll` detail for a talent row. An arms talent (Mystic Aim) rolls its
   // precursor test: attach `aim` (so the modal prompts for the target defence and
   // resolves Hit/Miss) and `arms` (so ed-app arms the payload into session on a
@@ -316,7 +323,7 @@ export class EdDisciplines extends LitElement {
         arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [] },
       };
     }
-    return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [] };
+    return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [], strain: t.rollStrain ?? 0 };
   }
 
   // Edit-mode rank stepper for one talent/skill row. The prices come off the
@@ -565,6 +572,18 @@ export class EdDisciplines extends LitElement {
         >i</button>
         <span class="knlbl">${k.name}</span>
         <span class="ktag">knack</span>
+        ${k.roll != null
+          ? html`<span class="knsp"></span><button
+              class="roll"
+              title=${`Roll ${k.name}${k.roll.karma ? ' (Karma available)' : ''}`}
+              aria-label="Roll ${k.name}"
+              @click=${() => this.dispatchEvent(new CustomEvent('ed-roll', {
+                detail: { label: k.name, step: k.roll.step, karma: this._karmaCtx(k.roll.karma), mods: k.roll.resultMods, strain: k.roll.strain },
+                bubbles: true,
+                composed: true,
+              }))}
+            >${diceIcon}</button>`
+          : nothing}
       </div>
     `;
   }

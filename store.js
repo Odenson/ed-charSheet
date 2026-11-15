@@ -6,7 +6,7 @@
 // and the model is re-derived from inputs (data flows back down). Derived values
 // are never stored.
 
-import { attributeValue, talentStep, makeDiceForStep } from './engine/derive.js';
+import { attributeValue, talentStep, makeDiceForStep, knackRoll } from './engine/derive.js';
 import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
@@ -115,7 +115,9 @@ export function resolveKnack(owned, catalog = {}, skillNames = new Set(), talent
     // these to surface a knack-sourced armed option, gating on the parent
     // talent's rank and deriving the arms roll Step from `attribute` + that rank
     // — the numeric step is NEVER parsed from the `step: "Rank+PER"` display
-    // string (ARCHITECTURE §5.5). Null for the vast majority of knacks.
+    // string (ARCHITECTURE §5.5). `attribute` is also the rolled-step attribute on
+    // every rollable knack (the roll button reads it; see knackRoll); combat options
+    // stay gated on `combatOptions`/`arms`. Null on knacks with no step.
     attribute: ref?.attribute ?? null,
     versus: ref?.versus ?? null,
     arms: ref?.arms ?? null,
@@ -965,6 +967,8 @@ export function deriveModel(character, rules, session = {}) {
         step,
         dice: step != null ? diceForStep(step) : '',
         karma,
+        // Strain charged when this talent is rolled from the Disciplines tab (plain number or null).
+        rollStrain: Number.isFinite(cat.strain) ? cat.strain : null,
         required: requiredTalents.has(t.name),
         // Terse one-line effect for the Effect column, and the paraphrased detail
         // the info modal shows. `documented` is false for talents not yet enriched
@@ -1720,6 +1724,29 @@ export function deriveModel(character, rules, session = {}) {
   };
   for (const d of disciplines) for (const t of d.talents ?? []) applyTestMods(t);
   for (const sk of skills) applyTestMods(sk);
+
+  // Knack rolls (plans/roll-knacks): derived per derive from the governing parent
+  // (folded step, Karma, result mods) via the pure knackRoll(); null = no roll button.
+  for (const k of knacks) {
+    let parent = null;
+    if (k.parent?.type === 'talent') {
+      for (const d of disciplines) {
+        for (const t of d.talents ?? []) {
+          if (t.name === k.parent.name && (parent == null || (t.rank ?? 0) > (parent.rank ?? 0))) parent = t;
+        }
+      }
+    } else if (k.parent?.type === 'skill') {
+      parent = skills.find((sk) => sk.name === k.parent.name) ?? null;
+    }
+    k.roll = knackRoll({
+      knack: k,
+      parent,
+      parentAttrStep: parent?.attribute ? attrStepByName[parent.attribute] : undefined,
+      knackAttrStep: k.attribute ? attrStepByName[k.attribute] : undefined,
+      catalogStep: knackCatalog[k.name]?.step ?? null,
+      diceForStep,
+    });
+  }
 
   // Action-modifier effects (taxonomy v5): derived per derive, never persisted.
   // Written only on a changed ability, so unaffected abilities gain no keys.

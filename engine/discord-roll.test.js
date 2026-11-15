@@ -312,3 +312,36 @@ test('discordSendDecision: disabled / blank / invalid / ok', () => {
   assert.equal(discordSendDecision(null).send, false);
   assert.equal(discordSendDecision(undefined).send, false);
 });
+
+// --- roll-knacks: Strain line (plans/roll-knacks I6) ---------------------------
+
+test('Strain line: absent when strain is missing, 0 or negative', () => {
+  for (const strain of [undefined, 0, -1]) {
+    const r = formatRollForDiscord(base({ strain }), NAME);
+    assert.ok(!lines(r).some((x) => x.startsWith('Strain')), String(strain));
+  }
+});
+
+test('Strain line: "Strain N" body line sits after Mods and before Total', () => {
+  const r = formatRollForDiscord(base({ strain: 2, mods: [{ label: 'Aim', value: 2, measure: 'result' }] }), NAME);
+  const l = lines(r);
+  const mi = l.findIndex((x) => x.startsWith('Mods:'));
+  const si = l.indexOf('Strain 2');
+  assert.ok(si > mi && mi >= 0);
+  assert.equal(l[si + 1], l[l.length - 1]);
+  assert.equal(l[l.length - 1], '**Total 7**');
+});
+
+test('Strain line: knack name with markdown characters is escaped in the header', () => {
+  const r = formatRollForDiscord(base({ label: 'Lip *Reading*', strain: 1 }), NAME);
+  assert.equal(lines(r)[0], `🎲 **${escapeDiscord('Lip *Reading*')}** — Step 9 (D10+D6)`);
+  assert.ok(lines(r).includes('Strain 1'));
+});
+
+test('Strain line: long detail is cut but header and Total survive within 2000 chars', () => {
+  const longMods = Array.from({ length: 60 }, (_, i) => ({ label: `Modifier number ${i}`, value: 1, measure: 'result' }));
+  const r = formatRollForDiscord(base({ strain: 3, mods: longMods }), NAME);
+  assert.ok(r.content.length <= 2000);
+  assert.ok(r.content.startsWith('🎲 **Melee Weapons**'));
+  assert.ok(r.content.endsWith('**Total 7**'));
+});

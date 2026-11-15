@@ -831,3 +831,47 @@ Sources:
 - rulebook extracts/rulebook extracts/text-RB-companions-guide.txt:15662 (mention of a victim's gahad being triggered; no rule)
 
 Decision: 2026-11-15 — No house rule needed; a gahad trigger may be edited at any time, left to the user's control. The edit-gahad-trigger feature supports a single trigger as a deliberate scope simplification (the book says "a couple of impulses"). (homebrew)
+
+### Q033 — Rolling a talent knack: step source, Karma, Strain, "Step: N/A" knacks, parent-talent bonuses
+Keywords: knack, talent knack, knack roll, knack step, Rank+attribute, replaces Action Step, Strain replaces, Karma on knack, knack karma, Step N/A, no test, Standard Effects, combining knacks, governing talent, knack rank, one knack per use, roll button, log, Discord · Resolved: 2026-11-15 · Context: roll-knacks
+
+(1) Step/Action/Strain printed on a knack "replace the Action Step, action type, or Strain cost of the associated talent when the knack is used". Knacks have no rank of their own ("knacks are not improved"); a knack "usually uses the associated talent for any required tests", and "all knacks are still considered the governing talent" (a Destructive Shout test is still a Battle Shout test; for a knack learned via several talents, it is used with the talent it was learned through). Printed formulas are "Rank+ATTR" (e.g. Rank+PER, Rank+DEX): Rank = the parent talent's rank; the attribute is the knack's own and may differ from the parent's. Exception: knacks learnable as skills use the skill rank for the Step. Only one knack may be used per use of a talent. When combining explicitly allowed knacks: lowest Action Step, greatest action time, total Strain of all knacks.
+(2) Karma: not stated per knack anywhere in the extracts (knack stat blocks have no Karma line; "Karma" does not occur in the knack chapter). Because a knack test is the governing talent's test, the talent Karma rules apply (not book-explicit): one Karma Point per use of a talent, talents not part of the Discipline (Versatility, racial, item-granted) get no Karma, and always-active/unrolled talents get none. Skill-learned knacks: skills, not talents, so no talent Karma (inference; PG Karma text is about talents). Treat as CONFLICT/gap -> owner decision if a ruling is needed.
+(3) Strain: the knack's printed Strain replaces the parent talent's Strain (not added), except combined knacks, which add up.
+(4) "Step: N/A" knacks (e.g. Roll With the Punches, Absorb Spell): they have no Action test; they are used *instead of* making the parent talent's test and instead reduce the successes of an incoming attack/spell by one (not below two). Not rolled. [Special Maneuver] knacks print no Step/Action/Strain; used with the listed test by spending extra successes; cannot be used on unsuccessful tests and do not count toward the knack limit. Crafting knacks also print Step N/A (per rules/knacks.json notes; not re-read in the book).
+(5) Parent-talent bonuses: not explicitly addressed. Since the test is the governing talent's, talent-level bonuses plausibly carry (not book-explicit); "Standard Effects" knacks also add the talent's standard effect, others only the knack's effect.
+
+Sources:
+- text-RB-companions-guide.txt:2757-2760 (p. 75/76 — knacks use associated talent for tests; not improved)
+- text-RB-companions-guide.txt:2791-2794 (p. 76 — one knack per talent use; knacks per talent = unaugmented rank)
+- text-RB-companions-guide.txt:2805-2815 (p. 77 — knack still considered governing talent)
+- text-RB-companions-guide.txt:2808-2813 (p. 77 — knacks as skills use skill rank for Step)
+- text-RB-companions-guide.txt:2824-2825 (p. 77 — Step, Action, Strain replace talent's)
+- text-RB-companions-guide.txt:2830-2837, 2838-2846 (p. 77-78 — Standard Effects, Combining, Special Maneuvers)
+- text-RB-companions-guide.txt:3034-3041 (p. 83 — Roll With the Punches, Step N/A)
+- text-RB-players-guide.txt:4141-4157 (p. 121 — Karma on talents; unrolled talents, non-Discipline talents)
+- rulebook extracts/manual/text-player-guide-game-concepts.txt:264-273 (p. 37 — Karma basics)
+- rules/knacks.json:5-12, 21 (repo: steps, N/A, no karma field)
+
+### Q034 — Strain on talent/knack use: when paid, armor/Wounds, Karma interaction, skills, variable Strain, Half-Magic/Versatility
+Keywords: strain, strain damage, talent strain, knack strain, auto-apply strain, roll button, damage to health, armor, wounds, miss, failed test, Claw Frenzy, variable strain, 1 per attack, skill strain, Half-Magic, Versatility, Karma, Battle Rites · Resolved: 2026-11-15 · Context: roll-knacks
+
+(1) Strain is the number of Damage Points the adept takes "each time he uses the talent"; it is paid per use (per attack for multi-attack talents), not conditional on success. Claw Frenzy: Strain is taken per attack declared up front, and "if any attacks miss ... the adept still takes the full amount of Strain". The book has no explicit "failed test still costs Strain" sentence for single-test talents; the per-use wording and the Claw Frenzy case imply it (inference). Also: an Action is required "every time it is used, which normally means every time a test is made".
+(2) Always full, unmodified damage, "no armor provides protection"; may be taken multiple times from one talent per round; "Unless specified, Strain never causes Wounds". It is plain Current Damage (counts toward Unconscious/Death ratings and blocks Wound healing, see Q031). Strain damage from blood magic is healed like other damage.
+(3) Spending Karma costs no Strain; the Karma die just adds to the result. Karma Points are separate. Exception: Battle Rites (Circle 5 talent) spends Karma to reduce a chosen talent's Strain by 1 once per round during the encounter.
+(4) Skills: skill text says "Strain:" is as for talents (p.119); General/Knowledge/Artisan skill entries print Strain 0. Whether the skill version of a talent never costs Strain is NOT stated in the extracts (app skills.json note asserts it; only language skills explicitly "do not cause Strain"). Talents with Strain 0 cost nothing. NA-action talents (always active) are not rolled.
+(5) Knack Strain: see Q033(3).
+(6) Variable Strain printed as "1 (see text)" (e.g. Claw Frenzy: 1 per attack declared), "1 per round the thread is held", per Astral Sight test etc. — the text of that talent governs. App formats: rules/talents.json "strain" is numeric only (0/1/2; some talents e.g. Claw Frenzy have no strain field); rules/skills.json numeric 0 for all; rules/knacks.json strings "0","1","2","3","N/A", null, "1 per minute", "1 per attack", "1+ (see below)", "0+ (see text)", "2+ (Special)", "1 Blood Magic Damage".
+(7) Half-Magic: no Strain mentioned in Half-Magic text (Karma allowed). Versatility/racial/item-granted talents: no Karma, but nothing removes their printed Strain (not explicit; inference).
+
+Sources:
+- text-RB-players-guide.txt:4234-4243 (p. 123, Strain)
+- text-RB-players-guide.txt:4188-4194 (p. 123, Action every use)
+- text-RB-players-guide.txt:4643-4655 (p. 134, Claw Frenzy)
+- text-RB-players-guide.txt:4130-4157 (p. 121, Karma)
+- text-RB-players-guide.txt:3900-3905 (Battle Rites)
+- text-RB-players-guide.txt:6617-6621 (skills Strain as per talents), 7298-7301, 7349-7352 (language skills no Strain)
+- text-RB-players-guide.txt:2769-2775 (p. 81-82, Half-Magic tests)
+- text-RB-players-guide.txt:6391-6401 (Versatility talent), 4155-4157
+- text-RB-players-guide.txt:14359 (Strain blocks Wound healing)
+- rules/talents.json:31,94,174 (numeric strain), rules/skills.json:7, rules/knacks.json:1751 etc.

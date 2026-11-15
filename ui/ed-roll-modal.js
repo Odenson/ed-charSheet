@@ -148,6 +148,12 @@ export class EdRollModal extends LitElement {
         this._result = null;
       } else {
         this._roll();
+        // Ordinary talent/knack roll: the auto-roll is the only roll, so its Strain
+        // is charged once here as the modal opens (updated() fires once per stepRow;
+        // Karma and Step-mod re-rolls never reach it). Not in _roll().
+        if (this.strain > 0) {
+          this.dispatchEvent(new CustomEvent('ed-strain', { detail: { amount: this.strain }, bubbles: true, composed: true }));
+        }
       }
     }
   }
@@ -621,7 +627,7 @@ export class EdRollModal extends LitElement {
               </div>`
             : ''}
           <div class="foot">
-            <span class="hint">Max on a die explodes: reroll and add.</span>
+            <span class="hint">${this.strain > 0 && !this._isSetDice() && !this._isAim() ? `${this.strain} Strain on roll. ` : ''}Max on a die explodes: reroll and add.</span>
             ${this.apply && this.apply.action !== 'knockdown-result'
               ? html`<span class="appfoot">
                   <button class="appbtn" @click=${this._apply}>${this._applyLabel()}</button>
