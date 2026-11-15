@@ -39,6 +39,8 @@ export function logRowCells(entry) {
       // Bonus Dice (e.g. Night's Edge's D4) are their own group, absent on older entries.
       r.bonusResult?.total != null && Number.isFinite(Number(r.bonusResult.total)) ? `Bonus die +${r.bonusResult.total}` : '',
       ...(r.mods ?? []).map(modText),
+      // Strain charged to Health by a talent/knack roll (absent when 0).
+      r.strain > 0 ? `Strain ${r.strain}` : '',
       // Effects that targeted this roll but could not be folded (unsupported
       // measure/operation, unreadable dice) — said plainly rather than dropped.
       ...(r.unapplied ?? []).map((u) => `⚠ Not applied: ${u.label} (${u.reason})`),

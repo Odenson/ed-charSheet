@@ -199,9 +199,9 @@ export class EdDisciplines extends LitElement {
     /* Skills tab: reuses the .trow grid so the columns line up with the talent
        table. Knacks derive from a skill or talent and render as an indented child
        row beneath the row that governs them. */
-    .knrow { display: flex; align-items: center; padding: 3px 0 3px 24px; font-size: var(--fs-small); color: var(--muted); border-bottom: 1px solid var(--border); }
-    .knrow .knsp { margin-left: auto; }
-    .knrow:last-child { border-bottom: none; }
+    .trow.knrow { padding: 3px 0; font-size: var(--fs-small); color: var(--muted); }
+    .knrow .kname { display: flex; align-items: center; min-width: 0; padding-left: 24px; }
+    .knrow .eff, .knrow .num { color: var(--muted); }
     .knrow .arr { color: var(--accent); margin-right: 6px; }
     .kninfo { width: 14px; height: 14px; border-radius: 50%; flex: none; cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
@@ -561,29 +561,36 @@ export class EdDisciplines extends LitElement {
   // One indented child row for a knack nested under the skill/talent it derives from.
   // Carries the same info control as skills/talents, opening a knack detail modal.
   _knackRow(k) {
+    const r = k.roll;
     return html`
-      <div class="knrow">
-        <span class="arr">↳</span>
-        <button
-          class="kninfo"
-          aria-label="${k.name} — view details"
-          title="${k.name} — click for details"
-          @click=${(e) => this._openModal({ type: 'knack', knack: k }, e)}
-        >i</button>
-        <span class="knlbl">${k.name}</span>
-        <span class="ktag">knack</span>
-        ${k.roll != null
-          ? html`<span class="knsp"></span><button
+      <div class="trow knrow${this.editMode ? ' edit' : ''}">
+        <span class="kname">
+          <span class="arr">↳</span>
+          <button
+            class="kninfo"
+            aria-label="${k.name} — view details"
+            title="${k.name} — click for details"
+            @click=${(e) => this._openModal({ type: 'knack', knack: k }, e)}
+          >i</button>
+          <span class="knlbl">${k.name}</span>
+          <span class="ktag">knack</span>
+        </span>
+        <span class="effcol eff" title=${k.brief ?? k.detail?.summary ?? ''}>${k.brief ?? k.detail?.summary ?? ''}</span>
+        <span class="num" title="Governing rank">${k.parentRank ?? ''}</span>
+        <span class="sd">${r ? html`${r.step} · ${r.dice}` : '—'}</span>
+        <span class="action sd">${k.action ?? ''}</span>
+        ${r != null
+          ? html`<button
               class="roll"
-              title=${`Roll ${k.name}${k.roll.karma ? ' (Karma available)' : ''}`}
+              title=${`Roll ${k.name}${r.karma ? ' (Karma available)' : ''}`}
               aria-label="Roll ${k.name}"
               @click=${() => this.dispatchEvent(new CustomEvent('ed-roll', {
-                detail: { label: k.name, step: k.roll.step, karma: this._karmaCtx(k.roll.karma), mods: k.roll.resultMods, strain: k.roll.strain },
+                detail: { label: k.name, step: r.step, karma: this._karmaCtx(r.karma), mods: r.resultMods, strain: r.strain },
                 bubbles: true,
                 composed: true,
               }))}
             >${diceIcon}</button>`
-          : nothing}
+          : html`<span></span>`}
       </div>
     `;
   }

@@ -96,6 +96,7 @@ export class EdRollModal extends LitElement {
     .optmod { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); cursor: pointer; }
     .optmod input { accent-color: var(--accent, #b26a00); }
     .modchip { font-size: var(--fs-fine); font-weight: 500; color: light-dark(#5a6472, #93a0b3); background: light-dark(#f1f2f5, #1b1f27); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+    .strainln { margin-top: 8px; font-size: var(--fs-small); font-weight: 500; text-align: right; color: light-dark(#a63a2b, #e0846f); }
     .outcome { margin-top: 8px; font-size: var(--fs-small); font-weight: 500; text-align: right; }
     .outcome.ok { color: light-dark(#3d6b4a, #82c39a); }
     .outcome.fail { color: light-dark(#a63a2b, #e0846f); }
@@ -607,6 +608,7 @@ export class EdRollModal extends LitElement {
             <span class="sub">Total</span>
             <span class="n">${this._grandTotal()}</span>
           </div>
+          ${this.strain > 0 && !this._isSetDice() && !this._isAim() ? html`<div class="strainln">Strain ${this.strain} — charged to Health</div>` : ''}
           ${this._outcome() ? html`<div class="outcome ${this._outcome().ok ? 'ok' : 'fail'}">${this._difficultyLabel() ? html`${this._difficultyLabel()} — ` : ''}${this._outcome().word}</div>` : ''}
           ${this._isSetDice()
             ? html`<div class="karma-ctl">

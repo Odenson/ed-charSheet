@@ -1738,6 +1738,8 @@ export function deriveModel(character, rules, session = {}) {
     } else if (k.parent?.type === 'skill') {
       parent = skills.find((sk) => sk.name === k.parent.name) ?? null;
     }
+    // The governing talent/skill rank, shown in the Rank column (knacks have no rank of their own).
+    k.parentRank = parent?.rank ?? null;
     k.roll = knackRoll({
       knack: k,
       parent,

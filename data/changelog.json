@@ -4,7 +4,8 @@
   "unreleased": {
     "summary": "",
     "changes": [
-      {"type": "added", "text": "Knacks with a step can now be rolled from their row, and the log and Discord show the knack name. Rolling a talent or knack now charges its Strain to Health (Take the Hit always charges 2)."}
+      {"type": "added", "text": "Knacks with a step can now be rolled from their row, and the log and Discord show the knack name. Knack rows now fill in the Effect, Rank, Step and Action columns, and rollable knacks appear in the Combat tab's Talent / Skill dropdown."},
+      {"type": "added", "text": "Rolling a talent or knack now charges its Strain to Health once when the roll opens (Take the Hit always charges 2). The roll modal, Roll Log, Combat log and Discord report show the Strain."}
     ]
   },
   "releases": [

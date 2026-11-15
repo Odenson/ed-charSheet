@@ -22,7 +22,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept has learned how to mitigate the effects of spellcasting attacks. Instead of making a Steel Thought test, the adept reduces the number of successes on a successful Spellcasting test against which Steel Thought can be applied by one. This cannot reduce an attack below two successes."
+      "summary": "The adept has learned how to mitigate the effects of spellcasting attacks. Instead of making a Steel Thought test, the adept reduces the number of successes on a successful Spellcasting test against which Steel Thought can be applied by one. This cannot reduce an attack below two successes.",
+      "brief": "Reduce spell successes instead of Steel Thought"
     },
     "Accompaniment": {
       "parents": [
@@ -35,7 +36,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept summons music to accompany their performance, granting an additional success to a successful test."
+      "summary": "Standard Effects. The adept summons music to accompany their performance, granting an additional success to a successful test.",
+      "brief": "Music adds a success"
     },
     "Acid Splash": {
       "parents": [
@@ -50,7 +52,8 @@
       "restrictions": {
         "discipline": "Elementalist"
       },
-      "summary": "Water - Acid. The Elementalist makes a flicking motion at a target within 10 yards, causing acid to manifest and weaken their armor briefly. The Elementalist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target has -2 Physical Armor until the end of the next round. Using this knack is a Simple action if the adept has used Elementalism to attempt weaving threads this round."
+      "summary": "Water - Acid. The Elementalist makes a flicking motion at a target within 10 yards, causing acid to manifest and weaken their armor briefly. The Elementalist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target has -2 Physical Armor until the end of the next round. Using this knack is a Simple action if the adept has used Elementalism to attempt weaving threads this round.",
+      "brief": "Acid lowers target's Physical Armor"
     },
     "Acrobatic Recovery": {
       "parents": [
@@ -63,7 +66,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. As a fluid part of their movement, the adept quickly leaps to their feet. The adept may use this knack in place of Dexterity for the Jumping Up combat option. If the Acrobatic Defense test is successful, the adept stands up as part of the Simple action. The strain cost includes the cost for performing this option. The normal rules for Jumping Up apply."
+      "summary": "Standard Effects. As a fluid part of their movement, the adept quickly leaps to their feet. The adept may use this knack in place of Dexterity for the Jumping Up combat option. If the Acrobatic Defense test is successful, the adept stands up as part of the Simple action. The strain cost includes the cost for performing this option. The normal rules for Jumping Up apply.",
+      "brief": "Leap to feet as Jumping Up"
     },
     "Acrobatic Strike": {
       "parents": [
@@ -76,7 +80,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept flips, spins, somersaults, or performs similar acrobatic maneuvers aggressively, making their attacks come from unexpected directions. They must be able to move and have sufficient space to maneuver in. The adept makes an Acrobatic Strike test against the highest Physical Defense of any opponents in close combat range (2 yards). Each success gives the adept a +2 bonus to the next close combat Attack test against each affected target until the end of the round. If the adept is knocked down or otherwise finds their movement restricted, they lose this bonus."
+      "summary": "The adept flips, spins, somersaults, or performs similar acrobatic maneuvers aggressively, making their attacks come from unexpected directions. They must be able to move and have sufficient space to maneuver in. The adept makes an Acrobatic Strike test against the highest Physical Defense of any opponents in close combat range (2 yards). Each success gives the adept a +2 bonus to the next close combat Attack test against each affected target until the end of the round. If the adept is knocked down or otherwise finds their movement restricted, they lose this bonus.",
+      "brief": "Acrobatic flips boost close attacks"
     },
     "Aggressive Maneuver": {
       "parents": [
@@ -89,7 +94,8 @@
       "attribute": "Dexterity",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept uses aggressive positioning to gain a superior offensive position, while not improving their defensive position. They make an Aggressive Maneuver test against the target’s Physical Defense. Each success gives the adept a +2 bonus to close combat Attack tests against the target until the end of the round. If the adept is using the Aggressive Attack combat option, they gain a +2 bonus to the Aggressive Maneuver test."
+      "summary": "The adept uses aggressive positioning to gain a superior offensive position, while not improving their defensive position. They make an Aggressive Maneuver test against the target’s Physical Defense. Each success gives the adept a +2 bonus to close combat Attack tests against the target until the end of the round. If the adept is using the Aggressive Attack combat option, they gain a +2 bonus to the Aggressive Maneuver test.",
+      "brief": "Gain offensive positioning bonus"
     },
     "Air Legs": {
       "parents": [
@@ -102,7 +108,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept keeps their footing in treacherous conditions while on an airship by making an Air Legs test in place of a Dexterity test to avoid falling off the airship or in other similar situations “aboard ship” that require a Dexterity test. This knack cannot be used when the adept is on “dry land.”"
+      "summary": "The adept keeps their footing in treacherous conditions while on an airship by making an Air Legs test in place of a Dexterity test to avoid falling off the airship or in other similar situations “aboard ship” that require a Dexterity test. This knack cannot be used when the adept is on “dry land.”",
+      "brief": "Keep footing aboard airships"
     },
     "Animal Handling": {
       "parents": [
@@ -115,7 +122,8 @@
       "attribute": "Willpower",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 192."
+      "summary": "As the skill, Player’s Guide, p. 192.",
+      "brief": "Use as the Animal Handling skill"
     },
     "Animal Tracking": {
       "parents": [
@@ -128,7 +136,8 @@
       "attribute": "Perception",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "The adept applies their knowledge of the wild to following the tracks and sign animals leave behind. In place of the Animal Tracking skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to follow the tracks and sign of animals across any terrain."
+      "summary": "The adept applies their knowledge of the wild to following the tracks and sign animals leave behind. In place of the Animal Tracking skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to follow the tracks and sign of animals across any terrain.",
+      "brief": "Track animals via Wilderness Survival"
     },
     "Anticipate Movement": {
       "parents": [
@@ -141,7 +150,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept anticipates any movements their target intends to make, and heads them off. The adept must have a higher Initiative result than their target, and makes an Anticipate Movement test against the target’s Mystic Defense. Each success reduces the target’s Movement Rate by 4 until the end of the round. If the target does move, the adept may move with the target as a Free action, intercepting them before they reach their objective, until the end of the round. This does not allow the adept to move beyond their Movement Rate."
+      "summary": "The adept anticipates any movements their target intends to make, and heads them off. The adept must have a higher Initiative result than their target, and makes an Anticipate Movement test against the target’s Mystic Defense. Each success reduces the target’s Movement Rate by 4 until the end of the round. If the target does move, the adept may move with the target as a Free action, intercepting them before they reach their objective, until the end of the round. This does not allow the adept to move beyond their Movement Rate.",
+      "brief": "Head off target's movement"
     },
     "Anticipate Spell": {
       "parents": [
@@ -219,7 +229,8 @@
           "note": "Anticipate Blow and its knacks may not be used for other purposes this round."
         }
       ],
-      "summary": "The adept anticipates mystic attacks made against them, making them more difficult to target astrally. The adept must have a higher Initiative result than their target, and makes an Anticipate Spell test against the target’s Mystic Defense. Each success adds +2 to their Mystic Defense against the target until the end of the round. The adept also gains +2 per success to the first Attack or Spellcasting test they make against the target, who may be the only target of the test. The adept can use this knack a number of times equal to their Anticipate Blow rank each round. Anticipate Blow or any associated knacks may not be used for other purposes this round."
+      "summary": "The adept anticipates mystic attacks made against them, making them more difficult to target astrally. The adept must have a higher Initiative result than their target, and makes an Anticipate Spell test against the target’s Mystic Defense. Each success adds +2 to their Mystic Defense against the target until the end of the round. The adept also gains +2 per success to the first Attack or Spellcasting test they make against the target, who may be the only target of the test. The adept can use this knack a number of times equal to their Anticipate Blow rank each round. Anticipate Blow or any associated knacks may not be used for other purposes this round.",
+      "brief": "Harder to target astrally"
     },
     "Arcane Accuracy": {
       "parents": [
@@ -234,7 +245,8 @@
       "restrictions": {
         "discipline": "Wizard"
       },
-      "summary": "The Wizard lends temporary arcane aid to an ally’s attack. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 to their next Attack test targeting Physical Defense until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round."
+      "summary": "The Wizard lends temporary arcane aid to an ally’s attack. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 to their next Attack test targeting Physical Defense until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round.",
+      "brief": "Grant ally attack bonus"
     },
     "Arcane Curses": {
       "parents": [
@@ -246,7 +258,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "For 1 Strain, the adept can spend two additional successes on an Arcane Mutterings test to maintain the effect without concentration."
+      "summary": "For 1 Strain, the adept can spend two additional successes on an Arcane Mutterings test to maintain the effect without concentration.",
+      "brief": "Sustain curse without concentration"
     },
     "Arcane Edge": {
       "parents": [
@@ -261,7 +274,8 @@
       "restrictions": {
         "discipline": "Wizard"
       },
-      "summary": "The Wizard briefly empowers an ally’s attacks with arcane energy. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 to their next Damage test using a weapon or claws until the end of the next round. Using this knack is a Simple action if the adept has used Wizardry to weave threads this round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round."
+      "summary": "The Wizard briefly empowers an ally’s attacks with arcane energy. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 to their next Damage test using a weapon or claws until the end of the next round. Using this knack is a Simple action if the adept has used Wizardry to weave threads this round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round.",
+      "brief": "Grant ally damage bonus"
     },
     "Arrow Cutting": {
       "parents": [
@@ -283,7 +297,8 @@
           }
         ]
       },
-      "summary": "The adept can spend an additional success on an Avoid Blow test to deflect the missile fired at them in such a way as to render it useless. This doesn’t require the adept to be using a weapon."
+      "summary": "The adept can spend an additional success on an Avoid Blow test to deflect the missile fired at them in such a way as to render it useless. This doesn’t require the adept to be using a weapon.",
+      "brief": "Deflect missile, ruining it"
     },
     "Assess Intentions": {
       "parents": [
@@ -296,7 +311,8 @@
       "attribute": "Charisma",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept discerns the true intentions of a Namegiver who they have been conversing with for at least ten minutes. The gamemaster makes a secret Assess Intentions test against the target’s Social Defense for the adept. If successful, the target’s true feelings about the matter being discussed are revealed. “The target doesn’t know what to feel,” or “the target hasn’t made any plans yet,” are both valid answers, though if the target is leaning one way or another on the issue, which should be specified. If the test fails, the reading is inaccurate."
+      "summary": "The adept discerns the true intentions of a Namegiver who they have been conversing with for at least ten minutes. The gamemaster makes a secret Assess Intentions test against the target’s Social Defense for the adept. If successful, the target’s true feelings about the matter being discussed are revealed. “The target doesn’t know what to feel,” or “the target hasn’t made any plans yet,” are both valid answers, though if the target is leaning one way or another on the issue, which should be specified. If the test fails, the reading is inaccurate.",
+      "brief": "Read a Namegiver's true intent"
     },
     "Astral Stealth": {
       "parents": [
@@ -309,7 +325,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept has learned to further conceal their actions and their Stealthy Stride result also conceals them in astral space."
+      "summary": "Standard Effects. The adept has learned to further conceal their actions and their Stealthy Stride result also conceals them in astral space.",
+      "brief": "Stealthy Stride hides astrally"
     },
     "Astral Strain": {
       "parents": [
@@ -324,7 +341,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "The Nethermancer uses a minor hex on a target within 10 yards, weakening their pattern. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Mystic Defense until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round."
+      "summary": "The Nethermancer uses a minor hex on a target within 10 yards, weakening their pattern. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Mystic Defense until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round.",
+      "brief": "Hex lowers target's Mystic Armor"
     },
     "Astral Survey": {
       "parents": [
@@ -337,7 +355,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. Using equal parts observation, logic, and divination magic, the adept also examines astral evidence to determine the answers to questions relating to their investigation."
+      "summary": "Standard Effects. Using equal parts observation, logic, and divination magic, the adept also examines astral evidence to determine the answers to questions relating to their investigation.",
+      "brief": "Examine astral evidence for answers"
     },
     "Astral Ward": {
       "parents": [
@@ -352,7 +371,8 @@
       "restrictions": {
         "discipline": "Wizard"
       },
-      "summary": "The Wizard creates a brief ward on the pattern of an ally within 10 yards. The Wizard makes a Spellcasting (6) test against a willing target. If successful, the target gains +2 Mystic Defense until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round."
+      "summary": "The Wizard creates a brief ward on the pattern of an ally within 10 yards. The Wizard makes a Spellcasting (6) test against a willing target. If successful, the target gains +2 Mystic Defense until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round.",
+      "brief": "Grant ally Mystic Armor"
     },
     "Augment Ally’s Form": {
       "parents": [
@@ -372,7 +392,8 @@
           "Cavalryman"
         ]
       },
-      "summary": "This knack may be purchased multiple times. Each time it is purchased, the adept must select a different animal companion. The adept performs a week long ritual, eight hours a day, with their animal companion, changing their form. This ritual applies a Mask to the animal companion, or changes the Mask already applied; the animal companion cannot have more than one Mask. The animal companion must still be a viable animal companion after the Mask is applied and the Mask cannot increase the effective Circle of the base creature."
+      "summary": "This knack may be purchased multiple times. Each time it is purchased, the adept must select a different animal companion. The adept performs a week long ritual, eight hours a day, with their animal companion, changing their form. This ritual applies a Mask to the animal companion, or changes the Mask already applied; the animal companion cannot have more than one Mask. The animal companion must still be a viable animal companion after the Mask is applied and the Mask cannot increase the effective Circle of the base creature.",
+      "brief": "Ritual to enhance animal companion"
     },
     "Beast Summons": {
       "parents": [
@@ -385,7 +406,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept has developed a connection or knowledge of creatures and can summon them. The adept thinks of a creature they are familiar with enough to recognize on sight. This can be broad, such as “bird”, or specific, “storm crow”, at the adept’s discretion. The adept makes a Beast Summons test and compares it to the Social Defense of the nearest applicable creature within Call Animal Companion rank ×100 yards. If successful, the creature moves toward the adept at its fastest reasonable speed. If it fails, the result is compared to the Social Defense of the next closest applicable creature until a creature is summoned or all options have been exhausted. This knack does not improve the attitude of the summoned creature, nor does it prevent allies of the summoned creature from following. If the adept wants to summon additional creatures, reduce the test result by 1 for each additional creature, up to Call Animal Companion rank total creatures."
+      "summary": "The adept has developed a connection or knowledge of creatures and can summon them. The adept thinks of a creature they are familiar with enough to recognize on sight. This can be broad, such as “bird”, or specific, “storm crow”, at the adept’s discretion. The adept makes a Beast Summons test and compares it to the Social Defense of the nearest applicable creature within Call Animal Companion rank ×100 yards. If successful, the creature moves toward the adept at its fastest reasonable speed. If it fails, the result is compared to the Social Defense of the next closest applicable creature until a creature is summoned or all options have been exhausted. This knack does not improve the attitude of the summoned creature, nor does it prevent allies of the summoned creature from following. If the adept wants to summon additional creatures, reduce the test result by 1 for each additional creature, up to Call Animal Companion rank total creatures.",
+      "brief": "Summon a familiar creature"
     },
     "Befuddle": {
       "parents": [
@@ -400,7 +422,8 @@
       "restrictions": {
         "discipline": "Illusionist"
       },
-      "summary": "The Illusionist taps their temple while staring at a target within 10 yards, causing momentary confusion. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Social Defense until the end of the next round. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round."
+      "summary": "The Illusionist taps their temple while staring at a target within 10 yards, causing momentary confusion. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Social Defense until the end of the next round. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round.",
+      "brief": "Briefly confuse a target"
     },
     "Bleed": {
       "parents": [
@@ -415,7 +438,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "The Nethermancer scrapes a nail against their wrist while staring at a target within 10 yards, briefly weakening their body. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Wound Threshold until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round."
+      "summary": "The Nethermancer scrapes a nail against their wrist while staring at a target within 10 yards, briefly weakening their body. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Wound Threshold until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round.",
+      "brief": "Weaken target's body briefly"
     },
     "Body Blade": {
       "parents": [
@@ -428,7 +452,8 @@
       "attribute": "Strength",
       "skillUse": "None",
       "restrictions": {},
-      "summary": "The adept temporarily transforms one of their limbs into a weapon, using the Body Blade Step for damage tests in unarmed combat. The transformation lasts for one attack, but the knack may be used for each unarmed attack during the round. This counts as a weapon for the purposes of targeting, but cannot be disarmed."
+      "summary": "The adept temporarily transforms one of their limbs into a weapon, using the Body Blade Step for damage tests in unarmed combat. The transformation lasts for one attack, but the knack may be used for each unarmed attack during the round. This counts as a weapon for the purposes of targeting, but cannot be disarmed.",
+      "brief": "Limb becomes a weapon"
     },
     "Bribery": {
       "parents": [
@@ -441,7 +466,8 @@
       "attribute": "Charisma",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "Though most societies publicly disapprove of bribes, those same societies harbor many members more than willing to take them. Bribery is discreetly buying favors. Adepts with this knack can use any number of successful methods to disguise the exchange. The adept makes a Bribery test against the target’s Social Defense, +1 for each additional target. If successful, the target does the favor asked. Small favors require a small amount of money, for example, 5 silver or the equivalent of a few hours’ wages for each target. For large favors, the adept must produce a day’s earnings for the targets. Larger-than-necessary bribes may receive a bonus to the Bribery test at the gamemaster’s discretion."
+      "summary": "Though most societies publicly disapprove of bribes, those same societies harbor many members more than willing to take them. Bribery is discreetly buying favors. Adepts with this knack can use any number of successful methods to disguise the exchange. The adept makes a Bribery test against the target’s Social Defense, +1 for each additional target. If successful, the target does the favor asked. Small favors require a small amount of money, for example, 5 silver or the equivalent of a few hours’ wages for each target. For large favors, the adept must produce a day’s earnings for the targets. Larger-than-necessary bribes may receive a bonus to the Bribery test at the gamemaster’s discretion.",
+      "brief": "Buy favors discreetly"
     },
     "Burst of Speed": {
       "parents": [
@@ -456,7 +482,8 @@
       "restrictions": {
         "discipline": "Elementalist"
       },
-      "summary": "Air. The Elementalist briefly imbues an ally within 10 yards with air, granting them brief fleetness. The Elementalist makes a Spellcasting (6) test against a willing target. If successful, the target gains +4 Movement Rate until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round."
+      "summary": "Air. The Elementalist briefly imbues an ally within 10 yards with air, granting them brief fleetness. The Elementalist makes a Spellcasting (6) test against a willing target. If successful, the target gains +4 Movement Rate until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round.",
+      "brief": "Grant ally brief speed"
     },
     "Call Any Missile": {
       "parents": [
@@ -469,7 +496,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept is no longer restricted to ammunition or weapons they fired or threw and may call all thrown or fired objects within Call Missile Rank x 20 yards. The result determines the number of missiles called as usual. The adept may also direct this knack against a specific opponent, allowing them to steal any unsecured missiles or throwing weapons they have on their person. When used in this way, the adept makes a Call Missile test against the target’s Mystic Defense. Each success calls a single throwing weapon or 3 missiles from their respective containers. Objects secured or “locked away” (secured by a rope or behind a closed door) cannot be retrieved as per normal."
+      "summary": "The adept is no longer restricted to ammunition or weapons they fired or threw and may call all thrown or fired objects within Call Missile Rank x 20 yards. The result determines the number of missiles called as usual. The adept may also direct this knack against a specific opponent, allowing them to steal any unsecured missiles or throwing weapons they have on their person. When used in this way, the adept makes a Call Missile test against the target’s Mystic Defense. Each success calls a single throwing weapon or 3 missiles from their respective containers. Objects secured or “locked away” (secured by a rope or behind a closed door) cannot be retrieved as per normal.",
+      "brief": "Recall any missile in range"
     },
     "Claw Riposte": {
       "parents": [
@@ -482,7 +510,8 @@
       "attribute": "Dexterity",
       "skillUse": null,
       "restrictions": {},
-      "summary": "Standard Effects. The adept can use Riposte against unarmed attacks, including creature attacks."
+      "summary": "Standard Effects. The adept can use Riposte against unarmed attacks, including creature attacks.",
+      "brief": "Riposte unarmed attacks"
     },
     "Claw Tool": {
       "parents": [
@@ -494,7 +523,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept gains more control over their Claw Shape ability enabling them to use it outside of combat. They gain a +2 bonus to any test which might benefit from this ability such as crafting, intimidation, or climbing tests. Applicable tests are at the discretion of the GM. The adept can revert their hands back to normal at any time."
+      "summary": "The adept gains more control over their Claw Shape ability enabling them to use it outside of combat. They gain a +2 bonus to any test which might benefit from this ability such as crafting, intimidation, or climbing tests. Applicable tests are at the discretion of the GM. The adept can revert their hands back to normal at any time.",
+      "brief": "Use Claw Shape outside combat"
     },
     "Cold Case": {
       "parents": [
@@ -507,7 +537,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The Difficulty Number is increased by +5, but when using this knack to evaluate evidence more than a week old, add +1 to the Difficulty 94 Number for each week after the first. This knack may be combined with other Evidence Analysis Knacks."
+      "summary": "Standard Effects. The Difficulty Number is increased by +5, but when using this knack to evaluate evidence more than a week old, add +1 to the Difficulty 94 Number for each week after the first. This knack may be combined with other Evidence Analysis Knacks.",
+      "brief": "Evaluate old evidence"
     },
     "Control the Tempo": {
       "parents": [
@@ -520,7 +551,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept knows how to get the most from every movement in close combat, sacrificing offense in the process. If the adept is using Defensive Stance, they may apply bonuses from Control the Tempo and Defensive Stance to active defense tests from adjacent opponents’ attacks that target Physical Defense (e.g. Avoid Blow and Riposte). This knack may be combined with other Acrobatic Defense knacks."
+      "summary": "Standard Effects. The adept knows how to get the most from every movement in close combat, sacrificing offense in the process. If the adept is using Defensive Stance, they may apply bonuses from Control the Tempo and Defensive Stance to active defense tests from adjacent opponents’ attacks that target Physical Defense (e.g. Avoid Blow and Riposte). This knack may be combined with other Acrobatic Defense knacks.",
+      "brief": "Defensive Stance bonus in melee"
     },
     "Courage": {
       "parents": [
@@ -535,7 +567,8 @@
       "restrictions": {
         "discipline": "Illusionist"
       },
-      "summary": "The Illusionist gives an ally within 10 yards an encouraging smile. The Illusionist makes a Spellcasting (6) test against a willing target. If successful, the target gains +1 per success to their next Initiative test until the end of the next round if their declared action is a close combat Attack test. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round."
+      "summary": "The Illusionist gives an ally within 10 yards an encouraging smile. The Illusionist makes a Spellcasting (6) test against a willing target. If successful, the target gains +1 per success to their next Initiative test until the end of the next round if their declared action is a close combat Attack test. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round.",
+      "brief": "Grant ally bravery bonus"
     },
     "Craft Blood Charm": {
       "parents": [
@@ -549,7 +582,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "The adept can use Patterncraft to create blood charms."
+      "summary": "The adept can use Patterncraft to create blood charms.",
+      "brief": "Create blood charms"
     },
     "Craft Common Magic Item": {
       "parents": [
@@ -569,7 +603,8 @@
           "Wizard"
         ]
       },
-      "summary": "The adept can use Patterncraft to create common magic items."
+      "summary": "The adept can use Patterncraft to create common magic items.",
+      "brief": "Create common magic items"
     },
     "Craft Poison": {
       "parents": [
@@ -584,7 +619,8 @@
       "restrictions": {
         "note": "Any Discipline"
       },
-      "summary": "The adept can use the Scout Weaving or Thief Weaving to create poisons (and only poisons) as though they had Alchemy and their Half-Magic allows them to identify poisons with a Perception-based Half-Magic test."
+      "summary": "The adept can use the Scout Weaving or Thief Weaving to create poisons (and only poisons) as though they had Alchemy and their Half-Magic allows them to identify poisons with a Perception-based Half-Magic test.",
+      "brief": "Create poisons via weaving"
     },
     "Create Orichalcum": {
       "parents": [
@@ -605,7 +641,8 @@
           "Weaponsmith"
         ]
       },
-      "summary": "The adept can use Elementalism or Thread Smithing to purify and create orichalcum from True elements. Skill Use: The non-magical version of this knack can only purify orichalcum, not create it."
+      "summary": "The adept can use Elementalism or Thread Smithing to purify and create orichalcum from True elements. Skill Use: The non-magical version of this knack can only purify orichalcum, not create it.",
+      "brief": "Purify and create orichalcum"
     },
     "Defiant Shout": {
       "parents": [
@@ -618,7 +655,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept issues a defiant shout from force of will alone against a target within Battle Shout rank ×5 yards by making a Defiant Shout test against the target’s Social Defense. If successful, the target cannot use any fear-based abilities (such as Battle Shout, Frighten, or Terror) for one round per success. This knack is considered to be a use of Battle Shout for increasing Difficulty Number."
+      "summary": "The adept issues a defiant shout from force of will alone against a target within Battle Shout rank ×5 yards by making a Defiant Shout test against the target’s Social Defense. If successful, the target cannot use any fear-based abilities (such as Battle Shout, Frighten, or Terror) for one round per success. This knack is considered to be a use of Battle Shout for increasing Difficulty Number.",
+      "brief": "Shout down a target"
     },
     "Deflect Blow": {
       "parents": [
@@ -630,7 +668,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept achieves greater skill at defensive fighting. When using the Defensive Stance combat option, they can freely determine the bonus to Physical Defense, up to a bonus equal to their Melee Weapons Rank. The penalty to Action tests is equal to the bonus to Physical Defense. For example, a character with a Melee Weapons Rank of 9 can receive a bonus ranging from +1 to +9, and receives a penalty from –1 to –9 as appropriate. Deflect Blow requires one use of the Melee Weapons talent in the round this knack is used, otherwise the adept suffers the penalty in the following round from overextending themselves, without receiving the Defense bonus. The effects of this knack end immediately if the adept is disarmed."
+      "summary": "The adept achieves greater skill at defensive fighting. When using the Defensive Stance combat option, they can freely determine the bonus to Physical Defense, up to a bonus equal to their Melee Weapons Rank. The penalty to Action tests is equal to the bonus to Physical Defense. For example, a character with a Melee Weapons Rank of 9 can receive a bonus ranging from +1 to +9, and receives a penalty from –1 to –9 as appropriate. Deflect Blow requires one use of the Melee Weapons talent in the round this knack is used, otherwise the adept suffers the penalty in the following round from overextending themselves, without receiving the Defense bonus. The effects of this knack end immediately if the adept is disarmed.",
+      "brief": "Freer Defensive Stance bonus"
     },
     "Deflection": {
       "parents": [
@@ -645,7 +684,8 @@
       "restrictions": {
         "discipline": "Wizard"
       },
-      "summary": "The Wizard enhances an ally’s ability to evade attack. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 Physical Defense until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round."
+      "summary": "The Wizard enhances an ally’s ability to evade attack. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 Physical Defense until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round.",
+      "brief": "Grant ally Physical Defense"
     },
     "Deny Terrain": {
       "parents": [
@@ -658,7 +698,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept flips, spins, somersaults, or performs similar acrobatic maneuvers, harrying their opponents and reducing their ability to move. The adept must have sufficient space to maneuver and move and use the Defensive Stance combat option and makes a Deny Terrain test against the highest Physical Defense of all adjacent opponents. Each success either reduces the Movement Rate of each affected target by 4 or the opponent is Harried until the end of the round. Targets choose their condition. If the adept is knocked down or otherwise finds their movement restricted, the effect ends."
+      "summary": "The adept flips, spins, somersaults, or performs similar acrobatic maneuvers, harrying their opponents and reducing their ability to move. The adept must have sufficient space to maneuver and move and use the Defensive Stance combat option and makes a Deny Terrain test against the highest Physical Defense of all adjacent opponents. Each success either reduces the Movement Rate of each affected target by 4 or the opponent is Harried until the end of the round. Targets choose their condition. If the adept is knocked down or otherwise finds their movement restricted, the effect ends.",
+      "brief": "Acrobatically restrict opponent movement"
     },
     "Design Enchanting Pattern": {
       "parents": [
@@ -671,7 +712,8 @@
       "step": null,
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept can use Patterncraft or Thread Smithing to design and modify enchanting patterns. Skill Use: This can only be applied to alchemical magic items and must be learned separately for each different category (e.g. common magic items, healing aids, etc.)."
+      "summary": "The adept can use Patterncraft or Thread Smithing to design and modify enchanting patterns. Skill Use: This can only be applied to alchemical magic items and must be learned separately for each different category (e.g. common magic items, healing aids, etc.).",
+      "brief": "Design enchanting patterns"
     },
     "Destructive Shout": {
       "parents": [
@@ -684,7 +726,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept channels their anger into a shout, making a Destructive Shout (6) test. Each success gives a +3 bonus to the next Damage test against an inanimate object in the same round."
+      "summary": "The adept channels their anger into a shout, making a Destructive Shout (6) test. Each success gives a +3 bonus to the next Damage test against an inanimate object in the same round.",
+      "brief": "Shout boosts damage to objects"
     },
     "Detect Poison": {
       "parents": [
@@ -697,7 +740,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept senses the presence of poison in food, drink, and even the air, within Danger Sense rank yards by making a Detect Poison test against the higher of the poison’s Step or the Mystic Defense of the creature or character (in the case of a poison stinger or poisoned weapon). If successful, they detect poison on the target substance, object, or character. If a poison is carried in a tightly sealed container, like a vial or flask, or if the poison comprises a natural part of an animal, such as a spider’s or scorpion’s venom, the adept requires an additional success on their Detect Poison test to detect the poison’s presence."
+      "summary": "The adept senses the presence of poison in food, drink, and even the air, within Danger Sense rank yards by making a Detect Poison test against the higher of the poison’s Step or the Mystic Defense of the creature or character (in the case of a poison stinger or poisoned weapon). If successful, they detect poison on the target substance, object, or character. If a poison is carried in a tightly sealed container, like a vial or flask, or if the poison comprises a natural part of an animal, such as a spider’s or scorpion’s venom, the adept requires an additional success on their Detect Poison test to detect the poison’s presence.",
+      "brief": "Sense poison nearby"
     },
     "Detect Spirit": {
       "parents": [
@@ -712,7 +756,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept uses divination magic and their natural connection to spirits to detect any in the area. To do so, the adept makes a Detect Spirit test against the Mystic Defense of all spirits within 30 yards. If successful, the adept can sense the presence of the spirit and use spells or talents to communicate and interact with the spirit. Unlike similar Half-Magic, this knack is not always on, but it can detect any type of spirit. This knack does not provide the adept with the type of spirit detected."
+      "summary": "The adept uses divination magic and their natural connection to spirits to detect any in the area. To do so, the adept makes a Detect Spirit test against the Mystic Defense of all spirits within 30 yards. If successful, the adept can sense the presence of the spirit and use spells or talents to communicate and interact with the spirit. Unlike similar Half-Magic, this knack is not always on, but it can detect any type of spirit. This knack does not provide the adept with the type of spirit detected.",
+      "brief": "Sense nearby spirits"
     },
     "Detect True Element": {
       "parents": [
@@ -727,7 +772,8 @@
       "attribute": "Perception",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept uses divination magic and their natural connection to the elements to detect any pockets of True elements in the area. To do so, the adept makes a Detect True Element test against the Detection difficulty of all elemental pockets within Rank x 100 yards. If successful, the adept knows the rough direction and intensity of any pockets or lodes. Intensity is a combination of the size and purity. See the Enchanting chapter for more details on this knack. Elementalists have this ability as part of their Half-Magic and are not required to learn this knack. Skill Use: The non-magical version of this talent is five separate skills, one for each element, and the character must have an appropriate tool to detect the True element."
+      "summary": "The adept uses divination magic and their natural connection to the elements to detect any pockets of True elements in the area. To do so, the adept makes a Detect True Element test against the Detection difficulty of all elemental pockets within Rank x 100 yards. If successful, the adept knows the rough direction and intensity of any pockets or lodes. Intensity is a combination of the size and purity. See the Enchanting chapter for more details on this knack. Elementalists have this ability as part of their Half-Magic and are not required to learn this knack. Skill Use: The non-magical version of this talent is five separate skills, one for each element, and the character must have an appropriate tool to detect the True element.",
+      "brief": "Sense True element pockets"
     },
     "Detect Weapon": {
       "parents": [
@@ -740,7 +786,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept detects hidden weapons by making a Detect Weapon test and comparing the result against the Detection Difficulty of any concealed weapons within short range of visibility (see the Gamemaster’s Guide, p. 135). If successful, they spot the weapon and learn its type, but are unaware of any magical properties it may possess. Once the adept notices a concealed weapon, they become aware of its presence and are alert to possible treachery. As a result, they cannot be surprised by an attack made with that weapon (see Conceal Object, Player’s Guide p. 135) unless the weapon’s owner takes different measures to gain surprise against them."
+      "summary": "The adept detects hidden weapons by making a Detect Weapon test and comparing the result against the Detection Difficulty of any concealed weapons within short range of visibility (see the Gamemaster’s Guide, p. 135). If successful, they spot the weapon and learn its type, but are unaware of any magical properties it may possess. Once the adept notices a concealed weapon, they become aware of its presence and are alert to possible treachery. As a result, they cannot be surprised by an attack made with that weapon (see Conceal Object, Player’s Guide p. 135) unless the weapon’s owner takes different measures to gain surprise against them.",
+      "brief": "Spot hidden weapons"
     },
     "Dirty Fighting": {
       "parents": [
@@ -753,7 +800,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept uses whatever tactics they can to gain an advantage on their opponent. The adept makes a Dirty Fighting test against the target’s Social Defense. Each success gives a +2 to the next close combat Attack test this round against the target. The adept may not use or have already used Surprise Strike this round."
+      "summary": "The adept uses whatever tactics they can to gain an advantage on their opponent. The adept makes a Dirty Fighting test against the target’s Social Defense. Each success gives a +2 to the next close combat Attack test this round against the target. The adept may not use or have already used Surprise Strike this round.",
+      "brief": "Fight dirty for bonus successes"
     },
     "Doubt": {
       "parents": [
@@ -768,7 +816,8 @@
       "restrictions": {
         "discipline": "Illusionist"
       },
-      "summary": "The Illusionist frowns at a target within 10 yards causing them to experience momentary doubt over their course of action. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -1 per success to their next Initiative test. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round."
+      "summary": "The Illusionist frowns at a target within 10 yards causing them to experience momentary doubt over their course of action. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -1 per success to their next Initiative test. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round.",
+      "brief": "Instill momentary doubt"
     },
     "Efficient Armor Forging": {
       "parents": [
@@ -783,7 +832,8 @@
       "restrictions": {
         "discipline": "Weaponsmith"
       },
-      "summary": "Standard Effects. The adept can improve a number of pieces of armor equal to their Forge Armor rank at a time. All affected armor must be initiated at the same time and a test is made for each armor."
+      "summary": "Standard Effects. The adept can improve a number of pieces of armor equal to their Forge Armor rank at a time. All affected armor must be initiated at the same time and a test is made for each armor.",
+      "brief": "Forge several armors at once"
     },
     "Efficient Weapon Forging": {
       "parents": [
@@ -798,7 +848,8 @@
       "restrictions": {
         "discipline": "Weaponsmith"
       },
-      "summary": "Standard Effects. The adept can improve a number of weapons equal to their Forge Weapon rank at a time. All affected weapons must be initiated at the same time and a test is made for each weapon."
+      "summary": "Standard Effects. The adept can improve a number of weapons equal to their Forge Weapon rank at a time. All affected weapons must be initiated at the same time and a test is made for each weapon.",
+      "brief": "Forge several weapons at once"
     },
     "Empathic Command": {
       "parents": [
@@ -811,7 +862,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept commands and calms their trusted animal companion through emotion and mental imagery. They need not speak any commands, but must be within Empathic Command Rank yards of their animal companion. The adept may make an Empathic Command test in place of their animal companion’s Willpower test to resist the effects of fear, charm, or other spells and talents directed against the animal companion which allow a test."
+      "summary": "The adept commands and calms their trusted animal companion through emotion and mental imagery. They need not speak any commands, but must be within Empathic Command Rank yards of their animal companion. The adept may make an Empathic Command test in place of their animal companion’s Willpower test to resist the effects of fear, charm, or other spells and talents directed against the animal companion which allow a test.",
+      "brief": "Wordlessly command animal companion"
     },
     "Evaluate": {
       "parents": [
@@ -824,7 +876,8 @@
       "attribute": "Perception",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "The adept has a shrewd sense for the true market value of an object. The adept examines the object and makes a Haggle test against the item’s Mystic Defense. On one success, they learn the item’s approximate price. Additional successes may disclose more detailed information based on the local or global economy, at the gamemaster’s discretion. On two successes, the adept also learns the item’s hidden value, if any, not readily apparent to the casual observer (for example if it is worth more to collectors). When evaluating magical items, the adept learns if the item is magical on three successes, but not the effect or purpose of its enchantment."
+      "summary": "The adept has a shrewd sense for the true market value of an object. The adept examines the object and makes a Haggle test against the item’s Mystic Defense. On one success, they learn the item’s approximate price. Additional successes may disclose more detailed information based on the local or global economy, at the gamemaster’s discretion. On two successes, the adept also learns the item’s hidden value, if any, not readily apparent to the casual observer (for example if it is worth more to collectors). When evaluating magical items, the adept learns if the item is magical on three successes, but not the effect or purpose of its enchantment.",
+      "brief": "Judge an item's market value"
     },
     "Extend Range": {
       "parents": [
@@ -836,7 +889,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Instead of extending their weapon’s maximum distance beyond Long Range, the adept extends the effective Short Range distance of their weapon to the maximum Long Range, suffering no distance penalty to their Attack test."
+      "summary": "Instead of extending their weapon’s maximum distance beyond Long Range, the adept extends the effective Short Range distance of their weapon to the maximum Long Range, suffering no distance penalty to their Attack test.",
+      "brief": "Stretch short range to long"
     },
     "Eye Gouge": {
       "parents": [
@@ -848,7 +902,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "The adept can spend two additional successes on an Attack test to inflict Partial Blindness on the target until the end of the next round. If the target is affected by this ability again in the same conflict, it inflicts Full Blindness. If the damage causes a Wound, the blindness lasts until the Wound is healed."
+      "summary": "The adept can spend two additional successes on an Attack test to inflict Partial Blindness on the target until the end of the next round. If the target is affected by this ability again in the same conflict, it inflicts Full Blindness. If the damage causes a Wound, the blindness lasts until the Wound is healed.",
+      "brief": "Partially blind target"
     },
     "Feint": {
       "parents": [
@@ -861,7 +916,8 @@
       "attribute": "Charisma",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept makes a Feint test against the target’s Social Defense. If successful, the adept deceives the target and they are Harried for the adept’s next Attack test against them. Each subsequent use of this talent against a target requires an additional success. If the adept is using the Defensive Stance combat option, they gain a +2 bonus to the Feint test and the target is Harried until the end of the round."
+      "summary": "The adept makes a Feint test against the target’s Social Defense. If successful, the adept deceives the target and they are Harried for the adept’s next Attack test against them. Each subsequent use of this talent against a target requires an additional success. If the adept is using the Defensive Stance combat option, they gain a +2 bonus to the Feint test and the target is Harried until the end of the round.",
+      "brief": "Deceive target for attack bonus"
     },
     "Flare": {
       "parents": [
@@ -875,7 +931,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept causes their missile or thrown weapon to shine brightly in their target’s eyes. If the Attack test is successful, the target suffers from Partial Blindness until the end of their next turn."
+      "summary": "Standard Effects. The adept causes their missile or thrown weapon to shine brightly in their target’s eyes. If the Attack test is successful, the target suffers from Partial Blindness until the end of their next turn.",
+      "brief": "Missile dazzles target"
     },
     "Flirting": {
       "parents": [
@@ -888,7 +945,8 @@
       "attribute": "Charisma",
       "skillUse": null,
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 196."
+      "summary": "As the skill, Player’s Guide, p. 196.",
+      "brief": "Use as the Flirting skill"
     },
     "Fluster": {
       "parents": [
@@ -903,7 +961,8 @@
       "restrictions": {
         "discipline": "Illusionist"
       },
-      "summary": "The Illusionist makes an expression at a target within 10 yards, causing them to become briefly flustered. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 to their next Action test until the end of the next round. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round."
+      "summary": "The Illusionist makes an expression at a target within 10 yards, causing them to become briefly flustered. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 to their next Action test until the end of the next round. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round.",
+      "brief": "Briefly fluster a target"
     },
     "Foresee Aggression": {
       "parents": [
@@ -916,7 +975,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept uses their knowledge of the future to improve their defenses, eschewing any offensive benefits. If the adept is using Defensive Stance, they may apply bonuses from Foresee Aggression and Defensive Stance to active defense tests (e.g. Avoid Blow, Riposte, and Steel Thought) against effects from opponents successfully targeted by Foresee Aggression. The adept does not gain bonuses to Attack tests. This knack may be combined with other Anticipate Blow knacks."
+      "summary": "Standard Effects. The adept uses their knowledge of the future to improve their defenses, eschewing any offensive benefits. If the adept is using Defensive Stance, they may apply bonuses from Foresee Aggression and Defensive Stance to active defense tests (e.g. Avoid Blow, Riposte, and Steel Thought) against effects from opponents successfully targeted by Foresee Aggression. The adept does not gain bonuses to Attack tests. This knack may be combined with other Anticipate Blow knacks.",
+      "brief": "Defensive Stance via foresight"
     },
     "Forgery": {
       "parents": [
@@ -929,7 +989,8 @@
       "attribute": "Dexterity",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 197."
+      "summary": "As the skill, Player’s Guide, p. 197.",
+      "brief": "Use as the Forgery skill"
     },
     "Fortify Armor": {
       "parents": [
@@ -944,7 +1005,8 @@
       "restrictions": {
         "discipline": "Elementalist"
       },
-      "summary": "Earth - Metal . The Elementalist infuses an ally or their armor with metal briefly, strengthening them against physical attack. The Elementalist touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 Physical Armor until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round."
+      "summary": "Earth - Metal . The Elementalist infuses an ally or their armor with metal briefly, strengthening them against physical attack. The Elementalist touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 Physical Armor until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round.",
+      "brief": "Metal grants ally Physical Armor"
     },
     "Fortify Pattern": {
       "parents": [
@@ -959,7 +1021,8 @@
       "restrictions": {
         "discipline": "Wizard"
       },
-      "summary": "The Wizard uses arcane energy to fortify an ally’s pattern against mystic damage. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 Mystic Armor until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round."
+      "summary": "The Wizard uses arcane energy to fortify an ally’s pattern against mystic damage. The Wizard touches a willing target and makes a Spellcasting (6) test. If successful, the target gains +2 Mystic Armor until the end of the next round. Using this knack is a Simple action if the adept used Wizardry to attempt weaving threads this round.",
+      "brief": "Grant ally Mystic Armor"
     },
     "Getting to Know You": {
       "parents": [
@@ -971,7 +1034,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "The adept can spend additional successes on a Conversation test for 1 Strain per success to learn more about the target. Each success spent in this way allows the adept to learn one of the targets fears, personality traits, or wants."
+      "summary": "The adept can spend additional successes on a Conversation test for 1 Strain per success to learn more about the target. Each success spent in this way allows the adept to learn one of the targets fears, personality traits, or wants.",
+      "brief": "Learn more from conversation"
     },
     "Ghost Master Ritual": {
       "parents": [
@@ -983,7 +1047,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept summons the ghost of a practitioner of his Discipline as a trainer for Circle advancement. See Ghost Masters, p. 19, for more information. Unlike other Thread Weaving talent knacks available to all types of Thread Weaving, the Ghost Master Ritual talent knack is specific to the Thread Weaving talent of each Discipline, as the ritual to be performed differs, and if the knack is learned from a tutor, the tutor must follow that Discipline. For example, an adept who is a Warrior and Archer must learn this talent knack twice, once from a Warrior tutor and once from an Archer tutor, to be able to summon a ghost master for both Disciplines."
+      "summary": "The adept summons the ghost of a practitioner of his Discipline as a trainer for Circle advancement. See Ghost Masters, p. 19, for more information. Unlike other Thread Weaving talent knacks available to all types of Thread Weaving, the Ghost Master Ritual talent knack is specific to the Thread Weaving talent of each Discipline, as the ritual to be performed differs, and if the knack is learned from a tutor, the tutor must follow that Discipline. For example, an adept who is a Warrior and Archer must learn this talent knack twice, once from a Warrior tutor and once from an Archer tutor, to be able to summon a ghost master for both Disciplines.",
+      "brief": "Summon a ghost master trainer"
     },
     "Give Ground": {
       "parents": [
@@ -996,7 +1061,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "The adept may spend additional successes to retreat two yards per success. The adept gains +1 to Physical Defense until the end of the next round for every two yards ceded through this special maneuver. Movement through this special maneuver does not trigger effects from opponents, but opponents are allowed to follow the adept up to their remaining Movement Rate as a Free action. The adept is limited to Rank yards."
+      "summary": "The adept may spend additional successes to retreat two yards per success. The adept gains +1 to Physical Defense until the end of the next round for every two yards ceded through this special maneuver. Movement through this special maneuver does not trigger effects from opponents, but opponents are allowed to follow the adept up to their remaining Movement Rate as a Free action. The adept is limited to Rank yards.",
+      "brief": "Retreat for Physical Defense"
     },
     "Glide": {
       "parents": [
@@ -1009,7 +1075,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept can travel farther when using Wind Catcher. Instead of being allowed to move as far horizontally as vertically, they can now move three times as far horizontally as they move vertically."
+      "summary": "Standard Effects. The adept can travel farther when using Wind Catcher. Instead of being allowed to move as far horizontally as vertically, they can now move three times as far horizontally as they move vertically.",
+      "brief": "Wind Catcher travels farther"
     },
     "Grand Entrance": {
       "parents": [
@@ -1022,7 +1089,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept must make a grand gesture when entering a room by dramatically opening doors, sweeping aside curtains, etc. Once inside, the adept may make a First Impression test against the highest Social Defense of the room’s occupants. With two successes, the Attitude of all occupants the adept has not previously met improves toward the adept by one degree. With at least three successes, it improves by two degrees."
+      "summary": "The adept must make a grand gesture when entering a room by dramatically opening doors, sweeping aside curtains, etc. Once inside, the adept may make a First Impression test against the highest Social Defense of the room’s occupants. With two successes, the Attitude of all occupants the adept has not previously met improves toward the adept by one degree. With at least three successes, it improves by two degrees.",
+      "brief": "Dramatic entrance for First Impression"
     },
     "Grasping Vines": {
       "parents": [
@@ -1037,7 +1105,8 @@
       "restrictions": {
         "discipline": "Elementalist"
       },
-      "summary": "Wood - The Elementalist summons and encourages vines to grow in a 4-yard radius within 10 yards, briefly hindering any within before dying back. The Elementalist makes a Spellcasting test against the highest Mystic Defense in the area. If successful, Movement Rates are halved within the area until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round."
+      "summary": "Wood - The Elementalist summons and encourages vines to grow in a 4-yard radius within 10 yards, briefly hindering any within before dying back. The Elementalist makes a Spellcasting test against the highest Mystic Defense in the area. If successful, Movement Rates are halved within the area until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round.",
+      "brief": "Vines hinder nearby foes"
     },
     "Halt Disease": {
       "parents": [
@@ -1050,7 +1119,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept spends a minute to prepare a poultice as normal. However, instead the poultice stops the progress of disease by making a Cold Purify test against the disease’s Step. With two successes, the effect of the disease is halted. The victim does not heal any damage already inflicted; the knack merely prevents the disease ravaging them further."
+      "summary": "The adept spends a minute to prepare a poultice as normal. However, instead the poultice stops the progress of disease by making a Cold Purify test against the disease’s Step. With two successes, the effect of the disease is halted. The victim does not heal any damage already inflicted; the knack merely prevents the disease ravaging them further.",
+      "brief": "Poultice halts disease progress"
     },
     "Hamstring": {
       "parents": [
@@ -1062,7 +1132,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "The adept may spend an additional success on an Attack test to halve the opponent’s Movement Rate until the end of the next round. If the attack causes a Wound, the penalty lasts until the Wound is healed. The adept must be using a sharp weapon or claws to use this special maneuver."
+      "summary": "The adept may spend an additional success on an Attack test to halve the opponent’s Movement Rate until the end of the next round. If the attack causes a Wound, the penalty lasts until the Wound is healed. The adept must be using a sharp weapon or claws to use this special maneuver.",
+      "brief": "Halve opponent's movement"
     },
     "Handle Elements": {
       "parents": [
@@ -1083,7 +1154,8 @@
           "Weaponsmith"
         ]
       },
-      "summary": "The adept can use Patterncraft or Thread Smithing to incorporate True elements into magical items, in addition to handling and manipulating them, such as creating elemental coins."
+      "summary": "The adept can use Patterncraft or Thread Smithing to incorporate True elements into magical items, in addition to handling and manipulating them, such as creating elemental coins.",
+      "brief": "Work True elements into items"
     },
     "Harrying Attack": {
       "parents": [
@@ -1095,7 +1167,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "The adept may spend two additional successes on a close combat Attack test to give the target a choice: until the end of the next round, reduce their Movement Rate to 0 or be Harried."
+      "summary": "The adept may spend two additional successes on a close combat Attack test to give the target a choice: until the end of the next round, reduce their Movement Rate to 0 or be Harried.",
+      "brief": "Force target to slow or suffer"
     },
     "Harvest True Element": {
       "parents": [
@@ -1108,7 +1181,8 @@
       "attribute": "Perception",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept uses their knowledge and natural connection to the elements to harvest True elements from a suitable lode or pocket, or uses the appropriate tool to harvest from a lode. To do so, the adept spends four hours working the site and makes a Harvest True Element test against the Harvest Difficulty. Each success yields one kernel of the appropriate quality. Adepts can also use this knack to purify impure kernels into perfect quality kernels. See p. 129 for details. See the Enchanting chapter for more details on this knack. Skill Use: The non-magical version of this talent is five separate skills, one for each element, and the character must have an appropriate tool to harvest the True element."
+      "summary": "The adept uses their knowledge and natural connection to the elements to harvest True elements from a suitable lode or pocket, or uses the appropriate tool to harvest from a lode. To do so, the adept spends four hours working the site and makes a Harvest True Element test against the Harvest Difficulty. Each success yields one kernel of the appropriate quality. Adepts can also use this knack to purify impure kernels into perfect quality kernels. See p. 129 for details. See the Enchanting chapter for more details on this knack. Skill Use: The non-magical version of this talent is five separate skills, one for each element, and the character must have an appropriate tool to harvest the True element.",
+      "brief": "Harvest True elements"
     },
     "Heal Animal Companion": {
       "parents": [
@@ -1121,7 +1195,8 @@
       "attribute": "Toughness",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept heals a Loyal animal companion, spending one of the adept’s Recovery tests to make a Heal Animal Companion test, and reducing the animal’s Current Damage by the result. This knack costs a Recovery test, but is not a Recovery test, and can only be used once per day per animal."
+      "summary": "The adept heals a Loyal animal companion, spending one of the adept’s Recovery tests to make a Heal Animal Companion test, and reducing the animal’s Current Damage by the result. This knack costs a Recovery test, but is not a Recovery test, and can only be used once per day per animal.",
+      "brief": "Heal animal companion damage"
     },
     "Hunting": {
       "parents": [
@@ -1134,7 +1209,8 @@
       "attribute": "Perception",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "The adept applies their knowledge of the wild to finding game. In place of the Hunting skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to find game, set snares, and kill or capture animals for food."
+      "summary": "The adept applies their knowledge of the wild to finding game. In place of the Hunting skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to find game, set snares, and kill or capture animals for food.",
+      "brief": "Find game via Wilderness Survival"
     },
     "Ideal Appearance": {
       "parents": [
@@ -1147,7 +1223,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept uses illusion magic to temporarily boost their charisma. Each time they interact with another character, the adept may make an Angelic Appearance test against the target’s Mystic Defense. The adept gains +1 for each success on their next Interaction test with the target."
+      "summary": "The adept uses illusion magic to temporarily boost their charisma. Each time they interact with another character, the adept may make an Angelic Appearance test against the target’s Mystic Defense. The adept gains +1 for each success on their next Interaction test with the target.",
+      "brief": "Illusory charisma boost"
     },
     "Improved Improvised Weapon": {
       "parents": [
@@ -1160,7 +1237,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept suffers no penalties when using improvised weapons and can use other Melee Weapons knacks with this knack."
+      "summary": "Standard Effects. The adept suffers no penalties when using improvised weapons and can use other Melee Weapons knacks with this knack.",
+      "brief": "Combine with Melee Weapons knacks"
     },
     "Improvised Pattern": {
       "parents": [
@@ -1172,7 +1250,8 @@
       "step": "NA",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept has learned to adapt their spell patterns on the fly. Prior to a Thread Weaving test for the purpose of weaving threads for a spell, you may add, remove, and/or adjust any extra threads. The spellcaster is still limited to their normal extra thread maximum. Each thread affected in this fashion costs 1 Strain. If this effectively completes the spell (now all intended threads are woven), the spellcaster may make a Spellcasting test as normal. The assumed order of threads woven is first required threads, followed by extra threads in an order of the caster’s choice. For example, a spellcaster’s first Thread Weaving attempt did not go as planned and the battlefield has changed. Now, they can choose to remove the extra threads they had intended on weaving, add additional extra threads, and/or change the purpose of unwoven extra threads (e.g. instead of additional range, choose increased area)."
+      "summary": "The adept has learned to adapt their spell patterns on the fly. Prior to a Thread Weaving test for the purpose of weaving threads for a spell, you may add, remove, and/or adjust any extra threads. The spellcaster is still limited to their normal extra thread maximum. Each thread affected in this fashion costs 1 Strain. If this effectively completes the spell (now all intended threads are woven), the spellcaster may make a Spellcasting test as normal. The assumed order of threads woven is first required threads, followed by extra threads in an order of the caster’s choice. For example, a spellcaster’s first Thread Weaving attempt did not go as planned and the battlefield has changed. Now, they can choose to remove the extra threads they had intended on weaving, add additional extra threads, and/or change the purpose of unwoven extra threads (e.g. instead of additional range, choose increased area).",
+      "brief": "Adapt spell patterns on the fly"
     },
     "Improvised Weapon": {
       "parents": [
@@ -1185,7 +1264,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept suffers no penalties when using improvised weapons."
+      "summary": "Standard Effects. The adept suffers no penalties when using improvised weapons.",
+      "brief": "No improvised weapon penalty"
     },
     "Incorporate Bound Spirit": {
       "parents": [
@@ -1205,7 +1285,8 @@
           "Nethermancer"
         ]
       },
-      "summary": "The adept can use Patterncraft to incorporate spirits into magic items."
+      "summary": "The adept can use Patterncraft to incorporate spirits into magic items.",
+      "brief": "Incorporate spirits into items"
     },
     "Incorporate Glyph": {
       "parents": [
@@ -1219,7 +1300,8 @@
       "restrictions": {
         "note": "Any Discipline"
       },
-      "summary": "The adept can use Patterncraft to incorporate glyphs into magic items and create spell matrix objects. The adept must know the appropriate type of matrix for any matrix object they wish to create."
+      "summary": "The adept can use Patterncraft to incorporate glyphs into magic items and create spell matrix objects. The adept must know the appropriate type of matrix for any matrix object they wish to create.",
+      "brief": "Incorporate glyphs and matrices"
     },
     "Intimidating Bellow": {
       "parents": [
@@ -1232,7 +1314,8 @@
       "attribute": "Charisma",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept issues a terrifying bellow against all enemies within Battle Bellow rank ×10 yards, making an Intimidating Bellow test against the highest Social Defense among the target group. If successful, all affected enemies suffer a -1 penalty to their tests per success until the end of the next round. This knack does not affect targets who are immune to fear."
+      "summary": "The adept issues a terrifying bellow against all enemies within Battle Bellow rank ×10 yards, making an Intimidating Bellow test against the highest Social Defense among the target group. If successful, all affected enemies suffer a -1 penalty to their tests per success until the end of the next round. This knack does not affect targets who are immune to fear.",
+      "brief": "Terrify enemies with a bellow"
     },
     "I’ll Take That": {
       "parents": [
@@ -1252,7 +1335,8 @@
         ],
         "note": "any Discipline"
       },
-      "summary": "The adept can spend two additional successes on a Disarm test to capture the disarmed weapon in a free hand. If the adept doesn’t have a free hand, they can drop whatever they are holding in one hand to capture the weapon."
+      "summary": "The adept can spend two additional successes on a Disarm test to capture the disarmed weapon in a free hand. If the adept doesn’t have a free hand, they can drop whatever they are holding in one hand to capture the weapon.",
+      "brief": "Catch disarmed weapon"
     },
     "Jinx": {
       "parents": [
@@ -1265,7 +1349,8 @@
       "attribute": "Charisma",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept shouts a dire warning or arcane-sounding curse against an opponent, suggesting an impending misfortune occurring, then makes a Jinx test against the target’s Social Defense. If successful, the target, fearful of the curse, is forced to concentrate on avoiding the suggested outcome and is Harried until the end of the round. Due to the disconcerting nature of this knack, this penalty also applies to the targets’ Social Defense. This knack may be used during combat."
+      "summary": "The adept shouts a dire warning or arcane-sounding curse against an opponent, suggesting an impending misfortune occurring, then makes a Jinx test against the target’s Social Defense. If successful, the target, fearful of the curse, is forced to concentrate on avoiding the suggested outcome and is Harried until the end of the round. Due to the disconcerting nature of this knack, this penalty also applies to the targets’ Social Defense. This knack may be used during combat.",
+      "brief": "Curse opponent with misfortune"
     },
     "Lip Reading": {
       "parents": [
@@ -1278,7 +1363,8 @@
       "attribute": "Perception",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "The adept eavesdrops on a conversation by watching the target character’s lips move and making a Lip Reading test against the target’s Social Defense. If successful, they are able to read what the speaker is saying for a number of minutes equal to the test result, as long as they can see the target’s lips. The adept must be able to understand the language being spoken to make sense of the conversation. If they don’t, the adept can phonetically sound out what the target is saying, allowing someone nearby who can understand the language to translate for them."
+      "summary": "The adept eavesdrops on a conversation by watching the target character’s lips move and making a Lip Reading test against the target’s Social Defense. If successful, they are able to read what the speaker is saying for a number of minutes equal to the test result, as long as they can see the target’s lips. The adept must be able to understand the language being spoken to make sense of the conversation. If they don’t, the adept can phonetically sound out what the target is saying, allowing someone nearby who can understand the language to translate for them.",
+      "brief": "Eavesdrop by reading lips"
     },
     "Make Concession": {
       "parents": [
@@ -1290,7 +1376,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept accepts their opponent has valid points to make, such as the quality of the sword is indeed superb or the Sky Raider is quite terrifying, while using that to mitigate damage. Instead of making a Resist Taunt test, the adept reduces the number of successes on a successful Action test against which Resist Taunt can be applied by one. This cannot reduce a result below two successes."
+      "summary": "The adept accepts their opponent has valid points to make, such as the quality of the sword is indeed superb or the Sky Raider is quite terrifying, while using that to mitigate damage. Instead of making a Resist Taunt test, the adept reduces the number of successes on a successful Action test against which Resist Taunt can be applied by one. This cannot reduce a result below two successes.",
+      "brief": "Concede a point to gain advantage"
     },
     "Mapmaking": {
       "parents": [
@@ -1303,7 +1390,8 @@
       "attribute": "Perception",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 197."
+      "summary": "As the skill, Player’s Guide, p. 197.",
+      "brief": "Use as the Mapmaking skill"
     },
     "Mind Armor": {
       "parents": [
@@ -1315,7 +1403,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept fashions a suit of armor from sheer will at a moment’s notice. The armor appears as shimmering air around the adept, and has a Physical Armor Rating equal to their Mind Armor Rank. Mind armor fits together in such a way as to allow the adept to move, similar to real armor. Mind Armor provides no Mystic Armor protection, but has no Initiative Penalty either. If other armor is worn, only the higher of any Armor Rating applies. Each use of this talent lasts for Mind Armor Rank minutes, but the adept may dispel it before that time elapses."
+      "summary": "The adept fashions a suit of armor from sheer will at a moment’s notice. The armor appears as shimmering air around the adept, and has a Physical Armor Rating equal to their Mind Armor Rank. Mind armor fits together in such a way as to allow the adept to move, similar to real armor. Mind Armor provides no Mystic Armor protection, but has no Initiative Penalty either. If other armor is worn, only the higher of any Armor Rating applies. Each use of this talent lasts for Mind Armor Rank minutes, but the adept may dispel it before that time elapses.",
+      "brief": "Conjure armor from will"
     },
     "Mind Blade": {
       "parents": [
@@ -1327,7 +1416,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept creates a melee weapon from sheer will at a moment’s notice. The weapon appears as a distortion of the air, shaped like a melee weapon of the adept’s choice, with a Damage Step equal to their Mind Blade Rank. The adept uses the blade in melee combat as normal. No Strength minimum applies for using a mind blade. The weapon lasts for Mind Blade Rank minutes, but may be dispelled by the adept before that time elapses. Mind blades may be broken using magical abilities and the wielder may be disarmed as with a normal melee weapon. A mind blade that is broken or leaves the adept’s hand is automatically dispelled."
+      "summary": "The adept creates a melee weapon from sheer will at a moment’s notice. The weapon appears as a distortion of the air, shaped like a melee weapon of the adept’s choice, with a Damage Step equal to their Mind Blade Rank. The adept uses the blade in melee combat as normal. No Strength minimum applies for using a mind blade. The weapon lasts for Mind Blade Rank minutes, but may be dispelled by the adept before that time elapses. Mind blades may be broken using magical abilities and the wielder may be disarmed as with a normal melee weapon. A mind blade that is broken or leaves the adept’s hand is automatically dispelled.",
+      "brief": "Conjure weapon from will"
     },
     "Mobile Interference": {
       "parents": [
@@ -1340,7 +1430,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept has learned how to anchor their astral interference not to a location, but to their own pattern. The field of increased astral noise is not stationary, but instead moves with the adept, keeping them in the center of the effect."
+      "summary": "Standard Effects. The adept has learned how to anchor their astral interference not to a location, but to their own pattern. The field of increased astral noise is not stationary, but instead moves with the adept, keeping them in the center of the effect.",
+      "brief": "Astral noise follows the adept"
     },
     "Mold Ally’s Form": {
       "parents": [
@@ -1360,7 +1451,8 @@
           "Cavalryman"
         ]
       },
-      "summary": "This knack may be purchased multiple times. Each time it is purchased, the adept must select a different animal companion. The adept performs a week long ritual, eight hours a day, with their animal companion, further changing their form. This ritual enhances a Mask already applied to the animal companion. If the animal companion does not have a Mask, this knack has no function. The Mask is changed to the effective Circle +1 version."
+      "summary": "This knack may be purchased multiple times. Each time it is purchased, the adept must select a different animal companion. The adept performs a week long ritual, eight hours a day, with their animal companion, further changing their form. This ritual enhances a Mask already applied to the animal companion. If the animal companion does not have a Mask, this knack has no function. The Mask is changed to the effective Circle +1 version.",
+      "brief": "Ritual to reshape animal companion"
     },
     "One Eye Open": {
       "parents": [
@@ -1372,7 +1464,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Before going to sleep, the adept meditates for 10 minutes and spends a Recovery test. For the next 10 hours, the adept adds their Borrow Sense rank to any Awareness tests made while sleeping to detect disturbances around them."
+      "summary": "Before going to sleep, the adept meditates for 10 minutes and spends a Recovery test. For the next 10 hours, the adept adds their Borrow Sense rank to any Awareness tests made while sleeping to detect disturbances around them.",
+      "brief": "Awareness bonus while sleeping"
     },
     "Opening": {
       "parents": [
@@ -1384,7 +1477,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "For 1 Strain, the adept may spend additional successes on an Attack test to give all allies +1 to Attack tests against this target until the end of the round. If the target is afflicted by a status effect caused by you or one of your allies, the bonus lasts until the end of the next round."
+      "summary": "For 1 Strain, the adept may spend additional successes on an Attack test to give all allies +1 to Attack tests against this target until the end of the round. If the target is afflicted by a status effect caused by you or one of your allies, the bonus lasts until the end of the next round.",
+      "brief": "Grant allies attack bonus"
     },
     "Other Sense": {
       "parents": [
@@ -1397,7 +1491,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept may target senses designated as [Other]."
+      "summary": "Standard Effects. The adept may target senses designated as [Other].",
+      "brief": "Target [Other] senses"
     },
     "Overpower": {
       "parents": [
@@ -1413,7 +1508,8 @@
           "name": "Strength"
         }
       },
-      "summary": "The adept may spend two additional successes on a close combat Attack test to force the target to make a Knockdown test against a Difficulty Number equal to the Attack test result. If the test fails, the target is knocked down and knocked back a number of yards equal to the total number of successes on the Attack test. The adept must be wielding a weapon in two hands to use this special maneuver."
+      "summary": "The adept may spend two additional successes on a close combat Attack test to force the target to make a Knockdown test against a Difficulty Number equal to the Attack test result. If the test fails, the target is knocked down and knocked back a number of yards equal to the total number of successes on the Attack test. The adept must be wielding a weapon in two hands to use this special maneuver.",
+      "brief": "Force target Knockdown test"
     },
     "Overrun": {
       "parents": [
@@ -1425,7 +1521,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "The adept can spend an additional success on an Attack test to force the target to make a Knockdown test if the target has a lower Strength Step than the adept’s mount. The Difficulty is the Attack test result."
+      "summary": "The adept can spend an additional success on an Attack test to force the target to make a Knockdown test if the target has a lower Strength Step than the adept’s mount. The Difficulty is the Attack test result.",
+      "brief": "Mount forces Knockdown test"
     },
     "Patient Maneuver": {
       "parents": [
@@ -1438,7 +1535,8 @@
       "attribute": "Dexterity",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept fights defensively for a turn, creating an opening. This knack is announced prior to determining Initiative and uses the adept’s Standard Action for the round. After announcing the knack, the adept makes a Patient Maneuver test and replaces their Physical Defense with the result until the end of the round. If the adept is not successfully attacked during this round, the first close combat attack the adept makes in the following round gains a bonus to the Attack test and Damage test equal to the adept’s Maneuver rank."
+      "summary": "The adept fights defensively for a turn, creating an opening. This knack is announced prior to determining Initiative and uses the adept’s Standard Action for the round. After announcing the knack, the adept makes a Patient Maneuver test and replaces their Physical Defense with the result until the end of the round. If the adept is not successfully attacked during this round, the first close combat attack the adept makes in the following round gains a bonus to the Attack test and Damage test equal to the adept’s Maneuver rank.",
+      "brief": "Fight defensively to create opening"
     },
     "Pattern Stress": {
       "parents": [
@@ -1453,7 +1551,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "The Nethermancer hexes a target within 10 yards, weakening their pattern against mystic attacks. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Mystic Armor until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round."
+      "summary": "The Nethermancer hexes a target within 10 yards, weakening their pattern against mystic attacks. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 Mystic Armor until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round.",
+      "brief": "Weaken target's Mystic Armor"
     },
     "Photographic Memory": {
       "parents": [
@@ -1466,7 +1565,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept remembers the exact details of a place, up to Book Memory rank in yards in every direction. They make a Photographic Memory test against the highest Mystic Defense of any item or character (or the place itself) in the area. If successful, the adept successfully memorizes the details of the place. The place counts as one book for the purpose of the Book Memory talent, but cannot be transcribed as a piece of text could be. Like looking up a memorized book, the adept can envision the place in their mind’s eye, allowing them to use Evidence Analysis to ask questions about the scene, or just examine details at their leisure. Note: Use of Evidence Analysis knacks is at the GM’s discretion."
+      "summary": "The adept remembers the exact details of a place, up to Book Memory rank in yards in every direction. They make a Photographic Memory test against the highest Mystic Defense of any item or character (or the place itself) in the area. If successful, the adept successfully memorizes the details of the place. The place counts as one book for the purpose of the Book Memory talent, but cannot be transcribed as a piece of text could be. Like looking up a memorized book, the adept can envision the place in their mind’s eye, allowing them to use Evidence Analysis to ask questions about the scene, or just examine details at their leisure. Note: Use of Evidence Analysis knacks is at the GM’s discretion.",
+      "brief": "Recall exact details of a place"
     },
     "Pilot Boat": {
       "parents": [
@@ -1479,7 +1579,8 @@
       "attribute": "Perception",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 199."
+      "summary": "As the skill, Player’s Guide, p. 199.",
+      "brief": "Use as the Pilot Boat skill"
     },
     "Point-Blank Shot": {
       "parents": [
@@ -1493,7 +1594,8 @@
       "attribute": "Dexterity",
       "skillUse": null,
       "restrictions": {},
-      "summary": "Standard Effects. The adept reduces the minimum range of their missile or thrown weapon to 0 yards and may attack adjacent opponents with it."
+      "summary": "Standard Effects. The adept reduces the minimum range of their missile or thrown weapon to 0 yards and may attack adjacent opponents with it.",
+      "brief": "Fire missiles at adjacent foes"
     },
     "Poisoned Influence": {
       "parents": [
@@ -1506,7 +1608,8 @@
       "attribute": "Charisma",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept inflames disputes and influences the development of mutual antipathy by making a Poisoned Influence test against the negotiating target’s Social Defense. If successful, the negotiator’s Attitude towards their opponents worsens by one degree for a number of hours equal to the adept’s Diplomacy rank. While this might not necessarily result in an immediate fight or cause the target to walk away, the use of Poisoned Influence usually helps to get parties divided and unwilling to compromise."
+      "summary": "The adept inflames disputes and influences the development of mutual antipathy by making a Poisoned Influence test against the negotiating target’s Social Defense. If successful, the negotiator’s Attitude towards their opponents worsens by one degree for a number of hours equal to the adept’s Diplomacy rank. While this might not necessarily result in an immediate fight or cause the target to walk away, the use of Poisoned Influence usually helps to get parties divided and unwilling to compromise.",
+      "brief": "Inflame disputes between parties"
     },
     "Pounce": {
       "parents": [
@@ -1518,7 +1621,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "If the adept reaches their target with Great Leap and the target isn’t too much larger, they may spend an additional success from the Attack test to force the target to make a Knockdown test against a Difficulty equal to the Attack test result."
+      "summary": "If the adept reaches their target with Great Leap and the target isn’t too much larger, they may spend an additional success from the Attack test to force the target to make a Knockdown test against a Difficulty equal to the Attack test result.",
+      "brief": "Knock down target after Great Leap"
     },
     "Precise Shot": {
       "parents": [
@@ -1531,7 +1635,8 @@
       "attribute": "Perception",
       "skillUse": null,
       "restrictions": {},
-      "summary": "Standard Effects. If Mystic Aim was successful, the adept may declare Called Shots against the target without Strain cost or penalty."
+      "summary": "Standard Effects. If Mystic Aim was successful, the adept may declare Called Shots against the target without Strain cost or penalty.",
+      "brief": "Free Called Shots after Mystic Aim"
     },
     "Psychometry": {
       "parents": [
@@ -1544,7 +1649,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept briefly handles an item and gains impressions about its history. These impressions can take various forms, from images, voices, scenes played out from the item’s perspective, etc. Most adepts have a particular style for the form of their impressions. The adept makes a Psychometry test against the item’s Mystic Defense. Each success allows the adept to ask a question about the item, and what it has done and seen within the previous Item History rank days."
+      "summary": "The adept briefly handles an item and gains impressions about its history. These impressions can take various forms, from images, voices, scenes played out from the item’s perspective, etc. Most adepts have a particular style for the form of their impressions. The adept makes a Psychometry test against the item’s Mystic Defense. Each success allows the adept to ask a question about the item, and what it has done and seen within the previous Item History rank days.",
+      "brief": "Read an item's history"
     },
     "Push Against the Horror": {
       "parents": [
@@ -1559,7 +1665,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "Standard Effects. The adept knows how to increase their astral interference to include Horrors. The field of increased astral noise also affects any powers used by Horrors and Horror constructs which require tests."
+      "summary": "Standard Effects. The adept knows how to increase their astral interference to include Horrors. The field of increased astral noise also affects any powers used by Horrors and Horror constructs which require tests.",
+      "brief": "Astral noise affects Horrors"
     },
     "Rapid Armor Forging": {
       "parents": [
@@ -1573,7 +1680,8 @@
       "restrictions": {
         "discipline": "Weaponsmith"
       },
-      "summary": "The adept can spend additional successes to reduce the number of days required to use Forge Armor by one per success to a minimum of one day. This may not be used with Efficient Armor Forging."
+      "summary": "The adept can spend additional successes to reduce the number of days required to use Forge Armor by one per success to a minimum of one day. This may not be used with Efficient Armor Forging.",
+      "brief": "Forge armor in fewer days"
     },
     "Rapid Weapon Forging": {
       "parents": [
@@ -1587,7 +1695,8 @@
       "restrictions": {
         "discipline": "Weaponsmith"
       },
-      "summary": "The adept can spend additional successes to reduce the number of days required to use Forge Weapon by one per success to a minimum of one day. This may not be used with Efficient Weapon Forging."
+      "summary": "The adept can spend additional successes to reduce the number of days required to use Forge Weapon by one per success to a minimum of one day. This may not be used with Efficient Weapon Forging.",
+      "brief": "Forge weapons in fewer days"
     },
     "Read River": {
       "parents": [
@@ -1600,7 +1709,8 @@
       "attribute": "Perception",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "The adept guides a riverboat through the often treacherous waters of a river. This can also be used to track another riverboat along the river. To track another riverboat, the adept makes a Read River test against the target riverboat captain’s Pilot Boat Step, modified at the gamemaster’s discretion."
+      "summary": "The adept guides a riverboat through the often treacherous waters of a river. This can also be used to track another riverboat along the river. To track another riverboat, the adept makes a Read River test against the target riverboat captain’s Pilot Boat Step, modified at the gamemaster’s discretion.",
+      "brief": "Navigate or track on rivers"
     },
     "Redirect Attack": {
       "parents": [
@@ -1612,7 +1722,8 @@
       "step": null,
       "skillUse": null,
       "restrictions": {},
-      "summary": "For 2 Strain, the adept can spend two additional successes on an Avoid Blow test to take advantage of the close quarters and surrounding chaos to redirect the close combat attack to a different opponent in close combat with the adept, using the original Attack test result with a -5 penalty. There must be at least four opponents in close combat with the adept to use this special maneuver. This special maneuver may only be used once per round."
+      "summary": "For 2 Strain, the adept can spend two additional successes on an Avoid Blow test to take advantage of the close quarters and surrounding chaos to redirect the close combat attack to a different opponent in close combat with the adept, using the original Attack test result with a -5 penalty. There must be at least four opponents in close combat with the adept to use this special maneuver. This special maneuver may only be used once per round.",
+      "brief": "Redirect attack to another target"
     },
     "Remember Conversation": {
       "parents": [
@@ -1625,7 +1736,8 @@
       "attribute": "Willpower",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept remembers a conversation for later recall by making a Remember Conversation test against the highest Mystic Defense among all the speakers conversing. If successful, the adept successfully memorizes the conversation. A memorized conversation counts as one book for the purpose of the Book Memory talent."
+      "summary": "The adept remembers a conversation for later recall by making a Remember Conversation test against the highest Mystic Defense among all the speakers conversing. If successful, the adept successfully memorizes the conversation. A memorized conversation counts as one book for the purpose of the Book Memory talent.",
+      "brief": "Recall a conversation later"
     },
     "Returning": {
       "parents": [
@@ -1637,7 +1749,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept’s thrown weapon returns to them immediately after an Attack test. This does not count for talent usage limits and can be combined with any knack."
+      "summary": "The adept’s thrown weapon returns to them immediately after an Attack test. This does not count for talent usage limits and can be combined with any knack.",
+      "brief": "Thrown weapon returns"
     },
     "Riding": {
       "parents": [
@@ -1649,7 +1762,8 @@
       "step": "N/A",
       "skillUse": "Yes",
       "restrictions": {},
-      "summary": "The ability to ride and look after a mounts, restricted to animals, not usable for monsters and magical beast. You are trained to saddle and ride the animal and maintain its well being."
+      "summary": "The ability to ride and look after a mounts, restricted to animals, not usable for monsters and magical beast. You are trained to saddle and ride the animal and maintain its well being.",
+      "brief": "Ride and tend mounts"
     },
     "Roll With the Punches": {
       "parents": [
@@ -1661,7 +1775,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Instead of making an Avoid Blow test, the adept reduces the successes on a successful Attack test against which Avoid Blow can be applied by one. This cannot reduce an attack below two successes."
+      "summary": "Instead of making an Avoid Blow test, the adept reduces the successes on a successful Attack test against which Avoid Blow can be applied by one. This cannot reduce an attack below two successes.",
+      "brief": "Reduce attack successes instead of Avoid Blow"
     },
     "Sailing": {
       "parents": [
@@ -1674,7 +1789,8 @@
       "attribute": "Perception",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 199."
+      "summary": "As the skill, Player’s Guide, p. 199.",
+      "brief": "Use as the Sailing skill"
     },
     "Savage Limbs": {
       "parents": [
@@ -1687,7 +1803,8 @@
       "attribute": "Strength",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept can apply the benefits of Claw Shape to any appendage, not just their hands. Each appendage has an appearance distinctive to the character, for example one adept may grow an elk’s antlers from their head, another a ram’s horns, or spikes from the tail in the case of a t’skrang. The appendage may not have any coverings which would obstruct this knack."
+      "summary": "Standard Effects. The adept can apply the benefits of Claw Shape to any appendage, not just their hands. Each appendage has an appearance distinctive to the character, for example one adept may grow an elk’s antlers from their head, another a ram’s horns, or spikes from the tail in the case of a t’skrang. The appendage may not have any coverings which would obstruct this knack.",
+      "brief": "Claw Shape on any appendage"
     },
     "Sculpt Ally’s Form": {
       "parents": [
@@ -1707,7 +1824,8 @@
           "Cavalryman"
         ]
       },
-      "summary": "This knack may be purchased multiple times. Each time it is purchased, the adept must select a different animal companion. The adept performs a week long ritual, eight hours a day, with their animal companion, further changing their form. This ritual enhances a Mask already applied to the animal companion. If the animal companion does not have a Mask, this knack has no function. The Mask is changed to the effective Circle +2 version."
+      "summary": "This knack may be purchased multiple times. Each time it is purchased, the adept must select a different animal companion. The adept performs a week long ritual, eight hours a day, with their animal companion, further changing their form. This ritual enhances a Mask already applied to the animal companion. If the animal companion does not have a Mask, this knack has no function. The Mask is changed to the effective Circle +2 version.",
+      "brief": "Ritual to sculpt animal companion"
     },
     "Seduction": {
       "parents": [
@@ -1720,7 +1838,8 @@
       "attribute": "Charisma",
       "skillUse": null,
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 200."
+      "summary": "As the skill, Player’s Guide, p. 200.",
+      "brief": "Use as the Seduction skill"
     },
     "Setup": {
       "parents": [
@@ -1733,7 +1852,8 @@
       "attribute": "Dexterity",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept maneuvers into a position to aid an ally against an opponent. They make a Setup test against the target’s Social Defense. Each success gives the ally +2 to their next close combat Attack test against the target and +2 to their Physical Defense against the target until the end of the round. If the adept is using the Defensive Stance combat option, or the ally also knows this knack, they gain +2 to the Setup test."
+      "summary": "The adept maneuvers into a position to aid an ally against an opponent. They make a Setup test against the target’s Social Defense. Each success gives the ally +2 to their next close combat Attack test against the target and +2 to their Physical Defense against the target until the end of the round. If the adept is using the Defensive Stance combat option, or the ally also knows this knack, they gain +2 to the Setup test.",
+      "brief": "Set up an ally's attack"
     },
     "Shackle Shrug": {
       "parents": [
@@ -1746,7 +1866,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept escapes from bonds around their hands or feet by gradually straining against them, and using extraordinary flexibility and magic to extricate their wrists or ankles from openings too small to wriggle out of normally. The adept spends one minute attempting to get out of the bonds, then makes a Shackle Shrug test against a Difficulty Number based on the type of bindings. Twine or string carries a Difficulty Number of 5; rope tied by an inexperienced captor has a Difficulty Number of 7; rope tied by an experienced jailer has a Difficulty Number of 9; steel shackles have a Difficulty Number of 11; magical shackles have a Difficulty Number equal to the shackles’ Mystic Defense. Because it is always easier to escape from shackles that bind the wrists than those around the ankles, add +2 to the Difficulty Number if the shackles bind the feet. If successful, the adept escapes. If they fail, the adept may try again, but requires an additional success cumulatively. The adept may make up to Shackle Shrug rank attempts per set of bindings each day."
+      "summary": "The adept escapes from bonds around their hands or feet by gradually straining against them, and using extraordinary flexibility and magic to extricate their wrists or ankles from openings too small to wriggle out of normally. The adept spends one minute attempting to get out of the bonds, then makes a Shackle Shrug test against a Difficulty Number based on the type of bindings. Twine or string carries a Difficulty Number of 5; rope tied by an inexperienced captor has a Difficulty Number of 7; rope tied by an experienced jailer has a Difficulty Number of 9; steel shackles have a Difficulty Number of 11; magical shackles have a Difficulty Number equal to the shackles’ Mystic Defense. Because it is always easier to escape from shackles that bind the wrists than those around the ankles, add +2 to the Difficulty Number if the shackles bind the feet. If successful, the adept escapes. If they fail, the adept may try again, but requires an additional success cumulatively. The adept may make up to Shackle Shrug rank attempts per set of bindings each day.",
+      "brief": "Slip out of bonds"
     },
     "Shield Drive": {
       "parents": [
@@ -1759,7 +1880,8 @@
       "attribute": "Strength",
       "skillUse": "Yes (Journeyman)",
       "restrictions": {},
-      "summary": "The adept quickly bashes the target with their shield and makes a Shield Drive test against the target’s Physical Defense. If successful, the target makes a Knockdown test against the Shield Drive result. The adept loses any Defense bonuses from their shield until their action in the following round."
+      "summary": "The adept quickly bashes the target with their shield and makes a Shield Drive test against the target’s Physical Defense. If successful, the target makes a Knockdown test against the Shield Drive result. The adept loses any Defense bonuses from their shield until their action in the following round.",
+      "brief": "Bash target with shield"
     },
     "Skinning": {
       "parents": [
@@ -1772,7 +1894,8 @@
       "attribute": "Dexterity",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "The adept applies their knowledge of the wild to preparing the spoils of the hunt. In place of the Skinning skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to remove hides and pelts cleanly from slain creatures so they can be tanned and used."
+      "summary": "The adept applies their knowledge of the wild to preparing the spoils of the hunt. In place of the Skinning skill, the adept makes a Wilderness Survival test against a Difficulty Number set by the gamemaster to remove hides and pelts cleanly from slain creatures so they can be tanned and used.",
+      "brief": "Dress game via Wilderness Survival"
     },
     "Soothe Venom": {
       "parents": [
@@ -1787,7 +1910,8 @@
       "restrictions": {
         "discipline": "Elementalist"
       },
-      "summary": "Fire - The Elementalist warms and soothes a victim afflicted by poison, reducing its effects temporarily. The Elementalist touches the target and makes a Spellcasting (6) test against a willing target. If successful, the Step of any poisons affecting the target is reduced by -2 until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round."
+      "summary": "Fire - The Elementalist warms and soothes a victim afflicted by poison, reducing its effects temporarily. The Elementalist touches the target and makes a Spellcasting (6) test against a willing target. If successful, the Step of any poisons affecting the target is reduced by -2 until the end of the next round. Using this knack is a Simple action if the adept used Elementalism to attempt weaving threads this round.",
+      "brief": "Ease poison effects"
     },
     "Spider Climb": {
       "parents": [
@@ -1800,7 +1924,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept can climb sheer surfaces they are normally unable to climb, including surfaces that may not be able to support their mass. Impossible to climb surfaces increase the Difficulty Number by +3 to +5. When using this knack, the adept may not engage in any other physical activity."
+      "summary": "Standard Effects. The adept can climb sheer surfaces they are normally unable to climb, including surfaces that may not be able to support their mass. Impossible to climb surfaces increase the Difficulty Number by +3 to +5. When using this knack, the adept may not engage in any other physical activity.",
+      "brief": "Climb sheer surfaces"
     },
     "Sprain": {
       "parents": [
@@ -1815,7 +1940,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "The Nethermancer selects a target within 10 yards and pops their knuckles, causing the target to briefly falter in their movements. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target’s Movement Rate is halved until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round."
+      "summary": "The Nethermancer selects a target within 10 yards and pops their knuckles, causing the target to briefly falter in their movements. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target’s Movement Rate is halved until the end of the next round. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round.",
+      "brief": "Make target falter"
     },
     "Streetwise": {
       "parents": [
@@ -1828,7 +1954,8 @@
       "attribute": "Charisma",
       "skillUse": "NA",
       "restrictions": {},
-      "summary": "As the skill, Player’s Guide, p. 201."
+      "summary": "As the skill, Player’s Guide, p. 201.",
+      "brief": "Use as the Streetwise skill"
     },
     "Strength of Bronze": {
       "parents": [
@@ -1848,7 +1975,8 @@
           "Dwarf"
         ]
       },
-      "summary": "The adept can reduce the negative effects of wearing heavy armor and using a shield. If the adept’s total Initiative Penalty due to armor and shields is at least 7, reduce the penalty by 1."
+      "summary": "The adept can reduce the negative effects of wearing heavy armor and using a shield. If the adept’s total Initiative Penalty due to armor and shields is at least 7, reduce the penalty by 1.",
+      "brief": "Reduce heavy armor Initiative penalty"
     },
     "Strength of Iron": {
       "parents": [
@@ -1868,7 +1996,8 @@
           "Dwarf"
         ]
       },
-      "summary": "The adept can further reduce the negative effects of wearing heavy armor and using a shield. If the adept’s total Initiative Penalty due to armor and shields is at least 6, reduce the penalty by 2 to no less than 5. This replaces the benefit of Strength of Bronze."
+      "summary": "The adept can further reduce the negative effects of wearing heavy armor and using a shield. If the adept’s total Initiative Penalty due to armor and shields is at least 6, reduce the penalty by 2 to no less than 5. This replaces the benefit of Strength of Bronze.",
+      "brief": "Further reduce armor Initiative penalty"
     },
     "Strength of Steel": {
       "parents": [
@@ -1888,7 +2017,8 @@
           "Dwarf"
         ]
       },
-      "summary": "The adept can further reduce the negative effects of wearing heavy armor and using a shield. If the adept’s total Initiative Penalty due to armor and shields is at least 5, reduce the penalty by 3, to no less than 4. This replaces the benefit of Strength of Iron."
+      "summary": "The adept can further reduce the negative effects of wearing heavy armor and using a shield. If the adept’s total Initiative Penalty due to armor and shields is at least 5, reduce the penalty by 3, to no less than 4. This replaces the benefit of Strength of Iron.",
+      "brief": "Greatly reduce armor Initiative penalty"
     },
     "Stutter": {
       "parents": [
@@ -1903,7 +2033,8 @@
       "restrictions": {
         "discipline": "Illusionist"
       },
-      "summary": "The Illusionist points out a target within 10 yards and inflicts upon them a minor curse of stuttering. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 to Charisma-based tests until the end of the next round. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round."
+      "summary": "The Illusionist points out a target within 10 yards and inflicts upon them a minor curse of stuttering. The Illusionist makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 to Charisma-based tests until the end of the next round. Using this knack is a Simple action if the adept used Illusionism to attempt weaving threads this round.",
+      "brief": "Curse target with stuttering"
     },
     "Subtle Casting": {
       "parents": [
@@ -1916,7 +2047,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Illusion . The adept knows how to use illusion magic to conceal their spellcasting activities. When the adept begins the process of casting a spell (either by weaving threads or spellcasting), they make a Subtle Casting test. The spell must not have any very obvious casting requirements in the description (GM discretion). This creates the difficulty for onlookers to notice the adept is casting a spell."
+      "summary": "Illusion . The adept knows how to use illusion magic to conceal their spellcasting activities. When the adept begins the process of casting a spell (either by weaving threads or spellcasting), they make a Subtle Casting test. The spell must not have any very obvious casting requirements in the description (GM discretion). This creates the difficulty for onlookers to notice the adept is casting a spell.",
+      "brief": "Conceal spellcasting with illusion"
     },
     "Swing Attack": {
       "parents": [
@@ -1929,7 +2061,8 @@
       "attribute": "Dexterity",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "The adept swings down at an opponent from an elevated position using sturdy ropes, ship rigging, or vines. Before the attack, the adept decides whether to swing past, or land next to the target. If the adept swings past, the attack is treated as a Swooping Attack with no penalties or Strain cost for Splitting Movement. The adept makes a Swing Attack test as a close combat Attack test against the target’s Physical Defense. If successful, each extra success inflicts an additional point of damage (generally +3 for each success)."
+      "summary": "The adept swings down at an opponent from an elevated position using sturdy ropes, ship rigging, or vines. Before the attack, the adept decides whether to swing past, or land next to the target. If the adept swings past, the attack is treated as a Swooping Attack with no penalties or Strain cost for Splitting Movement. The adept makes a Swing Attack test as a close combat Attack test against the target’s Physical Defense. If successful, each extra success inflicts an additional point of damage (generally +3 for each success).",
+      "brief": "Swing down onto opponent"
     },
     "Swinging Move": {
       "parents": [
@@ -1942,7 +2075,8 @@
       "attribute": "Dexterity",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "The adept makes Swinging Move test to travel distances by swinging from ropes or vines, such as an airship’s rigging or a chandelier. When covering a distance up to their Movement Rate, the adept makes a Swinging Move (8) test; when swinging up to double their Movement Rate, they make a Swinging Move (12) test and take 1 Strain. The attempt counts as their move for the round. A successful Swinging Move test means the adept swings and lands where they want, while failure means the adept botches their landing and are knocked down, taking falling damage for falls over 10 feet (reduce the distance fallen by 10 ft)."
+      "summary": "The adept makes Swinging Move test to travel distances by swinging from ropes or vines, such as an airship’s rigging or a chandelier. When covering a distance up to their Movement Rate, the adept makes a Swinging Move (8) test; when swinging up to double their Movement Rate, they make a Swinging Move (12) test and take 1 Strain. The attempt counts as their move for the round. A successful Swinging Move test means the adept swings and lands where they want, while failure means the adept botches their landing and are knocked down, taking falling damage for falls over 10 feet (reduce the distance fallen by 10 ft).",
+      "brief": "Travel by swinging on ropes"
     },
     "Tail Weapon": {
       "parents": [
@@ -1961,7 +2095,8 @@
           }
         ]
       },
-      "summary": "When the adept can use their Tail Attack combat option, this knack can be used with Melee Weapons in the same round. This attack cannot benefit from any other knacks."
+      "summary": "When the adept can use their Tail Attack combat option, this knack can be used with Melee Weapons in the same round. This attack cannot benefit from any other knacks.",
+      "brief": "Tail Attack with Melee Weapons"
     },
     "Take the Hit": {
       "parents": [
@@ -1986,7 +2121,8 @@
           "Scout"
         ]
       },
-      "summary": "Standard Effects. The adept uses their heightened awareness and prescience to protect an ally against their opponents. When Take the Hit is successfully used, the adept may select an adjacent ally; only one ally may be selected each round. When the ally is targeted by an opponent’s attack that affects Physical Defense, the adept may spend 2 Strain to change the target of the attack to the adept. The adept must successfully use Take the Hit against the opponent and the ally must be adjacent to the adept to use this effect."
+      "summary": "Standard Effects. The adept uses their heightened awareness and prescience to protect an ally against their opponents. When Take the Hit is successfully used, the adept may select an adjacent ally; only one ally may be selected each round. When the ally is targeted by an opponent’s attack that affects Physical Defense, the adept may spend 2 Strain to change the target of the attack to the adept. The adept must successfully use Take the Hit against the opponent and the ally must be adjacent to the adept to use this effect.",
+      "brief": "Protect ally using prescience"
     },
     "Tame Animal": {
       "parents": [
@@ -2007,7 +2143,8 @@
           "Cavalryman"
         ]
       },
-      "summary": "The adept tames a creature by touching it and making a Tame Animal test against its Social Defense. If successful, the creature’s Attitude toward the adept improves by one degree per success, to a maximum of Friendly. Once a creature’s attitude has been raised to Friendly, the adept may ride it. No one else may ride the creature until it is trained; it is automatically Unfriendly to anyone who tries to ride it other than the adept, including any characters to whom the creature may have had a better attitude before. This knack may be used on a creature only once each day."
+      "summary": "The adept tames a creature by touching it and making a Tame Animal test against its Social Defense. If successful, the creature’s Attitude toward the adept improves by one degree per success, to a maximum of Friendly. Once a creature’s attitude has been raised to Friendly, the adept may ride it. No one else may ride the creature until it is trained; it is automatically Unfriendly to anyone who tries to ride it other than the adept, including any characters to whom the creature may have had a better attitude before. This knack may be used on a creature only once each day.",
+      "brief": "Improve a creature's attitude"
     },
     "Telling the Tale": {
       "parents": [
@@ -2020,7 +2157,8 @@
       "attribute": "Charisma",
       "skillUse": "Yes (Novice)",
       "restrictions": {},
-      "summary": "Standard Effects. The adept expands their repertoire for use with the Emotion Song talent. Instead of singing, they can perform any artistic activity, such as storytelling, reciting of poetry, or even performing a puppet show. Using this knack does not count as using a knack for any limitations. Skill Use: The character must specify the artistic activity when this skill is learned. This skill may be learned more than once."
+      "summary": "Standard Effects. The adept expands their repertoire for use with the Emotion Song talent. Instead of singing, they can perform any artistic activity, such as storytelling, reciting of poetry, or even performing a puppet show. Using this knack does not count as using a knack for any limitations. Skill Use: The character must specify the artistic activity when this skill is learned. This skill may be learned more than once.",
+      "brief": "Emotion Song through any art"
     },
     "Throw Anything": {
       "parents": [
@@ -2032,7 +2170,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept uses an object no bigger than twelve inches long as a throwing weapon and does not incur a penalty to the Attack test when hurling the improvised missile (Throwing Objects, Player’s Guide, p. 393), but must be able to lift the object. The adept makes a Throwing Weapons test, as normal. If successful, the gamemaster determines the Damage Step of the improvised missile—most objects are Damage Step 1, but some larger or heavier objects may be Damage Step 2 or even 3. Objects hurled using this knack have the same range as a dagger (Player’s Guide, p. 232)."
+      "summary": "Standard Effects. The adept uses an object no bigger than twelve inches long as a throwing weapon and does not incur a penalty to the Attack test when hurling the improvised missile (Throwing Objects, Player’s Guide, p. 393), but must be able to lift the object. The adept makes a Throwing Weapons test, as normal. If successful, the gamemaster determines the Damage Step of the improvised missile—most objects are Damage Step 1, but some larger or heavier objects may be Damage Step 2 or even 3. Objects hurled using this knack have the same range as a dagger (Player’s Guide, p. 232).",
+      "brief": "Throw improvised objects without penalty"
     },
     "Touching the Past": {
       "parents": [
@@ -2045,7 +2184,8 @@
       "attribute": "Perception",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept can learn additional information from handling an item over an extended period, 1 hour each day for a week. This knack cannot be used at the same time as Item History during this time period as the adept’s pattern begins to interfere with the item’s pattern. The adept makes a Touching the Past test against the item’s Mystic Defense. Each success allows the adept to ask a question about the item and its history. The answers are vague and never reveal Key Knowledge, but can provide some insight and direction about where to look for such information. This may come in the form of visions from the item’s perspective, disembodied voices, ghostly scenes reliving the moment, etc."
+      "summary": "The adept can learn additional information from handling an item over an extended period, 1 hour each day for a week. This knack cannot be used at the same time as Item History during this time period as the adept’s pattern begins to interfere with the item’s pattern. The adept makes a Touching the Past test against the item’s Mystic Defense. Each success allows the adept to ask a question about the item and its history. The answers are vague and never reveal Key Knowledge, but can provide some insight and direction about where to look for such information. This may come in the form of visions from the item’s perspective, disembodied voices, ghostly scenes reliving the moment, etc.",
+      "brief": "Learn more from extended handling"
     },
     "Traceless Stride": {
       "parents": [
@@ -2058,7 +2198,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "Standard Effects. The adept can conceal not only their presence, but that they were ever there in the first place by not leaving any footprints while using Stealthy Stride on any surface. Once used, the effect lasts for Stealthy Stride Rank rounds, but ends if the adept stops using the talent."
+      "summary": "Standard Effects. The adept can conceal not only their presence, but that they were ever there in the first place by not leaving any footprints while using Stealthy Stride on any surface. Once used, the effect lasts for Stealthy Stride Rank rounds, but ends if the adept stops using the talent.",
+      "brief": "Leave no footprints"
     },
     "Unsettle": {
       "parents": [
@@ -2073,7 +2214,8 @@
       "restrictions": {
         "discipline": "Nethermancer"
       },
-      "summary": "The Nethermancer stares at a target within 10 yards, catching their eye while the target sees something unsettling within. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 to Willpower-based tests until the end of the next round. This does not include Effect tests. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round."
+      "summary": "The Nethermancer stares at a target within 10 yards, catching their eye while the target sees something unsettling within. The Nethermancer makes a Spellcasting test against the target’s Mystic Defense. If successful, the target suffers -2 to Willpower-based tests until the end of the next round. This does not include Effect tests. Using this knack is a Simple action if the adept used Nethermancy to attempt weaving threads this round.",
+      "brief": "Unnerve target with a vision"
     },
     "Vault Opponent": {
       "parents": [
@@ -2086,7 +2228,8 @@
       "attribute": "Dexterity",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "To use this knack, there must be space for the adept on the opposite side of their opponent. If so, the adept makes a Vault Opponent test against the target’s Social Defense. The test result must provide enough movement (vertical and horizontal) to move over the target. If the result provides enough movement, the adept leaps over the target and lands on the opposite side of them. Also, if the test is successful, the target is Blindsided for the first Action test made against the target after landing. If the result does not provide enough movement, the adept is knocked down. This may only be used once against a given target per day."
+      "summary": "To use this knack, there must be space for the adept on the opposite side of their opponent. If so, the adept makes a Vault Opponent test against the target’s Social Defense. The test result must provide enough movement (vertical and horizontal) to move over the target. If the result provides enough movement, the adept leaps over the target and lands on the opposite side of them. Also, if the test is successful, the target is Blindsided for the first Action test made against the target after landing. If the result does not provide enough movement, the adept is knocked down. This may only be used once against a given target per day.",
+      "brief": "Vault over an opponent"
     },
     "Wind Bow": {
       "parents": [
@@ -2098,7 +2241,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept manipulates the wind, shaping the whirling, shimmering elemental forces into a bow, crossbow, or other missile weapon which can propel a projectile with terrific force. The weapon is used like a normal weapon of its kind, but has a Damage Step equal to the adept’s Wind Bow Rank. Attack tests are made as normal. The weapon lasts for Wind Bow Rank minutes, but the adept may dispel it at any time. The weapon may be broken or taken from the adept like any other weapon of its type, in which case it is automatically dispelled."
+      "summary": "The adept manipulates the wind, shaping the whirling, shimmering elemental forces into a bow, crossbow, or other missile weapon which can propel a projectile with terrific force. The weapon is used like a normal weapon of its kind, but has a Damage Step equal to the adept’s Wind Bow Rank. Attack tests are made as normal. The weapon lasts for Wind Bow Rank minutes, but the adept may dispel it at any time. The weapon may be broken or taken from the adept like any other weapon of its type, in which case it is automatically dispelled.",
+      "brief": "Shape wind into a missile weapon"
     },
     "Wrecking Claws": {
       "parents": [
@@ -2110,7 +2254,8 @@
       "step": "N/A",
       "skillUse": "No",
       "restrictions": {},
-      "summary": "The adept can harden and lengthen their claws to improve their ability to damage barriers and structures. If used to destroy an object, the adept gains +5 to their Claw Shape Damage test. The adept can revert their hands back to normal at any time."
+      "summary": "The adept can harden and lengthen their claws to improve their ability to damage barriers and structures. If used to destroy an object, the adept gains +5 to their Claw Shape Damage test. The adept can revert their hands back to normal at any time.",
+      "brief": "Claws damage barriers"
     }
   },
   "restrictionTaxonomy": "docs/RESTRICTION-TAXONOMY.md (v1)"
