@@ -341,7 +341,7 @@ server.
 ### 7.1 Web store — always-on autosave (`store.js`)
 The overlay is keyed per character: `ed-character-edits:${id}` holds an **edits
 overlay** for that character — only the inputs the player changed
-(`{ meta, items, wealth }`), never a whole snapshot. Every edit writes it
+(`{ meta, items, wealth, traits, … }` — `traits` is a whole-array category), never a whole snapshot. Every edit writes it
 instantly — no permissions, survives refresh, works on every browser and
 offline. At load the overlay is merged onto the freshly-fetched store entry
 (`characters[id]` — the per-character file `data/characters/<id>.json`, §7.5), which stays the source of
@@ -554,7 +554,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
-    ed-edit-meta.js   # meta edit modal
+    ed-edit-meta.js   # "Edit character details" modal: descriptive meta (dispatches ed-edit-meta); for Orks also the Gahad trigger summary/description (dispatches ed-edit-gahad-trigger -> traits[] via store.js applyGahadTrigger)
     ed-add-legend.js  # add Legend Points modal
     ed-day-reset.js   # new-day / recovery reset modal
     ed-damage-modal.js # shared Take-damage modal (Overview Damage row + Combat Damage taken); applies a hit via engine resolveHit, dispatches ed-edit-health and the Knockdown ed-roll

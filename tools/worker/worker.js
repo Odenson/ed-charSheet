@@ -122,7 +122,8 @@ export default {
       return await upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(JSON.stringify({ message: 'save failed (upstream)', error: message }));
+      console.error(JSON.stringify({ message: 'save failed (upstream)', error: message, status: err instanceof GitHubError ? err.status : undefined }));
+      if (err instanceof GitHubError) return upstreamResponse(cors, err.status);
       return json(cors, 502, { ok: false, error: { code: 'upstream', message } });
     }
   },
@@ -173,7 +174,7 @@ function staleBase(cors, sha) {
 async function readCharacterFile(repo, filePath, branch, gh) {
   const res = await fetch(`${GITHUB}/repos/${repo}/contents/${filePath}?ref=${branch}`, { headers: gh });
   if (res.status === 404) return { sha: undefined, exists: false };
-  if (!res.ok) throw new Error(`read ${res.status}`);
+  if (!res.ok) throw new GitHubError(res.status);
   const obj = await res.json();
   return { sha: obj.sha, exists: true };
 }
@@ -191,7 +192,7 @@ async function putCharacterFile(repo, branch, gh, filePath, character, sha, cors
   if (res.ok) return ok(cors, res);
   if (res.status !== 409) {
     console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
-    return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
+    return upstreamResponse(cors, res.status);
   }
   return null;
 }
@@ -269,7 +270,7 @@ async function upsertItems(repo, branch, gh, itemsPath, delta, cors) {
     if (res.ok) return ok(cors, res);
     if (res.status !== 409) {
       console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
-      return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${res.status}` } });
+      return upstreamResponse(cors, res.status);
     }
   }
   return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
@@ -290,7 +291,7 @@ async function readItemsFile(repo, itemsPath, branch, gh) {
         items: {},
       },
     };
-  if (!res.ok) throw new Error(`read ${res.status}`);
+  if (!res.ok) throw new GitHubError(res.status);
   const obj = await res.json();
   return { sha: obj.sha, file: JSON.parse(base64ToString(obj.content)) };
 }
@@ -318,7 +319,31 @@ function checkItemsDelta(body) {
 }
 
 function ok(cors, res) {
-  return res.json().then((c) => json(cors, 200, { ok: true, commit: { sha: c.content.sha, url: c.html_url } }));
+  return res.json().then((c) => {
+    // A 2xx without `content.sha` is not a usable commit — fail clearly rather
+    // than crash reading `.sha` of undefined.
+    if (!c?.content?.sha) throw new Error('GitHub returned no content.sha for the saved file');
+    return json(cors, 200, { ok: true, commit: { sha: c.content.sha, url: c.html_url } });
+  });
+}
+
+// A failed GitHub call, carrying its HTTP status so the catch-all can map it.
+class GitHubError extends Error {
+  constructor(status) {
+    super(`github ${status}`);
+    this.status = status;
+  }
+}
+
+// Map a GitHub failure status to a clear 502 the app can show. 401/403 almost
+// always mean the worker's GITHUB_TOKEN is expired, revoked or lacks access
+// (403 can also be a rate limit); 404 means the repo or data branch is missing.
+function upstreamResponse(cors, status) {
+  if (status === 401 || status === 403)
+    return json(cors, 502, { ok: false, error: { code: 'github_auth', message: `GitHub rejected the worker's token (${status}): it may be expired, revoked, rate-limited or lack write access. Renew GITHUB_TOKEN.` } });
+  if (status === 404)
+    return json(cors, 502, { ok: false, error: { code: 'github_not_found', message: 'GitHub could not find the repo or the data branch (404). Check GITHUB_OWNER, GITHUB_REPO and GITHUB_BRANCH.' } });
+  return json(cors, 502, { ok: false, error: { code: 'upstream', message: `github ${status}` } });
 }
 
 // First save on a fresh repo: create the data branch from the default branch so
@@ -326,14 +351,21 @@ function ok(cors, res) {
 async function ensureBranch(repo, branch, gh) {
   const head = await fetch(`${GITHUB}/repos/${repo}/git/ref/heads/${branch}`, { headers: gh });
   if (head.ok) return;
-  const meta = await (await fetch(`${GITHUB}/repos/${repo}`, { headers: gh })).json();
-  const base = await (await fetch(`${GITHUB}/repos/${repo}/git/ref/heads/${meta.default_branch}`, { headers: gh })).json();
+  // Anything but "branch not found" (bad/expired token, rate limit, outage) is
+  // not a reason to try creating it — surface the real status.
+  if (head.status !== 404) throw new GitHubError(head.status);
+  const metaRes = await fetch(`${GITHUB}/repos/${repo}`, { headers: gh });
+  if (!metaRes.ok) throw new GitHubError(metaRes.status);
+  const meta = await metaRes.json();
+  const baseRes = await fetch(`${GITHUB}/repos/${repo}/git/ref/heads/${meta.default_branch}`, { headers: gh });
+  if (!baseRes.ok) throw new GitHubError(baseRes.status);
+  const base = await baseRes.json();
   const created = await fetch(`${GITHUB}/repos/${repo}/git/refs`, {
     method: 'POST',
     headers: { ...gh, 'Content-Type': 'application/json' },
     body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: base.object.sha }),
   });
-  if (!created.ok) throw new Error(`create branch ${created.status}`);
+  if (!created.ok) throw new GitHubError(created.status);
 }
 
 // Base64-encode a string as its UTF-8 bytes. `btoa` alone only accepts Latin1

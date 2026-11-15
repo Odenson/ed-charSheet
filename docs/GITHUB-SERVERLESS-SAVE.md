@@ -432,7 +432,7 @@ Wiring rules:
   serves a future background auto-save — a conflict is never dropped silently.
 - **Reconcile the overlay on success.** After a confirmed commit the branch holds
   those exact inputs, so the localStorage edits overlay for the saved categories
-  (`meta` / `items` / `wealth`) is now redundant **and** will mask the branch on
+  (`SAVED_CATEGORIES` in `store.js`: `meta` / `items` / `wealth` / `health` / `karma` / `advancements` / `traits` / `notes` / `history` / `legend`) is now redundant **and** will mask the branch on
   the next load — including edits made from another device. On success, clear the
   reconciled keys from the overlay so the (cache-busted) branch read becomes the
   source of truth. **Trade-off:** if a later branch read is unreachable, that

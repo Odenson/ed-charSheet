@@ -7,6 +7,21 @@
   },
   "releases": [
     {
+      "version": "1.37.0",
+      "date": "2026-11-15",
+      "summary": "Orks can now edit their Gahad trigger from the Edit character details modal, and failed GitHub saves now explain why.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Orks can now edit their Gahad trigger (summary and description) from the Edit character details modal."
+        },
+        {
+          "type": "fixed",
+          "text": "When saving to GitHub fails, the app now says why (for example an expired save token or a missing data branch) instead of showing a raw error."
+        }
+      ]
+    },
+    {
       "version": "1.36.0",
       "date": "2026-11-15",
       "summary": "New shared die and info icons, plus Combat and roll-modal clarity fixes.",
