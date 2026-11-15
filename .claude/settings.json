@@ -4,6 +4,16 @@
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
+      "Bash(git branch --show-current)",
+      "Bash(git rev-list*)",
+      "Bash(git merge-base*)",
+      "Bash(git merge origin/main*)",
+      "Bash(gh pr create --base main --head dev*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr merge * --squash*)",
+      "Bash(gh run list*)",
+      "Bash(date -u*)",
       "Bash(git show*)",
       "Bash(git fetch*)",
       "Bash(npm test*)",
@@ -12,14 +22,11 @@
       "Bash(git push origin dev*)",
       "Bash(git push -u origin dev*)",
       "Bash(node tools/sync-agents.mjs*)",
-      "Bash(node tools/release.mjs check*)",
+      "Bash(node tools/release.mjs*)",
       "Bash(node tools/token-report.mjs*)"
     ],
     "ask": [
-      "Bash(git merge*)",
       "Bash(git pull*)",
-      "Bash(gh pr create*)",
-      "Bash(gh pr merge*)",
       "Bash(rm -rf *)"
     ],
     "deny": [
