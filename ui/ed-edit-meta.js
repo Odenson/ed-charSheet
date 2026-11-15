@@ -1,12 +1,14 @@
 // ui/ed-edit-meta.js — the first edit form. A modal for the character's
 // descriptive meta (description, age, weight, sex, height, skin tone,
-// background). These are pure *inputs* with no engine impact.
+// background; for Orks also the Gahad trigger summary/description, dispatched
+// separately as `ed-edit-gahad-trigger`). These are pure *inputs* with no engine impact.
 //
 // Architecture (Tier-1 golden rule): this view NEVER mutates state or persists
 // anything itself. On save it dispatches `ed-edit-meta` up to ed-app, which
 // applies the patch, persists the overlay, and re-derives the model. It closes
 // via `close` (Escape / Cancel / backdrop). Enter confirms; theme-aware.
 import { LitElement, html, css } from 'lit';
+import { gahadTriggerChanged } from '../store.js';
 
 // The editable fields, in display order. `area` → multi-line textarea.
 // Add a field here (plus the matching meta key) to extend the form.
@@ -23,6 +25,7 @@ const FIELDS = [
 export class EdEditMeta extends LitElement {
   static properties = {
     meta: { attribute: false },
+    gahadTrigger: { attribute: false },
   };
 
   static styles = css`
@@ -89,6 +92,15 @@ export class EdEditMeta extends LitElement {
     }
     // Dispatch up — ed-app applies, persists, and re-derives. Then close.
     this.dispatchEvent(new CustomEvent('ed-edit-meta', { detail: patch, bubbles: true, composed: true }));
+    if (form.elements.gahadSummary && gahadTriggerChanged(this.gahadTrigger, {
+      summary: form.elements.gahadSummary.value,
+      description: form.elements.gahadDescription.value,
+    })) {
+      this.dispatchEvent(new CustomEvent('ed-edit-gahad-trigger', {
+        detail: { summary: form.elements.gahadSummary.value, description: form.elements.gahadDescription.value },
+        bubbles: true, composed: true,
+      }));
+    }
     this._close();
   }
 
@@ -114,6 +126,18 @@ export class EdEditMeta extends LitElement {
                 </div>
               `;
             })}
+            ${meta.race === 'Ork'
+              ? html`
+                <div class="field wide">
+                  <label for="gahadSummary">Gahad trigger: Summary</label>
+                  <input id="gahadSummary" name="gahadSummary" type="text" .value=${this.gahadTrigger?.summary ?? ''} />
+                </div>
+                <div class="field wide">
+                  <label for="gahadDescription">Gahad trigger: Description</label>
+                  <textarea id="gahadDescription" name="gahadDescription" rows="3" .value=${this.gahadTrigger?.description ?? ''}></textarea>
+                </div>
+                <p class="hint">Shown in the Gahad info on the Overview. Leave both blank to remove it.</p>`
+              : ''}
             <p class="hint">Saved to this browser. These details don't affect any rules or rolls.</p>
             <div class="actions">
               <button type="button" class="btn" @click=${this._close}>Cancel</button>

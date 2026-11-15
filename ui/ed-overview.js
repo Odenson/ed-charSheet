@@ -1048,7 +1048,7 @@ export class EdOverview extends LitElement {
           `
         : ''}
       ${this._edit
-        ? html`<ed-edit-meta .meta=${meta} @close=${() => (this._edit = false)}></ed-edit-meta>`
+        ? html`<ed-edit-meta .meta=${meta} .gahadTrigger=${this._traitsFor('Gahad').find((t) => t.type === 'trigger') ?? null} @close=${() => (this._edit = false)}></ed-edit-meta>`
         : ''}
     `;
   }

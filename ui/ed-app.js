@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -399,6 +399,7 @@ export class EdApp extends LitElement {
     // A view edited character inputs. Apply the patch, persist the overlay, and
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
+    this.addEventListener('ed-edit-gahad-trigger', (e) => this._editGahadTrigger(e.detail));
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     // Drink/Use a consumable potion (Equipment or Combat). Clear an armed one-shot
     // benefit (the pending pill's ✕).
@@ -1130,6 +1131,17 @@ export class EdApp extends LitElement {
     if (!this._character || !Array.isArray(notes)) return;
     this._character = { ...this._character, notes };
     saveNotesEdits(notes, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+  }
+
+  // The edit-details modal changed an Ork's Gahad trigger text. Update/create/
+  // remove the trigger trait, persist the traits overlay, re-derive.
+  _editGahadTrigger(patch) {
+    if (!this._character || !patch || typeof patch !== 'object') return;
+    const traits = applyGahadTrigger(this._character.traits ?? [], patch);
+    this._character = { ...this._character, traits };
+    saveTraitsEdits(traits, this._characterId);
     this._markDirty();
     this._model = this._derive();
   }

@@ -816,3 +816,18 @@ Sources:
 - rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14339-14354 (p. 381, Wounds)
 - rulebook extracts/rulebook extracts/text-RB-players-guide.txt:14355-14364 (p. 382, Healing Wounds)
 - rulebook extracts/rulebook extracts/text-RB-players-guide.txt:2050-2067 (p. 65, Health Ratings formulas)
+
+### Q032 — Ork racial ability Gahad: what it is, what a "gahad trigger" is, mechanical effect, who decides, how many triggers, can they change
+Keywords: gahad, ork, trigger, impulse, heartburn, hangover, swallowing, Willpower (6), resist, +1 bonus, Action test, Effect test, revenge, GM discretion, personal trigger, edit trigger · Resolved: 2026-11-15 · Context: edit-gahad-trigger
+
+(1) Gahad is largely a roleplaying concept: a physical sensation like intense heartburn, triggered by certain circumstances, driving the ork to eradicate the triggering situation or take revenge on the perpetrator. Each ork has unique triggers and feels it to varying degrees. A "gahad trigger" is an optional-rules construct: groups wanting game rules have the player describe impulses that always trigger gahad, in short sentences, with optional limits/exceptions (example: "Grisalk's gahad is triggered when his mother is insulted, except by someone in the family"). When triggered the player chooses to give in or resist (Willpower (6) test, successes required scaled to trigger severity, e.g. 1 vs 3+). Resisting ("swallowing") causes a hangover: starts within an hour, lasts 1 hour per success required, character is Harried (p. 388). Giving in (or failing to resist): driven to end the stimulus or take revenge for as long as the hangover would have lasted; +1 bonus to any Action or Effect test made towards ending the stimulus or taking revenge. The book says "bonus" without stating Step vs result add. The GM decides use/application: "always at the discretion of the gamemaster"; not meant as a +1 on every flimsy excuse; violent reaction not required, any forceful decisive action may satisfy it.
+(2) "A couple of impulses" (plural, several short triggers) is the book's guidance; no hard cap stated. The player describes/specifies the triggers (and limits); the GM adjudicates whether a given situation applies and the bonuses/penalties. The book says nothing on whether triggers may later be changed (not covered); the app treating them as player-editable text is consistent with the player authoring them but is not book-backed.
+(3) App comparison (rules/races.json:88-92): "+1 to Action or Effect tests aimed at ending the trigger or taking revenge, situational, GM discretion, Willpower (6) resist, hangover = Harried" matches the book. Minor notes: the effect is modeled as test-modifier target "Action" only (book says Action or Effect), measure "result" is an app interpretation (book just says "+1 bonus"), and the app summary says "gives in to (or fails to resist)" which matches. Not flagged as APP-DIFFERS beyond the result-vs-step nuance.
+
+Sources:
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:1471-1475 (p. ~49, ork intro)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:1494-1537 (pp. 49-50, Gahad racial ability)
+- rulebook extracts/rulebook extracts/QAs_Races.txt:176-210 (Q&A restatement)
+- rulebook extracts/rulebook extracts/text-RB-companions-guide.txt:15662 (mention of a victim's gahad being triggered; no rule)
+
+Decision: 2026-11-15 — No house rule needed; a gahad trigger may be edited at any time, left to the user's control. The edit-gahad-trigger feature supports a single trigger as a deliberate scope simplification (the book says "a couple of impulses"). (homebrew)

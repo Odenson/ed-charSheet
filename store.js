@@ -472,6 +472,47 @@ export function saveNotesEdits(notes, id) {
 }
 
 /**
+ * Persist the character's traits (quirks, triggers, ...) to the edits overlay.
+ * Traits are pure inputs, so the whole array is stored as-is.
+ */
+export function saveTraitsEdits(traits, id) {
+  const edits = loadEdits(id);
+  edits.traits = traits;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+const isGahadTrigger = (t) => t?.type === 'trigger' && t.relatedTo?.type === 'ability' && t.relatedTo?.name === 'Gahad';
+const trimStr = (v) => (v == null ? '' : String(v)).trim();
+
+/**
+ * Pure: update, create or remove the Ork Gahad trigger trait. Only the FIRST
+ * matching trigger is edited/removed. Blank fields are omitted, never "".
+ * Does not mutate its input.
+ */
+export function applyGahadTrigger(traits, { summary, description } = {}) {
+  const s = trimStr(summary);
+  const d = trimStr(description);
+  const list = [...(traits ?? [])];
+  const i = list.findIndex(isGahadTrigger);
+  const blank = !s && !d;
+  if (i >= 0) {
+    if (blank) { list.splice(i, 1); return list; }
+    const { summary: _s, description: _d, ...rest } = list[i];
+    list[i] = { ...rest, ...(s ? { summary: s } : {}), ...(d ? { description: d } : {}) };
+    return list;
+  }
+  if (blank) return list;
+  list.push({ name: 'Gahad trigger', type: 'trigger', relatedTo: { type: 'ability', name: 'Gahad' }, ...(s ? { summary: s } : {}), ...(d ? { description: d } : {}) });
+  return list;
+}
+
+/** True when the trigger fields differ from the prefill (both trimmed, null/undefined as ""). */
+export function gahadTriggerChanged(prefill, { summary, description } = {}) {
+  return trimStr(prefill?.summary) !== trimStr(summary) || trimStr(prefill?.description) !== trimStr(description);
+}
+
+/**
  * Persist the character's event timeline to the edits overlay (PLAN-NOTES-TAB).
  * History entries are pure input — dated `{ id, date, text }` events — so the
  * whole array is stored as-is; reverse-chronological ordering is a render
@@ -501,7 +542,7 @@ export function saveLegendEdits(earned, id) {
 
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'karma', 'advancements', 'notes', 'history', 'legend'];
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'karma', 'advancements', 'traits', 'notes', 'history', 'legend'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -582,6 +623,7 @@ export function applyEdits(character, edits) {
     // pure `{name, via?}` inputs — no derived-field stripping (unlike talent tier).
     if (advancements.knacks) next = { ...next, knacks: advancements.knacks };
   }
+  if (edits.traits) next = { ...next, traits: edits.traits };
   if (edits.notes) next = { ...next, notes: edits.notes };
   if (edits.history) next = { ...next, history: edits.history };
   if (edits.legend) {

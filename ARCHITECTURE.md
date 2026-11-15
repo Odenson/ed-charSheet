@@ -341,7 +341,7 @@ server.
 ### 7.1 Web store — always-on autosave (`store.js`)
 The overlay is keyed per character: `ed-character-edits:${id}` holds an **edits
 overlay** for that character — only the inputs the player changed
-(`{ meta, items, wealth }`), never a whole snapshot. Every edit writes it
+(`{ meta, items, wealth, traits, … }` — `traits` is a whole-array category), never a whole snapshot. Every edit writes it
 instantly — no permissions, survives refresh, works on every browser and
 offline. At load the overlay is merged onto the freshly-fetched store entry
 (`characters[id]` — the per-character file `data/characters/<id>.json`, §7.5), which stays the source of
