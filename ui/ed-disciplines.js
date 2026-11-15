@@ -10,6 +10,7 @@
 // paraphrase (rules/talents.json), never verbatim rulebook prose.
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
+import { infoIconCss } from './info-icon.js';
 import { ModalController } from './modal-controller.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
@@ -38,6 +39,7 @@ export class EdDisciplines extends LitElement {
 
   static styles = css`
     ${diceIconCss}
+    ${infoIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -916,7 +918,7 @@ export class EdDisciplines extends LitElement {
               </span>
             </div>
           </div>
-          <div class="mnote2"><span aria-hidden="true">ⓘ</span><span>No test to learn — training takes 40 hours over three weeks with a Circle ${m.next}+ tutor. Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</span></div>
+          <div class="mnote2"><span class="ibadge" aria-hidden="true">i</span><span>No test to learn — training takes 40 hours over three weeks with a Circle ${m.next}+ tutor. Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</span></div>
           <div class="mactions">
             <button class="mbtn" @click=${() => this._modalCtl.close()}>Cancel</button>
             <button class="mbtn primary" autofocus ?disabled=${!canTrain} title=${canTrain ? '' : 'Not enough Legend or silver'} @click=${() => canTrain && this._advancePick(m.discipline, silver)}>Train</button>
@@ -1037,7 +1039,7 @@ export class EdDisciplines extends LitElement {
                 })
               : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
           </div>
-          <div class="mnote2" style="margin-top:8px"><span aria-hidden="true">ⓘ</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>
+          <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>
         </div>
       </div>
     `;
@@ -1072,10 +1074,10 @@ export class EdDisciplines extends LitElement {
           const circ = typeof d === 'string' ? null : d?.circle ?? null;
           return circ == null ? nm : `${nm} ${circ}`;
         });
-        return html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${parts.join(', or ')} · enforced</span>` + (rest.note ? html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${rest.note} (GM adjudicates)</span>` : '');
+        return html`<span class="lbrief" style="color:var(--muted)"><span class="ibadge" aria-hidden="true">i</span> ${parts.join(', or ')} · enforced</span>` + (rest.note ? html`<span class="lbrief" style="color:var(--muted)"><span class="ibadge" aria-hidden="true">i</span> ${rest.note} (GM adjudicates)</span>` : '');
       }
       if (typeof disc === 'string' && disc) {
-        return html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${disc} · enforced</span>` + (rest.note ? html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${rest.note} (GM adjudicates)</span>` : '');
+        return html`<span class="lbrief" style="color:var(--muted)"><span class="ibadge" aria-hidden="true">i</span> ${disc} · enforced</span>` + (rest.note ? html`<span class="lbrief" style="color:var(--muted)"><span class="ibadge" aria-hidden="true">i</span> ${rest.note} (GM adjudicates)</span>` : '');
       }
       const gmParts = [];
       if (rest.attribute) {
@@ -1088,7 +1090,7 @@ export class EdDisciplines extends LitElement {
       }
       if (rest.note) gmParts.push(rest.note);
       if (!gmParts.length) return '';
-      return html`<span class="lbrief" style="color:var(--muted)"><span aria-hidden="true">ⓘ</span> ${gmParts.join('; ')} (GM adjudicates)</span>`;
+      return html`<span class="lbrief" style="color:var(--muted)"><span class="ibadge" aria-hidden="true">i</span> ${gmParts.join('; ')} (GM adjudicates)</span>`;
     };
     const q = (this._knackSearch ?? '').trim().toLowerCase();
     const filtered = q
@@ -1166,7 +1168,7 @@ export class EdDisciplines extends LitElement {
                 })
               : html`<div class="mtext" style="color: var(--muted)">${q ? html`No knacks match “${q}”.` : 'No knacks left to learn.'}</div>`}
           </div>
-          <div class="mnote2" style="margin-top:8px"><span aria-hidden="true">ⓘ</span><span>Only knacks you qualify for are listed: a governing talent is known through a Discipline at the required rank (and, when the "skills may govern knacks" house rule is on, a governing skill you own at the required rank), and you are under the per-parent cap. Silver fee from <code>rules/legend.json</code> <code>costs.knackTraining[rank]</code> — edit that table to retune.</span></div>
+          <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Only knacks you qualify for are listed: a governing talent is known through a Discipline at the required rank (and, when the "skills may govern knacks" house rule is on, a governing skill you own at the required rank), and you are under the per-parent cap. Silver fee from <code>rules/legend.json</code> <code>costs.knackTraining[rank]</code> — edit that table to retune.</span></div>
         </div>
       </div>
     `;

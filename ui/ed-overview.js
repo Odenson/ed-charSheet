@@ -4,6 +4,7 @@
 // until the engine computes them (see docs/UI-GUIDELINES.md).
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
+import { infoIconCss } from './info-icon.js';
 import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
@@ -31,6 +32,7 @@ export class EdOverview extends LitElement {
 
   static styles = [
     diceIconCss,
+    infoIconCss,
     legendSpentStyles,
     css`
     :host {
@@ -687,7 +689,7 @@ export class EdOverview extends LitElement {
               <span class="ftag race">${race}</span>
               <span class="txt"
                 >${a.name}${a.summary || this._traitsFor(a.name).length
-                  ? html`<button class="info" aria-label="About ${a.name}" title="Details" @click=${() => this._openModal(a.name, this._abilityModalBody(a))}>ⓘ</button>`
+                  ? html`<button class="info ibadge" aria-label="About ${a.name}" title="Details" @click=${() => this._openModal(a.name, this._abilityModalBody(a))}>i</button>`
                   : ''}</span
               >
             </div>
@@ -822,7 +824,7 @@ export class EdOverview extends LitElement {
       <div class="blk legend">
         <h4>
           Legend${status
-            ? html`<button class="info" aria-label="About Legendary Status" title="Legendary Status" @click=${() => this._openModal('Legendary Status', this._legendModalBody(l))}>ⓘ</button>`
+            ? html`<button class="info ibadge" aria-label="About Legendary Status" title="Legendary Status" @click=${() => this._openModal('Legendary Status', this._legendModalBody(l))}>i</button>`
             : ''}
         </h4>
         <div class="ltotal">
@@ -845,7 +847,7 @@ export class EdOverview extends LitElement {
           </div>
           <div class="line">
             <span>Available${l?.spent
-              ? html`<button class="info" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => this._openModal('Legend spent', legendSpentBody(l.spent))}>ⓘ</button>`
+              ? html`<button class="info ibadge" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => this._openModal('Legend spent', legendSpentBody(l.spent))}>i</button>`
               : ''}</span>
             ${num(l?.available)}
           </div>
@@ -915,14 +917,14 @@ export class EdOverview extends LitElement {
                   ${meta.name ?? 'Unnamed'}${this.editMode
                     ? nothing
                     : html`<button
-                        class="info"
+                        class="info ibadge"
                         title="Character details"
                         aria-label="Character details"
                         @click=${(e) => {
                           e.stopPropagation();
                           this._openModal(meta.name ?? 'Character details', this._metaBody());
                         }}
-                      >ⓘ</button>`}
+                      >i</button>`}
                 </div>
                 <div class="meta">${metaLine}</div>
               `,

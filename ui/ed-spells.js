@@ -9,6 +9,7 @@
 // remove (edit mode). Learn (a roll) and the cast flow land in 8.6a.
 import { LitElement, html, css } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
+import { infoIconCss } from './info-icon.js';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
   learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell,
   spellObjectRequirement, castWeaponChoices, weaponMysticDefense, nextCastNumber } from '../engine/spells.js';
@@ -46,6 +47,7 @@ export class EdSpells extends LitElement {
 
   static styles = css`
     ${diceIconCss}
+    ${infoIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -83,8 +85,6 @@ export class EdSpells extends LitElement {
     .srow.h { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .sname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .info { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--muted); color: var(--muted); font-size: var(--fs-eyebrow); font-style: italic; font-family: system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; background: none; cursor: pointer; padding: 0; box-sizing: border-box; }
-    .info:hover { border-color: var(--spell); color: var(--spell); }
     .attn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
     .attn.on { border-color: var(--spell); background: var(--spell-bg); color: var(--spell); }
     .attn:disabled { opacity: 0.35; cursor: default; }
@@ -933,7 +933,7 @@ export class EdSpells extends LitElement {
     const noFreeMatrix = !placed && !ctx.matrices.some((m) => !m.spell);
     return html`
       <div class="srow">
-        <button class="info" title="Spell details" aria-label="Details for ${s.name}" @click=${() => this._openDetail(s)}>i</button>
+        <button class="info ibadge" title="Spell details" aria-label="Details for ${s.name}" @click=${() => this._openDetail(s)}>i</button>
         <span class="sname" title=${s.name}>${s.name}</span>
         <span class="num">${s.threadsToWeave}</span>
         <span class="num">${s.weavingDifficulty?.value ?? '—'}</span>

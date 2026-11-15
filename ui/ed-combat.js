@@ -21,6 +21,7 @@
 // round's non-roll actions (Stand up) are recorded too, marked `kind: 'action'`.
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
+import { infoIconCss } from './info-icon.js';
 import { weaponOccurrence } from '../engine/spells.js';
 import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, UNARMED_WEAPON, successDamageSteps, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
 import { recoveriesRemaining } from '../engine/health.js';
@@ -100,6 +101,7 @@ export class EdCombat extends LitElement {
 
   static styles = css`
     ${diceIconCss}
+    ${infoIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#f7f8fa, #1b1f27);
@@ -1457,14 +1459,14 @@ export class EdCombat extends LitElement {
                   </select>
                 </div>
                 <div class="statline">
-                  <button class="info" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>ⓘ</button>
+                  <button class="info ibadge" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>i</button>
                   <span class="k">Attack</span>
                   <span class="v">${this._stepVal(ap.step)}</span>
                   <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
                   <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>${diceIcon}</button>
                 </div>
                 <div class="statline">
-                  <button class="info" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>ⓘ</button>
+                  <button class="info ibadge" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>i</button>
                   <span class="k">Damage</span>
                   <span class="v">${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}</span>
                   ${this._damageBonusBadge()}

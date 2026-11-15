@@ -14,6 +14,7 @@
 // lives behind a click-through modal styled to match the Disciplines talent modal.
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
+import { infoIconCss } from './info-icon.js';
 import { pickItemKeys, PICKER_LABELS } from './picker.js';
 import { equipArmour, applyArmourSwap, bumpQuantity, nextTradeItems } from './item-equip-state.js';
 import { boostHasNoEffect } from '../engine/potions.js';
@@ -195,6 +196,7 @@ export class EdEquipment extends LitElement {
 
   static styles = css`
     ${diceIconCss}
+    ${infoIconCss}
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -278,8 +280,6 @@ export class EdEquipment extends LitElement {
        weight. The icon hides until you hover the line on pointer devices, but
        stays visible on touch (no hover) so mobile can still reach it. */
     .uwline { display: flex; align-items: center; gap: 2px; }
-    .uwinfo { font: inherit; font-size: var(--fs-body); line-height: 1; border: none; background: none; color: var(--muted); cursor: pointer; padding: 0 3px; opacity: 0.8; transition: opacity 0.12s, color 0.12s; }
-    .uwinfo:hover { color: var(--accent); opacity: 1; }
     .uwinfo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 5px; opacity: 1; }
     @media (hover: hover) {
       .uwline .uwinfo { opacity: 0; }
@@ -814,11 +814,11 @@ export class EdEquipment extends LitElement {
         ${w.unweighed ? html`
           <div class="wline uwline">
             ${w.unweighed} item${w.unweighed > 1 ? 's' : ''} with unrecorded weight
-            ${w.unweighedItems?.length ? html`<button class="uwinfo"
+            ${w.unweighedItems?.length ? html`<button class="uwinfo ibadge"
                 aria-expanded=${this._showUnweighed ? 'true' : 'false'}
                 aria-label="List the items with unrecorded weight"
                 title="Which items?"
-                @click=${() => { this._showUnweighed = !this._showUnweighed; }}>ⓘ</button>` : ''}
+                @click=${() => { this._showUnweighed = !this._showUnweighed; }}>i</button>` : ''}
           </div>
           ${this._showUnweighed && w.unweighedItems?.length ? html`
             <ul class="uwlist">
