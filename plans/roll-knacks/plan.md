@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.38.0
 ---
 # Delivery Plan: Roll knacks (roll-knacks)
 
