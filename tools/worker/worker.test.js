@@ -580,7 +580,7 @@ test('two characters save to two separate files with no false conflict', async (
 
 // --- upstream failure --------------------------------------------------------
 
-test('non-409 GitHub failure (403) → 502 upstream', async () => {
+test('non-409 GitHub failure (403) → 502 github_auth', async () => {
   const mock = mockGitHub({
     ...branchExists,
     ...readsCharFile(CHAR_PATH, 'char-sha'),
@@ -589,7 +589,7 @@ test('non-409 GitHub failure (403) → 502 upstream', async () => {
   try {
     const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
     assert.equal(status, 502);
-    assert.equal(json.error.code, 'upstream');
+    assert.equal(json.error.code, 'github_auth');
   } finally {
     mock.restore();
   }
@@ -810,7 +810,7 @@ test('save-items persistent 409 → 409 conflict after MAX_RETRIES', async () =>
   }
 });
 
-test('save-items non-409 GitHub failure (403) → 502 upstream', async () => {
+test('save-items non-409 GitHub failure (403) → 502 github_auth', async () => {
   const mock = mockGitHub({
     ...branchExists,
     ...readsItems(ITEMS),
@@ -819,7 +819,82 @@ test('save-items non-409 GitHub failure (403) → 502 upstream', async () => {
   try {
     const { status, json } = await call(req({ items: { x: ITEM } }, { path: '/save-items' }));
     assert.equal(status, 502);
+    assert.equal(json.error.code, 'github_auth');
+  } finally {
+    mock.restore();
+  }
+});
+
+// --- clear GitHub error mapping ---------------------------------------------
+
+test('bad/expired token on the branch check (401) → 502 github_auth, not a JS crash', async () => {
+  const mock = mockGitHub({ 'GET /git/ref/heads/character-data': () => ({ status: 401, body: { message: 'Bad credentials' } }) });
+  try {
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502);
+    assert.equal(json.error.code, 'github_auth');
+    assert.match(json.error.message, /GITHUB_TOKEN/);
+    assert.ok(!/undefined/.test(json.error.message), 'no raw JS error text');
+    assert.ok(!mock.calls.some((c) => c.method === 'POST'), 'does not try to create the branch');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('missing repo on branch bootstrap (404) → 502 github_not_found', async () => {
+  const mock = mockGitHub({
+    'GET /git/ref/heads/character-data': () => ({ status: 404, body: {} }),
+    'GET /ed-charSheet': () => ({ status: 404, body: {} }),
+  });
+  try {
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502);
+    assert.equal(json.error.code, 'github_not_found');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('file read failure (401) → 502 github_auth', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    'GET /contents/data/characters/chakka.json': () => ({ status: 401, body: {} }),
+  });
+  try {
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502);
+    assert.equal(json.error.code, 'github_auth');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('other GitHub failure (500) keeps code upstream with the status', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsCharFile(CHAR_PATH, 'char-sha'),
+    'PUT /contents/data/characters/chakka.json': () => ({ status: 500, body: {} }),
+  });
+  try {
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502);
     assert.equal(json.error.code, 'upstream');
+    assert.equal(json.error.message, 'github 500');
+  } finally {
+    mock.restore();
+  }
+});
+
+test('a 2xx PUT with no content.sha → 502 with a clear message, not a JS crash', async () => {
+  const mock = mockGitHub({
+    ...branchExists,
+    ...readsCharFile(CHAR_PATH, 'char-sha'),
+    'PUT /contents/data/characters/chakka.json': () => ({ status: 200, body: {} }),
+  });
+  try {
+    const { status, json } = await call(req({ character: CHAR, id: 'chakka' }));
+    assert.equal(status, 502);
+    assert.match(json.error.message, /no content\.sha/);
   } finally {
     mock.restore();
   }
