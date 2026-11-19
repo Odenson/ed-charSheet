@@ -106,3 +106,44 @@ and UI-kit check both green).
   "+ Learn spell" new shape, roll Apply/choosers gain Cancel (OK stays), aim Roll is
   amber, Spells/Equipment/Disciplines/trade dialogs cap at 85vh and scroll, learn
   footer shows a disabled "Learn spell" before a spell is picked.
+
+### Phase 4 — Dev Lead review (dev-lead)
+
+Reviewed commit 22b35b4 (`git show`), spec.md and the tester's tests. **Clean — no
+revision needed.**
+- Gate: `npm test` 1458 / 1458 pass (pretest import + UI-kit checks included).
+- Test guarantee: the four tester files are byte-identical to the Phase-2 snapshot.
+- Router/controller match spec R1–R15; kit is lit-free and dispatches nothing
+  (golden rule); `onClose(reason)` lets `ed-confirm` dispatch only `confirm` on OK.
+- Roll modal: `updated()` Strain/Karma charge logic and chooser commits untouched
+  (diff touches render only, plus first-focus in `firstUpdated`).
+- Tier 1: UI-GUIDELINES §7 changed by the signed-off D1 sentence + note only.
+- Accepted dev deviations: roll first focus via `opened(null)` in `firstUpdated`
+  + `updateComplete.then(refocus)`; `.mfoot` wrapper div in `modal.js`.
+
+### Phase 5 — Doc sync (design-agent)
+
+Applied (Tier 3): `docs/FEATURE-WORKFLOW.md:99` and `docs/AI-WORKFLOWS.md:130` now
+list `tools/check-ui-kit.mjs` in `pretest`. Deferred Tier-1/2 edits: **none**.
+Note (no change proposed): UI-GUIDELINES §7's "Every modal/overlay follows the same
+keyboard contract" is not yet true for legacy modals; MODALS.md §10 lists them and
+the second feature migrates them. `docs/TAXONOMY-AUDIT.md` mentions of
+`ui/modal-controller.js` are dated records and left as is.
+
+### Phase 6 — Owner handoff
+
+**GUARDRAILS PR checklist**
+- [x] No Tier-1 invariant changed — only the owner-signed-off §7 D1 sentence
+      (qa-log 11:53; scope 13:42); roll OK exception signed 13:40.
+- [ ] Overview fits viewport — no Overview layout change; **owner to confirm on dev**.
+- [x] Derived values still placeholder pills — no derived-value change.
+- [ ] Light + dark; modals Escape-close / Enter-confirm — kit uses `light-dark()` /
+      host vars; **owner to verify visually**.
+- [x] Taxonomy change — N/A (no Tier-2).
+- [x] Asset/fetch paths relative — no new fetches.
+- [x] Modals use `ui/kit/`; UI-kit check passes (migrated hosts; legacy in baseline).
+
+**Manual UI verification** — see "Owner manual checklist" earlier in this log
+(light + dark, mobile 340px fold, Overview fit, stacked Escape, held keys, roll
+modal, day-reset embedded roll, damage, trade, equipment, spells, disciplines,
+legacy smoke pass).

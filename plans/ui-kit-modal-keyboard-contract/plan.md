@@ -1,5 +1,6 @@
 ---
-status: building
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: UI kit + modal keyboard contract (ui-kit-modal-keyboard-contract)
 

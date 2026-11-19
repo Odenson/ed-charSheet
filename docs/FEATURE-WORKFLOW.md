@@ -96,7 +96,7 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 
 ### Gate and UI verification
 
-The gate is `npm test` (`node --test`; `pretest` runs `tools/check-imports.mjs`).
+The gate is `npm test` (`node --test`; `pretest` runs `tools/check-imports.mjs` and `tools/check-ui-kit.mjs`).
 There is no browser test harness and agents never open the preview: UI changes
 are verified by the owner on `dev`, from the manual checklist the Dev Lead puts in
 `build-log.md` and, in full, in the final message under "UI test requirements" (what to look at, light and dark mode, mobile fold, Overview viewport fit).
