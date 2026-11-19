@@ -122,6 +122,7 @@ Re-check the Tier 1 rules you could have affected:
 - [ ] Overview still fits the desktop viewport with no vertical scroll
 - [ ] Derived values still show placeholder pills, never fabricated numbers
 - [ ] Works in both light and dark mode; modals still Escape-closes/Enter-confirms
+- [ ] Modals and modal-like UI use ui/kit/; the UI-kit check passes
 - [ ] Any taxonomy change bumped the version AND migrated all rules/*.json AND
       updated the schema/effectTaxonomy references (Tier 2) — or N/A
 - [ ] Asset/fetch paths are relative (./…), never root-absolute (see WORKFLOW.md)

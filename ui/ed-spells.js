@@ -13,7 +13,8 @@ import { infoIconCss } from './info-icon.js';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
   learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell,
   spellObjectRequirement, castWeaponChoices, weaponMysticDefense, nextCastNumber } from '../engine/spells.js';
-import { ModalController } from './modal-controller.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 import { allocForSilver, spendAllocation } from '../engine/wealth.js';
 import { successCount } from '../engine/combat.js';
 import { loadRollLog } from '../store-rolllog.js';
@@ -45,7 +46,7 @@ export class EdSpells extends LitElement {
     _rolls: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     ${diceIconCss}
     ${infoIconCss}
     :host {
@@ -93,24 +94,15 @@ export class EdSpells extends LitElement {
     .mx { font-size: var(--fs-eyebrow); color: var(--spell); }
 
     /* detail modal (Escape closes / Enter confirms; theme-aware) */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 30rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; }
-    .mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px; }
-    .mhead .nm { font-size: var(--fs-title); font-weight: 500; }
-    .mhead .cr { font-size: var(--fs-small); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 9px; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
+    .crpill { font-size: var(--fs-small); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 9px; }
     .msum { font-size: var(--fs-body); line-height: 1.55; margin: 6px 0 12px; }
     .grid { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 5px 12px; font-size: var(--fs-small); }
     .grid .k { color: var(--muted); font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.03em; align-self: center; }
     .grid .full { grid-column: 2 / -1; }
     .sub { grid-column: 1 / -1; height: 1px; background: var(--border); margin: 4px 0; }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-    button.btn.primary { border-color: var(--spell); background: var(--spell-bg); color: var(--spell); font-weight: 500; }
-    button.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
     .cmwpn { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-body); }
     .cmnum { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--fs-body); }
     .cmnum .tgt { width: 64px; }
-    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
 
     /* cast workspace */
     .ctseg { display: flex; gap: 4px; flex-wrap: wrap; margin: 0 0 10px; }
@@ -199,7 +191,6 @@ export class EdSpells extends LitElement {
     /* Learn modal (PLAN-LEARN-SPELLS.md §6): a two-pane picker → prereq panel.
        Fixed-height internally-scrolling list (same rule as the Raw cast list);
        unaffordable/blocked states disable the roll with a reason, never silently. */
-    .learnmodal { width: 48rem; max-width: 100%; }
     .learn-wrap { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 12px; align-items: start; }
     @media (max-width: 640px) { .learn-wrap { grid-template-columns: 1fr; } }
     .learnlist { background: var(--bg-card); border-radius: 8px; overflow-y: auto; max-height: 340px; }
@@ -227,7 +218,7 @@ export class EdSpells extends LitElement {
     .silverrow input { width: 84px; font: inherit; font-size: var(--fs-small); text-align: center; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; }
     .totbg { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 9px; font-variant-numeric: tabular-nums; }
     .totbg.miss { color: var(--danger); background: light-dark(#f6e4e0, #3a2320); }
-  `;
+  `];
 
   constructor() {
     super();
@@ -257,9 +248,20 @@ export class EdSpells extends LitElement {
     // state only — { plan, choices, empty, pick, number, touched }. Never persisted.
     this._castModal = null;
     this._castObject = null;       // {name, index} chosen at cast, snapshotted for the activation
+    // Three kit controllers in one shadow root; each finds its own dialog by id.
+    this._infoCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
+    this._learnCtl = new ModalController(this, {
+      kind: 'input',
+      canConfirm: () => this._learnCanConfirm(),
+      onConfirm: () => this._confirmLearn(),
+      initialFocus: ['.lrow.on', '.lrow'],
+      onClose: () => { this._learn = null; },
+    });
     this._castModalCtl = new ModalController(this, {
+      kind: 'input',
+      onConfirm: () => this._castModalConfirm(),
+      canConfirm: () => !!this._castModal && (this._castModal.empty || this._castModalValue() != null),
       onClose: () => { this._castModal = null; },
-      initialFocus: '.btn.primary',
     });
   }
 
@@ -273,18 +275,6 @@ export class EdSpells extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this._onKey = (e) => {
-      // Learn modal (Enter confirms when enabled — the roll must have succeeded
-      // and the spell be affordable; otherwise Enter is a mute no-op like the
-      // disabled Confirm button). Escape/backdrop always close (UI-GUIDELINES).
-      if (e.key === 'Escape' && (this._modal || this._learn)) {
-        e.stopPropagation(); this._modal = null; this._learn = null;
-      } else if (e.key === 'Enter' && this._learn) {
-        e.stopPropagation();
-        if (this._learnCanConfirm()) this._confirmLearn();
-      } else if (e.key === 'Enter' && this._modal) { e.stopPropagation(); this._modal = null; }
-    };
-    document.addEventListener('keydown', this._onKey);
     // The shared roll modal reports each completed roll via ed-roll-logged
     // (composed → reaches document). We tag the step we just dispatched
     // (`_pendingStep`) so the result lands on the right cast step, and reload
@@ -298,7 +288,6 @@ export class EdSpells extends LitElement {
     // Tab switch destroys this element — stash the cast workspace so returning
     // restores it (ed-app renders only the active tab).
     this._saveScratch();
-    document.removeEventListener('keydown', this._onKey);
     document.removeEventListener('ed-roll-logged', this._onRollLogged);
     super.disconnectedCallback();
   }
@@ -649,9 +638,10 @@ export class EdSpells extends LitElement {
   // vs the Learning Difficulty, then on success dispatch the new known[] entry +
   // the silver payment (two independent input writes, engine-computed coins).
 
-  _openLearn() {
+  _openLearn(e) {
     this._learn = { name: null, teacherOn: false, teacherRank: 1, teacher: null, result: null, silver: null };
     this._pendingLearn = null;
+    this._learnCtl.opened(e?.currentTarget);
   }
 
   _learnList() { return learnableSpells(this.ctx); }
@@ -764,7 +754,7 @@ export class EdSpells extends LitElement {
         this.dispatchEvent(new CustomEvent('ed-edit-wealth', { detail: { coins: spent.coins, gems: spent.gems }, bubbles: true, composed: true }));
       }
     }
-    this._learn = null;
+    this._learnCtl.close({ reason: 'confirm' });
   }
 
   _learnModal() {
@@ -780,37 +770,37 @@ export class EdSpells extends LitElement {
     const silver = this._silver();
     const wealth = this.model?.wealth ?? {};
     const afford = spendAllocation(wealth.coins ?? {}, wealth.gems ?? [], allocForSilver(silver));
-    return html`
-      <div class="overlay" @click=${() => (this._learn = null)}>
-        <div class="modal learnmodal" role="dialog" aria-modal="true" aria-label="Learn a spell" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="nm">Learn a spell</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._learn = null)}>✕</button>
-          </div>
-          <div class="learn-wrap">
-            <div>
-              <h4 class="circlelbl">Learnable spells</h4>
-              ${discs.length
-                ? html`<div class="learnlist">
-                    ${discs.map((disc) => html`
-                      <div class="circlelbl" style="font-size:var(--fs-fine);">${disc}</div>
-                      ${Object.keys(grouped[disc]).sort((a, b) => a - b).map((circle) => html`
-                        ${grouped[disc][circle].map((s) => html`
-                          <button class="lrow ${s.name === spell?.name ? 'on' : ''}" @click=${() => this._pickLearn(s.name)}>
-                            <span></span><span class="nm">${s.name}${!s.castable ? html`<span class="lflag" title="Your Circle in this Discipline is below the spell's — learnable now, castable later.">can't cast yet</span>` : ''}</span>
-                            <span class="cr">C${s.circle}</span>
-                          </button>`)}
-                      `)}
-                    `)}
-                  </div>`
-                : html`<div class="empty">Nothing to learn — every spell already learnt, or no Thread Weaving talent covers the catalog.</div>`}
-            </div>
-            <div>
-              ${spell ? this._learnDetail(spell, { diff, gate, legendCost, available, suggested, silver, afford }) : html`<div class="empty">Pick a spell to see its prerequisites and roll to learn it.</div>`}
-            </div>
-          </div>
-        </div>
-      </div>`;
+    return modalFrame(this._learnCtl, {
+      title: 'Learn a spell',
+      layer: 2100,
+      width: '48rem',
+      scroll: true,
+      body: html`
+    <div class="learn-wrap">
+      <div>
+        <h4 class="circlelbl">Learnable spells</h4>
+        ${discs.length
+          ? html`<div class="learnlist">
+              ${discs.map((disc) => html`
+                <div class="circlelbl" style="font-size:var(--fs-fine);">${disc}</div>
+                ${Object.keys(grouped[disc]).sort((a, b) => a - b).map((circle) => html`
+                  ${grouped[disc][circle].map((s) => html`
+                    <button class="lrow ${s.name === spell?.name ? 'on' : ''}" @click=${() => this._pickLearn(s.name)}>
+                      <span></span><span class="nm">${s.name}${!s.castable ? html`<span class="lflag" title="Your Circle in this Discipline is below the spell's — learnable now, castable later.">can't cast yet</span>` : ''}</span>
+                      <span class="cr">C${s.circle}</span>
+                    </button>`)}
+                `)}
+              `)}
+            </div>`
+          : html`<div class="empty">Nothing to learn — every spell already learnt, or no Thread Weaving talent covers the catalog.</div>`}
+      </div>
+      <div>
+        ${spell ? this._learnDetail(spell, { diff, gate, legendCost, available, suggested, silver, afford }) : html`<div class="empty">Pick a spell to see its prerequisites and roll to learn it.</div>`}
+      </div>
+    </div>`,
+      // With no spell picked the footer still shows Cancel and a disabled Learn.
+      primary: { label: spell ? `Learn ${spell.name}` : 'Learn spell', tone: 'karma', disabled: !this._learnCanConfirm() },
+    });
   }
 
   _learnDetail(spell, { diff, gate, legendCost, available, suggested, silver, afford }) {
@@ -872,15 +862,13 @@ export class EdSpells extends LitElement {
           @input=${(e) => { this._learn = { ...this._learn, silver: e.target.value === '' ? null : Number(e.target.value) }; }}>
         <span>sp${suggested != null && (learn.silver == null) ? html` (suggested ${suggested})` : ''}</span>
       </div>
-      ${showBill ? html`<p class="err">The purse can’t cover ${silver} sp — edit the price or add coins in Equipment.</p>` : ''}
-
-      <div class="actions">
-        <button class="btn" @click=${() => (this._learn = null)}>Cancel</button>
-        <button class="btn" style="border-color:var(--karma);background:var(--karma-bg);color:var(--karma);font-weight:500;" ?disabled=${!this._learnCanConfirm()} @click=${this._confirmLearn}>Learn ${spell.name}</button>
-      </div>`;
+      ${showBill ? html`<p class="err">The purse can’t cover ${silver} sp — edit the price or add coins in Equipment.</p>` : ''}`;
   }
 
-  _openDetail(spell) { this._modal = spell; }
+  _openDetail(spell, e) {
+    this._modal = spell;
+    this._infoCtl.opened(e?.currentTarget);
+  }
 
   render() {
     const ctx = this.ctx;
@@ -910,7 +898,7 @@ export class EdSpells extends LitElement {
     return html`
       ${this.editMode
         ? html`<div class="top" style="margin-bottom:2px;">
-            <button class="btn learnbtn" @click=${() => this._openLearn()}>＋ Learn spell</button>
+            <button class="btn learnbtn" @click=${(e) => this._openLearn(e)}>＋ Learn spell</button>
           </div>`
         : ''}
       ${discs.length
@@ -933,7 +921,7 @@ export class EdSpells extends LitElement {
     const noFreeMatrix = !placed && !ctx.matrices.some((m) => !m.spell);
     return html`
       <div class="srow">
-        <button class="info ibadge" title="Spell details" aria-label="Details for ${s.name}" @click=${() => this._openDetail(s)}>i</button>
+        <button class="info ibadge" title="Spell details" aria-label="Details for ${s.name}" @click=${(e) => this._openDetail(s, e)}>i</button>
         <span class="sname" title=${s.name}>${s.name}</span>
         <span class="num">${s.threadsToWeave}</span>
         <span class="num">${s.weavingDifficulty?.value ?? '—'}</span>
@@ -958,28 +946,25 @@ export class EdSpells extends LitElement {
   }
 
   _detailModal(s) {
-    return html`
-      <div class="overlay" @click=${() => (this._modal = null)}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${s.name} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="nm">${s.name}</span>
-            <span class="cr">${s.discipline} · Circle ${s.circle}</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
-          </div>
-          ${s.description || s.summary ? html`<p class="msum">${s.description ?? s.summary}</p>` : ''}
-          <div class="grid">
-            <span class="k">Threads</span><span>${s.threadsToWeave}</span>
-            <span class="k">Weaving</span><span>${s.weavingDifficulty?.value ?? '—'}${s.weavingDifficulty?.reattune ? ` / ${s.weavingDifficulty.reattune}` : ''}</span>
-            <span class="k">Casting</span><span>${s.castingTarget ?? '—'}</span>
-            <span class="k">Range</span><span>${s.range ?? '—'}</span>
-            <span class="k">Duration</span><span>${s.duration ?? '—'}</span>
-            <span class="k">Area</span><span>${s.area ?? '—'}</span>
-            ${s.successes?.length ? html`<div class="sub"></div><span class="k">Success</span><span class="full">${s.successes.map((x) => x.label).join('; ')}</span>` : ''}
-            ${s.extraThreads?.length ? html`<span class="k">Extra</span><span class="full">${s.extraThreads.map((x) => x.label).join('; ')}</span>` : ''}
-          </div>
-          <div class="actions"><button class="btn" @click=${() => (this._modal = null)}>Close</button></div>
-        </div>
-      </div>`;
+    return modalFrame(this._infoCtl, {
+      title: s.name,
+      titleExtra: html`<span class="crpill">${s.discipline} · Circle ${s.circle}</span>`,
+      layer: 2100,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    ${s.description || s.summary ? html`<p class="msum">${s.description ?? s.summary}</p>` : ''}
+    <div class="grid">
+      <span class="k">Threads</span><span>${s.threadsToWeave}</span>
+      <span class="k">Weaving</span><span>${s.weavingDifficulty?.value ?? '—'}${s.weavingDifficulty?.reattune ? ` / ${s.weavingDifficulty.reattune}` : ''}</span>
+      <span class="k">Casting</span><span>${s.castingTarget ?? '—'}</span>
+      <span class="k">Range</span><span>${s.range ?? '—'}</span>
+      <span class="k">Duration</span><span>${s.duration ?? '—'}</span>
+      <span class="k">Area</span><span>${s.area ?? '—'}</span>
+      ${s.successes?.length ? html`<div class="sub"></div><span class="k">Success</span><span class="full">${s.successes.map((x) => x.label).join('; ')}</span>` : ''}
+      ${s.extraThreads?.length ? html`<span class="k">Extra</span><span class="full">${s.extraThreads.map((x) => x.label).join('; ')}</span>` : ''}
+    </div>`,
+    });
   }
 
   // --- Cast workspace (phase 8.6a) ------------------------------------------
@@ -1263,38 +1248,31 @@ export class EdSpells extends LitElement {
 
   // The cast modal for an object-bearing self-cast. Presentational: it shows the
   // engine's weapon choices and an editable target number, and routes Confirm /
-  // Cast on nothing / close through the view handlers. Enter confirms (the primary
-  // button has initial focus; Enter inside the number field also confirms).
+  // Cast on nothing / close through the view handlers. Enter confirms (the kit
+  // routes it, including from the number field).
   _castModalTpl() {
     const m = this._castModal;
     const valid = m.empty || this._castModalValue() != null;
-    return html`
-      <div class="overlay" @click=${() => this._castModalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Cast ${m.plan.name}" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="nm">Cast ${m.plan.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._castModalCtl.close()}>✕</button>
+    return modalFrame(this._castModalCtl, {
+      title: `Cast ${m.plan.name}`,
+      layer: 2100,
+      width: '30rem',
+      body: html`
+    ${m.empty
+      ? html`<p class="msum">No equipped weapon</p>
+          <p class="temuted">Casting now wastes the woven threads and the spell.</p>`
+      : html`<div class="pickrow">
+          <div class="plbl">Choose the weapon</div>
+          <div class="pickopts">
+            ${m.choices.map((c, i) => html`<label class="cmwpn"><input type="radio" name="cmw" .checked=${m.pick === i} @change=${() => this._castModalPick(i)}> ${c.label}</label>`)}
           </div>
-          ${m.empty
-            ? html`<p class="msum">No equipped weapon</p>
-                <p class="temuted">Casting now wastes the woven threads and the spell.</p>`
-            : html`<div class="pickrow">
-                <div class="plbl">Choose the weapon</div>
-                <div class="pickopts">
-                  ${m.choices.map((c, i) => html`<label class="cmwpn"><input type="radio" name="cmw" .checked=${m.pick === i} @change=${() => this._castModalPick(i)}> ${c.label}</label>`)}
-                </div>
-                <label class="cmnum">Target number
-                  <input class="tgt" type="number" min="1" step="1" .value=${m.number} aria-label="Target number"
-                    @input=${(e) => this._castModalNumber(e.target.value)}
-                    @keydown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); this._castModalConfirm(); } }}>
-                </label>
-              </div>`}
-          <div class="actions">
-            <button class="btn" @click=${() => this._castModalCtl.close()}>Close</button>
-            <button class="btn primary" ?disabled=${!valid} @click=${() => this._castModalConfirm()}>${m.empty ? 'Cast on nothing' : 'Confirm'}</button>
-          </div>
-        </div>
-      </div>`;
+          <label class="cmnum">Target number
+            <input class="tgt" type="number" min="1" step="1" .value=${m.number} aria-label="Target number"
+              @input=${(e) => this._castModalNumber(e.target.value)}>
+          </label>
+        </div>`}`,
+      primary: { label: m.empty ? 'Cast on nothing' : 'Confirm', tone: 'spell', disabled: !valid },
+    });
   }
 
   _castPanel(plan) {

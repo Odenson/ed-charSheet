@@ -115,9 +115,10 @@ Every modal/overlay follows the same keyboard contract:
 - **Escape closes** the modal (equivalent to clicking the backdrop or the ✕).
   This is mandatory for *any* modal that appears.
 - **Enter confirms** — for modals that accept input or ask for confirmation,
-  Enter triggers the primary action (Save / OK / Confirm). Read-only modals (like
-  the current roll and ability modals) have no primary action, so Enter is a
-  no-op there; wire it as soon as a modal gains an accept action.
+  Enter triggers the primary action (Save / OK / Confirm). Read-only modals:
+  Enter closes (it is their OK).
+
+*§7 amended 2026-11-18 by owner sign-off (ui-kit-modal-keyboard-contract qa-log, D1).*
 
 ## 8. Save-conflict modal
 When a GitHub save finds the character changed on another device or player since

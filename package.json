@@ -7,7 +7,8 @@
   "private": true,
   "scripts": {
     "lint:imports": "node tools/check-imports.mjs",
-    "pretest": "node tools/check-imports.mjs",
+    "lint:ui-kit": "node tools/check-ui-kit.mjs",
+    "pretest": "node tools/check-imports.mjs && node tools/check-ui-kit.mjs",
     "test": "node --test",
     "start": "bash scripts/start-local.sh",
     "dev": "node tools/dev-server.mjs",

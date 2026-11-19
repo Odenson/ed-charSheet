@@ -7,9 +7,11 @@
 // The confirm button's `tone` is 'danger' by default (destructive actions) and
 // 'accent' for non-destructive choices like the armour swap.
 //
-// Tier-1 modal rules: Escape / Cancel / backdrop close (= cancel); Enter confirms
-// (the primary button is autofocused, so Enter triggers it); theme-aware.
+// Built on the UI kit (ui/kit/, docs/MODALS.md): Escape / ✕ / Cancel / backdrop
+// close (= cancel); Enter confirms (the kit routes it); theme-aware.
 import { LitElement, html, css } from 'lit';
+import { ModalController, deepActiveElement } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 export class EdConfirm extends LitElement {
   static properties = {
@@ -21,7 +23,7 @@ export class EdConfirm extends LitElement {
     disabled: { type: Boolean }, // when true the primary action is blocked (Cancel-only)
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --border: light-dark(#e2e5ea, #2c313b);
@@ -32,39 +34,29 @@ export class EdConfirm extends LitElement {
       --danger-bg: light-dark(#fbe9e7, #3a1f1c);
       --text: light-dark(#111418, #f0f3f7);
     }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.5rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
-    .msg { font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0 0 1rem; }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; }
-    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
-    button.btn.danger { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); font-weight: 500; }
-    button.btn.accent { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-    button.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
-    .warn { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-body); line-height: 1.4; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; margin: 0 0 1rem; }
+    .msg { font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0; }
+    .warn { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-body); line-height: 1.4; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; margin: 1rem 0 0; }
     .warn.block { color: var(--danger); background: var(--danger-bg); border-color: var(--danger); }
-  `;
+  `];
+
+  constructor() {
+    super();
+    // Escape / ✕ / backdrop / Cancel end in onClose('cancel'); Confirm goes
+    // through _confirm, which closes first (restoring focus) and then dispatches
+    // ONLY `confirm` — hosts read their prompt state in @confirm and clear it in
+    // @close, so a `close` before `confirm` would silently cancel the action.
+    this._ctl = new ModalController(this, {
+      kind: 'confirm',
+      onConfirm: () => this._confirm(),
+      canConfirm: () => !this.disabled,
+      initialFocus: '[data-cancel]',
+      onClose: (r) => { if (r === 'cancel') this._close(); },
+    });
+  }
 
   connectedCallback() {
     super.connectedCallback();
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); this._close(); }
-    };
-    document.addEventListener('keydown', this._onKeydown);
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
-  }
-
-  // Focus the primary (confirm) button so Enter confirms. The button carries a
-  // tone class (`danger` by default, `accent` for non-destructive choices). When
-  // the action is blocked (`disabled`), focus Cancel instead so Enter can't fire.
-  firstUpdated() {
-    const primary = this.disabled ? null : this.renderRoot.querySelector('.btn.danger, .btn.accent');
-    (primary ?? this.renderRoot.querySelector('.btn')).focus();
+    this._ctl.opened(deepActiveElement());
   }
 
   _close() {
@@ -73,28 +65,27 @@ export class EdConfirm extends LitElement {
 
   _confirm() {
     if (this.disabled) return;
+    this._ctl.close({ reason: 'confirm' });
     this.dispatchEvent(new CustomEvent('confirm', { bubbles: true, composed: true }));
   }
 
   render() {
-    return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${this.heading || 'Confirm'} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>${this.heading || 'Are you sure?'}</span>
-            <button class="mclose" aria-label="Close" @click=${this._close}>✕</button>
-          </div>
-          <p class="msg">${this.message}</p>
-          ${this.warn
-            ? html`<div class="warn ${this.disabled ? 'block' : ''}"><span aria-hidden="true">${this.disabled ? '⛔' : '⚠'}</span><span>${this.warn}</span></div>`
-            : ''}
-          <div class="actions">
-            <button type="button" class="btn" @click=${this._close}>Cancel</button>
-            <button type="button" class="btn ${this.tone === 'accent' ? 'accent' : 'danger'}" ?disabled=${this.disabled} @click=${this._confirm}>${this.confirmLabel || 'Confirm'}</button>
-          </div>
-        </div>
-      </div>
-    `;
+    return modalFrame(this._ctl, {
+      title: this.heading || 'Are you sure?',
+      label: this.heading || 'Confirm',
+      layer: 2100,
+      width: '26rem',
+      body: html`
+        <p class="msg">${this.message}</p>
+        ${this.warn
+          ? html`<div class="warn ${this.disabled ? 'block' : ''}"><span aria-hidden="true">${this.disabled ? '⛔' : '⚠'}</span><span>${this.warn}</span></div>`
+          : ''}`,
+      primary: {
+        label: this.confirmLabel || 'Confirm',
+        tone: this.tone === 'accent' ? 'accent' : 'danger',
+        disabled: !!this.disabled,
+      },
+    });
   }
 }
 

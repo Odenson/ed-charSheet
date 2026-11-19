@@ -1,0 +1,18 @@
+{
+  "ui/ed-add-legend.js": { "dialog-role": 1, "frame-css": 6, "keydown": 1 },
+  "ui/ed-app.js": { "button-style": 1 },
+  "ui/ed-changelog.js": { "frame-css": 4, "keydown": 1 },
+  "ui/ed-character-picker.js": { "dialog-role": 1, "frame-css": 2, "keydown": 1 },
+  "ui/ed-combat.js": { "button-style": 1, "dialog-role": 1, "frame-css": 4, "keydown": 1 },
+  "ui/ed-conflict.js": { "dialog-role": 1, "keydown": 1 },
+  "ui/ed-custom-item.js": { "dialog-role": 2, "frame-css": 6, "keydown": 1 },
+  "ui/ed-day-reset.js": { "dialog-role": 1, "frame-css": 7, "keydown": 1 },
+  "ui/ed-edit-meta.js": { "dialog-role": 1, "frame-css": 6, "keydown": 1 },
+  "ui/ed-homebrew.js": { "frame-css": 4, "keydown": 1 },
+  "ui/ed-notes.js": { "dialog-role": 1, "frame-css": 6, "keydown": 1 },
+  "ui/ed-overview.js": { "button-style": 1, "frame-css": 4, "keydown": 1 },
+  "ui/ed-save-key.js": { "dialog-role": 1, "keydown": 1 },
+  "ui/ed-settings.js": { "dialog-role": 1, "keydown": 1 },
+  "ui/ed-spells.js": { "font-size": 5 },
+  "ui/legend-spent-view.js": { "font-size": 2 }
+}

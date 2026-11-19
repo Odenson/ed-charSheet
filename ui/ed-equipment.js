@@ -22,6 +22,8 @@ import { recoveriesRemaining } from '../engine/health.js';
 import { spendAllocation, creditAllocation } from '../engine/wealth.js';
 import { numFmt, cap, prettyName } from './format.js';
 import { itemImageUrl } from '../store.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 import './ed-confirm.js';
 import './ed-trade-modal.js';
 
@@ -144,10 +146,18 @@ export class EdEquipment extends LitElement {
     this._customItemsOpen = false;
     this._swapPrompt = null;
     this._usePrompt = null;
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape' && this._modal) { e.stopPropagation(); this._closeModal(); }
-      else if (e.key === 'Escape' && this._addOpen) { e.stopPropagation(); this._closePicker(); }
-    };
+    // The item modal runs on the UI kit (read-only `info`: Escape, Enter, ✕ and
+    // backdrop all close it and return focus to the tile).
+    this._modalCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
+    // The add-item picker keeps "Escape anywhere in the tab closes it": a host
+    // level listener (the kit swallows Escape first while a modal is open, so
+    // this only sees it when the picker is the only thing open). The search input
+    // handles its own Escape in _pickKeydown.
+    this.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !this._addOpen || e.defaultPrevented) return;
+      if (e.composedPath()[0] === this.renderRoot.querySelector('.combo input')) return;
+      this._closePicker();
+    });
     this._onPointerDown = (e) => {
       // A pointerdown outside the picker closes it (composedPath spans the shadow
       // root, so shadow-internal clicks are seen too); clicking the search input
@@ -160,26 +170,22 @@ export class EdEquipment extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    document.addEventListener('keydown', this._onKeydown);
     document.addEventListener('pointerdown', this._onPointerDown);
   }
 
   disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
     document.removeEventListener('pointerdown', this._onPointerDown);
     super.disconnectedCallback();
   }
 
-  // Drop keyboard focus from the trigger tile so an Escape close ends the same way a
-  // mouse close does — otherwise the item button keeps :focus-visible (accent outline)
-  // after the modal is gone. Matches ed-overview's _closeModal.
-  _closeModal() {
-    this.renderRoot.activeElement?.blur();
-    this._modal = null;
-  }
-
   // Closing the add-picker (Done / Escape / click outside) resets it so the next
   // open starts clean, and blurs so an Escape close leaves no :focus-visible ring.
+  // Open the item modal; the tile is the trigger focus returns to on close.
+  _openItem(name, e) {
+    this._modal = name;
+    this._modalCtl.opened(e?.currentTarget);
+  }
+
   _closePicker() {
     this._addOpen = false;
     this._query = '';
@@ -194,7 +200,7 @@ export class EdEquipment extends LitElement {
     }
   }
 
-  static styles = css`
+  static styles = [modalCss, css`
     ${diceIconCss}
     ${infoIconCss}
     :host {
@@ -366,14 +372,9 @@ export class EdEquipment extends LitElement {
     .resale { font-size: var(--fs-fine); color: var(--muted); margin: 8px 2px 0; }
 
     /* Detail modal — matches the Disciplines talent modal. */
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; max-width: 30rem; width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; }
-    .modal.magic { box-shadow: var(--shadow); }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-value); font-weight: 500; }
-    .modal.magic .mtitle { color: var(--arcane); }
+    [data-variant='magic'] { box-shadow: var(--shadow); }
+    [data-variant='magic'] .mtitle { color: var(--arcane); }
     .mtitle .star { color: var(--arcane); font-size: var(--fs-small); }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
     .mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .chip { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
     .chip.effc { color: var(--accent); background: var(--accent-bg); border-color: transparent; }
@@ -384,6 +385,7 @@ export class EdEquipment extends LitElement {
     .mdesc { font-size: var(--fs-body); line-height: 1.5; margin: 6px 0; font-style: italic; color: var(--muted); }
     .mact { display: flex; align-items: center; gap: 10px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .mact .spacer { flex: 1; }
+    .mact .del { font-size: var(--fs-body); }
     /* Thread-item rank list — woven ranks are accent-tinted, unwoven muted. */
     .mthread { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 9px; display: flex; flex-direction: column; gap: 6px; }
     .trk { border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: var(--fs-small); line-height: 1.45; color: var(--muted); }
@@ -396,7 +398,7 @@ export class EdEquipment extends LitElement {
     @media (max-width: 620px) {
       .board { column-count: 1; }
     }
-  `;
+  `];
 
   // Items as the *input* shape the character stores. Only thread items carry
   // `threadRank` (a woven-rank input); toggling equipment or editing the rank
@@ -511,16 +513,15 @@ export class EdEquipment extends LitElement {
       bubbles: true, composed: true,
     }));
     this._closeTrade();
-    if (this._modal === itemName) this._modal = null;
+    if (this._modal === itemName) this._modalCtl.close(); // the tile is gone: focus falls to <body>
   }
   _toggle(name) {
     this._equip(name, 'toggle');
   }
   // The player accepted the swap: the new armour is worn, every other armour is
-  // stored (item-equip-state.applyArmourSwap — pure, inputs only). Blur first so
-  // the swap modal leaves no :focus-visible ring behind (same as _closeModal).
+  // stored (item-equip-state.applyArmourSwap — pure, inputs only). ed-confirm has
+  // already returned focus to its trigger (no ring on pointer opens).
   _confirmSwap() {
-    this.renderRoot.activeElement?.blur();
     const { name, via } = this._swapPrompt ?? {};
     this._swapPrompt = null;
     if (!name) return;
@@ -606,7 +607,7 @@ export class EdEquipment extends LitElement {
       message="Only one set of armour can be worn — ${worn} is currently worn. Equip ${name} instead and store ${worn}?"
       confirmLabel="Swap"
       @confirm=${this._confirmSwap}
-      @close=${() => { this.renderRoot.activeElement?.blur(); this._swapPrompt = null; }}
+      @close=${() => { this._swapPrompt = null; }}
     ></ed-confirm>`;
   }
 
@@ -623,7 +624,7 @@ export class EdEquipment extends LitElement {
       mode=${mode}
       .wealth=${this._wealth()}
       @confirm=${(e) => this._confirmTrade(e.detail)}
-      @close=${() => { this.renderRoot.activeElement?.blur(); this._closeTrade(); }}
+      @close=${() => this._closeTrade()}
     ></ed-trade-modal>`;
   }
 
@@ -665,7 +666,7 @@ export class EdEquipment extends LitElement {
       : '';
     return html`
       <div class=${cls}>
-        <button class="iteminfo" @click=${() => (this._modal = it.name)} title="View ${it.name} details">
+        <button class="iteminfo" @click=${(e) => this._openItem(it.name, e)} title="View ${it.name} details">
           <span class="nm">${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${it.name}</span>
           ${stored ? nothing : html`<span class="sub">${subLine(it)}</span>`}
         </button>
@@ -734,7 +735,6 @@ export class EdEquipment extends LitElement {
     this._usePrompt = name;
   }
   _closeUse() {
-    this.renderRoot.activeElement?.blur();
     this._usePrompt = null;
   }
   _confirmUse() {
@@ -972,50 +972,49 @@ export class EdEquipment extends LitElement {
     // terminated so authored punctuation gaps don't run sentences together.
     const description = ref.description ?? null;
     const effectText = effects.map((e) => e.summary.trim()).map((s) => (/[.!?]$/.test(s) ? s : `${s}.`)).join(' ');
-    return html`
-      <div class="overlay" @click=${() => (this._modal = null)}>
-        <div class="modal ${mg ? 'magic' : ''}" role="dialog" aria-modal="true" aria-label=${it.name} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${it.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._modal = null)}>✕</button>
-          </div>
-          <div class="mchips">
-            ${baseChips.map((c) => html`<span class="chip">${c.v}</span>`)}
-            ${threadChips.map((c) => html`<span class="chip mag">${c.v}</span>`)}
-            ${mainChips.map((c) => html`<span class="chip effc">${c.v}</span>`)}
-          </div>
-          ${!it.known
-            ? html`<div class="mtext" style="color: var(--muted)">Not in the catalog — contributes nothing to the sheet.</div>`
-            : html`
-                ${description ? html`<p class="mdesc">${description}</p>` : ''}
-                ${effectText ? html`<p class="mtext">${effectText}</p>` : ''}
-                ${!description && !effectText && !mainChips.length
-                  ? html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`
-                  : ''}
-                ${th
-                  ? html`<div class="mthread">
-                      ${th.threadRanks.map((r) => {
-                        const rr = (r.effects ?? []).map((e) => e.summary).filter(Boolean).map((s) => (/[.!?]$/.test(s) ? s : `${s}.`)).join(' ');
-                        return html`<div class="trk ${r.rank <= th.threadRank ? 'woven' : ''}">
-                            <span class="trh">Thread ${r.rank}</span>
-                            ${r.keyKnowledge ? html`<div class="tkey">${r.keyKnowledge}</div>` : ''}
-                            ${rr ? html`<div class="teff">${rr}</div>` : ''}
-                          </div>`;
-                      })}
-                      ${th.threadRank === 0 ? html`<div class="trk"><span class="trh">No thread woven</span><div class="teff">Rank effects are inactive until a thread is woven.</div></div>` : ''}
-                    </div>`
-                  : ''}
-              `}
-          ${this.editMode
-            ? html`<div class="mact">
-                <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}>${it.equipped ? 'Equipped' : 'Stored'}</button>
-                <span class="spacer"></span>
-                <button class="del" @click=${() => this._remove(it.name)} style="font-size: var(--fs-body)">Remove item</button>
+    return modalFrame(this._modalCtl, {
+      title: html`${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${it.name}`,
+      label: it.name,
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      variant: mg ? 'magic' : undefined,
+      body: html`
+    <div class="mchips">
+      ${baseChips.map((c) => html`<span class="chip">${c.v}</span>`)}
+      ${threadChips.map((c) => html`<span class="chip mag">${c.v}</span>`)}
+      ${mainChips.map((c) => html`<span class="chip effc">${c.v}</span>`)}
+    </div>
+    ${!it.known
+      ? html`<div class="mtext" style="color: var(--muted)">Not in the catalog — contributes nothing to the sheet.</div>`
+      : html`
+          ${description ? html`<p class="mdesc">${description}</p>` : ''}
+          ${effectText ? html`<p class="mtext">${effectText}</p>` : ''}
+          ${!description && !effectText && !mainChips.length
+            ? html`<div class="mtext" style="color: var(--muted)">No special rules — reference gear.</div>`
+            : ''}
+          ${th
+            ? html`<div class="mthread">
+                ${th.threadRanks.map((r) => {
+                  const rr = (r.effects ?? []).map((e) => e.summary).filter(Boolean).map((s) => (/[.!?]$/.test(s) ? s : `${s}.`)).join(' ');
+                  return html`<div class="trk ${r.rank <= th.threadRank ? 'woven' : ''}">
+                      <span class="trh">Thread ${r.rank}</span>
+                      ${r.keyKnowledge ? html`<div class="tkey">${r.keyKnowledge}</div>` : ''}
+                      ${rr ? html`<div class="teff">${rr}</div>` : ''}
+                    </div>`;
+                })}
+                ${th.threadRank === 0 ? html`<div class="trk"><span class="trh">No thread woven</span><div class="teff">Rank effects are inactive until a thread is woven.</div></div>` : ''}
               </div>`
             : ''}
-        </div>
-      </div>
-    `;
+        `}
+    ${this.editMode
+      ? html`<div class="mact">
+          <button class="eq ${it.equipped ? 'on' : ''}" @click=${() => this._toggle(it.name)}>${it.equipped ? 'Equipped' : 'Stored'}</button>
+          <span class="spacer"></span>
+          <button class="del" @click=${() => this._remove(it.name)}>Remove item</button>
+        </div>`
+      : ''}`,
+    });
   }
 
   render() {
@@ -1039,7 +1038,7 @@ export class EdEquipment extends LitElement {
                           ? this._matches().map((n, i) => {
                               const it = catalog[n]; const mg = MAGIC_KINDS.has(it.kind); const owned = this._inputs().some((x) => x.name === n);
                               return html`<div class="res ${mg ? 'mg' : ''} ${i === this._hi ? 'hi' : ''} ${owned ? 'owned' : ''}"
-                                @click=${() => this._add(n)}>
+                                @mousedown=${(e) => e.preventDefault()} @click=${() => this._add(n)}>
                                 <span class="rk">${KLABEL[it.kind] || it.kind}</span>
                                 <span class="star">${mg ? '✦' : ''}</span>
                                 <span class="rn">${n}</span>

@@ -19,7 +19,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, resolve, relative, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -300,7 +300,7 @@ function listSourceFiles() {
       const abs = resolve(absDir, entry);
       const rel = relative(ROOT, abs).split(sep).join('/');
       if (statSync(abs).isDirectory()) {
-        if (rel === 'engine' || rel === 'ui') walk(abs);
+        if (rel === 'engine' || rel === 'ui' || rel === 'ui/kit') walk(abs);
         continue;
       }
       if (!rel.endsWith('.js') || rel.endsWith('.test.js')) continue;
@@ -331,6 +331,6 @@ function runCli() {
   return 1;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   process.exit(runCli());
 }
