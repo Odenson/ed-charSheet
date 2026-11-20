@@ -3,14 +3,20 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      {
-        "type": "improved",
-        "text": "Modals now share one keyboard contract: Enter = OK, Escape closes only the top dialog, and focus stays inside and returns to the button that opened it. Applies to the roll, confirm, trade, Take damage, Spells, Equipment item and Disciplines modals, which now share one look."
-      }
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.39.0",
+      "date": "2026-11-20",
+      "summary": "Modals now share one keyboard contract (Enter = OK, Escape closes only the top dialog, focus trapped and restored) and one look across the roll, confirm, trade, Take damage, Spells, Equipment item and Disciplines modals.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Modals now share one keyboard contract: Enter = OK, Escape closes only the top dialog, and focus stays inside and returns to the button that opened it. Applies to the roll, confirm, trade, Take damage, Spells, Equipment item and Disciplines modals, which now share one look."
+        }
+      ]
+    },
     {
       "version": "1.38.0",
       "date": "2026-11-15",

@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.39.0
 ---
 # Delivery Plan: UI kit + modal keyboard contract (ui-kit-modal-keyboard-contract)
 
