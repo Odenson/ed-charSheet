@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.40.0
 ---
 # Delivery Plan: UI kit modal migration 2 (ui-kit-modal-migration-2)
 
