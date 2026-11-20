@@ -568,7 +568,9 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     kit/                   # the UI kit: the modal keyboard + focus contract (docs/MODALS.md)
       modal-stack.js       # pure stack + key router + footer hint
       modal-controller.js  # ModalController: one capture key listener, focus, latch
-      modal.js             # modalFrame + modalCss
+      modal.js             # modalFrame + modalCss + ensureLightStyles (light-DOM hosts)
+      dirty.js             # pure isDirty(snapshot, draft) for the free-text discard guard
+      scope-css.js         # pure scopeCss(cssText, selector): scopes kit CSS under .kit-portal
       button-css.js        # buttonCss
     item-equip-state.js    # input-time equip rules (one armour worn)
     combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)

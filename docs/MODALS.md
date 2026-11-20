@@ -42,7 +42,7 @@ keep data-down / dispatch-up.
 The wrapper turns a keydown into plain facts, and `routeKey` returns one of
 `close | confirm | block | pass`. Anything but `pass` is swallowed
 (`preventDefault` + `stopPropagation`), in the capture phase, so legacy
-bubble-phase `document` listeners below never also act. Ordered rules, first
+bubble-phase listener can also act (none remain outside `ui/kit/`; the UI-kit check forbids new ones). Ordered rules, first
 match wins:
 
 | # | Condition | Result |
@@ -162,7 +162,7 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 | Disciplines, Equipment item | 2000 | 30rem, scroll |
 | confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
 | Notes, Edit details, Add Legend, custom item, day reset, save key, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 26rem / 24rem / 26rem |
-| Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem) |
+| Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |
 | trade | 2150 | 27rem, scroll |
 | Settings, conflict | 2200 | 26rem |
 | roll | 3000 | 340px |
@@ -193,6 +193,13 @@ carries no trigger:
 - an Equipment full sell (the tile is removed).
 
 ## 8. Separate-component modals
+
+The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-custom-item`,
+`ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key` and
+`ed-character-picker` also own their controller. Unlike `ed-confirm`, they
+dispatch their domain event (for example `ed-conflict`, `ed-edit-meta`) and then
+`close` for any reason (`onClose` always dispatches `close`). Hosts act on the
+domain event and clear their mount state in `@close`.
 
 `ed-confirm`, `ed-trade-modal` and `ed-roll-modal` are their own elements shown
 by a parent. `ed-confirm` and `ed-trade-modal` own a controller and only dispatch

@@ -1,5 +1,6 @@
 ---
-status: building
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: UI kit modal migration 2 (ui-kit-modal-migration-2)
 
