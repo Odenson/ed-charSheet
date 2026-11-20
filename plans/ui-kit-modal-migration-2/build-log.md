@@ -109,3 +109,20 @@ Run on **Notes** (add note), **Edit character details**, and **custom item** (th
 Bugs found are logged in `build-log.md` under "Owner test results" with the case id, so a fix run can target them.
 
 Notes for the owner: V1.5 needs a path that opens an `ed-confirm` over Settings; none exists today, so mark it `-` if unreachable (an `ed-confirm` at layer 2100 would render beneath Settings at 2200 but still get Escape first via the kit stack). The custom-item discard prompt uses the confirm label **Close** (not Discard) by owner decision, so in V2.4 click Close for that modal. Conflict footer order is `[Take theirs] [Cancel] [Keep mine]`. Also check password-manager autofill still offers to save/fill on the Save-key modal (V1.4).
+
+## Owner test results (2026-11-20, guided walkthrough on dev)
+
+Recorded from the owner's answers during a guided session. Light mode unless noted.
+
+| # | Cases | Result | Notes |
+|---|---|---|---|
+| 1 | Smoke: hard reload, app loads, no console errors (G8) | P | |
+| 2 | V1.1-V1.3 Settings: styling, Escape + focus return, Enter | P | |
+| 3 | V1.4 Save-key: styling, Escape, password-manager autofill | P | |
+| 4 | V1.6-V1.8 Conflict over an open modal; Escape | - | Skipped; still required before release (blocks `/release-feature`) |
+| 5 | V2.1-V2.4 Notes discard prompt, Escape/Enter on prompt, Discard | P | |
+| 6 | V2.9 + V2.6 Notes Enter/Ctrl+Enter, title Enter, clean close | P | |
+| 7 | V3.1-V3.2 Combat step audit and stray keys | P | |
+| 8 | G1 + dark mode: modals readable, Overview fits | P | |
+
+Not yet run: V1.5, V1.7-V1.10 (rest of conflict/stacking/mobile), V2.5, V2.7-V2.8, V2.10, Edit details and custom item prompts (V2), V3.3-V3.7, G2-G7.
