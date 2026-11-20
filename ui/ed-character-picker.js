@@ -5,15 +5,18 @@
 // rows [{ id, name, portrait }] from store.js `listCharacters`) and dispatches
 // `load-character` up with the chosen id; ed-app does the loading. It opens both
 // on first-run startup (no saved selection) and from the header icon, and it
-// closes via `close` (Escape / backdrop / ✕).
+// closes via `close` (Escape / backdrop / ✕). Built on the UI kit (docs/MODALS.md),
+// kind `picker`.
 //
 // Tier-1 modal rules: Escape / backdrop close; Enter confirms (the list rows are
-// native <button>s, the first is autofocused, so Enter activates it); theme-aware
+// native <button>s, the kit focuses the first, so Enter activates it); theme-aware
 // via light-dark(); two font weights only (400/500). Portrait thumbnails resolve
 // through store.js `portraitUrlFor` (raw CDN on Pages, bundle-relative locally)
 // and degrade to a name-initial placeholder on a missing/broken image.
 import { LitElement, html, css } from 'lit';
 import { portraitUrlFor } from '../store.js';
+import { ModalController, deepActiveElement } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 export class EdCharacterPicker extends LitElement {
   static properties = {
@@ -21,7 +24,7 @@ export class EdCharacterPicker extends LitElement {
     current: { type: String },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --border: light-dark(#e2e5ea, #2c313b);
@@ -30,18 +33,6 @@ export class EdCharacterPicker extends LitElement {
       --accent-bg: light-dark(#f6e9dc, #3a2a17);
       --text: light-dark(#111418, #f0f3f7);
     }
-    .overlay {
-      position: fixed; inset: 0; z-index: 2100; padding: 1rem;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(0, 0, 0, 0.5); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    }
-    .modal {
-      background: var(--bg-chip); color: var(--text); border: 1px solid var(--border);
-      border-radius: 12px; width: 24rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem;
-      box-sizing: border-box;
-    }
-    .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
-    .close { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     .hint { font-size: var(--fs-fine); color: var(--muted); margin: 0 0 0.6rem; line-height: 1.4; }
     .list { display: flex; flex-direction: column; gap: 6px; max-height: 45vh; overflow-y: auto; }
     .row {
@@ -60,31 +51,19 @@ export class EdCharacterPicker extends LitElement {
     .who { display: flex; flex-direction: column; min-width: 0; }
     .nm { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .id { font-size: var(--fs-fine); color: var(--muted); }
-  `;
+  `];
 
   constructor() {
     super();
     this.characters = [];
     this.current = null;
     this._broken = new Set(); // ids whose portrait failed to load
+    this._ctl = new ModalController(this, { kind: 'picker', onClose: () => this._close() });
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); this._close(); }
-    };
-    document.addEventListener('keydown', this._onKeydown);
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
-  }
-
-  // Focus the first row so Enter confirms (native button activation).
-  firstUpdated() {
-    this.renderRoot.querySelector('.row')?.focus();
+    this._ctl.opened(deepActiveElement());
   }
 
   _close() {
@@ -113,29 +92,25 @@ export class EdCharacterPicker extends LitElement {
 
   render() {
     const rows = [...(this.characters ?? [])].sort((a, b) => (a?.id ?? '').localeCompare(b?.id ?? ''));
-    return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Load a character" @click=${(e) => e.stopPropagation()}>
-          <div class="head">
-            <span>Load a character</span>
-            <button class="close" aria-label="Close" @click=${this._close}>✕</button>
-          </div>
-          <p class="hint">Pick a character to load. The choice is remembered for the next visit.</p>
-          <div class="list">
-            ${rows.map((row) => html`
-              <button class="row ${row.id === this.current ? 'current' : ''}" @click=${() => this._pick(row.id)}>
-                ${this._thumb(row.id, row)}
-                <span class="who">
-                  <span class="nm">${row?.name ?? row.id}</span>
-                  <span class="id">${row.id}${row.id === this.current ? ' — loaded' : ''}</span>
-                </span>
-              </button>
-            `)}
-            ${rows.length === 0 ? html`<p class="hint">No characters found.</p>` : ''}
-          </div>
-        </div>
-      </div>
-    `;
+    return modalFrame(this._ctl, {
+      title: 'Load a character',
+      layer: 2100,
+      width: '24rem',
+      body: html`
+        <p class="hint">Pick a character to load. The choice is remembered for the next visit.</p>
+        <div class="list">
+          ${rows.map((row) => html`
+            <button type="button" class="row ${row.id === this.current ? 'current' : ''}" @click=${() => this._pick(row.id)}>
+              ${this._thumb(row.id, row)}
+              <span class="who">
+                <span class="nm">${row?.name ?? row.id}</span>
+                <span class="id">${row.id}${row.id === this.current ? ' — loaded' : ''}</span>
+              </span>
+            </button>
+          `)}
+          ${rows.length === 0 ? html`<p class="hint">No characters found.</p>` : ''}
+        </div>`,
+    });
   }
 }
 

@@ -20,6 +20,8 @@ export class EdConfirm extends LitElement {
     confirmLabel: { type: String },
     tone: { type: String }, // 'danger' (default) | 'accent'
     warn: { type: String }, // optional highlighted caution line above the buttons
+    cancelLabel: { type: String }, // default 'Cancel'
+    focusCancel: { type: Boolean }, // Enter lands on Cancel (discard prompts)
     disabled: { type: Boolean }, // when true the primary action is blocked (Cancel-only)
   };
 
@@ -75,6 +77,8 @@ export class EdConfirm extends LitElement {
       label: this.heading || 'Confirm',
       layer: 2100,
       width: '26rem',
+      cancelLabel: this.cancelLabel || 'Cancel',
+      focusCancel: !!this.focusCancel,
       body: html`
         <p class="msg">${this.message}</p>
         ${this.warn

@@ -20,9 +20,13 @@
 //
 // Tier-1 modal rules: Escape / backdrop / ✕ close (= cancel); Escape while a
 // roll is showing dismisses just the roll (back to the stats + dice again);
-// Enter confirms (the primary button is autofocused); theme-aware.
+// Enter confirms (the primary button); theme-aware. Built on the UI kit
+// (docs/MODALS.md): while a roll shows, the dirty hook turns the cancel path into
+// "dismiss the roll" and Enter belongs to the embedded roll's own buttons.
 import { LitElement, html, css } from 'lit';
 import './ed-roll-modal.js';
+import { ModalController, deepActiveElement } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 export class EdDayReset extends LitElement {
   static properties = {
@@ -31,7 +35,7 @@ export class EdDayReset extends LitElement {
     roll: { type: Object }, // the embedded recovery roll config (from ed-app) | null
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --border: light-dark(#e2e5ea, #2c313b);
@@ -40,54 +44,41 @@ export class EdDayReset extends LitElement {
       --accent-bg: light-dark(#e8f2ea, #23362a);
       --text: light-dark(#111418, #f0f3f7);
     }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.5rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     .msg { font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0 0 0.75rem; }
     .stats { display: flex; gap: 8px; margin: 0 0 1rem; }
     .stat { flex: 1; text-align: center; border: 1px solid var(--border); border-radius: 8px; padding: 6px 4px; background: var(--accent-bg); }
     .stat .lbl { display: block; font-size: var(--fs-fine); color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
     .stat .val { display: block; font-size: var(--fs-value); font-weight: 500; color: var(--text); }
     .rollarea { border-top: 1px solid var(--border); padding-top: 0.75rem; margin-bottom: 0.5rem; }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
-    button.btn.accent { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-    button.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
-  `;
+  `];
+
+  constructor() {
+    super();
+    this._ctl = new ModalController(this, {
+      kind: 'confirm',
+      canConfirm: () => !this.roll,
+      // While a roll shows, Escape/✕/backdrop dismiss just the roll.
+      isDirty: () => !!this.roll,
+      onDiscardPrompt: () => this._dismissRoll(),
+      onConfirm: () => this._dispatch(this._primaryEvent()),
+      onClose: () => this._close(),
+    });
+  }
 
   connectedCallback() {
     super.connectedCallback();
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        if (this.roll) this._dismissRoll();
-        else this._close();
-      }
-    };
-    document.addEventListener('keydown', this._onKeydown);
+    this._ctl.opened(deepActiveElement());
   }
 
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
-  }
-
-  // Focus the primary action so Enter confirms: the spend/roll button in the
-  // stats state, or the embedded roll's Heal action while a roll is showing.
-  firstUpdated() {
-    this._focusPrimary();
-  }
-
+  // Focus the embedded roll's Heal action while a roll is showing (the kit's
+  // initial focus covers the stats state).
   updated(changed) {
-    if (changed.has('roll')) this._focusPrimary();
+    if (changed.has('roll') && this.roll) this._focusPrimary();
+    if (changed.has('roll') && !this.roll && changed.get('roll') !== undefined) this._ctl.refocus();
   }
 
   _focusPrimary() {
-    const primary = this.roll
-      ? (this.renderRoot.querySelector('ed-roll-modal')?.renderRoot.querySelector('.appbtn, .ok') ?? null)
-      : (this.renderRoot.querySelector('.btn.accent') ?? this.renderRoot.querySelector('.btn'));
-    primary?.focus();
+    this.renderRoot.querySelector('ed-roll-modal')?.renderRoot.querySelector('.appbtn, .ok')?.focus();
   }
 
   _dispatch(name) {
@@ -112,54 +103,56 @@ export class EdDayReset extends LitElement {
     const p = this.plan ?? {};
     const remaining = p.remaining;
     const plural = remaining === 1 ? 'Recovery test' : 'Recovery tests';
-    return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="A new day begins" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>A new day begins</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._close()}>✕</button>
-          </div>
-          <div class="stats">
-            <div class="stat"><span class="lbl">Recoveries left</span><span class="val">${remaining ?? '—'}</span></div>
-            <div class="stat"><span class="lbl">Damage</span><span class="val">${p.damage ?? 0}</span></div>
-            <div class="stat"><span class="lbl">Wounds</span><span class="val">${p.wounds ?? 0}</span></div>
-          </div>
-          ${this.roll
-            ? html`
-                <p class="msg">Roll this Recovery test to heal Damage — the result is the heal. Repeat while Damage remains and ${plural.toLowerCase()} are left.</p>
-                <div class="rollarea">
-                  <ed-roll-modal
-                    .embedded=${true}
-                    .rollId=${this.roll.rollId}
-                    .label=${this.roll.label}
-                    .stepRow=${this.roll.stepRow}
-                    .karma=${this.roll.karma}
-                    .apply=${this.roll.apply}
-                    .difficulty=${this.roll.difficulty}
-                    .mods=${this.roll.mods}
-                    .stepMods=${this.roll.stepMods}
-                    .optionalMods=${this.roll.optionalMods}
-                    .baseStep=${this.roll.baseStep}
-                    .stepByNumber=${this.roll.stepByNumber}
-                    .strain=${this.roll.strain}
-                    .aim=${this.roll.aim}
-                    @close=${(e) => this._rollClosed(e)}
-                  ></ed-roll-modal>
-                </div>
-              `
-            : html`
-                ${this._prompt(p, remaining, plural)}
-                <div class="actions">
-                  <button type="button" class="btn" @click=${() => this._close()}>Cancel</button>
-                  ${(p.damageSpendable && this.canRoll) || p.woundSpendable
-                    ? html`<button type="button" class="btn" @click=${() => this._dispatch('reset')}>Skip spend & reset</button>
-                      <button type="button" class="btn accent" @click=${() => this._dispatch(p.woundSpendable ? 'spend-wound' : 'roll')}>${p.woundSpendable ? 'Spend 1 (heal a Wound)' : 'Roll a Recovery test (heal Damage)'}</button>`
-                    : html`<button type="button" class="btn accent" @click=${() => this._dispatch('reset')}>Reset the day</button>`}
-                </div>
-              `}
+    const spend = (p.damageSpendable && this.canRoll) || p.woundSpendable;
+    return modalFrame(this._ctl, {
+      title: 'A new day begins',
+      layer: 2100,
+      width: '26rem',
+      // No footer while a roll shows: the embedded roll owns its buttons.
+      primary: this.roll ? undefined : {
+        tone: 'heal',
+        label: spend ? (p.woundSpendable ? 'Spend 1 (heal a Wound)' : 'Roll a Recovery test (heal Damage)') : 'Reset the day',
+      },
+      extra: !this.roll && spend
+        ? html`<button type="button" class="btn" @click=${() => this._dispatch('reset')}>Skip spend & reset</button>`
+        : undefined,
+      body: html`
+        <div class="stats">
+          <div class="stat"><span class="lbl">Recoveries left</span><span class="val">${remaining ?? '—'}</span></div>
+          <div class="stat"><span class="lbl">Damage</span><span class="val">${p.damage ?? 0}</span></div>
+          <div class="stat"><span class="lbl">Wounds</span><span class="val">${p.wounds ?? 0}</span></div>
         </div>
-      </div>
-    `;
+        ${this.roll
+          ? html`
+              <p class="msg">Roll this Recovery test to heal Damage — the result is the heal. Repeat while Damage remains and ${plural.toLowerCase()} are left.</p>
+              <div class="rollarea">
+                <ed-roll-modal
+                  .embedded=${true}
+                  .rollId=${this.roll.rollId}
+                  .label=${this.roll.label}
+                  .stepRow=${this.roll.stepRow}
+                  .karma=${this.roll.karma}
+                  .apply=${this.roll.apply}
+                  .difficulty=${this.roll.difficulty}
+                  .mods=${this.roll.mods}
+                  .stepMods=${this.roll.stepMods}
+                  .optionalMods=${this.roll.optionalMods}
+                  .baseStep=${this.roll.baseStep}
+                  .stepByNumber=${this.roll.stepByNumber}
+                  .strain=${this.roll.strain}
+                  .aim=${this.roll.aim}
+                  @close=${(e) => this._rollClosed(e)}
+                ></ed-roll-modal>
+              </div>`
+          : this._prompt(p, remaining, plural)}`,
+    });
+  }
+
+  // The event the primary button dispatches (also what Enter runs).
+  _primaryEvent() {
+    const p = this.plan ?? {};
+    if (!((p.damageSpendable && this.canRoll) || p.woundSpendable)) return 'reset';
+    return p.woundSpendable ? 'spend-wound' : 'roll';
   }
 
   _prompt(p, remaining, plural) {

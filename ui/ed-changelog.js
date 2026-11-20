@@ -4,8 +4,10 @@
 // badge shows the latest released version; clicking it opens a read-only modal
 // listing each release's changes (and any Unreleased notes, which only appear on
 // the /dev/ instance where they exist). Escape / backdrop / ✕ close it, matching
-// the app's other modals (UI-GUIDELINES §7).
+// the app's other modals (UI-GUIDELINES §7); built on the UI kit (docs/MODALS.md).
 import { LitElement, html, css } from 'lit';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 const TYPE_LABEL = {
   added: 'Added',
@@ -23,7 +25,7 @@ class EdChangelog extends LitElement {
     _expanded: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --border: light-dark(#e2e5ea, #2c313b);
@@ -45,26 +47,6 @@ class EdChangelog extends LitElement {
       cursor: pointer;
     }
     .badge:hover { filter: brightness(1.06); }
-    .overlay {
-      position: fixed; inset: 0; z-index: 2000;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex; align-items: center; justify-content: center;
-      padding: 1rem;
-    }
-    .modal {
-      background: var(--bg-chip); color: var(--fg);
-      border: 1px solid var(--border); border-radius: 12px;
-      max-width: 32rem; width: 100%; max-height: 80vh; overflow: auto;
-      padding: 1rem 1.25rem;
-    }
-    .mhead {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem;
-    }
-    .mclose {
-      background: none; border: none; color: var(--muted);
-      font-size: var(--fs-value); line-height: 1; cursor: pointer;
-    }
     .rel { margin-bottom: 1rem; }
     .rel:last-child { margin-bottom: 0; }
     .relhead { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.35rem; }
@@ -86,21 +68,18 @@ class EdChangelog extends LitElement {
     .relsum { font-size: var(--fs-body); color: var(--muted); margin: 0.1rem 0 0.4rem; line-height: 1.4; }
     .toggle { background: none; border: none; color: var(--muted); font-size: var(--fs-body); cursor: pointer; padding: 0; line-height: 1; flex: none; margin-left: auto; }
     .toggle:hover { color: var(--fg); }
-  `;
+  `];
 
   constructor() {
     super();
     this._data = null;
     this._open = false;
     this._expanded = new Set();
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape') this._open = false;
-    };
+    this._ctl = new ModalController(this, { kind: 'info', onClose: () => { this._open = false; } });
   }
 
   async connectedCallback() {
     super.connectedCallback();
-    document.addEventListener('keydown', this._onKeydown);
     try {
       const res = await fetch('./data/changelog.json');
       if (res.ok) {
@@ -112,11 +91,6 @@ class EdChangelog extends LitElement {
     } catch {
       /* If the changelog can't load, the badge simply doesn't render. */
     }
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
   }
 
   get _latest() {
@@ -160,24 +134,21 @@ class EdChangelog extends LitElement {
     if (!latest) return html``;
     const unreleased = this._data?.unreleased?.changes ?? [];
     return html`
-      <button class="badge" title="What's new — view the changelog" @click=${() => (this._open = true)}>
+      <button class="badge" title="What's new — view the changelog" @click=${(e) => { this._open = true; this._ctl.opened(e.currentTarget); }}>
         v${latest.version}
       </button>
       ${this._open
-        ? html`
-            <div class="overlay" @click=${() => (this._open = false)}>
-              <div class="modal" @click=${(e) => e.stopPropagation()}>
-                <div class="mhead">
-                  <span>What's new</span>
-                  <button class="mclose" aria-label="Close" @click=${() => (this._open = false)}>✕</button>
-                </div>
-                ${unreleased.length
-                  ? this._renderRelease({ summary: this._data.unreleased?.summary ?? '', changes: unreleased }, 'unreleased')
-                  : ''}
-                ${(this._data.releases ?? []).map((r) => this._renderRelease(r, r.version))}
-              </div>
-            </div>
-          `
+        ? modalFrame(this._ctl, {
+            title: "What's new",
+            layer: 2000,
+            width: '32rem',
+            scroll: true,
+            body: html`
+              ${unreleased.length
+                ? this._renderRelease({ summary: this._data.unreleased?.summary ?? '', changes: unreleased }, 'unreleased')
+                : ''}
+              ${(this._data.releases ?? []).map((r) => this._renderRelease(r, r.version))}`,
+          })
         : ''}
     `;
   }

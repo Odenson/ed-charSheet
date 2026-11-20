@@ -11,12 +11,21 @@
 // is the deliberate exception — it is high-churn, per-character localStorage
 // (decision #2), read/written here directly through store-rolllog.js; it never
 // rides the overlay, an export, or a GitHub save.
+//
+// Its modals (note, event, expanded note, Legend spent) are on the UI kit
+// (ui/kit/, docs/MODALS.md): one ModalController each. The note and event forms
+// are free-text, so a dirty Escape/✕/backdrop/Cancel opens a stacked "Discard
+// unsaved changes?" ed-confirm; Enter saves from the date field, Ctrl/⌘+Enter from
+// a textarea.
 import { LitElement, html, css } from 'lit';
 import { infoIconCss } from './info-icon.js';
 import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { loadRollLog, setRollLogMax, clearRollLog, DEFAULT_MAX, MAX_OPTIONS } from '../store-rolllog.js';
 import './ed-confirm.js';
 import './ed-add-legend.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
+import { isDirty } from './kit/dirty.js';
 
 // Ids for entries the player creates. Real entries only — the virtual
 // "Starting total" row keeps its reserved '__starting_total__' id.
@@ -49,6 +58,7 @@ export class EdNotes extends LitElement {
   };
 
   static styles = [
+    modalCss,
     infoIconCss,
     legendSpentStyles,
     css`
@@ -138,12 +148,7 @@ export class EdNotes extends LitElement {
     .tdate { font-size: var(--fs-small); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .ttext { white-space: pre-wrap; word-break: break-word; line-height: 1.4; }
 
-    /* Modal (UI-GUIDELINES §7): Escape closes; Enter confirms where the form
-       has a single-line control, and the primary button for textareas. */
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 30rem; max-width: 100%; max-height: 88vh; overflow: auto; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
+    /* Modal bodies (the frame itself is the UI kit's, ui/kit/modal.js). */
     form { display: flex; flex-direction: column; gap: 0.7rem; }
     .fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     label { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
@@ -151,9 +156,6 @@ export class EdNotes extends LitElement {
     textarea { resize: vertical; line-height: 1.4; }
     input:focus, textarea:focus { outline: none; border-color: var(--accent); }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; }
-    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
-    button.btn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
 
     @media (max-width: 720px) {
       .cards { grid-template-columns: 1fr; }
@@ -177,27 +179,36 @@ export class EdNotes extends LitElement {
     this._expandedNote = null;
     this._confirm = null;
     this._historySortAsc = false;
+    this._noteSnap = { text: '' };
+    this._histSnap = { date: '', text: '' };
+    const free = (get, snapKey, kindKey) => ({
+      kind: 'input',
+      isDirty: () => isDirty(this[snapKey], get()),
+      onDiscardPrompt: () => { this._requestConfirm(kindKey); },
+    });
+    this._noteCtl = new ModalController(this, {
+      ...free(() => this._noteDraft(), '_noteSnap', 'discard-note'),
+      onConfirm: () => this._saveNote(),
+      onClose: () => { this._noteModal = null; },
+    });
+    this._histCtl = new ModalController(this, {
+      ...free(() => this._histDraft(), '_histSnap', 'discard-history'),
+      onConfirm: () => this._saveHistory(),
+      onClose: () => { this._historyModal = null; },
+    });
+    this._expCtl = new ModalController(this, { kind: 'info', onClose: () => { this._expandedNote = null; } });
+    this._spentCtl = new ModalController(this, { kind: 'info', onClose: () => { this._spentModal = false; } });
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this._onKeydown = (e) => {
-      if (e.key !== 'Escape') return;
-      if (this._confirm) return;
-      this._closeModal();
-    };
-    document.addEventListener('keydown', this._onKeydown);
     this._loadRolls();
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
   }
 
   updated(changed) {
     if (changed.has('characterId')) {
       this._loadRolls();
+      this._expCtl.close({ restoreFocus: false });
       this._expandedNote = null;
     }
   }
@@ -259,9 +270,17 @@ export class EdNotes extends LitElement {
   }
 
   // --- Notes CRUD (edit-mode gated; untimed cards, decision #4) ---
+  _openNote(id, trigger) {
+    const entry = this._notes().find((n) => n.id === id);
+    this._noteSnap = { text: entry?.text ?? '' };
+    this._noteModal = { id };
+    this._noteCtl.opened(trigger);
+  }
+  _noteField() { return this._noteCtl.dialogEl()?.querySelector('.note-text') ?? null; }
+  _noteDraft() { return { text: this._noteField()?.value ?? this._noteSnap.text }; }
   _saveNote(e) {
-    e.preventDefault();
-    const text = (this.renderRoot.querySelector('.note-text')?.value ?? '').trim();
+    e?.preventDefault();
+    const text = (this._noteField()?.value ?? '').trim();
     if (!text) return;
     const list = [...this._notes()];
     const id = this._noteModal?.id ?? null;
@@ -270,14 +289,25 @@ export class EdNotes extends LitElement {
       const i = list.findIndex((n) => n.id === id);
       if (i >= 0) list[i] = { ...list[i], text };
     }
-    this._noteModal = null;
     this._dispatchNotes(list);
+    this._noteCtl.close({ reason: 'confirm' });
   }
 
   // --- History CRUD (dated timeline) ---
+  _openHistory(id, trigger) {
+    const entry = this._history().find((h) => h.id === id);
+    this._histSnap = { date: entry?.date ?? new Date().toISOString().slice(0, 10), text: entry?.text ?? '' };
+    this._historyModal = { id };
+    this._histCtl.opened(trigger);
+  }
+  _histForm() { return this._histCtl.dialogEl()?.querySelector('form') ?? null; }
+  _histDraft() {
+    const f = this._histForm();
+    return f ? { date: f.elements.date?.value ?? '', text: f.elements.text?.value ?? '' } : this._histSnap;
+  }
   _saveHistory(e) {
-    e.preventDefault();
-    const f = this.renderRoot.querySelector('form');
+    e?.preventDefault();
+    const f = this._histForm();
     const date = (f?.elements.date?.value ?? '').trim();
     const text = (f?.elements.text?.value ?? '').trim();
     if (!text) return;
@@ -288,21 +318,8 @@ export class EdNotes extends LitElement {
       const i = list.findIndex((h) => h.id === id);
       if (i >= 0) list[i] = { ...list[i], date, text };
     }
-    this._historyModal = null;
     this._dispatchHistory(list);
-  }
-  _historyDirty() {
-    const f = this.renderRoot.querySelector('form');
-    if (!f) return false;
-    const entry = this._history().find((h) => h.id === this._historyModal?.id);
-    const date = entry?.date ?? new Date().toISOString().slice(0, 10);
-    return f.elements.date.value !== date || f.elements.text.value !== (entry?.text ?? '');
-  }
-  _noteDirty() {
-    const t = this.renderRoot.querySelector('.note-text');
-    if (!t) return false;
-    const entry = this._notes().find((n) => n.id === this._noteModal?.id);
-    return t.value !== (entry?.text ?? '');
+    this._histCtl.close({ reason: 'confirm' });
   }
 
   // --- delete confirm ---
@@ -320,11 +337,23 @@ export class EdNotes extends LitElement {
       clearRollLog(this.characterId);
       this._loadRolls();
     } else if (c.kind === 'discard-history') {
-      this._historyModal = null;
+      this._confirm = null;
+      this._histCtl.close(); // unguarded: the discard was chosen
+      return;
     } else if (c.kind === 'discard-note') {
-      this._noteModal = null;
+      this._confirm = null;
+      this._noteCtl.close();
+      return;
     }
     this._confirm = null;
+  }
+  _isDiscard() { return this._confirm?.kind === 'discard-note' || this._confirm?.kind === 'discard-history'; }
+  // Cancel / Escape on the prompt: back to editing, focus on the field.
+  _closeConfirm() {
+    const kind = this._confirm?.kind;
+    this._confirm = null;
+    if (kind === 'discard-note') this._noteCtl.refocus();
+    else if (kind === 'discard-history') this._histCtl.refocus();
   }
   _confirmMsg() {
     switch (this._confirm?.kind) {
@@ -354,72 +383,42 @@ export class EdNotes extends LitElement {
     }
   }
 
-  // --- modal shell ---
-  _closeModal() {
-    if (this._expandedNote != null) {
-      this._expandedNote = null;
-      return;
-    }
-    if (this._noteModal) {
-      if (this._noteDirty()) this._requestConfirm('discard-note');
-      else this._noteModal = null;
-    } else if (this._historyModal) {
-      if (this._historyDirty()) this._requestConfirm('discard-history');
-      else this._historyModal = null;
-    } else if (this._spentModal) this._spentModal = false;
-  }
-  _modalShell(title, body) {
-    return html`
-      <div class="overlay" @click=${this._closeModal}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${title} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>${title}</span>
-            <button class="mclose" aria-label="Close" @click=${this._closeModal}>✕</button>
-          </div>
-          ${body}
-        </div>
-      </div>
-    `;
-  }
-
+  // --- modals (UI kit) ---
   _noteModalTmpl() {
     const entry = this._notes().find((n) => n.id === this._noteModal?.id);
-    return this._modalShell(
-      this._noteModal?.id == null ? 'Add note' : 'Edit note',
-      html`
-        <form @submit=${this._saveNote}>
-          <textarea class="note-text" rows="6" .value=${entry?.text ?? ''} placeholder="An NPC, a location, a quest thread, a table reminder…"></textarea>
+    return modalFrame(this._noteCtl, {
+      title: this._noteModal?.id == null ? 'Add note' : 'Edit note',
+      layer: 2100,
+      width: '30rem',
+      hasTextarea: true,
+      primary: { label: 'Save' },
+      body: html`
+        <form @submit=${(e) => { e.preventDefault(); this._noteCtl.confirm(); }}>
+          <textarea class="note-text" rows="6" autofocus .value=${entry?.text ?? ''} placeholder="An NPC, a location, a quest thread, a table reminder…"></textarea>
           <p class="hint">Saved with your character. Notes are timeless — the History tab keeps dated events.</p>
-          <div class="actions">
-            <button type="button" class="btn" @click=${this._closeModal}>Cancel</button>
-            <button type="submit" class="btn primary">Save</button>
-          </div>
-        </form>
-      `,
-    );
+        </form>`,
+    });
   }
 
   _historyModalTmpl() {
-    const entry = this._history().find((h) => h.id === this._historyModal?.id);
-    return this._modalShell(
-      this._historyModal?.id == null ? 'Add event' : 'Edit event',
-      html`
-        <form @submit=${this._saveHistory}>
+    return modalFrame(this._histCtl, {
+      title: this._historyModal?.id == null ? 'Add event' : 'Edit event',
+      layer: 2100,
+      width: '30rem',
+      hasTextarea: true,
+      primary: { label: 'Save' },
+      body: html`
+        <form @submit=${(e) => { e.preventDefault(); this._histCtl.confirm(); }}>
           <div class="fld">
             <label for="n-date">Date</label>
-            <input id="n-date" name="date" type="date" .value=${entry?.date ?? new Date().toISOString().slice(0, 10)} />
+            <input id="n-date" name="date" type="date" .value=${this._histSnap.date} />
           </div>
           <div class="fld">
             <label for="n-text">What happened</label>
-            <textarea id="n-text" name="text" rows="4" .value=${entry?.text ?? ''}></textarea>
+            <textarea id="n-text" name="text" rows="4" autofocus .value=${this._histSnap.text}></textarea>
           </div>
-          <div class="actions">
-            <button type="button" class="btn" @click=${this._closeModal}>Cancel</button>
-            <button type="submit" class="btn primary">Save</button>
-          </div>
-        </form>
-      `,
-    );
+        </form>`,
+    });
   }
 
   _legendModalTmpl() {
@@ -433,7 +432,7 @@ export class EdNotes extends LitElement {
     return html`
       <div class="headline">
         <span class="hbig">Notes</span>
-        ${this.editMode ? html`<button class="addbtn" @click=${() => (this._noteModal = { id: null })}>+ Add note</button>` : ''}
+        ${this.editMode ? html`<button class="addbtn" @click=${(e) => this._openNote(null, e.currentTarget)}>+ Add note</button>` : ''}
       </div>
       ${list.length
         ? html`
@@ -453,13 +452,13 @@ export class EdNotes extends LitElement {
         <div class="ncard">
           <div class="ntext">${n.text}</div>
           <div class="nactions">
-            <button class="edit" aria-label="Edit note" title="Edit note" @click=${() => (this._noteModal = { id: n.id })}>✎</button>
+            <button class="edit" aria-label="Edit note" title="Edit note" @click=${(e) => this._openNote(n.id, e.currentTarget)}>✎</button>
             <button class="del" aria-label="Delete note" title="Delete note" @click=${() => this._requestConfirm('note', n.id)}>✕</button>
           </div>
         </div>
       `;
     }
-    const open = () => (this._expandedNote = n.id);
+    const open = (e) => { this._expandedNote = n.id; this._expCtl.opened(e.currentTarget); };
     return html`
       <div
         class="ncard"
@@ -470,7 +469,7 @@ export class EdNotes extends LitElement {
         @keydown=${(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            open();
+            open(e);
           }
         }}
       >
@@ -481,7 +480,9 @@ export class EdNotes extends LitElement {
 
   _expandedNoteTmpl() {
     const entry = this._notes().find((n) => n.id === this._expandedNote);
-    return this._modalShell('Note', html`<div class="ntext">${entry?.text ?? ''}</div>`);
+    return modalFrame(this._expCtl, {
+      title: 'Note', layer: 2100, width: '30rem', body: html`<div class="ntext">${entry?.text ?? ''}</div>`,
+    });
   }
 
   _rollsView() {
@@ -574,7 +575,7 @@ export class EdNotes extends LitElement {
       <div class="headline">
         <span class="hbig"
           >Legend earned${spent
-            ? html`<button class="info ibadge" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => (this._spentModal = true)}>i</button>`
+            ? html`<button class="info ibadge" aria-label="Legend spent breakdown" title="Legend spent" @click=${(e) => { this._spentModal = true; this._spentCtl.opened(e.currentTarget); }}>i</button>`
             : ''}</span
         >
         <span class="htotal">
@@ -611,7 +612,7 @@ export class EdNotes extends LitElement {
           title=${this._historySortAsc ? 'Switch to newest first' : 'Switch to oldest first'}>
           ${this._historySortAsc ? '↑ oldest' : '↓ newest'}
         </button>
-        <button class="addbtn" @click=${() => (this._historyModal = { id: null })}>+ Add event</button>
+        <button class="addbtn" @click=${(e) => this._openHistory(null, e.currentTarget)}>+ Add event</button>
       </div>
       ${list.length
         ? html`
@@ -620,7 +621,7 @@ export class EdNotes extends LitElement {
                 <div class="trow">
                   <span class="tdate">${h.date || '—'}</span>
                   <span class="ttext">${h.text}</span>
-                  <button class="edit" aria-label="Edit event" title="Edit" @click=${() => (this._historyModal = { id: h.id })}>✎</button>
+                  <button class="edit" aria-label="Edit event" title="Edit" @click=${(e) => this._openHistory(h.id, e.currentTarget)}>✎</button>
                   <button class="del" aria-label="Delete event" title="Delete" @click=${() => this._requestConfirm('history', h.id)}>✕</button>
                 </div>
               `)}
@@ -648,15 +649,19 @@ export class EdNotes extends LitElement {
       ${this._noteModal ? this._noteModalTmpl() : ''}
       ${this._historyModal ? this._historyModalTmpl() : ''}
       ${this._legendModal ? this._legendModalTmpl() : ''}
-      ${this._spentModal ? this._modalShell('Legend spent', legendSpentBody(this.model?.legend?.spent)) : ''}
+      ${this._spentModal
+        ? modalFrame(this._spentCtl, { title: 'Legend spent', layer: 2100, width: '30rem', body: legendSpentBody(this.model?.legend?.spent) })
+        : ''}
       ${this._expandedNote != null ? this._expandedNoteTmpl() : ''}
       ${this._confirm
         ? html`<ed-confirm
             heading=${this._confirmHeading()}
             message=${this._confirmMsg()}
             confirmLabel=${this._confirmLabel()}
+            cancelLabel=${this._isDiscard() ? 'Keep editing' : 'Cancel'}
+            ?focusCancel=${this._isDiscard()}
             @confirm=${this._confirmDelete}
-            @close=${() => (this._confirm = null)}
+            @close=${() => this._closeConfirm()}
           ></ed-confirm>`
         : ''}
     `;

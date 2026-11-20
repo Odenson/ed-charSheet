@@ -14,7 +14,9 @@ styles.
 |---|---|
 | `ui/kit/modal-stack.js` | Pure (no `lit`, no DOM): the modal stack, `routeKey(facts)` (the ordered Enter/Escape router) and `footerHint()`. |
 | `ui/kit/modal-controller.js` | `ModalController` (Lit reactive controller, lit-free): **one** capture-phase `document` key listener that acts on the top modal only, the held-key latch, initial focus, Tab trap, return-to-trigger. Also exports `currentModality`, `deepActiveElement`, `returnFocusToTrigger`. |
-| `ui/kit/modal.js` | `modalFrame(ctl, opts)` (the Lit frame template) and `modalCss` (frame styles; it includes `buttonCss`). |
+| `ui/kit/modal.js` | `modalFrame(ctl, opts)` (the Lit frame template), `modalCss` (frame styles; it includes `buttonCss`) and `ensureLightStyles()` (adopts the kit CSS scoped under `.kit-portal` for a light-DOM host). |
+| `ui/kit/dirty.js` | Pure: `isDirty(snapshot, draft)`, the free-text dirty check (null/undefined/'' equal, numbers and booleans by string form, no trimming). |
+| `ui/kit/scope-css.js` | Pure: `scopeCss(cssText, selector)`, wraps a stylesheet in a scope selector with native CSS nesting. |
 | `ui/kit/button-css.js` | `buttonCss`: the one button shape and its tones. |
 
 **The rule:** modals and modal-like UI use `ui/kit/`. `tools/check-ui-kit.mjs`
@@ -27,8 +29,8 @@ keep data-down / dispatch-up.
 
 1. **Escape closes only the top modal.** Stacked modals close one per Escape.
 2. **Enter = OK**: the primary action, or close for read-only modals (UI-GUIDELINES §7).
-3. **Ctrl/⌘+Enter saves** in textarea modals (Enter keeps typing a newline). Kit
-   support only so far; no textarea modal is on the kit yet.
+3. **Ctrl/⌘+Enter saves** in textarea modals (Enter keeps typing a newline;
+   UI-GUIDELINES §7).
 4. **Focus moves in** on open, **Tab is trapped**, and **focus returns to the
    trigger** on close. A pointer-opened modal restores focus with the keyboard
    ring suppressed; a keyboard-opened one keeps the ring.
@@ -71,10 +73,9 @@ match wins:
   repeats are swallowed, even with an empty stack, until that key's `keyup` (or
   window blur). So holding Enter on the roll's OK never re-fires the dice button
   that was just refocused.
-- **Transitional foreign-dialog rule.** A legacy dialog stacked over a kit modal
-  keeps its own keys (R5). Known gap: clicking blank space in that legacy modal
-  drops focus to `<body>`, and Escape then closes the kit modal below. This goes
-  away when the legacy modals migrate.
+- **Foreign-dialog rule.** Every modal is on the kit now; R5 (a dialog that is
+  not on the kit stack keeps its own keys) stays as a safety net for any future
+  third-party dialog.
 
 ## 4. ModalController
 
@@ -97,7 +98,7 @@ controller (`requestClose()` for user cancel, `close()` programmatically).
 | `initialFocus` | — | Selector, array of selectors (tried in order) or a function returning either. |
 | `dialogSelector` | see below | Explicit dialog override. |
 | `isDirty` / `onDiscardPrompt` | — | Dirty guard (below). |
-| `light` | `false` | Portal hosts: the root is `document`, not `host.renderRoot`. Unused so far. |
+| `light` | `false` | Portal hosts: the root is `document`, not `host.renderRoot`. Used by `ed-save-key` (credential autofill needs the field in the light DOM) with `ensureLightStyles()`; its portal div carries the class `kit-portal`. |
 
 Methods: `opened(trigger)`, `close({ restoreFocus = true, reason = 'cancel' })`
 (unguarded), `requestClose()`, `confirm()`, `refocus()`, `dialogEl()`,
@@ -120,9 +121,23 @@ Methods: `opened(trigger)`, `close({ restoreFocus = true, reason = 'cancel' })`
 - **`refocus()`** re-runs the order while open, for a view that changes in place
   (the roll chooser becoming the result).
 - **Dirty guard (D3).** User cancels (Escape, ✕, backdrop, Cancel) call
-  `onDiscardPrompt` when `isDirty()` and stay open. Free-text modals (Notes,
-  custom item, Edit character details) ask; short numeric or choice modals (Add
-  Legend, Settings, Trade, Take damage, Karma Ritual) do not. Hook only so far.
+  `onDiscardPrompt` when `isDirty()` and stay open. Free-text modals (Notes note
+  and event, Edit character details, custom item) ask; short numeric or choice
+  modals (Add Legend, Settings, Trade, Take damage, Karma Ritual) do not. The
+  host snapshots its fields when the modal opens, passes
+  `isDirty: () => isDirty(snap, draft)` (`ui/kit/dirty.js`) and sets a flag in
+  `onDiscardPrompt` that renders a stacked
+  `<ed-confirm heading="Discard unsaved changes?" confirmLabel="Discard"
+  cancelLabel="Keep editing" focusCancel>` **after** the frame (same layer, DOM
+  order puts it on top). Its `@confirm` calls the host controller's unguarded
+  `close()`; its `@close` (Escape, Keep editing, ✕) clears the flag and calls
+  `refocus()` so the field (`autofocus`) is focused again. `ed-confirm` takes
+  `cancelLabel` and `focusCancel` (stamps `autofocus` on Cancel, which wins over
+  the enabled primary) so Enter on the prompt keeps editing. The hook can also be
+  a **back-one-step interceptor**: `onDiscardPrompt` may change the view instead
+  of asking (the custom-item form returns to the list; the day-reset modal
+  dismisses its embedded roll). The custom-item prompt uses the confirm label
+  "Close" because its working set persists in the browser.
 - **Hand-offs.** `close({ restoreFocus: false })` is for a hand-off to another
   modal that takes focus and returns it itself. `close()` restores focus
   synchronously *before* `onClose`, so a follow-on modal keeps its own focus.
@@ -137,7 +152,7 @@ render() { return modalFrame(this._ctl, { title, layer: 2100, width: '26rem', bo
 Renders `.overlay > .modal[role=dialog][aria-modal][data-modal] > .mhead / .mbody /
 footer`. Options: `title` (string or template), `label` (the `aria-label`;
 required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
-`scroll` (85vh cap), `variant` (stamps `data-variant`; style
+`scroll` (85vh cap), `cancelLabel` (default `Cancel`), `focusCancel` (autofocus the Cancel button), `variant` (stamps `data-variant`; style
 `[data-variant='…']`, the sanctioned variant hook), `primary`
 `{ label, tone, disabled, type, form, title, className }`, `extra`, `ack`,
 `hasTextarea`.
@@ -146,7 +161,10 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 |---|---|---|
 | Disciplines, Equipment item | 2000 | 30rem, scroll |
 | confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
+| Notes, Edit details, Add Legend, custom item, day reset, save key, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 26rem / 24rem / 26rem |
+| Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem) |
 | trade | 2150 | 27rem, scroll |
+| Settings, conflict | 2200 | 26rem |
 | roll | 3000 | 340px |
 
 **Footers (D5) and hint (V4).** Input and confirm modals: `[Cancel] [Primary]`,
@@ -202,18 +220,9 @@ still rings. No global CSS needed.
 
 ## 10. Not yet on the kit
 
-These modals still follow the old behaviour (Enter on a read-only one re-clicks
-the trigger behind it), so the §7 sentence does not hold for them yet. The
-second kit feature migrates them and this list shrinks:
-
-- the Overview ⓘ info, character details and Legend spent modals;
-- Karma Ritual and the lightbox;
-- `ed-add-legend` and `ed-edit-meta`;
-- Notes;
-- the Combat step audit;
-- `ed-custom-item` and `ed-day-reset`;
-- `ed-character-picker`, `ed-settings`, `ed-save-key` and `ed-conflict`;
-- `ed-changelog` and `ed-homebrew`.
+Nothing: every modal is on the kit. (The remaining
+`tools/ui-kit-baseline.json` entries are non-modal: Spells and the Legend-spent
+view font sizes, and one inline-styled button in `ed-app`.)
 
 ## 11. Checklist for a touched modal
 
@@ -238,7 +247,9 @@ redefinition) and `button-style` (an inline `style=` on a `<button>`). Files in
 `ui/kit/` are exempt except for `font-size`.
 
 `tools/ui-kit-baseline.json` is a **two-way ratchet** allowlist of today's
-counts for the modals not yet migrated: a count above it fails as a new
+counts; since `ui-kit-modal-migration-2` it holds only the three non-modal
+entries (`ed-app.js` button-style 1, `ed-spells.js` font-size 5,
+`legend-spent-view.js` font-size 2): a count above it fails as a new
 violation ("use ui/kit/"); a count below it fails with "lower the baseline to N"
 (delete the rule at 0); a baseline entry for a missing file fails with "remove
 stale entry". A migration lowers its own file's entry in the same change.

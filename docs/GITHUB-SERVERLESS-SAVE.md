@@ -425,7 +425,7 @@ Wiring rules:
   failure. The `stale_base` case is **not** an error toast — it opens the
   conflict modal (below).
 - **Conflicts → keep mine / take theirs.** A `SaveConflictError` (`stale_base`)
-  opens `ed-conflict.js`, a light-DOM portal modal: **Keep mine** re-saves with
+  opens `ed-conflict.js`, a modal on the UI kit (own shadow root): **Keep mine** re-saves with
   the conflict's current sha as the acknowledged base (the overwrite is explicit,
   not silent); **Take theirs** reconciles the local overlay and reloads the branch
   version; **Cancel** closes and leaves the local draft dirty. The same path
@@ -582,7 +582,7 @@ server-side, plus honest limits:
 | `store-server.js` | A save-target module (feature-detected, opt-in) — POSTs `{ character, id, base }`, maps `stale_base` to `SaveConflictError` |
 | `store.js` live read | On the Pages site the discovery index + the per-character file are fetched from the `character-data` branch; local runs read the gitignored working copies |
 | `save-action.js` | Pure conflict-choice → next-step mapping (keep mine / take theirs / cancel) |
-| `ui/ed-conflict.js` | The keep-mine / take-theirs conflict modal (light-DOM portal) |
+| `ui/ed-conflict.js` | The keep-mine / take-theirs conflict modal (UI kit, own shadow root) |
 | `store-custom-items.js` | The `/save-items` twin — custom-item delta POST + the `ed-custom-items` overlay (PLAN-CUSTOM-ITEMS.md §4.2) |
 | `data/custom-items.json` | Shared player-created catalog on `character-data` (`ed-items/2`), folded into `rules/custom-items.json` on `dev` by CI (PLAN-CUSTOM-ITEMS.md §3) |
 | Settings toggle | "Save to GitHub (server)" — enables the target and holds the required `SAVE_KEY` for the session |

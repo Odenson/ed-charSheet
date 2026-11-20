@@ -14,8 +14,11 @@
 //
 // Validation is the shared engine/validate-item.js gate (layer 1 of 3): Save-item
 // and Save-to-GitHub are disabled while any row fails it, with inline messages.
-// Enter confirms (primary buttons are autofocused); Escape closes the form first,
-// then the modal; theme-aware via light-dark().
+// Built on the UI kit (ui/kit/, docs/MODALS.md): Enter = OK (Ctrl/⌘+Enter from the
+// description textarea); Escape closes the item form first (back to the list), then
+// the modal, asking "Discard unsaved changes?" when changes are staged (a stacked
+// ed-confirm, confirm label "Close": the working set stays in this browser);
+// theme-aware via light-dark().
 
 import { LitElement, html, css, nothing } from 'lit';
 import { validateItem } from '../engine/validate-item.js';
@@ -25,6 +28,9 @@ import {
   summaryFor, blankEffect, finishEffect, cleanItemForm, damageStepEffect, seedDamageStep,
 } from './custom-item-builder.js';
 import { cap, prettyName } from './format.js';
+import './ed-confirm.js';
+import { ModalController, deepActiveElement } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 const KLABEL = {
   weapon: 'Weapon', armor: 'Armour', shield: 'Shield', ammunition: 'Ammunition',
@@ -79,13 +85,13 @@ export class EdCustomItem extends LitElement {
     overlay: { attribute: false },   // pending ed-custom-items delta { items?, delete? } or null
     canonKeys: { attribute: false }, // canon item names (collision warning)
     _form: { state: true },          // item form open: { name, item, originalName }
-    _confirmClose: { state: true },  // staged-changes close confirmation
+    _discard: { state: true },       // staged-changes close prompt
   };
 
   constructor() {
     super();
     this._form = null;
-    this._confirmClose = false;
+    this._discard = false;
     // Working set derived once on open: the *committed* catalog plus any pending
     // overlay delta (so a pending item still shows, and a reopen after a reload
     // still knows what is uncommitted). Edits mutate this map; the delta vs
@@ -96,23 +102,21 @@ export class EdCustomItem extends LitElement {
     this._seeded = false;
     this._weightMode = 'none'; // transient UI-only weight unit while typing (see _weightField)
     this._summaryOverride = new Set(); // effects whose summary the user typed
-    this._onKeydown = (e) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      if (this._form) this._form = null;
-      else if (this._confirmClose) this._confirmClose = false;
-      else this._requestClose();
-    };
+    this._ctl = new ModalController(this, {
+      kind: 'input',
+      // Dirty doubles as "back one step": in the item form Escape/✕/backdrop/Cancel
+      // return to the list; in the list, staged changes ask before closing.
+      isDirty: () => !!this._form || this._hasChanges(),
+      onDiscardPrompt: () => { if (this._form) this._form = null; else this._discard = true; },
+      onConfirm: () => (this._form ? this._commitForm() : this._saveAll()),
+      canConfirm: () => (this._form ? this._formErrors().length === 0 : this._canSave()),
+      onClose: () => this._close(),
+    });
   }
 
   connectedCallback() {
     super.connectedCallback();
-    document.addEventListener('keydown', this._onKeydown);
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
+    this._ctl.opened(deepActiveElement());
   }
 
   willUpdate(changedProps) {
@@ -122,9 +126,11 @@ export class EdCustomItem extends LitElement {
     if (!this._seeded && (changedProps.has('committed') || changedProps.has('overlay'))) this._seed();
   }
 
-  firstUpdated() {
-    // Focus the primary action so Enter confirms (Tier-1 modal rule).
-    this.renderRoot.querySelector('.m-primary')?.focus();
+  updated(changed) {
+    // Moving between the list and the item form re-runs the kit's initial focus
+    // (the form's name field is `autofocus`). Edits inside the form replace
+    // `_form` too, so only react to open/closed flips.
+    if (changed.has('_form') && !!changed.get('_form') !== !!this._form) this._ctl.refocus();
   }
 
   // Open (or reopen) with the committed catalog + any pending overlay delta as
@@ -136,7 +142,7 @@ export class EdCustomItem extends LitElement {
     this._working = seedWorking(this.committed, this.overlay);
     this._summaryOverride = new Set();
     this._form = null;
-    this._confirmClose = false;
+    this._discard = false;
   }
 
   // True when any working-set item differs from the loaded catalog.
@@ -166,16 +172,19 @@ export class EdCustomItem extends LitElement {
     this._dispatch('draft'); // ed-app writes the overlay instantly
   }
 
-  _requestClose() {
-    if (this._hasChanges()) this._confirmClose = true;
-    else this._close();
+  // Save to GitHub is allowed when something is staged and every row passes validation.
+  _canSave() {
+    const { items, delete: dels } = this._delta();
+    return (Object.keys(items).length + dels.length) > 0
+      && Object.entries(items).every(([name, item]) => validateItem(name, item).ok);
   }
+
   _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
   _saveAll() {
     this._dispatch('save'); // ed-app POSTs, reconciles, re-reads, toasts
-    this._close();
+    this._ctl.close({ reason: 'confirm' });
   }
 
   // --- working-set mutations ---
@@ -364,13 +373,34 @@ export class EdCustomItem extends LitElement {
   }
 
   render() {
+    const f = this._form;
+    const { items, delete: dels } = this._delta();
+    const pending = Object.keys(items).length + dels.length;
+    const errors = f ? this._formErrors() : [];
     return html`
-      <div class="overlay" @click=${this._requestClose}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Custom items" @click=${(e) => e.stopPropagation()}>
-          ${this._form ? this._formView() : this._listView()}
-        </div>
-      </div>
-      ${this._confirmClose ? this._closeConfirm() : ''}
+      ${modalFrame(this._ctl, {
+        title: f ? (f.originalName == null ? 'New item' : `Edit ${f.originalName}`) : '✎ Custom items',
+        label: 'Custom items',
+        layer: 2100,
+        width: '40rem',
+        scroll: true,
+        hasTextarea: !!f,
+        body: f ? this._formView(errors) : this._listView(),
+        primary: f
+          ? { label: f.originalName == null ? 'Add item' : 'Save item', disabled: errors.length > 0 }
+          : {
+              label: `Save to GitHub${pending ? ` (${pending})` : ''}`,
+              disabled: !this._canSave(),
+              title: Object.entries(items).every(([name, item]) => validateItem(name, item).ok) ? '' : 'Fix the item errors before saving.',
+            },
+      })}
+      ${this._discard
+        ? html`<ed-confirm heading="Discard unsaved changes?"
+            message="Your custom-item changes are kept in this browser until you save them to GitHub. Close anyway?"
+            confirmLabel="Close" cancelLabel="Keep editing" focusCancel
+            @confirm=${() => { this._discard = false; this._ctl.close(); }}
+            @close=${() => { this._discard = false; this._ctl.refocus(); }}></ed-confirm>`
+        : ''}
     `;
   }
 
@@ -381,15 +411,7 @@ export class EdCustomItem extends LitElement {
       item: this._working.get(name) ?? this.committed?.[name],
       toDelete: !this._working.has(name),
     }));
-    const { items, delete: dels } = this._delta();
-    const pending = Object.keys(items).length + dels.length;
-    const valid = Object.entries(items).every(([name, item]) => validateItem(name, item).ok);
-
     return html`
-      <div class="mhead">
-        <span class="mtitle">✎ Custom items</span>
-        <button class="mclose" aria-label="Close" @click=${this._requestClose}>✕</button>
-      </div>
       <p class="sub">Items you create are shared by every character and, once saved, folded into the rule files. Thread items can't be created here.</p>
 
       <div class="clist">
@@ -407,21 +429,14 @@ export class EdCustomItem extends LitElement {
           : html`<div class="empty">No custom items yet — create your first one below.</div>`}
       </div>
 
-      <div class="mfoot">
-        <button class="fbtn new" @click=${this._newItem}>＋ New item</button>
-        <span class="spacer"></span>
-        <button class="fbtn m-primary" @click=${this._saveAll} ?disabled=${!pending || !valid} title=${valid ? '' : 'Fix the item errors before saving.'}>
-          Save to GitHub${pending ? ` (${pending})` : ''}
-        </button>
-      </div>
+      <button type="button" class="btn new" @click=${this._newItem}>＋ New item</button>
     `;
   }
 
-  _formView() {
+  _formView(errors) {
     const f = this._form;
     const item = f.item;
     const kind = item.kind;
-    const errors = this._formErrors();
     const isNew = f.originalName == null;
     const collides = !isNew ? false : this.canonKeys?.some((k) => k.toLowerCase() === f.name?.trim().toLowerCase());
     const refFields = REF_FIELDS[kind] ?? [];
@@ -429,16 +444,11 @@ export class EdCustomItem extends LitElement {
     const shortEffect = item.presentation?.shortEffect ?? '';
 
     return html`
-      <div class="mhead">
-        <span class="mtitle">${isNew ? 'New item' : `Edit ${f.originalName}`}</span>
-        <button class="mclose" aria-label="Close" @click=${() => (this._form = null)}>✕</button>
-      </div>
-
-      <form @submit=${(e) => { e.preventDefault(); this._commitForm(); }}>
+      <form @submit=${(e) => { e.preventDefault(); this._ctl.confirm(); }}>
         <div class="frow">
           <span class="fld name">
             <label for="f-name">Name</label>
-            <input id="f-name" .value=${f.name} placeholder="Item name"
+            <input id="f-name" .value=${f.name} placeholder="Item name" autofocus
               @input=${(e) => this._setForm({ name: e.target.value })} />
           </span>
           <span class="fld kind">
@@ -496,11 +506,6 @@ export class EdCustomItem extends LitElement {
           ? html`<ul class="errs">${errors.map((er) => html`<li>${er}</li>`)}</ul>`
           : ''}
 
-        <div class="mfoot">
-          <button type="button" class="fbtn" @click=${() => (this._form = null)}>Cancel</button>
-          <span class="spacer"></span>
-          <button type="submit" class="fbtn f-primary" ?disabled=${errors.length > 0}>${isNew ? 'Add item' : 'Save item'}</button>
-        </div>
       </form>
     `;
   }
@@ -546,23 +551,7 @@ export class EdCustomItem extends LitElement {
     `;
   }
 
-  _closeConfirm() {
-    return html`
-      <div class="overlay sub" @click=${(e) => e.stopPropagation()}>
-        <div class="modal sml" role="alertdialog" aria-modal="true" aria-label="Unsaved changes">
-          <div class="mhead"><span class="mtitle">Unsaved changes</span></div>
-          <p class="msg">Your custom-item changes are kept in this browser until you save them to GitHub. Close anyway?</p>
-          <div class="mfoot">
-            <button class="fbtn" @click=${() => (this._confirmClose = false)}>Keep editing</button>
-            <span class="spacer"></span>
-            <button class="fbtn f-primary" @click=${() => { this._confirmClose = false; this._close(); }}>Close</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-card: light-dark(#f1f2f5, #1b1f27);
       --bg-chip: light-dark(#ffffff, #232833);
@@ -579,15 +568,7 @@ export class EdCustomItem extends LitElement {
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .overlay.sub { z-index: 2200; }
-    .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 40rem; max-width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; box-sizing: border-box; }
-    .modal.sml { width: 24rem; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .mtitle { font-size: var(--fs-value); font-weight: 500; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
     .sub { font-size: var(--fs-small); color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
-    .msg { font-size: var(--fs-body); line-height: 1.5; color: var(--fg); margin: 0 0 0.75rem; }
 
     /* List */
     .clist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
@@ -601,15 +582,9 @@ export class EdCustomItem extends LitElement {
     .cdel { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-value); line-height: 1; padding: 2px 4px; border-radius: 6px; flex: 0 0 auto; }
     .cdel:hover { color: var(--danger); }
     .cdel:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
+    .btn.new { border-style: dashed; }
     .empty { color: var(--muted); font-size: var(--fs-small); padding: 4px 2px; }
 
-    .mfoot { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; }
-    .mfoot .spacer { flex: 1; }
-    .fbtn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
-    .fbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-    .fbtn[disabled] { opacity: 0.45; cursor: default; }
-    .fbtn.m-primary, .fbtn.f-primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-    .fbtn.new { border-style: dashed; }
 
     /* Item form */
     form { display: flex; flex-direction: column; gap: 4px; }
@@ -647,7 +622,7 @@ export class EdCustomItem extends LitElement {
     .erow.gen { align-items: center; opacity: 0.85; }
     .erow.gen .gtag { font-size: var(--fs-eyebrow); color: var(--muted); }
     .erow.gen .gsum { font-size: var(--fs-small); color: var(--fg); }
-  `;
+  `];
 }
 
 customElements.define('ed-custom-item', EdCustomItem);

@@ -117,8 +117,9 @@ Every modal/overlay follows the same keyboard contract:
 - **Enter confirms** — for modals that accept input or ask for confirmation,
   Enter triggers the primary action (Save / OK / Confirm). Read-only modals:
   Enter closes (it is their OK).
+- Textarea modals: Enter types a newline; Ctrl/⌘+Enter saves.
 
-*§7 amended 2026-11-18 by owner sign-off (ui-kit-modal-keyboard-contract qa-log, D1).*
+*§7 amended 2026-11-18 by owner sign-off (ui-kit-modal-keyboard-contract qa-log, D1); amended 2026-11-20 by owner sign-off (qa-log 2026-11-20T09:21:00Z, ui-kit-modal-migration-2).*
 
 ## 8. Save-conflict modal
 When a GitHub save finds the character changed on another device or player since

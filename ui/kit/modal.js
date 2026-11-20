@@ -9,6 +9,7 @@
 import { html, css, nothing } from 'lit';
 import { buttonCss } from './button-css.js';
 import { footerHint } from './modal-stack.js';
+import { scopeCss } from './scope-css.js';
 
 const TONE_CLASS = { accent: '', danger: 'danger', spell: 'spell', karma: 'karma', heal: 'heal' };
 
@@ -49,12 +50,12 @@ export const modalCss = [
  * @param {import('./modal-controller.js').ModalController} ctl
  * @param {object} opts  title, label, titleExtra, body, layer, width, scroll,
  *   variant, primary { label, tone, disabled, type, form, title, className },
- *   extra, ack { label, className }, hasTextarea. See docs/MODALS.md.
+ *   extra, ack { label, className }, hasTextarea, cancelLabel, focusCancel. See docs/MODALS.md.
  */
 export function modalFrame(ctl, opts) {
   const {
     title, titleExtra, body, layer = 2000, width = '26rem', scroll = false,
-    variant, primary, extra, ack, hasTextarea = false,
+    variant, primary, extra, ack, hasTextarea = false, cancelLabel = 'Cancel', focusCancel = false,
   } = opts;
   const label = opts.label ?? (typeof title === 'string' ? title : undefined);
   const kind = ctl.kind;
@@ -67,7 +68,7 @@ export function modalFrame(ctl, opts) {
         <span class="mhint">${footerHint({ hasTextarea })}</span>
         <span class="mbtns">
           ${extra ?? nothing}
-          <button type="button" class="btn" data-cancel @click=${() => ctl.requestClose()}>Cancel</button>
+          <button type="button" class="btn" data-cancel ?autofocus=${focusCancel} @click=${() => ctl.requestClose()}>${cancelLabel}</button>
           <button type=${type} form=${form ?? nothing} class=${cls} data-primary ?disabled=${disabled} title=${ptitle || nothing}
             @click=${() => { if (type !== 'submit') ctl.confirm(); }}>${pl}</button>
         </span>
@@ -95,4 +96,15 @@ export function modalFrame(ctl, opts) {
         ${footer}
       </div>
     </div>`;
+}
+
+let _lightStyled = false;
+/** Light-DOM hosts (ed-save-key): adopt the kit CSS once, scoped under `.kit-portal`. */
+export function ensureLightStyles() {
+  if (_lightStyled) return;
+  _lightStyled = true;
+  const text = modalCss.map((c) => c.cssText).join('\n');
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(scopeCss(text, '.kit-portal'));
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
 }
