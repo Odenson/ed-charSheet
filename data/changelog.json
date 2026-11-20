@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.40.0",
+      "date": "2026-11-20",
+      "summary": "Every remaining dialog now follows one keyboard contract: Enter = OK, Escape closes the top dialog, and Notes and detail dialogs save with Ctrl/⌘+Enter and ask before discarding unsaved text.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Every dialog now follows the same keyboard rules. Enter = OK, Escape closes only the top dialog, and focus returns to the button that opened it. This now covers Notes, Overview, Combat step breakdown, Settings, Load character, the day-reset and the save dialogs. Notes and details dialogs save with Ctrl/⌘+Enter and ask before discarding unsaved text."
+        }
+      ]
+    },
+    {
       "version": "1.39.0",
       "date": "2026-11-20",
       "summary": "Modals now share one keyboard contract (Enter = OK, Escape closes only the top dialog, focus trapped and restored) and one look across the roll, confirm, trade, Take damage, Spells, Equipment item and Disciplines modals.",

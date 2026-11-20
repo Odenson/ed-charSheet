@@ -33,6 +33,8 @@ import { MOD_TABS, modTabCounts, normalizeModTab, localSituationNames } from './
 import { logRowCells } from './combat-log-rows.js';
 import './ed-confirm.js';
 import './ed-damage-modal.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 // Per-character combat-tab scratchpad, kept in module memory so the player's
 // picks survive a tab switch (ed-app renders only the active tab, so this element
@@ -99,7 +101,7 @@ export class EdCombat extends LitElement {
     _attackArmed: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     ${diceIconCss}
     ${infoIconCss}
     :host {
@@ -172,7 +174,7 @@ export class EdCombat extends LitElement {
     .dmgbonus { flex: none; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--bg-chip); border: 1px solid var(--karma); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
     .roll { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-small); flex: none; padding: 0; line-height: 1; }
     .roll:disabled { opacity: 0.4; cursor: default; }
-    .roll.reset { border-color: var(--karma); background: light-dark(#e7f0ea, #223029); color: var(--karma); }
+    .roll.reset { margin-left: auto; border-color: var(--karma); background: light-dark(#e7f0ea, #223029); color: var(--karma); }
     /* Take-damage carries the emergency (danger) tone to read apart from the rolls. */
     .roll.dmg { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
 
@@ -285,16 +287,10 @@ export class EdCombat extends LitElement {
       .log tr.emptyrow { display: block; }
     }
 
-    /* Take-damage modal (UI-GUIDELINES §7 — Escape closes, Enter confirms). */
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     form { display: flex; flex-direction: column; gap: 0.6rem; }
     .mpara { font-size: var(--fs-small); line-height: 1.5; margin: 0; }
     .mpara b { font-weight: 500; }
     .mpara.hint { font-size: var(--fs-fine); color: var(--muted); }
-    .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
     /* Step-audit: a small info button on the Attack/Damage rows + its modal. */
     .info { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); flex: none; padding: 0; line-height: 1; }
@@ -307,7 +303,7 @@ export class EdCombat extends LitElement {
     .arow.total { border-top: 1px solid var(--border); margin-top: 3px; padding-top: 6px; }
     .asec { font-size: var(--fs-fine); color: var(--muted); margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); line-height: 1.5; }
     .aempty { font-size: var(--fs-small); color: var(--muted); }
-  `;
+  `];
 
   constructor() {
     super();
@@ -319,6 +315,7 @@ export class EdCombat extends LitElement {
     this._target = '';
     this._modTab = 'opts';
     this._stepAudit = null;
+    this._auditCtl = new ModalController(this, { kind: 'info', onClose: () => { this._stepAudit = null; } });
     this._manualSuccesses = '';
     this._confirmClear = false;
     this._rolls = [];
@@ -328,13 +325,8 @@ export class EdCombat extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    // Every modal/overlay here honors UI-GUIDELINES §7: Escape closes.
-    this._onKeydown = (e) => {
-      if (e.key !== 'Escape') return;
-      if (this._stepAudit) { this._stepAudit = null; return; }
-      if (this._confirmClear) { this._confirmClear = false; return; }
-    };
-    document.addEventListener('keydown', this._onKeydown);
+    // Modals here (step audit; the confirms are ed-confirm) are on the UI kit,
+    // which owns Escape/Enter (docs/MODALS.md).
     // Roll Log refreshes (device-local, shared with the Notes tab). The roll
     // modal is not a descendant, so observe its composed events at document
     // level — they still flow UP from the modal exactly once.
@@ -361,7 +353,6 @@ export class EdCombat extends LitElement {
     // Tab switch destroys this element — stash the picks so returning restores
     // them (ed-app renders only the active tab).
     this._saveScratch();
-    document.removeEventListener('keydown', this._onKeydown);
     document.removeEventListener('ed-roll-logged', this._onRollLogged);
     super.disconnectedCallback();
   }
@@ -433,6 +424,7 @@ export class EdCombat extends LitElement {
     this._target = '';
     this._modTab = 'opts';
     this._stepAudit = null;
+    this._auditCtl.close({ restoreFocus: false });
     this._manualSuccesses = '';
     this._confirmClear = false;
     this._lastAttack = null;
@@ -446,6 +438,7 @@ export class EdCombat extends LitElement {
     this._target = '';
     this._modTab = 'opts';
     this._stepAudit = null;
+    this._auditCtl.close({ restoreFocus: false });
     this._manualSuccesses = '';
     this._confirmClear = false;
     this._lastAttack = null;
@@ -1385,7 +1378,7 @@ export class EdCombat extends LitElement {
           <button class="roll ${boost ? 'boosted' : ''}" ?disabled=${noRecoveries} @click=${this._recoveryTest}
             title=${recTitle}
             aria-label=${boost ? `Recovery test, plus ${boost} step armed` : 'Recovery test'}>${diceIcon}</button>
-          <button class="roll reset" style="margin-left:auto" @click=${() => this.dispatchEvent(new CustomEvent('ed-day-reset', { detail: { source: 'combat' }, bubbles: true, composed: true }))} title="Start a new day — reset recoveries, clear combat state, and spend any remaining recoveries" aria-label="Reset the day"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16h18"/><path d="M8 16a4 4 0 0 1 8 0"/><path d="M12 3.5v2"/><path d="M5.2 6.7l1.4 1.4"/><path d="M18.8 6.7l-1.4 1.4"/><path d="M12 20l-2-2h4z" fill="currentColor" stroke="none"/></svg></button>
+          <button class="roll reset" @click=${() => this.dispatchEvent(new CustomEvent('ed-day-reset', { detail: { source: 'combat' }, bubbles: true, composed: true }))} title="Start a new day — reset recoveries, clear combat state, and spend any remaining recoveries" aria-label="Reset the day"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16h18"/><path d="M8 16a4 4 0 0 1 8 0"/><path d="M12 3.5v2"/><path d="M5.2 6.7l1.4 1.4"/><path d="M18.8 6.7l-1.4 1.4"/><path d="M12 20l-2-2h4z" fill="currentColor" stroke="none"/></svg></button>
         </div>
       </div>`;
   }
@@ -1487,14 +1480,14 @@ export class EdCombat extends LitElement {
                   </select></label>
                 </div>
                 <div class="statline">
-                  <button class="info ibadge" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${() => (this._stepAudit = 'attack')}>i</button>
+                  <button class="info ibadge" title="Attack step breakdown" aria-label="Attack step breakdown" @click=${(e) => this._openAudit('attack', e.currentTarget)}>i</button>
                   <span class="k">Attack</span>
                   <span class="v">${this._stepVal(ap.step)}</span>
                   <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
                   <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>${diceIcon}</button>
                 </div>
                 <div class="statline">
-                  <button class="info ibadge" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${() => (this._stepAudit = 'damage')}>i</button>
+                  <button class="info ibadge" title="Damage step breakdown" aria-label="Damage step breakdown" @click=${(e) => this._openAudit('damage', e.currentTarget)}>i</button>
                   <span class="k">Damage</span>
                   <span class="v">${w.key === 'None' ? html`<span class="noval">— No Weapon —</span>` : html`${this._stepVal(dp.step)}${dp.step != null && dp.bonusDice?.length ? ` + ${dp.bonusDice.map((b) => b.value).join(' + ')}` : ''}${range}`}</span>
                   ${this._damageBonusBadge()}
@@ -1577,6 +1570,10 @@ export class EdCombat extends LitElement {
     const signed = p.kind === 'base' ? `${p.value}` : `${p.value >= 0 ? '+' : ''}${p.value}`;
     return html`<div class="arow"><span class="al">${p.label}</span><span class="av ${p.value < 0 ? 'neg' : ''}">${signed}</span></div>`;
   }
+  _openAudit(which, trigger) {
+    this._stepAudit = which;
+    this._auditCtl.opened(trigger);
+  }
   _stepAuditTpl() {
     const which = this._stepAudit;
     const audit = which === 'damage' ? this._damageAudit() : this._attackAudit();
@@ -1584,26 +1581,22 @@ export class EdCombat extends LitElement {
     const stepParts = audit.parts.filter((p) => p.kind !== 'result' && p.kind !== 'dice');
     const diceParts = audit.parts.filter((p) => p.kind === 'dice');
     const resultParts = audit.parts.filter((p) => p.kind === 'result');
-    return html`
-      <div class="overlay" @click=${() => (this._stepAudit = null)}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="${title} breakdown" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>${title} breakdown</span>
-            <button class="mclose" aria-label="Close" @click=${() => (this._stepAudit = null)}>✕</button>
-          </div>
-          <div class="audit">
-            ${stepParts.length ? stepParts.map((p) => this._auditRow(p)) : html`<div class="aempty">No base step yet — pick a ${which === 'damage' ? 'weapon' : 'talent or skill'}.</div>`}
-            <div class="arow total"><span class="al">Step</span><span class="av">${audit.step == null ? this._pend() : audit.step}</span></div>
-            ${diceParts.length
-              ? html`<div class="asec">Bonus dice (rolled separately, not the Step):</div>${diceParts.map((p) => this._auditRow(p))}`
-              : ''}
-            ${resultParts.length
-              ? html`<div class="asec">Applied to the roll total (not the Step):</div>${resultParts.map((p) => this._auditRow(p))}`
-              : ''}
-          </div>
-          <div class="hfoot"><span class="hint">Escape closes</span></div>
-        </div>
-      </div>`;
+    return modalFrame(this._auditCtl, {
+      title: `${title} breakdown`,
+      layer: 2100,
+      width: '26rem',
+      body: html`
+        <div class="audit">
+          ${stepParts.length ? stepParts.map((p) => this._auditRow(p)) : html`<div class="aempty">No base step yet — pick a ${which === 'damage' ? 'weapon' : 'talent or skill'}.</div>`}
+          <div class="arow total"><span class="al">Step</span><span class="av">${audit.step == null ? this._pend() : audit.step}</span></div>
+          ${diceParts.length
+            ? html`<div class="asec">Bonus dice (rolled separately, not the Step):</div>${diceParts.map((p) => this._auditRow(p))}`
+            : ''}
+          ${resultParts.length
+            ? html`<div class="asec">Applied to the roll total (not the Step):</div>${resultParts.map((p) => this._auditRow(p))}`
+            : ''}
+        </div>`,
+    });
   }
 
 }

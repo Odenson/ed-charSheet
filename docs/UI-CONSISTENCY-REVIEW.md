@@ -22,22 +22,22 @@ the summary table when it is fixed.
 |----|---------|-----|------|--------|
 | [K1](#k1-one-escape-closes-every-stacked-modal) | One Escape closes every stacked modal | High | 3 | ✅ FIXED (ui-kit-modal-keyboard-contract) |
 | [K2](#k2-roll-modal-enter-re-fires-the-dice-button-behind-it) | Roll modal: Enter re-fires the dice button behind it | High | 3 | ✅ FIXED (ui-kit-modal-keyboard-contract) |
-| [K3](#k3-enter-works-only-if-the-right-thing-has-focus) | Enter works only if the right thing has focus (5 different implementations) | High | 3 | 🟢 FIXED for this build's modals; rest in feature 2 — not yet on the kit: see [MODALS.md](MODALS.md#not-yet-on-the-kit) |
+| [K3](#k3-enter-works-only-if-the-right-thing-has-focus) | Enter works only if the right thing has focus (5 different implementations) | High | 3 | 🟢 FIXED (every modal is on the kit; see [MODALS.md](MODALS.md#not-yet-on-the-kit)) |
 | [K4](#k4-spells-learn-modal-enter-confirms-under-the-roll-modal) | Spells learn modal: Enter confirms while the roll modal is on top | High | 3 | ✅ FIXED (ui-kit-modal-keyboard-contract) |
-| [K5](#k5-karma-ritual-enter-on-any-button-buys-karma) | Karma Ritual: Enter on any button (↺ Undo, ✕) buys Karma | Med | 3 | 🔴 OPEN |
-| [K6](#k6-read-only-modals-enter-does-something-different-on-every-tab) | Read-only modals: Enter does something different on every tab | Med | **1** | 🟢 FIXED for this build's modals; rest in feature 2 — not yet on the kit: see [MODALS.md](MODALS.md#not-yet-on-the-kit) |
+| [K5](#k5-karma-ritual-enter-on-any-button-buys-karma) | Karma Ritual: Enter on any button (↺ Undo, ✕) buys Karma | Med | 3 | 🟢 FIXED (every modal is on the kit; see [MODALS.md](MODALS.md#not-yet-on-the-kit)) |
+| [K6](#k6-read-only-modals-enter-does-something-different-on-every-tab) | Read-only modals: Enter does something different on every tab | Med | **1** | 🟢 FIXED (every modal is on the kit; see [MODALS.md](MODALS.md#not-yet-on-the-kit)) |
 | [K7](#k7-pickers-and-search-lists-handle-keys-differently) | Pickers and search lists handle keys differently | Med | 3 | 🔴 OPEN |
-| [K8](#k8-textarea-modals-have-no-keyboard-save) | Textarea modals have no keyboard Save | Low | 3 | 🟢 DECIDED (D2); kit support shipped |
-| [K9](#k9-escape-and-unsaved-changes-inconsistent-guard) | Escape with unsaved changes: guarded in some modals, silently discarded in others | Med | 3 | 🟢 DECIDED (D3); kit hook shipped |
+| [K8](#k8-textarea-modals-have-no-keyboard-save) | Textarea modals have no keyboard Save | Low | 3 | 🟢 DECIDED (D2); wired (Ctrl/⌘+Enter in Notes, Edit details, custom item) |
+| [K9](#k9-escape-and-unsaved-changes-inconsistent-guard) | Escape with unsaved changes: guarded in some modals, silently discarded in others | Med | 3 | 🟢 DECIDED (D3); wired (stacked ed-confirm discard prompt on Notes, Edit details, custom item) |
 | [K10](#k10-inline-fields-and-add-rows-no-enter-no-escape) | Inline fields and add rows: no Enter to add, no Escape to revert | Low | 3 | 🟡 NEEDS OWNER (D4) |
-| [M1](#m1-only-3-of-20-modal-hosts-use-the-shared-modalcontroller) | Only 3 of ~20 modal hosts use the shared `ModalController` | High | 3 | 🟢 FIXED for this build's modals; rest in feature 2 — not yet on the kit: see [MODALS.md](MODALS.md#not-yet-on-the-kit) |
-| [M2](#m2-missing-roledialog--aria-modal) | Missing `role="dialog"` / `aria-modal` on 8 modals | Med | 3 | 🟢 FIXED for this build's modals; rest in feature 2 |
-| [M3](#m3-close-paths-differ-inside-one-component) | Close paths differ inside one component | Low | 3 | 🟢 FIXED for this build's modals; rest in feature 2 |
-| [M4](#m4-modals-with-no--or-no-keyboard-way-in) | Modals with no ✕, or no keyboard way to open them | Low | 3 | 🔴 OPEN |
-| [V1](#v1-modal-footers-cancel--close--nothing) | Modal footers: Cancel / Close / nothing | Low | 3 | 🟢 FIXED for this build's modals; rest in feature 2 |
-| [V2](#v2-nine-primary-button-styles) | Nine primary-button styles | Low | 3 | 🟢 FIXED for this build's modals; rest in feature 2 |
-| [V3](#v3-modal-title-size-breaks-the-type-scale) | Modal title size: 1 of ~20 follows §3a | Low | 3 | 🟢 FIXED for this build's modals; rest in feature 2 |
-| [V4](#v4-keyboard-hints-shown-in-two-modals-only) | Keyboard hints shown in two modals only | Low | 3 | 🟢 FIXED for this build's modals; rest in feature 2 |
+| [M1](#m1-only-3-of-20-modal-hosts-use-the-shared-modalcontroller) | Only 3 of ~20 modal hosts use the shared `ModalController` | High | 3 | 🟢 FIXED (every modal is on the kit; see [MODALS.md](MODALS.md#not-yet-on-the-kit)) |
+| [M2](#m2-missing-roledialog--aria-modal) | Missing `role="dialog"` / `aria-modal` on 8 modals | Med | 3 | ✅ FIXED (ui-kit-modal-migration-2) |
+| [M3](#m3-close-paths-differ-inside-one-component) | Close paths differ inside one component | Low | 3 | ✅ FIXED (ui-kit-modal-migration-2) |
+| [M4](#m4-modals-with-no--or-no-keyboard-way-in) | Modals with no ✕, or no keyboard way to open them | Low | 3 | 🟡 PARTLY FIXED (ui-kit-modal-migration-2): lightbox and custom-item prompt have ✕; still open: the portrait `<img>` trigger has no keyboard way to open the lightbox |
+| [V1](#v1-modal-footers-cancel--close--nothing) | Modal footers: Cancel / Close / nothing | Low | 3 | ✅ FIXED (ui-kit-modal-migration-2) |
+| [V2](#v2-nine-primary-button-styles) | Nine primary-button styles | Low | 3 | ✅ FIXED (ui-kit-modal-migration-2) |
+| [V3](#v3-modal-title-size-breaks-the-type-scale) | Modal title size: 1 of ~20 follows §3a | Low | 3 | ✅ FIXED (ui-kit-modal-migration-2) |
+| [V4](#v4-keyboard-hints-shown-in-two-modals-only) | Keyboard hints shown in two modals only | Low | 3 | ✅ FIXED (ui-kit-modal-migration-2) |
 | [V5](#v5-destructive-actions-confirmed-in-some-tabs-not-others) | Destructive actions: confirmed in some tabs, not others | Med | 3 | 🟡 NEEDS OWNER (D6) |
 | [V6](#v6-the-drink-potion-confirm-is-written-twice-and-has-drifted) | The Drink-potion confirm is written twice and has drifted | Low | 3 | 🔴 OPEN |
 | [V7](#v7-clear-log-wording-differs-between-combat-and-notes) | Clear-log wording differs between Combat and Notes | Low | 3 | 🔴 OPEN |
@@ -160,6 +160,8 @@ Modals use **five** different ways to make Enter confirm:
   covers the row case.
 
 ### K5. Karma Ritual: Enter on any button buys Karma
+🟢 **FIXED** (ui-kit-modal-migration-2: the Karma Ritual is on the kit with `onConfirm` and the button exclusion).
+
 📖 **From code**, `ui/ed-overview.js:1037–1039`.
 
 - **What happens:** the `keydown` on `.overlay` calls `preventDefault()` and
@@ -416,13 +418,14 @@ the Combat message, which says that the other tab's view is cleared too.
   `--accent`, `--border`, … with `light-dark()`. The values match today. Moving
   them to `:root` in `index.html` (like the type scale) prevents drift.
 - **Day-reset uses a green `--accent`** (`ui/ed-day-reset.js`), so its primary
-  button is green while every other modal's is amber. Confirm whether that is
-  intentional (healing = green) or should match.
+  button is green while every other modal's is amber. Decided: kept on purpose as
+  the kit `heal` tone.
 - **Accessible-name collision:** the header edit-mode switch, the Overview details
   region, and the edit-meta dialog are all named *"Edit character details"*.
   Rename the switch to *"Edit mode"* (on/off is already given by `aria-checked`).
-- **Always-on listeners:** `ed-changelog` and `ed-homebrew` are always mounted
-  and react to every Escape on the page, even when closed. M1 removes this.
+- **Always-on listeners:** `ed-changelog` and `ed-homebrew` were always mounted
+  and reacted to every Escape on the page. Fixed in ui-kit-modal-migration-2:
+  both are on the kit and no `document` key listener remains.
 
 ---
 
@@ -480,9 +483,11 @@ With `modalFrame()` everything stays in one tree, so native forms, the existing
 trap code and `role="dialog"` lookups just work.
 
 **Special cases the kit must support:**
-- **Portal modals** (`ed-conflict`, `ed-save-key`, `ed-settings`) render into
-  `document.body` so password managers can see the fields. These use the
-  controller's `light` mode, and `modalCss` is injected inline.
+- **Portal modal** (`ed-save-key`) renders into `document.body` so password
+  managers can see the credential field. It uses the controller's `light` mode
+  plus `ensureLightStyles()`, which adopts the kit CSS scoped under `.kit-portal`.
+  `ed-conflict` and `ed-settings` moved to their own shadow roots in
+  ui-kit-modal-migration-2.
 - **Embedded roll panel** inside `ed-day-reset`: `ed-roll-modal` in `embedded`
   mode renders without a frame. The frame is optional.
 - **Hand-offs** (cast → roll, damage → Knockdown roll): keep

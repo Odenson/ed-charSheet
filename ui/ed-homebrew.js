@@ -6,6 +6,8 @@
 // enabled. Escape / backdrop / ✕ close it, matching the app's other modals
 // (UI-GUIDELINES §7); theme-aware (light + dark); 400/500 weights only.
 import { LitElement, html, css } from 'lit';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 class EdHomebrew extends LitElement {
   static properties = {
@@ -13,7 +15,7 @@ class EdHomebrew extends LitElement {
     _open: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --border: light-dark(#e2e5ea, #2c313b);
@@ -35,26 +37,6 @@ class EdHomebrew extends LitElement {
       cursor: pointer;
     }
     .badge:hover { filter: brightness(1.06); }
-    .overlay {
-      position: fixed; inset: 0; z-index: 2000;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex; align-items: center; justify-content: center;
-      padding: 1rem;
-    }
-    .modal {
-      background: var(--bg-chip); color: var(--fg);
-      border: 1px solid var(--border); border-radius: 12px;
-      max-width: 32rem; width: 100%; max-height: 80vh; overflow: auto;
-      padding: 1rem 1.25rem;
-    }
-    .mhead {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem;
-    }
-    .mclose {
-      background: none; border: none; color: var(--muted);
-      font-size: var(--fs-value); line-height: 1; cursor: pointer;
-    }
     .rule { margin-bottom: 1rem; }
     .rule:last-child { margin-bottom: 0; }
     .rname { font-size: var(--fs-value); font-weight: 500; }
@@ -76,33 +58,13 @@ class EdHomebrew extends LitElement {
       color: var(--muted); margin: 1px 0 1px 8px;
     }
     .term .dot { color: var(--accent); flex: none; }
-  `;
+  `];
 
   constructor() {
     super();
     this.rules = [];
     this._open = false;
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape') this._close();
-    };
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    document.addEventListener('keydown', this._onKeydown);
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
-  }
-
-  // Drop keyboard focus from the trigger pill so an Escape close ends the same
-  // way a mouse close does — otherwise the pill keeps :focus-visible and a stray
-  // Enter/Space would reopen the modal (same pattern as ed-overview/ed-equipment).
-  _close() {
-    this.renderRoot.activeElement?.blur();
-    this._open = false;
+    this._ctl = new ModalController(this, { kind: 'info', onClose: () => { this._open = false; } });
   }
 
   // One rule block: name, the rulebook section it overrides, the summary, and the
@@ -138,21 +100,17 @@ class EdHomebrew extends LitElement {
     if (!this.rules?.length) return html``;
     const label = this.rules.length > 1 ? `Homebrew ×${this.rules.length}` : 'Homebrew';
     return html`
-      <button class="badge" title="Active homebrew rules — click to view" @click=${() => (this._open = true)}>
+      <button class="badge" title="Active homebrew rules — click to view" @click=${(e) => { this._open = true; this._ctl.opened(e.currentTarget); }}>
         ${label}
       </button>
       ${this._open
-        ? html`
-            <div class="overlay" @click=${() => this._close()}>
-              <div class="modal" @click=${(e) => e.stopPropagation()}>
-                <div class="mhead">
-                  <span>Active homebrew rules</span>
-                  <button class="mclose" aria-label="Close" @click=${() => this._close()}>✕</button>
-                </div>
-                ${this.rules.map((r) => this._rule(r))}
-              </div>
-            </div>
-          `
+        ? modalFrame(this._ctl, {
+            title: 'Active homebrew rules',
+            layer: 2000,
+            width: '32rem',
+            scroll: true,
+            body: html`${this.rules.map((r) => this._rule(r))}`,
+          })
         : ''}
     `;
   }

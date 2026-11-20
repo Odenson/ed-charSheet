@@ -330,14 +330,27 @@ test('end state: ed-spells.js keeps only font-size at 5; the other survivors mat
   assert.deepEqual(baseline['ui/legend-spent-view.js'], { 'font-size': 2 });
 });
 
-test('end state: the baseline has exactly the 16 expected files', () => {
+test('end state (ui-kit-modal-migration-2): the baseline is exactly the three non-modal entries', () => {
   const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+  assert.deepEqual(baseline, {
+    'ui/ed-app.js': { 'button-style': 1 },
+    'ui/ed-spells.js': { 'font-size': 5 },
+    'ui/legend-spent-view.js': { 'font-size': 2 },
+  });
   assert.deepEqual(Object.keys(baseline), [
-    'ui/ed-add-legend.js', 'ui/ed-app.js', 'ui/ed-changelog.js', 'ui/ed-character-picker.js',
-    'ui/ed-combat.js', 'ui/ed-conflict.js', 'ui/ed-custom-item.js', 'ui/ed-day-reset.js',
-    'ui/ed-edit-meta.js', 'ui/ed-homebrew.js', 'ui/ed-notes.js', 'ui/ed-overview.js',
-    'ui/ed-save-key.js', 'ui/ed-settings.js', 'ui/ed-spells.js', 'ui/legend-spent-view.js',
+    'ui/ed-app.js', 'ui/ed-spells.js', 'ui/legend-spent-view.js',
   ]);
+});
+
+test('end state (ui-kit-modal-migration-2): migrated modal hosts have no violations at all', () => {
+  for (const rel of [
+    'ui/ed-add-legend.js', 'ui/ed-changelog.js', 'ui/ed-character-picker.js', 'ui/ed-combat.js',
+    'ui/ed-conflict.js', 'ui/ed-custom-item.js', 'ui/ed-day-reset.js', 'ui/ed-edit-meta.js',
+    'ui/ed-homebrew.js', 'ui/ed-notes.js', 'ui/ed-overview.js', 'ui/ed-save-key.js', 'ui/ed-settings.js',
+  ]) {
+    const c = countViolations(rel, readFileSync(resolve(ROOT, rel), 'utf8'));
+    assert.deepEqual(Object.values(c).filter(Boolean), [], `${rel}: ${JSON.stringify(c)}`);
+  }
 });
 
 test('end state: the seven migrated hosts have no keydown/dialog-role/frame-css/button-style violations', () => {

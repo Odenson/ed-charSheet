@@ -6,8 +6,14 @@
 // Architecture (Tier-1 golden rule): this view NEVER mutates state or persists
 // anything itself. On save it dispatches `ed-edit-meta` up to ed-app, which
 // applies the patch, persists the overlay, and re-derives the model. It closes
-// via `close` (Escape / Cancel / backdrop). Enter confirms; theme-aware.
+// via `close` (Escape / Cancel / backdrop). Enter saves from a single-line field,
+// Ctrl/⌘+Enter from a textarea; a dirty Escape/✕/backdrop asks "Discard unsaved
+// changes?" (stacked ed-confirm); theme-aware. Built on the UI kit (docs/MODALS.md).
 import { LitElement, html, css } from 'lit';
+import './ed-confirm.js';
+import { ModalController, deepActiveElement } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
+import { isDirty } from './kit/dirty.js';
 import { gahadTriggerChanged } from '../store.js';
 
 // The editable fields, in display order. `area` → multi-line textarea.
@@ -26,9 +32,10 @@ export class EdEditMeta extends LitElement {
   static properties = {
     meta: { attribute: false },
     gahadTrigger: { attribute: false },
+    _discard: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --border: light-dark(#e2e5ea, #2c313b);
@@ -37,10 +44,6 @@ export class EdEditMeta extends LitElement {
       --accent-bg: light-dark(#f6e9dc, #3a2a17);
       --text: light-dark(#111418, #f0f3f7);
     }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--text); border: 1px solid var(--border); border-radius: 12px; width: 32rem; max-width: 100%; max-height: 88vh; overflow: auto; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 0.8rem; }
     .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .field.wide { grid-column: 1 / -1; }
@@ -48,39 +51,54 @@ export class EdEditMeta extends LitElement {
     input, textarea { font: inherit; font-size: var(--fs-body); color: var(--text); background: light-dark(#f7f8fa, #1b1f27); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
     textarea { resize: vertical; line-height: 1.4; }
     input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-    .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 0.25rem; }
-    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--text); }
-    button.btn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
     .hint { grid-column: 1 / -1; font-size: var(--fs-fine); color: var(--muted); margin: -0.2rem 0 0; }
     @media (max-width: 480px) { form { grid-template-columns: 1fr; } }
-  `;
+  `];
+
+  constructor() {
+    super();
+    this._discard = false;
+    this._snap = {};
+    this._ctl = new ModalController(this, {
+      kind: 'input',
+      isDirty: () => isDirty(this._snap, this._draft()),
+      onDiscardPrompt: () => { this._discard = true; },
+      onConfirm: () => this._save(),
+      onClose: () => this._close(),
+    });
+  }
 
   connectedCallback() {
     super.connectedCallback();
-    this._onKeydown = (e) => {
-      if (e.key === 'Escape') { e.stopPropagation(); this._close(); }
-    };
-    document.addEventListener('keydown', this._onKeydown);
+    // Snapshot of every rendered field, taken when the modal opens.
+    const meta = this.meta ?? {};
+    this._snap = Object.fromEntries(FIELDS.map((f) => [f.key, meta[f.key] ?? '']));
+    if (meta.race === 'Ork') {
+      this._snap.gahadSummary = this.gahadTrigger?.summary ?? '';
+      this._snap.gahadDescription = this.gahadTrigger?.description ?? '';
+    }
+    this._ctl.opened(deepActiveElement());
   }
 
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
+  _form() {
+    return this._ctl.dialogEl()?.querySelector('form') ?? null;
   }
 
-  // Focus the first field once the form is in the DOM.
-  firstUpdated() {
-    const first = this.renderRoot.querySelector('input, textarea');
-    if (first) first.focus();
+  // Current field values (same keys as the snapshot); the snapshot itself when
+  // the form is not rendered yet.
+  _draft() {
+    const form = this._form();
+    if (!form) return this._snap;
+    return Object.fromEntries(Object.keys(this._snap).map((k) => [k, form.elements[k]?.value ?? '']));
   }
 
   _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
-  _save(e) {
-    e.preventDefault();
-    const form = e.currentTarget;
+  _save() {
+    const form = this._form();
+    if (!form) return;
     const patch = {};
     for (const f of FIELDS) {
       const raw = (form.elements[f.key]?.value ?? '').trim();
@@ -101,28 +119,30 @@ export class EdEditMeta extends LitElement {
         bubbles: true, composed: true,
       }));
     }
-    this._close();
+    this._ctl.close({ reason: 'confirm' });
   }
 
   render() {
     const meta = this.meta ?? {};
     return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Edit character details" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>Edit character details</span>
-            <button class="mclose" aria-label="Close" @click=${this._close}>✕</button>
-          </div>
-          <form @submit=${this._save}>
-            ${FIELDS.map((f) => {
+      ${modalFrame(this._ctl, {
+        title: 'Edit character details',
+        layer: 2100,
+        width: '32rem',
+        scroll: true,
+        hasTextarea: true,
+        primary: { label: 'Save' },
+        body: html`
+          <form @submit=${(e) => e.preventDefault()}>
+            ${FIELDS.map((f, i) => {
               const val = meta[f.key] ?? '';
               const wide = f.type === 'area';
               return html`
                 <div class="field ${wide ? 'wide' : ''}">
                   <label for=${f.key}>${f.label}</label>
                   ${f.type === 'area'
-                    ? html`<textarea id=${f.key} name=${f.key} rows=${f.rows} .value=${String(val)}></textarea>`
-                    : html`<input id=${f.key} name=${f.key} type=${f.type === 'number' ? 'number' : 'text'} .value=${String(val)} />`}
+                    ? html`<textarea id=${f.key} name=${f.key} rows=${f.rows} ?autofocus=${i === 0} .value=${String(val)}></textarea>`
+                    : html`<input id=${f.key} name=${f.key} type=${f.type === 'number' ? 'number' : 'text'} ?autofocus=${i === 0} .value=${String(val)} />`}
                 </div>
               `;
             })}
@@ -139,13 +159,14 @@ export class EdEditMeta extends LitElement {
                 <p class="hint">Shown in the Gahad info on the Overview. Leave both blank to remove it.</p>`
               : ''}
             <p class="hint">Saved to this browser. These details don't affect any rules or rolls.</p>
-            <div class="actions">
-              <button type="button" class="btn" @click=${this._close}>Cancel</button>
-              <button type="submit" class="btn primary">Save</button>
-            </div>
-          </form>
-        </div>
-      </div>
+        </form>`,
+      })}
+      ${this._discard
+        ? html`<ed-confirm heading="Discard unsaved changes?" message="Your edits to the character details have not been saved."
+            confirmLabel="Discard" cancelLabel="Keep editing" focusCancel
+            @confirm=${() => { this._discard = false; this._ctl.close(); }}
+            @close=${() => { this._discard = false; this._ctl.refocus(); }}></ed-confirm>`
+        : ''}
     `;
   }
 }

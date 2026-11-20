@@ -1,7 +1,9 @@
 // ui/ed-overview.js — the Overview tab: hero portrait + header, attributes,
 // and the Defences/Armour/Movement/Health/Combat panels. Fit-to-viewport,
 // collapses to one column on mobile. Derived stats show as placeholder pills
-// until the engine computes them (see docs/UI-GUIDELINES.md).
+// until the engine computes them (see docs/UI-GUIDELINES.md). Its modals (info,
+// Character details, Legend spent, Karma Ritual, the portrait lightbox) are on
+// the UI kit (ui/kit/, docs/MODALS.md).
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
 import { infoIconCss } from './info-icon.js';
@@ -12,6 +14,8 @@ import './ed-edit-meta.js';
 import './ed-add-legend.js';
 import './ed-damage-modal.js';
 import { humanize, cap } from './format.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 const ABBR = { Dexterity: 'DEX', Strength: 'STR', Toughness: 'TOU', Perception: 'PER', Willpower: 'WIL', Charisma: 'CHA' };
 
@@ -31,6 +35,7 @@ export class EdOverview extends LitElement {
   };
 
   static styles = [
+    modalCss,
     diceIconCss,
     infoIconCss,
     legendSpentStyles,
@@ -66,7 +71,7 @@ export class EdOverview extends LitElement {
     .portrait .ph { color: var(--muted); font-size: var(--fs-hero); }
     /* Mobile-only avatar in the header (desktop uses the large .portrait). */
     .avatar { display: none; flex: none; width: 52px; height: 52px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; }
-    .lightbox-img { max-width: 92vw; max-height: 88vh; border-radius: 12px; object-fit: contain; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+    .lightbox-img { display: block; max-width: 100%; max-height: 75vh; border-radius: 12px; object-fit: contain; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
     .right { display: flex; flex-direction: column; gap: 8px; }
     .blk { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
     .blk h4 { margin: 0 0 6px; font-size: var(--fs-eyebrow); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -87,7 +92,7 @@ export class EdOverview extends LitElement {
     /* Karma Ritual "+": reuses the .info affordance (amber glyph, hover-reveal),
        matching the "Add Legend earned" plus. Disabled → muted when Karma is full. */
     .info:disabled { color: var(--muted); cursor: default; opacity: 0.5; }
-    .hreset { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--muted); background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .hreset { margin-left: auto; flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--muted); background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
     .hreset:hover { color: var(--accent); border-color: var(--accent); }
     .hreset.reset { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     /* Top row: attributes (compacted) beside the Legend panel, sharing one height. */
@@ -120,7 +125,6 @@ export class EdOverview extends LitElement {
     .hstate.bad { background: light-dark(#f6e4e0, #3a2320); color: light-dark(#a63a2b, #e0846f); }
     .hfield { width: 46px; font: inherit; font-size: var(--fs-body); font-weight: 500; color: light-dark(#111418, #f0f3f7); background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 1px 0; outline: none; text-align: right; }
     .hfield:focus { border-bottom-color: var(--accent); }
-    .hbtn { font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
     .hint { font-size: var(--fs-fine); color: var(--muted); }
     .val { font-weight: 500; }
     /* Health card (V1): Damage / Wounds highlighted rows, a damage gauge, then
@@ -181,10 +185,6 @@ export class EdOverview extends LitElement {
        (UI-GUIDELINES: mobile must work). */
     *:hover > .info, *:focus-within > .info, .info:focus-visible { opacity: 1; }
     @media (hover: none) { .info { opacity: 1; } }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: light-dark(#111418, #f0f3f7); border: 1px solid var(--border); border-radius: 12px; max-width: 32rem; max-height: 80vh; overflow: auto; padding: 1rem 1.25rem; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.5rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; }
     .mbody { font-size: var(--fs-body); line-height: 1.5; color: var(--muted); }
     .mpara { margin: 0 0 0.6rem; }
     .mpara b { color: light-dark(#111418, #f0f3f7); font-weight: 500; }
@@ -193,8 +193,6 @@ export class EdOverview extends LitElement {
     .kbuy { font: inherit; font-size: var(--fs-value); width: 4.5rem; text-align: right; color: inherit; background: var(--bg-chip, light-dark(#f7f8fa,#1b1f27)); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; margin: 0 4px; }
     .kbuy:focus { outline: none; border-color: var(--accent); }
     .kbuyfor { color: var(--muted); }
-    .kfoot { display: flex; justify-content: flex-end; margin: 0.6rem 0 0.2rem; }
-    .hbtn:disabled { opacity: 0.4; cursor: default; }
     .khist { margin-top: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
     .khhead { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
     .khrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-small); color: var(--muted); padding: 2px 0; }
@@ -383,15 +381,21 @@ export class EdOverview extends LitElement {
       aria-label="Karma Ritual"
       @click=${(e) => {
         e.stopPropagation();
-        if (paid) this._openKarmaRitual();
+        if (paid) this._openKarmaRitual(e.currentTarget);
         else this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { refill: true }, bubbles: true, composed: true }));
       }}
     >✚</button>`;
   }
-  _openKarmaRitual() {
+  _openKarmaRitual(trigger) {
     const k = this.model?.characteristics?.karma ?? {};
     this._karmaBuy = this._ritualMaxBuy(k); // default: refill to full (or as much as Legend affords)
     this._karmaRitual = true;
+    this._karmaCtl.opened(trigger);
+  }
+  // The clamped number of points the draft will buy (the primary's Enter target).
+  _karmaN() {
+    const k = this.model?.characteristics?.karma ?? {};
+    return Math.max(0, Math.min(Number(this._karmaBuy) || 0, this._ritualMaxBuy(k)));
   }
   // Most Karma the character could buy right now: room under max, and what Legend
   // affords. The modal clamps the draft to this (ed-app re-clamps defensively).
@@ -419,9 +423,6 @@ export class EdOverview extends LitElement {
         <span class="kbuyfor">for <b>${spend}</b> Legend</span>
       </div>
       <p class="mpara hint">After: Karma <b>${cur + n}</b> / ${k.max ?? '—'} · Legend <b>${avail != null ? avail - spend : '—'}</b>.${cap === 0 ? ' No Karma to buy (full, or not enough Legend).' : ''}</p>
-      <div class="kfoot">
-        <button class="hbtn" ?disabled=${n <= 0} @click=${() => this._buyKarma(n)}>Buy${n > 0 ? ` ${n}` : ''}</button>
-      </div>
       ${rituals.length
         ? html`<div class="khist">
             <div class="khhead">Recent rituals</div>
@@ -436,7 +437,7 @@ export class EdOverview extends LitElement {
   }
   _buyKarma(n) {
     if (n > 0) this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { ritual: { points: n } }, bubbles: true, composed: true }));
-    this._karmaRitual = false;
+    this._karmaCtl.close({ reason: 'confirm' });
   }
   // A roll button. Dispatches 'ed-roll' (caught by ed-app) with the step to roll.
   // Disabled when there's no step yet (e.g. engine-derived combat stats). If the
@@ -590,36 +591,26 @@ export class EdOverview extends LitElement {
       @click=${(e) => this.renderRoot.querySelector('ed-damage-modal')?.show(e.currentTarget)}>${inner}</button>`;
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    this._onKeydown = (e) => {
-      if (e.key !== 'Escape') return;
-      if (this._addLegend) this._addLegend = false;
-      if (this._karmaRitual) this._karmaRitual = false;
-      if (this._modal) this._closeModal();
-      if (this._lightbox) this._lightbox = false;
-    };
-    document.addEventListener('keydown', this._onKeydown);
+  constructor() {
+    super();
+    this._infoCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
+    this._lightboxCtl = new ModalController(this, { kind: 'info', onClose: () => { this._lightbox = false; } });
+    this._karmaCtl = new ModalController(this, {
+      kind: 'input',
+      onConfirm: () => this._buyKarma(this._karmaN()),
+      canConfirm: () => this._karmaN() > 0,
+      onClose: () => { this._karmaRitual = false; },
+    });
   }
 
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
+  _openModal(title, body, trigger) {
+    this._modal = { title, body };
+    this._infoCtl.opened(trigger);
   }
-
-  _openModal(title, body) { this._modal = { title, body }; }
   // Opens the shared add-Legend form (Phase F) — the same <ed-add-legend> the
   // Notes tab's Legend view uses, so both surfaces add through one identical
   // form and one dispatch contract (ed-edit-legend-earned → ed-app persists).
   _openAddLegend() { this._addLegend = true; }
-  _closeModal() {
-    // Drop keyboard focus from the trigger (the ⓘ button) so an Escape close ends
-    // the same way a mouse close does. Otherwise the ⓘ keeps :focus-visible (the
-    // blue ring) and stays hover-revealed after the modal is gone.
-    this.renderRoot.activeElement?.blur();
-    this._modal = null;
-  }
-
   // Modal body listing all character metadata (any field added to meta shows up).
   _metaBody() {
     const meta = this.model?.meta ?? {};
@@ -689,7 +680,7 @@ export class EdOverview extends LitElement {
               <span class="ftag race">${race}</span>
               <span class="txt"
                 >${a.name}${a.summary || this._traitsFor(a.name).length
-                  ? html`<button class="info ibadge" aria-label="About ${a.name}" title="Details" @click=${() => this._openModal(a.name, this._abilityModalBody(a))}>i</button>`
+                  ? html`<button class="info ibadge" aria-label="About ${a.name}" title="Details" @click=${(e) => this._openModal(a.name, this._abilityModalBody(a), e.currentTarget)}>i</button>`
                   : ''}</span
               >
             </div>
@@ -824,7 +815,7 @@ export class EdOverview extends LitElement {
       <div class="blk legend">
         <h4>
           Legend${status
-            ? html`<button class="info ibadge" aria-label="About Legendary Status" title="Legendary Status" @click=${() => this._openModal('Legendary Status', this._legendModalBody(l))}>i</button>`
+            ? html`<button class="info ibadge" aria-label="About Legendary Status" title="Legendary Status" @click=${(e) => this._openModal('Legendary Status', this._legendModalBody(l), e.currentTarget)}>i</button>`
             : ''}
         </h4>
         <div class="ltotal">
@@ -847,7 +838,7 @@ export class EdOverview extends LitElement {
           </div>
           <div class="line">
             <span>Available${l?.spent
-              ? html`<button class="info ibadge" aria-label="Legend spent breakdown" title="Legend spent" @click=${() => this._openModal('Legend spent', legendSpentBody(l.spent))}>i</button>`
+              ? html`<button class="info ibadge" aria-label="Legend spent breakdown" title="Legend spent" @click=${(e) => this._openModal('Legend spent', legendSpentBody(l.spent), e.currentTarget)}>i</button>`
               : ''}</span>
             ${num(l?.available)}
           </div>
@@ -908,7 +899,7 @@ export class EdOverview extends LitElement {
         <div class="hero">
           <div class="head">
             ${portrait
-              ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @error=${this._portraitError} @click=${() => (this._lightbox = true)} />`
+              ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @error=${this._portraitError} @click=${(e) => { this._lightbox = true; this._lightboxCtl.opened(e.currentTarget); }} />`
               : ''}
             ${this._editRegion(
               'details',
@@ -922,7 +913,7 @@ export class EdOverview extends LitElement {
                         aria-label="Character details"
                         @click=${(e) => {
                           e.stopPropagation();
-                          this._openModal(meta.name ?? 'Character details', this._metaBody());
+                          this._openModal(meta.name ?? 'Character details', this._metaBody(), e.currentTarget);
                         }}
                       >i</button>`}
                 </div>
@@ -973,7 +964,6 @@ export class EdOverview extends LitElement {
                     ? ''
                     : html`<button
                         class="hreset reset"
-                        style="margin-left:auto"
                         title="Start a new day — reset recoveries, clear combat state, and spend remaining recoveries"
                         aria-label="Reset the day"
                         @click=${(e) => {
@@ -1012,40 +1002,27 @@ export class EdOverview extends LitElement {
       </div>
       <ed-damage-modal .model=${this.model}></ed-damage-modal>
       ${this._modal
-        ? html`
-            <div class="overlay" @click=${this._closeModal}>
-              <div class="modal" @click=${(e) => e.stopPropagation()}>
-                <div class="mhead">
-                  <span>${this._modal.title}</span>
-                  <button class="mclose" aria-label="Close" @click=${this._closeModal}>✕</button>
-                </div>
-                <div class="mbody">${this._modal.body}</div>
-              </div>
-            </div>
-          `
+        ? modalFrame(this._infoCtl, { title: this._modal.title, layer: 2000, width: '32rem', scroll: true, body: this._modal.body })
         : ''}
       ${this._lightbox && portrait
-        ? html`<div class="overlay" @click=${() => (this._lightbox = false)}>
-            <img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />
-          </div>`
+        ? modalFrame(this._lightboxCtl, {
+            title: meta.name ?? 'Portrait',
+            layer: 2000,
+            width: 'auto',
+            body: html`<img class="lightbox-img" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />`,
+          })
         : ''}
       ${this._addLegend
         ? html`<ed-add-legend .earned=${(m.resources?.legend?.earned ?? []).filter((x) => !x.virtual)} @close=${() => (this._addLegend = false)}></ed-add-legend>`
         : ''}
       ${this._karmaRitual
-        ? html`
-            <div class="overlay" @click=${() => (this._karmaRitual = false)} @keydown=${(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); this._buyKarma(Math.max(0, Math.min(Number(this._karmaBuy) || 0, this._ritualMaxBuy(this.model?.characteristics?.karma ?? {})))); }
-            }}>
-              <div class="modal" @click=${(e) => e.stopPropagation()}>
-                <div class="mhead">
-                  <span>Karma Ritual</span>
-                  <button class="mclose" aria-label="Close" @click=${() => (this._karmaRitual = false)}>✕</button>
-                </div>
-                <div class="mbody">${this._karmaRitualBody()}</div>
-              </div>
-            </div>
-          `
+        ? modalFrame(this._karmaCtl, {
+            title: 'Karma Ritual',
+            layer: 2000,
+            width: '26rem',
+            primary: { label: `Buy${this._karmaN() > 0 ? ` ${this._karmaN()}` : ''}`, tone: 'karma', disabled: this._karmaN() <= 0 },
+            body: this._karmaRitualBody(),
+          })
         : ''}
       ${this._edit
         ? html`<ed-edit-meta .meta=${meta} .gahadTrigger=${this._traitsFor('Gahad').find((t) => t.type === 'trigger') ?? null} @close=${() => (this._edit = false)}></ed-edit-meta>`
