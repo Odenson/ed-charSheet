@@ -99,14 +99,23 @@ test('the real repository passes the import check', () => {
     for (const entry of readdirSync(absDir)) {
       const abs = resolve(absDir, entry);
       const rel = relative(ROOT, abs).split(sep).join('/');
-      if (statSync(abs).isDirectory()) { if (rel === 'engine' || rel === 'ui') walk(abs); continue; }
+      if (statSync(abs).isDirectory()) { if (rel === 'engine' || rel === 'ui' || rel === 'ui/kit') walk(abs); continue; }
       if (!rel.endsWith('.js') || rel.endsWith('.test.js')) continue;
       if (rel.includes('/') && !rel.startsWith('engine/') && !rel.startsWith('ui/')) continue;
       rels.push(rel);
     }
   };
   walk(ROOT);
+  assert.ok(rels.includes('ui/kit/modal-stack.js'), 'the walker must include ui/kit/');
+  assert.ok(rels.includes('ui/kit/modal-controller.js'), 'the walker must include ui/kit/');
   const modules = rels.map((rel) => ({ rel, src: readFileSync(resolve(ROOT, rel), 'utf8') }));
   const { errors } = analyzeModules(modules);
   assert.deepEqual(errors, [], `import problems:\n${errors.map((e) => `${e.file}:${e.line} ${e.msg}`).join('\n')}`);
+});
+
+test('check-imports.mjs walks ui/kit/ and uses the pathToFileURL main-module guard (Windows-safe)', () => {
+  const src = readFileSync(resolve(ROOT, 'tools/check-imports.mjs'), 'utf8');
+  assert.match(src, /rel === 'ui\/kit'/);
+  assert.match(src, /pathToFileURL/);
+  assert.doesNotMatch(src, /import\.meta\.url === `file:\/\//);
 });

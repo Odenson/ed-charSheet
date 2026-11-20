@@ -6,15 +6,17 @@
 // dispatches `confirm` ({ mode, itemName, amount, alloc }) so the Equipment view
 // can compute the next inputs + purse and dispatch the single atomic `ed-trade`.
 //
-// Tier-1 modal rules: Escape / Cancel / backdrop close; Enter confirms (the
-// primary button is autofocused when the action is allowed, Cancel otherwise);
-// theme-aware light+dark with two font weights; amounts are silver at copper
+// Built on the UI kit (ui/kit/, docs/MODALS.md): Escape / Cancel / backdrop close;
+// Enter confirms when the allocation is valid (the kit routes it; Cancel is
+// focused when it is not); theme-aware light+dark with two font weights; amounts are silver at copper
 // granularity (multiples of 0.1 sp) and never fabricated — an unparseable cost
 // resolves to 0 via engine/wealth.js costSilver.
 import { LitElement, html, css } from 'lit';
 import { coinsSilver, gemsSilver, costSilver } from '../engine/wealth.js';
 import { PICKER_LABELS } from './picker.js';
 import { numFmt } from './format.js';
+import { ModalController, deepActiveElement } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 // Aggregated per-identity gem rows: matched by (name, valueSilver), oldest first.
 const gemOptions = (gems = []) => {
@@ -60,7 +62,7 @@ export class EdTradeModal extends LitElement {
     _gVal: { state: true },
     _gQty: { state: true },
   };
-  static styles = css`
+  static styles = [modalCss, css`
     :host {
       --bg-chip: light-dark(#ffffff, #232833);
       --bg-card: light-dark(#ffffff, #1f242e);
@@ -71,13 +73,7 @@ export class EdTradeModal extends LitElement {
       --danger: light-dark(#c0392b, #e06557);
       --danger-bg: light-dark(#fbe9e7, #3a1f1c);
       --txt: light-dark(#111418, #f0f3f7);
-      --fs-value: 1.1rem; --fs-body: 0.9rem; --fs-small: 0.75rem; --fs-fine: 0.7rem;
     }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2150; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--txt); border: 1px solid var(--border); border-radius: 12px; width: 27rem; max-width: 100%; max-height: min(88vh, 44rem); overflow-y: auto; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 0.25rem; }
-    .mtitle { font-size: var(--fs-value); font-weight: 500; line-height: 1.25; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 2px; }
     .sub { font-size: var(--fs-small); color: var(--muted); margin: 0 0 0.75rem; }
     .row { display: flex; align-items: center; gap: 8px; margin: 0.75rem 0; }
     .row label { font-size: var(--fs-small); color: var(--muted); flex: 0 0 auto; }
@@ -102,13 +98,9 @@ export class EdTradeModal extends LitElement {
     .gemsub input.gq { width: 3rem; }
     .gemsub .gadd { font: inherit; font-size: var(--fs-small); color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-weight: 500; }
     .warn { font-size: var(--fs-body); line-height: 1.4; color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 8px; padding: 8px 10px; margin: 0.5rem 0 0.75rem; }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 0.75rem; }
-    button.btn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--txt); }
-    button.btn.accent { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-    button.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
     .price { font-size: var(--fs-small); color: var(--muted); }
     .gbox { border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 4px; }
-  `;
+  `];
 
   constructor() {
     super();
@@ -122,7 +114,16 @@ export class EdTradeModal extends LitElement {
     this._gName = '';
     this._gVal = '';
     this._gQty = '1';
-    this._listener = null;
+    // Enter confirms when the allocation is valid; Cancel has initial focus when
+    // it is not (the primary is skipped while disabled). Confirm closes first
+    // (restoring focus) and dispatches ONLY `confirm`, never `close` as well.
+    this._ctl = new ModalController(this, {
+      kind: 'input',
+      onConfirm: () => this._confirm(),
+      canConfirm: () => this._canConfirm(),
+      initialFocus: '[data-cancel]',
+      onClose: (r) => { if (r === 'cancel') this._close(); },
+    });
   }
 
   // Suggested price = the catalogue cost where it parses, else 0 (thread items
@@ -225,25 +226,20 @@ export class EdTradeModal extends LitElement {
     this._coins = allSilverAlloc(this.wealth?.coins ?? {}, this._amountSilver(), this.mode === 'buy');
     this._revealed = new Set();
     this._gems = [];
-    this._listener = (e) => { if (e.key === 'Escape') { e.stopPropagation(); this._close(); } };
-    document.addEventListener('keydown', this._listener);
-  }
-  disconnectedCallback() {
-    if (this._listener) document.removeEventListener('keydown', this._listener);
-    super.disconnectedCallback();
-  }
-  firstUpdated() {
-    // Focus the primary action when allowed, else Cancel (so Enter can't fire a
-    // blocked confirm). One-shot — typing in the amount field must never be
-    // stolen by a re-focus, so no `updated` re-focus here.
-    const primary = this._canConfirm() ? this.renderRoot.querySelector('.btn.accent') : null;
-    (primary ?? this.renderRoot.querySelector('.btn')).focus();
+    this._ctl.opened(deepActiveElement());
   }
   _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
+  // Enter in a gem-row field adds the gem only (the fields are data-enter="local").
+  _gemKeydown(e) {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    e.preventDefault();
+    this._addGem();
+  }
   _confirm() {
     if (!this._canConfirm()) return;
+    this._ctl.close({ reason: 'confirm' });
     this.dispatchEvent(new CustomEvent('confirm', {
       detail: {
         mode: this.mode,
@@ -291,85 +287,80 @@ export class EdTradeModal extends LitElement {
     const hidden = denoms.filter((d) => !shown.includes(d));
     const gems = this.wealth?.gems ?? [];
 
-    return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="${page === 'buy' ? 'Buy' : 'Sell'} ${this.item?.name ?? ''}" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">${page === 'buy' ? 'Buy' : 'Sell'} · ${this.item?.name ?? 'item'}</span>
-            <button class="mclose" aria-label="Close" @click=${this._close}>✕</button>
-          </div>
-          <p class="sub">${this._detail()}</p>
+    const word = page === 'buy' ? 'Buy' : 'Sell';
+    return modalFrame(this._ctl, {
+      title: `${word} · ${this.item?.name ?? 'item'}`,
+      label: `${word} ${this.item?.name ?? ''}`,
+      layer: 2150,
+      width: '27rem',
+      scroll: true,
+      body: html`
+    <p class="sub">${this._detail()}</p>
 
-          <div class="row">
-            <label for="trade-amt">Amount (sp)</label>
-            <input class="amt" id="trade-amt" type="number" min="0" step="0.1" .value=${amount}
-              @input=${(e) => this._setAmount(e.target.value)} aria-label="Trade amount in silver" />
-            <span class="tot">${page === 'buy' ? 'Paying' : 'Receiving'} ${numFmt(alloc)} sp</span>
-          </div>
+    <div class="row">
+      <label for="trade-amt">Amount (sp)</label>
+      <input class="amt" id="trade-amt" type="number" min="0" step="0.1" .value=${amount}
+        @input=${(e) => this._setAmount(e.target.value)} aria-label="Trade amount in silver" />
+      <span class="tot">${page === 'buy' ? 'Paying' : 'Receiving'} ${numFmt(alloc)} sp</span>
+    </div>
 
-          ${page === 'buy'
-            ? html`
-                <div class="grid">
-                  <div class="gh">Pay from your purse</div>
-                  ${shown.length ? shown.map((d) => this._coinRow(d, 'buy')) : 'Nothing to spend — no coins recorded.'}
-                  ${gems.length
-                    ? html`<div class="gh">Gems (full face value)</div>
-                        ${this._buyGems().map((g) => {
-                          const cur = this._gemAt(g.name, g.valueSilver)?.qty ?? 0;
-                          return html`<div class="grow">
-                            <span class="glab"><span class="n">${g.name}</span><span class="r">×${numFmt(g.valueSilver)} sp · own ${g.owned}</span></span>
-                            <span class="qty">
-                              <button aria-label="Decrease ${g.name}" @click=${() => this._bumpBuyGem(g.name, g.valueSilver, -1)}>−</button>
-                              <span class="cnt">${cur}</span>
-                              <button aria-label="Increase ${g.name}" @click=${() => this._bumpBuyGem(g.name, g.valueSilver, 1)}>＋</button>
-                            </span>
-                          </div>`;
-                        })}`
-                    : ''}
-                  ${!shown.length && !gems.length ? html`<div class="sub" style="margin:0">Nothing to spend — no coins or gems recorded.</div>` : ''}
-                </div>
-                ${!can ? html`<div class="warn">You cannot add it yet — allocate ${numFmt(amount - alloc)} sp more.</div>` : ''}
-              `
-            : html`
-                <div class="grid">
-                  <div class="gh">Take proceeds as</div>
-                  ${shown.length ? shown.map((d) => this._coinRow(d, 'sell')) : 'No coins yet — credit coins below.'}
-                  ${hidden.length
-                    ? html`<div class="addcoin">
-                        ${hidden.map((d) => html`<button @click=${() => this._reveal(d.key)}>＋ ${d.label} ×${numFmt(d.rate)} sp</button>`)}
-                      </div>`
-                    : ''}
-                  <div class="gh">Gems paid to you</div>
-                  ${this._sellGems().map((g, i) => html`<div class="grow">
-                    <span class="glab"><span class="n">${g.name}</span><span class="r">×${numFmt(g.valueSilver)} sp</span></span>
-                    <span class="qty">
-                      <button aria-label="Decrease ${g.name}" @click=${() => this._bumpSellGem(g.name, g.valueSilver, -1)}>−</button>
-                      <span class="cnt">${g.qty}</span>
-                      <button aria-label="Increase ${g.name}" @click=${() => this._bumpSellGem(g.name, g.valueSilver, 1)}>＋</button>
-                    </span>
-                  </div>`)}
-                  <div class="gbox">
-                    <div class="gh">Define a gem you were paid in</div>
-                    <div class="gemsub">
-                      <input class="gq" placeholder="Gem name" maxlength="40" aria-label="Gem name" .value=${this._gName} @input=${(e) => (this._gName = e.target.value)} />
-                      <input placeholder="value sp" type="number" min="0" aria-label="Value in silver" .value=${this._gVal} @input=${(e) => (this._gVal = e.target.value)} />
-                      <input class="gq" placeholder="qty" type="number" min="1" aria-label="Quantity" .value=${this._gQty} @input=${(e) => (this._gQty = e.target.value)} />
-                      <button class="gadd" @click=${this._addGem}>Add</button>
-                    </div>
-                  </div>
-                </div>
-                ${!can ? html`<div class="warn">${alloc < amount
-                  ? `Receiving ${numFmt(alloc)} sp — add ${numFmt(amount - alloc)} sp more to reach ${numFmt(amount)} exactly.`
-                  : `Receiving ${numFmt(alloc)} sp — that is more than ${numFmt(amount)}; lower it to exactly ${numFmt(amount)}.`}</div>` : ''}
-              `}
-
-          <div class="actions">
-            <button type="button" class="btn" @click=${this._close}>Cancel</button>
-            <button type="button" class="btn accent" ?disabled=${!can} @click=${this._confirm}>${page === 'buy' ? 'Buy' : 'Sell'}</button>
+    ${page === 'buy'
+      ? html`
+          <div class="grid">
+            <div class="gh">Pay from your purse</div>
+            ${shown.length ? shown.map((d) => this._coinRow(d, 'buy')) : 'Nothing to spend — no coins recorded.'}
+            ${gems.length
+              ? html`<div class="gh">Gems (full face value)</div>
+                  ${this._buyGems().map((g) => {
+                    const cur = this._gemAt(g.name, g.valueSilver)?.qty ?? 0;
+                    return html`<div class="grow">
+                      <span class="glab"><span class="n">${g.name}</span><span class="r">×${numFmt(g.valueSilver)} sp · own ${g.owned}</span></span>
+                      <span class="qty">
+                        <button aria-label="Decrease ${g.name}" @click=${() => this._bumpBuyGem(g.name, g.valueSilver, -1)}>−</button>
+                        <span class="cnt">${cur}</span>
+                        <button aria-label="Increase ${g.name}" @click=${() => this._bumpBuyGem(g.name, g.valueSilver, 1)}>＋</button>
+                      </span>
+                    </div>`;
+                  })}`
+              : ''}
+            ${!shown.length && !gems.length ? html`<div class="sub" style="margin:0">Nothing to spend — no coins or gems recorded.</div>` : ''}
           </div>
-        </div>
-      </div>
-    `;
+          ${!can ? html`<div class="warn">You cannot add it yet — allocate ${numFmt(amount - alloc)} sp more.</div>` : ''}
+        `
+      : html`
+          <div class="grid">
+            <div class="gh">Take proceeds as</div>
+            ${shown.length ? shown.map((d) => this._coinRow(d, 'sell')) : 'No coins yet — credit coins below.'}
+            ${hidden.length
+              ? html`<div class="addcoin">
+                  ${hidden.map((d) => html`<button @click=${() => this._reveal(d.key)}>＋ ${d.label} ×${numFmt(d.rate)} sp</button>`)}
+                </div>`
+              : ''}
+            <div class="gh">Gems paid to you</div>
+            ${this._sellGems().map((g, i) => html`<div class="grow">
+              <span class="glab"><span class="n">${g.name}</span><span class="r">×${numFmt(g.valueSilver)} sp</span></span>
+              <span class="qty">
+                <button aria-label="Decrease ${g.name}" @click=${() => this._bumpSellGem(g.name, g.valueSilver, -1)}>−</button>
+                <span class="cnt">${g.qty}</span>
+                <button aria-label="Increase ${g.name}" @click=${() => this._bumpSellGem(g.name, g.valueSilver, 1)}>＋</button>
+              </span>
+            </div>`)}
+            <div class="gbox">
+              <div class="gh">Define a gem you were paid in</div>
+              <div class="gemsub">
+                <input class="gq" data-enter="local" @keydown=${this._gemKeydown} placeholder="Gem name" maxlength="40" aria-label="Gem name" .value=${this._gName} @input=${(e) => (this._gName = e.target.value)} />
+                <input data-enter="local" @keydown=${this._gemKeydown} placeholder="value sp" type="number" min="0" aria-label="Value in silver" .value=${this._gVal} @input=${(e) => (this._gVal = e.target.value)} />
+                <input class="gq" data-enter="local" @keydown=${this._gemKeydown} placeholder="qty" type="number" min="1" aria-label="Quantity" .value=${this._gQty} @input=${(e) => (this._gQty = e.target.value)} />
+                <button class="gadd" @click=${this._addGem}>Add</button>
+              </div>
+            </div>
+          </div>
+          ${!can ? html`<div class="warn">${alloc < amount
+            ? `Receiving ${numFmt(alloc)} sp — add ${numFmt(amount - alloc)} sp more to reach ${numFmt(amount)} exactly.`
+            : `Receiving ${numFmt(alloc)} sp — that is more than ${numFmt(amount)}; lower it to exactly ${numFmt(amount)}.`}</div>` : ''}
+        `}`,
+      primary: { label: word, disabled: !can },
+    });
   }
 }
 

@@ -12,7 +12,7 @@ import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../s
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
-import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
+import { currentModality, deepActiveElement, returnFocusToTrigger } from './kit/modal-controller.js';
 import { payFromPurse } from '../engine/wealth.js';
 import { talentRankStepCost, lowestDisciplineCircle, skillRankStepCost } from '../engine/legend-spent.js';
 import { logCircleTraining, logTalentLearned, logSkillLearned, logKnackLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';

@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "1.39.0",
+      "date": "2026-11-20",
+      "summary": "Modals now share one keyboard contract (Enter = OK, Escape closes only the top dialog, focus trapped and restored) and one look across the roll, confirm, trade, Take damage, Spells, Equipment item and Disciplines modals.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Modals now share one keyboard contract: Enter = OK, Escape closes only the top dialog, and focus stays inside and returns to the button that opened it. Applies to the roll, confirm, trade, Take damage, Spells, Equipment item and Disciplines modals, which now share one look."
+        }
+      ]
+    },
+    {
       "version": "1.38.0",
       "date": "2026-11-15",
       "summary": "Knacks can now be rolled from their row (log and Discord name the knack), and rolling a talent or knack now charges its Strain to Health, shown in the roll modal, logs and Discord.",

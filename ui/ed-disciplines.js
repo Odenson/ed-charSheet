@@ -11,10 +11,16 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
 import { infoIconCss } from './info-icon.js';
-import { ModalController } from './modal-controller.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
 import { describeRequirement } from '../engine/advancement.js';
+
+// The kit kind of each Disciplines modal (one controller serves all nine):
+// info modals (talent/skill/knack/granted) are read-only; the pickers act on a
+// focused option; Train is a confirm.
+const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', advance: 'confirm' };
 
 // Hover text for an ability whose action an effect changed (taxonomy v5
 // action-modifier). Pure formatting of the engine's pre-resolved fields: the
@@ -37,7 +43,7 @@ export class EdDisciplines extends LitElement {
     _skillSearch: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     ${diceIconCss}
     ${infoIconCss}
     :host {
@@ -75,11 +81,6 @@ export class EdDisciplines extends LitElement {
     button.cpill { font-family: inherit; cursor: pointer; }
     button.cpill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--karma-bg); }
     /* Confirm-modal actions (train to next Circle). */
-    .mactions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-    .mbtn { font: inherit; font-size: var(--fs-body); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-chip); color: var(--fg); }
-    .mbtn.primary { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-    .mbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
-    .mbtn:disabled { opacity: 0.4; cursor: not-allowed; }
     /* Train-to-Circle cost rows: Legend and the editable silver fee, each checked. */
     .cbox { background: var(--bg-chip); border: 1px solid var(--border); border-radius: 8px; padding: 2px 12px; margin: 10px 0; }
     .crow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
@@ -223,11 +224,6 @@ export class EdDisciplines extends LitElement {
     .sinfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 
     /* Detail modal (Escape / backdrop / ✕ close), theme-aware. */
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
-    .modal { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; max-width: 30rem; width: 100%; max-height: 85vh; overflow: auto; padding: 14px 16px; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .mtitle { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-value); font-weight: 500; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-value); line-height: 1; cursor: pointer; }
     .mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .chip { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; }
     .chip.changed { color: var(--accent); }
@@ -242,7 +238,7 @@ export class EdDisciplines extends LitElement {
       .meta { flex-direction: column; }
       .mcell.dur, .mcell.half, .mcell.art { flex: 1 1 auto; }
     }
-  `;
+  `];
 
   constructor() {
     super();
@@ -253,7 +249,14 @@ export class EdDisciplines extends LitElement {
     // into the dialog on open and returns to the trigger on close (ring
     // suppressed for pointer opens). The controller owns the Escape listener and
     // the focus trap; this component only opens/closes it.
-    this._modalCtl = new ModalController(this, { onClose: () => { this._modal = null; } });
+    this._modalCtl = new ModalController(this, {
+      kind: () => DISC_KIND[this._modal?.type] ?? 'info',
+      canConfirm: () => this._modal?.type === 'advance' && this._advanceState(this._modal).canTrain,
+      onConfirm: () => this._confirmAdvance(),
+      // Train: the primary when allowed, otherwise the fee field.
+      initialFocus: () => (this._modal?.type === 'advance' ? '.silin' : null),
+      onClose: () => { this._modal = null; },
+    });
   }
 
   // Open the detail modal for `entry` and hand the controller the trigger so
@@ -384,24 +387,22 @@ export class EdDisciplines extends LitElement {
       dt.skillUse && dt.skillUse.allowed === false ? { v: 'No skill use' } : null,
       dt.versus ? { v: `vs ${dt.versus}` } : null,
     ].filter(Boolean);
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${t.name} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle"><span class="tinfo ${t.required ? 'req' : 'opt'}" aria-hidden="true">i</span>${t.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}" title=${c.title ?? nothing}>${c.v}</span>`)}</div>
-          ${dt.summary
-            ? html`<div class="mtext">${dt.summary}</div>`
-            : html`<div class="mtext" style="color: var(--muted)">Full details coming.</div>`}
-          ${(dt.notes ?? []).map((n) => html`<div class="mnote">${n}</div>`)}
-          ${t.grantSources?.length
-            ? html`<div class="mnote">Rank ${t.rank} ${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus ?? 0)} by ${this._grantTitle(t.grantSources)} — absorbed into the step above.</div>`
-            : ''}
-        </div>
-      </div>
-    `;
+    return modalFrame(this._modalCtl, {
+      title: html`<span class="tinfo ${t.required ? 'req' : 'opt'}" aria-hidden="true">i</span>${t.name}`,
+      label: t.name,
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}" title=${c.title ?? nothing}>${c.v}</span>`)}</div>
+    ${dt.summary
+      ? html`<div class="mtext">${dt.summary}</div>`
+      : html`<div class="mtext" style="color: var(--muted)">Full details coming.</div>`}
+    ${(dt.notes ?? []).map((n) => html`<div class="mnote">${n}</div>`)}
+    ${t.grantSources?.length
+      ? html`<div class="mnote">Rank ${t.rank} ${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus ?? 0)} by ${this._grantTitle(t.grantSources)} — absorbed into the step above.</div>`
+      : ''}`,
+    });
   }
 
   // One skill row, using the same .trow grid as talents so the columns line up.
@@ -606,20 +607,18 @@ export class EdDisciplines extends LitElement {
       k.action ? { v: `${k.action} action` } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
     ].filter(Boolean);
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${k.name} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle"><span class="kninfo" aria-hidden="true">i</span>${k.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
-          ${dt.summary
-            ? html`<div class="mtext">${dt.summary}</div>`
-            : html`<div class="mtext" style="color: var(--muted)">Knack details not yet recorded.</div>`}
-        </div>
-      </div>
-    `;
+    return modalFrame(this._modalCtl, {
+      title: html`<span class="kninfo" aria-hidden="true">i</span>${k.name}`,
+      label: k.name,
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mchips">${chips.map((c) => html`<span class="chip ${c.c ?? ''}">${c.v}</span>`)}</div>
+    ${dt.summary
+      ? html`<div class="mtext">${dt.summary}</div>`
+      : html`<div class="mtext" style="color: var(--muted)">Knack details not yet recorded.</div>`}`,
+    });
   }
 
   // Skill detail modal. Mirrors the talent modal: chips summarise the mechanics
@@ -635,24 +634,22 @@ export class EdDisciplines extends LitElement {
       s.attribute ? { v: s.attribute } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
     ].filter(Boolean);
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${s.name} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${s.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mchips">${chips.map((c) => html`<span class=${c.c ? `chip ${c.c}` : 'chip'} title=${c.title ?? nothing}>${c.v}</span>`)}</div>
-          ${dt.summary
-            ? html`<div class="mtext">${dt.summary}</div>`
-            : html`<div class="mtext" style="color: var(--muted)">Skill description not yet recorded.</div>`}
-          ${dt.versus ? html`<div class="mnote">Tested against ${dt.versus}.</div>` : ''}
-          ${s.grantSources?.length
-            ? html`<div class="mnote">Rank ${s.rank} ${this._grantSign(s.rankBonus)}${Math.abs(s.rankBonus ?? 0)} by ${this._grantTitle(s.grantSources)} — absorbed into the step above.</div>`
-            : ''}
-        </div>
-      </div>
-    `;
+    return modalFrame(this._modalCtl, {
+      title: html`<span class="sinfo" aria-hidden="true">i</span>${s.name}`,
+      label: s.name,
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mchips">${chips.map((c) => html`<span class=${c.c ? `chip ${c.c}` : 'chip'} title=${c.title ?? nothing}>${c.v}</span>`)}</div>
+    ${dt.summary
+      ? html`<div class="mtext">${dt.summary}</div>`
+      : html`<div class="mtext" style="color: var(--muted)">Skill description not yet recorded.</div>`}
+    ${dt.versus ? html`<div class="mnote">Tested against ${dt.versus}.</div>` : ''}
+    ${s.grantSources?.length
+      ? html`<div class="mnote">Rank ${s.rank} ${this._grantSign(s.rankBonus)}${Math.abs(s.rankBonus ?? 0)} by ${this._grantTitle(s.grantSources)} — absorbed into the step above.</div>`
+      : ''}`,
+    });
   }
 
   // Edit-mode budget bar: Available Legend (derived, never stored) as a chip at
@@ -754,21 +751,19 @@ export class EdDisciplines extends LitElement {
 
   // Granted-ability detail modal — what granted it and at what standing.
   _grantedModal(g) {
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label=${g.name} @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle"><span class="sinfo" aria-hidden="true">i</span>${g.name}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mchips">
-            ${[{ v: `Rank ${g.rank}` }, g.attribute ? { v: g.attribute } : null].filter(Boolean).map((c) => html`<span class="chip">${c.v}</span>`)}
-          </div>
-          <div class="mtext">Available by grant — not a learned rank, so it costs no Legend and stays here until learned. ${g.step != null ? 'Currently rollable.' : 'Rank it up by learning the talent to roll it.'}</div>
-          <div class="mnote">Granted by ${this._grantTitle(g.grantSources)}.</div>
-        </div>
-      </div>
-    `;
+    return modalFrame(this._modalCtl, {
+      title: html`<span class="sinfo" aria-hidden="true">i</span>${g.name}`,
+      label: g.name,
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mchips">
+      ${[{ v: `Rank ${g.rank}` }, g.attribute ? { v: g.attribute } : null].filter(Boolean).map((c) => html`<span class="chip">${c.v}</span>`)}
+    </div>
+    <div class="mtext">Available by grant — not a learned rank, so it costs no Legend and stays here until learned. ${g.step != null ? 'Currently rollable.' : 'Rank it up by learning the talent to roll it.'}</div>
+    <div class="mnote">Granted by ${this._grantTitle(g.grantSources)}.</div>`,
+    });
   }
 
   // Rightmost control of the Half-magic cell: opens a picker to choose the
@@ -819,27 +814,25 @@ export class EdDisciplines extends LitElement {
   // opens focused on it (ModalController honours [autofocus]). Escape/backdrop/✕
   // close via the controller; Enter fires the focused option.
   _halfMagicModal(r) {
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Half-Magic test attribute" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">Half-Magic test</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mtext" style="color: var(--muted)">Pick the attribute — the GM has final say. Step = attribute step + Circle ${r.circle}.</div>
-          <div class="hmopts">
-            ${r.options.map(
-              (o) => html`
-                <button class="hmopt" ?autofocus=${o.attribute === r.defaultAttribute} @click=${() => this._rollHalfMagic(r, o)}>
-                  <span class="hmatt">${o.attribute}${o.attribute === r.defaultAttribute ? html`<span class="hmdef">default</span>` : ''}</span>
-                  <span class="hmstep">${o.step} · ${o.dice}</span>
-                </button>
-              `,
-            )}
-          </div>
-        </div>
-      </div>
-    `;
+    return modalFrame(this._modalCtl, {
+      title: html`Half-Magic test`,
+      label: 'Half-Magic test attribute',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext" style="color: var(--muted)">Pick the attribute — the GM has final say. Step = attribute step + Circle ${r.circle}.</div>
+    <div class="hmopts">
+      ${r.options.map(
+        (o) => html`
+          <button class="hmopt" ?autofocus=${o.attribute === r.defaultAttribute} @click=${() => this._rollHalfMagic(r, o)}>
+            <span class="hmatt">${o.attribute}${o.attribute === r.defaultAttribute ? html`<span class="hmdef">default</span>` : ''}</span>
+            <span class="hmstep">${o.step} · ${o.dice}</span>
+          </button>
+        `,
+      )}
+    </div>`,
+    });
   }
 
   // Circle-advancement track: previous · current · next. `circle` is the stored,
@@ -897,7 +890,8 @@ export class EdDisciplines extends LitElement {
   // both cover; on confirm it dispatches ed-advance-circle with the agreed fee.
   // No test to learn — training is Legend + silver + time (the time/tutor are the
   // GM's; only the money is tracked).
-  _advanceModal(m) {
+  // Legend / silver checks for Train, shared by the modal render and Enter.
+  _advanceState(m) {
     const available = this.model?.legend?.available ?? null;
     const coins = this.model?.wealth?.coins ?? {};
     const purse = coinsSilver(coins);
@@ -905,7 +899,19 @@ export class EdDisciplines extends LitElement {
     const silver = Number(this._trainSilver) || 0;
     const legendOk = legendCost == null ? true : available != null && available >= legendCost;
     const silverOk = silver <= 0 ? true : payFromPurse(coins, silver).ok;
-    const canTrain = legendOk && silverOk;
+    return { available, coins, purse, legendCost, silver, legendOk, silverOk, canTrain: legendOk && silverOk };
+  }
+
+  // Enter on Train (or with focus on the dialog) trains, only when allowed.
+  _confirmAdvance() {
+    const m = this._modal;
+    if (m?.type !== 'advance') return;
+    const st = this._advanceState(m);
+    if (st.canTrain) this._advancePick(m.discipline, st.silver);
+  }
+
+  _advanceModal(m) {
+    const { available, purse, legendCost, silver, legendOk, silverOk, canTrain } = this._advanceState(m);
     const grantText = m.grants.length ? m.grants.join(', ') : 'no new talent (already known)';
     const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
     // Read-only progress for the optional homebrew gate (PG p.453). Eligibility is
@@ -921,37 +927,32 @@ export class EdDisciplines extends LitElement {
           <span class="cchk ${req.satisfied ? 'ok' : 'bad'}">${reqText.unresolved ? html`<span class="pend">—</span>` : html`${chk(req.countMet)}${reqText.progress} ${chk(req.hasFromCircle)}Circle ${req.fromCircle}`}</span>
         </div>`
       : '';
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Train to next Circle" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">Train to Circle ${m.next}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mtext">Advancing ${m.discipline} to Circle ${m.next} grants ${grantText} at Rank 1, gains Circle ${m.next}'s Discipline abilities, and opens a new Talent Option slot to fill.</div>
-          <div class="cbox">
-            ${reqRow}
-            <div class="crow">
-              <div><div class="ck">Purchase ${grantText} · Rank 1</div><div class="csub">Available Legend ${available ?? '—'}</div></div>
-              <span class="cchk ${legendOk ? 'ok' : 'bad'}">${legendCost == null ? html`<span class="pend">—</span>` : html`${chk(legendOk)}${legendCost} Legend`}</span>
-            </div>
-            <div class="crow">
-              <div><div class="ck">Training fee · silver</div><div class="csub">Circle ${m.next} average — negotiable · purse ${Math.round(purse)} sp</div></div>
-              <span style="display:inline-flex;align-items:center;gap:6px">
-                <input class="silin" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
-                  @input=${(e) => (this._trainSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
-                <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
-              </span>
-            </div>
-          </div>
-          <div class="mnote2"><span class="ibadge" aria-hidden="true">i</span><span>No test to learn — training takes 40 hours over three weeks with a Circle ${m.next}+ tutor. Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</span></div>
-          <div class="mactions">
-            <button class="mbtn" @click=${() => this._modalCtl.close()}>Cancel</button>
-            <button class="mbtn primary" autofocus ?disabled=${!canTrain} title=${canTrain ? '' : 'Not enough Legend or silver'} @click=${() => canTrain && this._advancePick(m.discipline, silver)}>Train</button>
-          </div>
-        </div>
+    return modalFrame(this._modalCtl, {
+      title: html`Train to Circle ${m.next}`,
+      label: 'Train to next Circle',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext">Advancing ${m.discipline} to Circle ${m.next} grants ${grantText} at Rank 1, gains Circle ${m.next}'s Discipline abilities, and opens a new Talent Option slot to fill.</div>
+    <div class="cbox">
+      ${reqRow}
+      <div class="crow">
+        <div><div class="ck">Purchase ${grantText} · Rank 1</div><div class="csub">Available Legend ${available ?? '—'}</div></div>
+        <span class="cchk ${legendOk ? 'ok' : 'bad'}">${legendCost == null ? html`<span class="pend">—</span>` : html`${chk(legendOk)}${legendCost} Legend`}</span>
       </div>
-    `;
+      <div class="crow">
+        <div><div class="ck">Training fee · silver</div><div class="csub">Circle ${m.next} average — negotiable · purse ${Math.round(purse)} sp</div></div>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <input class="silin" data-enter="local" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
+            @input=${(e) => (this._trainSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
+          <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
+        </span>
+      </div>
+    </div>
+    <div class="mnote2"><span class="ibadge" aria-hidden="true">i</span><span>No test to learn — training takes 40 hours over three weeks with a Circle ${m.next}+ tutor. Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</span></div>`,
+      primary: { label: 'Train', disabled: !canTrain, title: canTrain ? '' : 'Not enough Legend or silver' },
+    });
   }
 
   _advancePick(discipline, silver) {
@@ -979,29 +980,27 @@ export class EdDisciplines extends LitElement {
   // terse effect. First option autofocused; Escape/backdrop/✕ close via the
   // shared controller.
   _learnModal(m) {
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Add a talent option" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">Add a talent option · Circle ${m.circle}</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mtext" style="color: var(--muted)">Pick a talent from ${m.discipline}'s eligible pool — it joins at Rank 1, priced at Circle ${m.circle}.</div>
-          <div class="hmopts">
-            ${m.learnable.length
-              ? m.learnable.map(
-                  (o, i) => html`
-                    <button class="lopt" ?autofocus=${i === 0} @click=${() => this._learnPick(m.discipline, o.name, m.circle)}>
-                      <span>${o.name}</span>
-                      ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
-                    </button>
-                  `,
-                )
-              : html`<div class="mtext" style="color: var(--muted)">No eligible talents left to add at this Circle.</div>`}
-          </div>
-        </div>
-      </div>
-    `;
+    return modalFrame(this._modalCtl, {
+      title: html`Add a talent option · Circle ${m.circle}`,
+      label: 'Add a talent option',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext" style="color: var(--muted)">Pick a talent from ${m.discipline}'s eligible pool — it joins at Rank 1, priced at Circle ${m.circle}.</div>
+    <div class="hmopts">
+      ${m.learnable.length
+        ? m.learnable.map(
+            (o, i) => html`
+              <button class="lopt" ?autofocus=${i === 0} @click=${() => this._learnPick(m.discipline, o.name, m.circle)}>
+                <span>${o.name}</span>
+                ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
+              </button>
+            `,
+          )
+        : html`<div class="mtext" style="color: var(--muted)">No eligible talents left to add at this Circle.</div>`}
+    </div>`,
+    });
   }
 
   // Pick a skill: close the picker (returns focus to the "+"), then dispatch up.
@@ -1026,49 +1025,47 @@ export class EdDisciplines extends LitElement {
     const filtered = q
       ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.attribute ?? '').toLowerCase().includes(q) || (o.brief ?? '').toLowerCase().includes(q) || o.tier.toLowerCase().includes(q))
       : opts;
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Learn a new skill" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">Learn a new skill · Rank 1</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mtext" style="color: var(--muted)">Pick a skill from the catalog — it joins at Rank 1, priced by its tier (${opts[0]?.tier ?? 'Novice'} etc.). Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</div>
-          <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._skillSearch ?? ''} aria-label="Search skills" autofocus
-            @input=${(e) => (this._skillSearch = e.target.value)} />
-          <div class="cbox" style="margin: 4px 0 8px">
-            <div class="crow">
-              <div><div class="ck">Training fee · silver</div><div class="csub">Average — negotiable · purse ${Math.round(purse)} sp</div></div>
-              <span style="display:inline-flex;align-items:center;gap:6px">
-                <input class="silin" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
-                  @input=${(e) => (this._skillSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
-                <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
-              </span>
-            </div>
-          </div>
-          <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} skills${q ? html` matching “${q}”` : ''}</div>
-          <div class="hmopts">
-            ${filtered.length
-              ? filtered.map((o, i) => {
-                  const legendOk = o.rank1Cost == null ? true : available == null ? true : available >= o.rank1Cost;
-                  const canPick = legendOk && silverOk;
-                  const costLabel = o.rank1Cost == null ? '—' : `${o.rank1Cost} Legend`;
-                  const tierLabel = o.tier === 'Journeyman' ? 'Journeyman' : 'Novice';
-                  return html`
-                    <button class="lopt" ?disabled=${!canPick}
-                      title=${canPick ? `${o.name} · ${tierLabel} · ${o.attribute ?? ''} · ${costLabel}` : (!legendOk ? 'Not enough Available Legend' : !silverOk ? 'Not enough silver' : '')}
-                      @click=${() => canPick && this._learnSkillPick(o.name)}>
-                      <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}<span class="pill">${tierLabel}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
-                      <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costLabel}</span>
-                    </button>
-                  `;
-                })
-              : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
-          </div>
-          <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>
-        </div>
+    return modalFrame(this._modalCtl, {
+      title: html`Learn a new skill · Rank 1`,
+      label: 'Learn a new skill',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext" style="color: var(--muted)">Pick a skill from the catalog — it joins at Rank 1, priced by its tier (${opts[0]?.tier ?? 'Novice'} etc.). Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</div>
+    <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._skillSearch ?? ''} aria-label="Search skills" autofocus
+      @input=${(e) => (this._skillSearch = e.target.value)} />
+    <div class="cbox" style="margin: 4px 0 8px">
+      <div class="crow">
+        <div><div class="ck">Training fee · silver</div><div class="csub">Average — negotiable · purse ${Math.round(purse)} sp</div></div>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <input class="silin" data-enter="local" type="number" min="0" step="1" .value=${String(silver)} aria-label="Training fee in silver"
+            @input=${(e) => (this._skillSilver = Math.max(0, Math.round(Number(e.target.value) || 0)))} />
+          <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
+        </span>
       </div>
-    `;
+    </div>
+    <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} skills${q ? html` matching “${q}”` : ''}</div>
+    <div class="hmopts">
+      ${filtered.length
+        ? filtered.map((o, i) => {
+            const legendOk = o.rank1Cost == null ? true : available == null ? true : available >= o.rank1Cost;
+            const canPick = legendOk && silverOk;
+            const costLabel = o.rank1Cost == null ? '—' : `${o.rank1Cost} Legend`;
+            const tierLabel = o.tier === 'Journeyman' ? 'Journeyman' : 'Novice';
+            return html`
+              <button class="lopt" ?disabled=${!canPick}
+                title=${canPick ? `${o.name} · ${tierLabel} · ${o.attribute ?? ''} · ${costLabel}` : (!legendOk ? 'Not enough Available Legend' : !silverOk ? 'Not enough silver' : '')}
+                @click=${() => canPick && this._learnSkillPick(o.name)}>
+                <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}<span class="pill">${tierLabel}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
+                <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costLabel}</span>
+              </button>
+            `;
+          })
+        : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
+    </div>
+    <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>`,
+    });
   }
 
   // Learn-a-knack picker (PLAN-ADD-KNACKS §7.5, docs/HOMEBREW-RULES.md §5.6). One
@@ -1122,82 +1119,80 @@ export class EdDisciplines extends LitElement {
     const filtered = q
       ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.brief ?? '').toLowerCase().includes(q) || o.qualifies.some((p) => p.name.toLowerCase().includes(q)))
       : opts;
-    return html`
-      <div class="overlay" @click=${() => this._modalCtl.close()}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Learn a knack" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span class="mtitle">Learn a knack</span>
-            <button class="mclose" aria-label="Close" @click=${() => this._modalCtl.close()}>✕</button>
-          </div>
-          <div class="mtext" style="color: var(--muted)">A knack is learned at its governing talent's (or skill's) rank, costs Legend = a Novice talent of that rank, and takes Rank days of training (~50 sp/day). Time and finding a mentor are the GM's call; only Legend and silver are tracked here. Discipline restrictions are enforced; other restrictions the GM adjudicates.</div>
-          <input class="searchin" type="search" placeholder="Search knacks, parents, effects…" .value=${this._knackSearch ?? ''} aria-label="Search knacks" autofocus
-            @input=${(e) => (this._knackSearch = e.target.value)} />
-          <div class="cbox" style="margin: 4px 0 8px">
-            <div class="crow">
-              <div><div class="ck">Training fee · silver</div><div class="csub">Per-rank default · blank = auto · purse ${Math.round(purse)} sp</div></div>
-              <span style="display:inline-flex;align-items:center;gap:6px">
-                <input class="silin" type="number" min="0" step="1" placeholder="auto" .value=${String(this._knackSilver ?? '')} aria-label="Training fee override in silver"
-                  @input=${(e) => (this._knackSilver = e.target.value)} />
-                <span class="csub" style="margin:0">sp</span>
-              </span>
-            </div>
-          </div>
-          <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} knacks${q ? html` matching “${q}”` : ''}</div>
-          <div class="hmopts">
-            ${filtered.length
-              ? filtered.map((o) => {
-                  const fee = feeFor(o);
-                  const silverOk = fee <= 0 ? true : payFromPurse(coins, fee).ok;
-                  const legendOk = o.cost == null ? true : available == null ? true : available >= o.cost;
-                  const canPick = legendOk && silverOk;
-                  const costLabel = o.cost == null ? '—' : `${o.cost} Legend`;
-                  const feeLabel = o.trainingFee == null ? '—' : `${fee} sp`;
-                  const multi = o.qualifies.length > 1;
-                  const via = this._knackVia?.[o.name] ?? o.viaDefault;
-                  const parents = o.qualifies.map((p) => `${p.name} · Rank ${p.rank}`).join(' / ');
-                  const infoOpen = !!this._knackInfo?.[o.name];
-                  const mech = [
-                    o.action && o.action !== 'None' ? `${o.action} action` : null,
-                    o.strain != null && o.strain !== 'None' ? `Strain ${o.strain}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ');
-                  return html`
-                    <div class="lopt" style="cursor:default">
-                      <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">
-                        <button class="kninfo" aria-label="Read ${o.name} description" aria-expanded=${infoOpen} title="Read ${o.name} description" @click=${() => this._toggleKnackInfo(o.name)}>i</button>
-                        ${o.name}<span class="pill">Rank ${o.requiredRank ?? '—'}</span>
-                      </span>
-                      <span class="lbrief">${multi ? html`Talent: ${o.qualifies.map((p) => `${p.name} (R${p.rank})`).join(' / ')}` : `Talent: ${parents}`} · ${costLabel} · ${feeLabel}</span>
-                      ${restrictionRender(o.restriction)}
-                      <span style="display:inline-flex;align-items:center;gap:8px;margin-top:4px">
-                        ${multi
-                          ? html`<select class="silin" aria-label="Learn under which talent" @change=${(e) => { this._knackVia = { ...(this._knackVia ?? {}), [o.name]: e.target.value }; this.requestUpdate?.(); }}>
-                              ${o.qualifies.map((p) => html`<option value=${p.name} ?selected=${p.name === via}>${p.name} · Rank ${p.rank}</option>`)}
-                            </select>`
-                          : ''}
-                        ${chk(canPick)}
-                        <button class="lpick" ?disabled=${!canPick}
-                          title=${canPick ? `Learn ${o.name} via ${via}` : (!legendOk ? 'Not enough Available Legend' : 'Not enough silver')}
-                          @click=${() => canPick && this._learnKnackPick(o)}>Learn</button>
-                      </span>
-                      ${infoOpen
-                        ? html`
-                            <div style="margin-top:6px;white-space:normal;line-height:1.45">
-                              <div style="color:var(--fg);font-size:var(--fs-small)">${o.summary ?? (o.brief ?? 'No description recorded.')}</div>
-                              ${mech ? html`<div style="color:var(--muted);font-size:var(--fs-small);margin-top:2px">${mech}</div>` : ''}
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  `;
-                })
-              : html`<div class="mtext" style="color: var(--muted)">${q ? html`No knacks match “${q}”.` : 'No knacks left to learn.'}</div>`}
-          </div>
-          <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Only knacks you qualify for are listed: a governing talent is known through a Discipline at the required rank (and, when the "skills may govern knacks" house rule is on, a governing skill you own at the required rank), and you are under the per-parent cap. Silver fee from <code>rules/legend.json</code> <code>costs.knackTraining[rank]</code> — edit that table to retune.</span></div>
-        </div>
+    return modalFrame(this._modalCtl, {
+      title: html`Learn a knack`,
+      label: 'Learn a knack',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext" style="color: var(--muted)">A knack is learned at its governing talent's (or skill's) rank, costs Legend = a Novice talent of that rank, and takes Rank days of training (~50 sp/day). Time and finding a mentor are the GM's call; only Legend and silver are tracked here. Discipline restrictions are enforced; other restrictions the GM adjudicates.</div>
+    <input class="searchin" type="search" placeholder="Search knacks, parents, effects…" .value=${this._knackSearch ?? ''} aria-label="Search knacks" autofocus
+      @input=${(e) => (this._knackSearch = e.target.value)} />
+    <div class="cbox" style="margin: 4px 0 8px">
+      <div class="crow">
+        <div><div class="ck">Training fee · silver</div><div class="csub">Per-rank default · blank = auto · purse ${Math.round(purse)} sp</div></div>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <input class="silin" data-enter="local" type="number" min="0" step="1" placeholder="auto" .value=${String(this._knackSilver ?? '')} aria-label="Training fee override in silver"
+            @input=${(e) => (this._knackSilver = e.target.value)} />
+          <span class="csub" style="margin:0">sp</span>
+        </span>
       </div>
-    `;
+    </div>
+    <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} knacks${q ? html` matching “${q}”` : ''}</div>
+    <div class="hmopts">
+      ${filtered.length
+        ? filtered.map((o) => {
+            const fee = feeFor(o);
+            const silverOk = fee <= 0 ? true : payFromPurse(coins, fee).ok;
+            const legendOk = o.cost == null ? true : available == null ? true : available >= o.cost;
+            const canPick = legendOk && silverOk;
+            const costLabel = o.cost == null ? '—' : `${o.cost} Legend`;
+            const feeLabel = o.trainingFee == null ? '—' : `${fee} sp`;
+            const multi = o.qualifies.length > 1;
+            const via = this._knackVia?.[o.name] ?? o.viaDefault;
+            const parents = o.qualifies.map((p) => `${p.name} · Rank ${p.rank}`).join(' / ');
+            const infoOpen = !!this._knackInfo?.[o.name];
+            const mech = [
+              o.action && o.action !== 'None' ? `${o.action} action` : null,
+              o.strain != null && o.strain !== 'None' ? `Strain ${o.strain}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+            return html`
+              <div class="lopt" style="cursor:default">
+                <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">
+                  <button class="kninfo" aria-label="Read ${o.name} description" aria-expanded=${infoOpen} title="Read ${o.name} description" @click=${() => this._toggleKnackInfo(o.name)}>i</button>
+                  ${o.name}<span class="pill">Rank ${o.requiredRank ?? '—'}</span>
+                </span>
+                <span class="lbrief">${multi ? html`Talent: ${o.qualifies.map((p) => `${p.name} (R${p.rank})`).join(' / ')}` : `Talent: ${parents}`} · ${costLabel} · ${feeLabel}</span>
+                ${restrictionRender(o.restriction)}
+                <span style="display:inline-flex;align-items:center;gap:8px;margin-top:4px">
+                  ${multi
+                    ? html`<select class="silin" data-enter="local" aria-label="Learn under which talent" @change=${(e) => { this._knackVia = { ...(this._knackVia ?? {}), [o.name]: e.target.value }; this.requestUpdate?.(); }}>
+                        ${o.qualifies.map((p) => html`<option value=${p.name} ?selected=${p.name === via}>${p.name} · Rank ${p.rank}</option>`)}
+                      </select>`
+                    : ''}
+                  ${chk(canPick)}
+                  <button class="lpick" ?disabled=${!canPick}
+                    title=${canPick ? `Learn ${o.name} via ${via}` : (!legendOk ? 'Not enough Available Legend' : 'Not enough silver')}
+                    @click=${() => canPick && this._learnKnackPick(o)}>Learn</button>
+                </span>
+                ${infoOpen
+                  ? html`
+                      <div style="margin-top:6px;white-space:normal;line-height:1.45">
+                        <div style="color:var(--fg);font-size:var(--fs-small)">${o.summary ?? (o.brief ?? 'No description recorded.')}</div>
+                        ${mech ? html`<div style="color:var(--muted);font-size:var(--fs-small);margin-top:2px">${mech}</div>` : ''}
+                      </div>
+                    `
+                  : ''}
+              </div>
+            `;
+          })
+        : html`<div class="mtext" style="color: var(--muted)">${q ? html`No knacks match “${q}”.` : 'No knacks left to learn.'}</div>`}
+    </div>
+    <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Only knacks you qualify for are listed: a governing talent is known through a Discipline at the required rank (and, when the "skills may govern knacks" house rule is on, a governing skill you own at the required rank), and you are under the per-parent cap. Silver fee from <code>rules/legend.json</code> <code>costs.knackTraining[rank]</code> — edit that table to retune.</span></div>`,
+    });
   }
 
   // Group a discipline's talents by the Circle they were learned at, ascending

@@ -127,7 +127,7 @@ script that edits protected files without naming them) is not caught.
 
 ## Related automation (not AI)
 
-- `npm test` — `node --test`, with `pretest` running `tools/check-imports.mjs`.
+- `npm test` — `node --test`, with `pretest` running `tools/check-imports.mjs` and the UI-kit check `tools/check-ui-kit.mjs` (see docs/MODALS.md §12).
 - `.github/workflows/deploy-pages.yml` — dev → `/dev`, main → root.
 - `.github/workflows/fold-custom-items.yml` — folds player-created catalog
   items into `rules/custom-items.json` on dev.

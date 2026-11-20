@@ -565,7 +565,11 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-conflict.js    # save-conflict modal (§7.5, UI-GUIDELINES §8)
     ed-character-picker.js # character chooser modal (first-run picker, §7.5)
     ed-changelog.js   # changelog badge/modal
-    modal-controller.js    # shared modal focus/Escape contract (docs/MODALS.md)
+    kit/                   # the UI kit: the modal keyboard + focus contract (docs/MODALS.md)
+      modal-stack.js       # pure stack + key router + footer hint
+      modal-controller.js  # ModalController: one capture key listener, focus, latch
+      modal.js             # modalFrame + modalCss
+      button-css.js        # buttonCss
     item-equip-state.js    # input-time equip rules (one armour worn)
     combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)
     combat-log-rows.js     # Combat-log row to table-cell mapping (pure)
@@ -623,6 +627,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   tools/
     worker/              # Cloudflare Worker for serverless save (§7.5):
                          # worker.js + worker.test.js + wrangler.toml
+    check-ui-kit.mjs     # UI-kit check (pretest)
+    ui-kit-baseline.json # two-way ratchet allowlist
   tools/archive/
     import-xlsx.mjs   # ARCHIVED bootstrap importer (provenance only; not run)
     add-items.py     # ARCHIVED rulebook extractor (pre-ed-items/3; not run)

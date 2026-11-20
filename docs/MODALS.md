@@ -1,145 +1,244 @@
-# Modals — the standard implementation
+# Modals — the UI kit and the keyboard contract
 
-Every modal in this app follows one focus contract, implemented once in
-[`ui/modal-controller.js`](../ui/modal-controller.js). This doc is the authority
-for *how a modal behaves*; the Tier-1 UI rule that a modal **must** exist for
-these interactions (Escape-closes / Enter-confirms, theme-aware) lives in
-[UI-GUIDELINES.md](UI-GUIDELINES.md). New or edited modals adopt the controller;
-they do not hand-roll their own Escape/focus handling.
+Every modal in this app follows one keyboard and focus contract, implemented once
+in the in-repo kit under [`ui/kit/`](../ui/kit/). This doc is the authority for
+*how a modal behaves*; the Tier-1 UI rule that a modal **must** honour
+Escape-closes / Enter-confirms (and that read-only modals close on Enter) lives
+in [UI-GUIDELINES.md](UI-GUIDELINES.md) §7. New or edited modals use the kit;
+they do not hand-roll Escape, Enter or focus handling, frame markup or button
+styles.
 
-## The bug this prevents
+## 1. The UI kit
 
-> "I press Escape to close the modal and a focus ring is left stuck on the button
-> that opened it."
+| File | Contents |
+|---|---|
+| `ui/kit/modal-stack.js` | Pure (no `lit`, no DOM): the modal stack, `routeKey(facts)` (the ordered Enter/Escape router) and `footerHint()`. |
+| `ui/kit/modal-controller.js` | `ModalController` (Lit reactive controller, lit-free): **one** capture-phase `document` key listener that acts on the top modal only, the held-key latch, initial focus, Tab trap, return-to-trigger. Also exports `currentModality`, `deepActiveElement`, `returnFocusToTrigger`. |
+| `ui/kit/modal.js` | `modalFrame(ctl, opts)` (the Lit frame template) and `modalCss` (frame styles; it includes `buttonCss`). |
+| `ui/kit/button-css.js` | `buttonCss`: the one button shape and its tones. |
 
-Cause: an inline modal (rendered from a component's own `_modal` state) never
-moved focus off the trigger when it opened. You click the button (pointer — no
-ring), the modal opens with focus still on that button behind the backdrop, you
-press **Escape** (keyboard), the modal closes, and *that keydown* flips the
-still-focused button into `:focus-visible` — so a ring appears on it. It reads as
-"Escape parked focus on the button."
+**The rule:** modals and modal-like UI use `ui/kit/`. `tools/check-ui-kit.mjs`
+runs in `pretest` (`npm test`) and fails on new hand-rolled copies (see
+[The UI-kit check](#the-ui-kit-check)). The kit never dispatches game events and
+never touches character state: hosts pass `onConfirm` / `onClose` callbacks and
+keep data-down / dispatch-up.
 
-It is a whole family: keyboard users also never got their focus into the dialog,
-Tab escaped to the page behind the backdrop, and focus was lost to `<body>` on
-close. One contract fixes all of it.
+## 2. The contract
 
-## The contract
+1. **Escape closes only the top modal.** Stacked modals close one per Escape.
+2. **Enter = OK**: the primary action, or close for read-only modals (UI-GUIDELINES §7).
+3. **Ctrl/⌘+Enter saves** in textarea modals (Enter keeps typing a newline). Kit
+   support only so far; no textarea modal is on the kit yet.
+4. **Focus moves in** on open, **Tab is trapped**, and **focus returns to the
+   trigger** on close. A pointer-opened modal restores focus with the keyboard
+   ring suppressed; a keyboard-opened one keeps the ring.
+5. **Theme-aware** (light and dark), two font weights, `--fs-*` tokens.
+6. Backdrop click, ✕ and Escape are all the same cancel path.
 
-1. **Escape closes.** (Tier-1.) The controller owns a document-level keydown
-   listener while the modal is open — the component does not add its own.
-2. **Enter confirms**, where the modal has a primary action. The component
-   focuses its primary control (see *Initial focus* below) so Enter triggers it.
-3. **Focus moves into the dialog on open.** Keyboard and screen-reader users land
-   inside the modal, not stranded on the trigger.
-4. **Tab is trapped** within the dialog while it is open.
-5. **Focus returns to the trigger on close** — via Escape, the ✕ button, or the
-   backdrop. If the modal was opened by **pointer** (mouse/touch), the trigger's
-   keyboard focus ring is **suppressed** for that restore (no stuck highlight); if
-   it was opened by **keyboard**, the ring is kept (the keyboard user needs to see
-   where focus went). This is the owner-chosen behaviour: *return-to-trigger, no
-   ring on pointer opens*.
-6. **Theme-aware, backdrop + ✕ + Escape all close.** Unchanged from before.
+## 3. Key routing
 
-### Why the ring can be suppressed across Shadow DOM
+The wrapper turns a keydown into plain facts, and `routeKey` returns one of
+`close | confirm | block | pass`. Anything but `pass` is swallowed
+(`preventDefault` + `stopPropagation`), in the capture phase, so legacy
+bubble-phase `document` listeners below never also act. Ordered rules, first
+match wins:
 
-Each component styles its own focus ring inside its shadow root (e.g.
-`.tinfo:focus-visible { box-shadow: 0 0 0 3px … }`), with no `!important`. The
-controller restores a pointer-opened trigger by setting **inline**
-`outline:none; box-shadow:none` on the element itself — inline styles live on the
-node and outrank the component's rule even across the shadow boundary — then tears
-that override down on the trigger's next real interaction, so ordinary keyboard
-focus still rings. No global CSS, no per-component change needed.
+| # | Condition | Result |
+|---|---|---|
+| R1 | key is not Enter/Escape | pass |
+| R2 | IME composing | pass |
+| R3 | latched (held through a kit close/confirm) | block |
+| R4 | stack empty | pass |
+| R5 | target is in a dialog that is not on the kit stack (legacy modal on top) | pass |
+| R6 | key repeat (except a plain Enter in a textarea inside the top modal) | block |
+| R7 | `defaultPrevented` | pass |
+| R8 | controller has no `kind` (legacy) | Escape → close; Enter → pass |
+| R9 | target outside the top modal (stray focus / `<body>`) | Escape → close; modified Enter → block; plain Enter: info → close, input/confirm → confirm if allowed else block, picker → block |
+| R10 | Escape | close |
+| R11 | Shift/Alt+Enter | pass |
+| R12 | Ctrl/⌘+Enter in a textarea | confirm if allowed, else pass |
+| R13 | own-control target: textarea, select, link, a non-primary button, or `data-enter="local"` | pass |
+| R14 | Enter on the primary | info → confirm; others confirm if allowed, else block |
+| R15 | Enter by kind | info → close; input/confirm → confirm if allowed else pass; picker → pass |
 
-## Adoption recipe (inline-state modal)
+- **`data-enter="local"`** marks a field whose Enter belongs to itself (the roll
+  modal's optional-mod checkboxes, trade gem inputs, Disciplines fee fields).
+- **Checkboxes and radios are fields**, not own-Enter controls, so Enter on them
+  follows R15 unless marked local (keeps UI-GUIDELINES §8a "Enter saves" possible).
+- **Held keys and the latch.** A held key acts once. When a kit modal closes or
+  confirms (by any path, including a native click after a passed Enter on
+  Cancel/✕/OK), the keys held at that moment are *latched*: their further
+  repeats are swallowed, even with an empty stack, until that key's `keyup` (or
+  window blur). So holding Enter on the roll's OK never re-fires the dice button
+  that was just refocused.
+- **Transitional foreign-dialog rule.** A legacy dialog stacked over a kit modal
+  keeps its own keys (R5). Known gap: clicking blank space in that legacy modal
+  drops focus to `<body>`, and Escape then closes the kit modal below. This goes
+  away when the legacy modals migrate.
 
-For a component that renders a modal from its own reactive state (the common
-case — `ed-disciplines`, `ed-equipment`, …):
+## 4. ModalController
 
 ```js
-import { ModalController } from './modal-controller.js';
-
-constructor() {
-  super();
-  this._modal = null;
-  // onClose is the host's own close side effect; the controller calls it AFTER
-  // focus is restored. It owns the Escape listener and the focus trap.
-  this._modalCtl = new ModalController(this, { onClose: () => { this._modal = null; } });
-}
-
-// Open from the SAME handler that sets state, passing the trigger element so
-// focus can return to it. `event.currentTarget` is the button that was clicked.
-_openModal(entry, event) {
-  this._modal = entry;
-  this._modalCtl.opened(event?.currentTarget);
-}
+import { ModalController } from './kit/modal-controller.js';
+this._modalCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
 ```
 
-- Every **info/open** button: `@click=${(e) => this._openModal(x, e)}` — pass the
-  event so the controller learns the trigger.
-- Every **close** point (backdrop `@click`, the ✕ button): route through
-  `() => this._modalCtl.close()`, **not** a direct `this._modal = null`. Closing
-  through the controller is what restores focus. (Escape is automatic.)
-- Keep `@click=${(e) => e.stopPropagation()}` on the inner `.modal` so a click
-  inside it doesn't hit the backdrop's close.
-- The dialog element must match the controller's `dialogSelector` (default
-  `[role="dialog"]`). Keep `role="dialog"` and `aria-modal="true"` on it.
-
-### Options
-
-`new ModalController(host, opts)`:
+Open from the same handler that sets state, passing the trigger:
+`this._modalCtl.opened(event?.currentTarget)`. Route every close through the
+controller (`requestClose()` for user cancel, `close()` programmatically).
 
 | Option | Default | Meaning |
 |---|---|---|
-| `onClose` | — | Host close side effect, run after focus is restored. |
-| `dialogSelector` | `'[role="dialog"]'` | The dialog element inside the host's `renderRoot`. |
-| `initialFocus` | first focusable | Selector (within the dialog) to focus on open — set this to the primary button when Enter should confirm. |
+| `onClose(reason)` | — | `'cancel'` or `'confirm'`. Runs **after** the stack entry is removed and focus restored. |
+| `kind` | `null` | `input`, `confirm`, `info`, `picker`, or a function returning one (read per key and per render). `null` = legacy: Enter is not routed and today's focus order is kept. |
+| `onConfirm` | — | Run by `confirm()` for input/confirm kinds. It never closes the modal by itself; the host decides. |
+| `canConfirm` | primary exists and is enabled | Evaluated per key. Always false unless the kind is input/confirm. |
+| `primarySelector` | `[data-primary]` | Locates the router primary. |
+| `initialFocus` | — | Selector, array of selectors (tried in order) or a function returning either. |
+| `dialogSelector` | see below | Explicit dialog override. |
+| `isDirty` / `onDiscardPrompt` | — | Dirty guard (below). |
+| `light` | `false` | Portal hosts: the root is `document`, not `host.renderRoot`. Unused so far. |
 
-`ctl.close({ restoreFocus: false })` closes without returning focus to the trigger. Use it only for a hand-off to another modal that takes focus and returns it itself: the Spells tab's cast modal (weapon + target number for an object-bearing self-cast such as Night's Edge) does this on Confirm because the roll modal opens next. "Cast on nothing" (no equipped weapon) opens no further modal, so it closes normally and restores focus to Cast, as do Escape, ✕, backdrop and Close. The shared Take-damage modal does the same on Apply when the hit is five or more over the Wound Threshold, because the Knockdown roll modal opens next; any other Apply closes normally.
+Methods: `opened(trigger)`, `close({ restoreFocus = true, reason = 'cancel' })`
+(unguarded), `requestClose()`, `confirm()`, `refocus()`, `dialogEl()`,
+`primaryEl()`, plus the `id`, `open` and `kind` getters.
 
-## Separate-component modals
+- **Close reasons.** `requestClose()` gives `'cancel'`; an info modal's
+  `confirm()` gives `'confirm'`. A separate-component modal (`ed-confirm`,
+  `ed-trade-modal`) closes with `{ reason: 'confirm' }` before dispatching
+  `confirm`, and only dispatches `close` for `'cancel'`: hosts read prompt state
+  in `@confirm` and clear it in `@close`, so a `close` before `confirm` would
+  cancel the action.
+- **Dialog lookup.** `dialogSelector` if given; for a controller with a `kind`,
+  only `[data-modal="<id>"]` (the frame stamps it, so several controllers can
+  share one shadow root); otherwise `[role="dialog"]`.
+- **Initial focus** (controllers with a `kind`): an enabled `[autofocus]`; the
+  enabled primary (input/confirm only); `initialFocus`; for `info`, the primary
+  (the `ack` button) else the dialog; the first enabled control in `.mbody`
+  (never the header ✕); the dialog (`tabindex="-1"`). A legacy controller keeps
+  `[autofocus]`, `initialFocus`, first focusable, dialog.
+- **`refocus()`** re-runs the order while open, for a view that changes in place
+  (the roll chooser becoming the result).
+- **Dirty guard (D3).** User cancels (Escape, ✕, backdrop, Cancel) call
+  `onDiscardPrompt` when `isDirty()` and stay open. Free-text modals (Notes,
+  custom item, Edit character details) ask; short numeric or choice modals (Add
+  Legend, Settings, Trade, Take damage, Karma Ritual) do not. Hook only so far.
+- **Hand-offs.** `close({ restoreFocus: false })` is for a hand-off to another
+  modal that takes focus and returns it itself. `close()` restores focus
+  synchronously *before* `onClose`, so a follow-on modal keeps its own focus.
 
-Some modals are their own element (`ed-confirm`, `ed-conflict`, `ed-roll-modal`),
-shown by a parent from its state and closed by a dispatched `close` event. The
-**parent owns the trigger**, so the parent restores focus — using the two helpers
-the controller also uses, so behaviour is identical without a full controller:
+## 5. modalFrame
 
 ```js
-import { currentModality, deepActiveElement, returnFocusToTrigger } from './modal-controller.js';
-
-// On open (the parent's `ed-roll` / show handler): capture the ACTUAL focused
-// element. Do NOT use the event's target/composedPath — a roll button dispatches
-// `ed-roll` from its component (`this.dispatchEvent`), so the path names the
-// component, never the button. `deepActiveElement()` pierces Shadow DOM to the
-// button that actually holds focus (and would keep the leftover ring).
-this._rollTrigger = deepActiveElement();
-this._rollOpenedByKeyboard = currentModality() === 'keyboard';
-
-// On the modal's `@close`: clear state, then return focus (ring suppressed for
-// pointer opens).
-_closeRoll() {
-  const trigger = this._rollTrigger;
-  const openedByKeyboard = this._rollOpenedByKeyboard;
-  this._rollTrigger = null;
-  this._roll = null;
-  returnFocusToTrigger(trigger, { openedByKeyboard });
-}
+static styles = [modalCss, css`…host styles…`];
+render() { return modalFrame(this._ctl, { title, layer: 2100, width: '26rem', body, primary: { label: 'OK' } }); }
 ```
 
-This is exactly what `ed-app` does for `ed-roll-modal` — it fixes the focus ring
-left on **every** roll button (the dice icon on talents, skills, half-magic, combat) in
-one place. `returnFocusToTrigger(el, { openedByKeyboard })` is safe to call even
-when focus never left the trigger: it re-focuses with the ring suppressed.
-Result-apply closes (an in-modal button click that removes the modal) need no
-restore — focus falls away from the trigger on its own, with no ring.
+Renders `.overlay > .modal[role=dialog][aria-modal][data-modal] > .mhead / .mbody /
+footer`. Options: `title` (string or template), `label` (the `aria-label`;
+required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
+`scroll` (85vh cap), `variant` (stamps `data-variant`; style
+`[data-variant='…']`, the sanctioned variant hook), `primary`
+`{ label, tone, disabled, type, form, title, className }`, `extra`, `ack`,
+`hasTextarea`.
 
-**Self-contained modal element.** `ed-damage-modal` (the shared Take-damage modal, rendered at the root of both `ed-overview` and `ed-combat`) is its own element but owns its `ModalController`. A host opens it with `el.show(trigger)`, which resets the draft and calls `ctl.opened(trigger)`. Escape, ✕ and backdrop close through `ctl.close()`, and focus returns to the trigger. There is no parent `close` event. Render it at the host's root, not inside a card, because `.overlay` is `position: fixed`.
+| Host | Layer | Width |
+|---|---|---|
+| Disciplines, Equipment item | 2000 | 30rem, scroll |
+| confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
+| trade | 2150 | 27rem, scroll |
+| roll | 3000 | 340px |
 
-## Checklist for a touched modal
+**Footers (D5) and hint (V4).** Input and confirm modals: `[Cancel] [Primary]`,
+right-aligned, with a muted hint "Enter = OK · Esc = Cancel" ("Ctrl+Enter saves ·
+Esc = Cancel" for textarea modals; the text cannot be overridden). Read-only
+(`info`) modals: ✕ only, no footer, no hint. **Roll-modal exception** (owner,
+qa-log 13:40): the roll result view and the Knockdown result keep a visible
+**OK** via the `ack` option; Enter = OK closes it. Pickers: ✕ only.
 
-- [ ] Escape closes (via the controller, not a hand-rolled listener).
-- [ ] Focus moves into the dialog on open; Tab stays trapped inside.
-- [ ] Every close path (Escape / ✕ / backdrop) goes through `close()` so focus
-      returns to the trigger.
-- [ ] Pointer-opened → no ring left on the trigger; keyboard-opened → ring kept.
-- [ ] Enter confirms if there is a primary action (`initialFocus` on it).
+## 6. buttonCss
+
+`.btn` (neutral) and `.btn.primary` (weight 500, amber by default) share one
+shape. A tone class recolours: `accent`, `danger`, `spell`, `karma`, `heal`
+(declared after `.primary`, so a tone wins). Karma tone is for spending Karma;
+spell tone on Spells. Disabled is opacity 0.4. Colours are host variables with
+`light-dark()` fallbacks. There is no focus-ring rule, so the UA ring stays.
+
+## 7. Hand-offs and known trigger-gone cases
+
+Focus falls to `<body>` (as before) when the trigger is gone or a hand-off
+carries no trigger:
+
+- Spells cast → roll (`close({ restoreFocus: false })`);
+- Take damage → Knockdown roll (`close({ restoreFocus: !roll })`);
+- Apply closes (the roll is removed; no restore);
+- an Equipment full sell (the tile is removed).
+
+## 8. Separate-component modals
+
+`ed-confirm`, `ed-trade-modal` and `ed-roll-modal` are their own elements shown
+by a parent. `ed-confirm` and `ed-trade-modal` own a controller and only dispatch
+`confirm` / `close` (Confirm dispatches only `confirm`). `ed-roll-modal` owns a
+controller for its framed views and dispatches `close` for any reason; the
+**parent (`ed-app`) owns the trigger**, captured with `deepActiveElement()` and
+restored in `_closeRoll` with `returnFocusToTrigger()`:
+
+```js
+this._rollTrigger = deepActiveElement();
+this._rollOpenedByKeyboard = currentModality() === 'keyboard';
+```
+
+The embedded roll (inside the day-reset modal) never opens its controller and
+keeps its own `.dm` markup; its ✕/OK dispatch `close` directly.
+
+## 9. Why the ring can be suppressed across Shadow DOM
+
+Each component styles its own focus ring inside its shadow root with no
+`!important`. The controller restores a pointer-opened trigger by setting
+**inline** `outline:none; box-shadow:none` on the element itself — inline styles
+outrank the component's rule even across the shadow boundary — then tears that
+override down on the trigger's next real interaction, so ordinary keyboard focus
+still rings. No global CSS needed.
+
+## 10. Not yet on the kit
+
+These modals still follow the old behaviour (Enter on a read-only one re-clicks
+the trigger behind it), so the §7 sentence does not hold for them yet. The
+second kit feature migrates them and this list shrinks:
+
+- the Overview ⓘ info, character details and Legend spent modals;
+- Karma Ritual and the lightbox;
+- `ed-add-legend` and `ed-edit-meta`;
+- Notes;
+- the Combat step audit;
+- `ed-custom-item` and `ed-day-reset`;
+- `ed-character-picker`, `ed-settings`, `ed-save-key` and `ed-conflict`;
+- `ed-changelog` and `ed-homebrew`.
+
+## 11. Checklist for a touched modal
+
+- [ ] Built on `ui/kit/` (`ModalController` + `modalFrame` + `modalCss`); no
+      `document` key listener, no hand-rolled frame/button CSS.
+- [ ] Escape closes only this modal when it is on top; Enter = OK (or closes, if
+      read-only).
+- [ ] Every close path goes through the controller so focus returns to the trigger.
+- [ ] Pointer-opened → no ring left; keyboard-opened → ring kept.
+- [ ] Fields that own Enter carry `data-enter="local"`.
+- [ ] Footer per D5, hint per V4; title at `--fs-title`.
 - [ ] Works in light and dark mode.
+- [ ] `npm test` passes, including the UI-kit check.
+
+## 12. The UI-kit check
+
+`tools/check-ui-kit.mjs` counts, per `ui/**/*.js` file (comments stripped):
+`keydown` (document/window keydown or keyup listeners), `dialog-role` (a literal
+`role="dialog"`), `frame-css` (CSS naming `.overlay`, `.modal`, `.mhead`,
+`.mclose` or `button.btn`), `font-size` (a non-`--fs-*` size, or a `--fs-*`
+redefinition) and `button-style` (an inline `style=` on a `<button>`). Files in
+`ui/kit/` are exempt except for `font-size`.
+
+`tools/ui-kit-baseline.json` is a **two-way ratchet** allowlist of today's
+counts for the modals not yet migrated: a count above it fails as a new
+violation ("use ui/kit/"); a count below it fails with "lower the baseline to N"
+(delete the rule at 0); a baseline entry for a missing file fails with "remove
+stale entry". A migration lowers its own file's entry in the same change.

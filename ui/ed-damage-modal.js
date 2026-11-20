@@ -5,10 +5,11 @@
 // new health inputs) and, for a hit five or more over the Wound Threshold,
 // `ed-roll` (Knockdown test). Wound and Knockdown come from the engine
 // (`resolveHit`) — this view computes no game values. Built on ModalController
-// (docs/MODALS.md): Escape, focus in/trap/restore.
+// (docs/MODALS.md) and the kit frame: Escape, Enter = Apply, focus in/trap/restore.
 import { LitElement, html, css } from 'lit';
 import { resolveHit } from '../engine/health.js';
-import { ModalController } from './modal-controller.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 export class EdDamageModal extends LitElement {
   static properties = {
@@ -17,24 +18,16 @@ export class EdDamageModal extends LitElement {
     _take: { state: true },
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     :host { display: contents; }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
-    .modal { background: var(--card, light-dark(#ffffff, #232833)); color: var(--fg, light-dark(#111418, #f0f3f7)); border: 1px solid var(--border); border-radius: 12px; width: 26rem; max-width: 100%; padding: 1rem 1.25rem 1.25rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--fs-value); font-weight: 500; margin-bottom: 0.75rem; }
-    .mclose { background: none; border: none; color: var(--muted); font-size: var(--fs-title); cursor: pointer; line-height: 1; padding: 0; }
     .mpara { font-size: var(--fs-small); line-height: 1.5; margin: 0; }
     .mpara b { font-weight: 500; }
     .mpara.hint { font-size: var(--fs-fine); color: var(--muted); }
     .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-body); }
     .hrow input { font: inherit; font-size: var(--fs-body); color: var(--fg, light-dark(#111418, #f0f3f7)); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 6rem; text-align: right; }
     .hrow input:focus { outline: none; border-color: var(--accent); }
-    .hfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-    .hint { font-size: var(--fs-fine); color: var(--muted); }
-    .hbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); }
-    .hbtn:disabled { opacity: 0.4; cursor: not-allowed; }
     .pend { font-weight: 400; color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 0 6px; font-size: var(--fs-small); }
-  `;
+  `];
 
   constructor() {
     super();
@@ -42,7 +35,12 @@ export class EdDamageModal extends LitElement {
     this._open = false;
     this._take = 0;
     this._ctl = new ModalController(this, {
+      kind: 'input',
       onClose: () => { this._open = false; },
+      // Enter applies: the router calls this, which submits the form (the
+      // submit handler runs _apply). Take 0 disables Apply, so Enter is a no-op.
+      onConfirm: () => this.renderRoot.querySelector('#dmg-form')?.requestSubmit(),
+      canConfirm: () => Number(this._take) > 0,
       initialFocus: 'input',
     });
   }
@@ -91,25 +89,18 @@ export class EdDamageModal extends LitElement {
         ? html` · <b>${st.state === 'dead' ? 'Dead' : st.state === 'unconscious' ? 'Unconscious' : 'Conscious'}</b>`
         : '';
     const ch = this.model?.characteristics;
-    const close = () => this._ctl.close();
-    return html`
-      <div class="overlay" @click=${close}>
-        <div class="modal" role="dialog" aria-modal="true" aria-label="Take damage" @click=${(e) => e.stopPropagation()}>
-          <div class="mhead">
-            <span>Take damage</span>
-            <button class="mclose" type="button" aria-label="Close" @click=${close}>✕</button>
-          </div>
-          <p class="mpara">Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious ${this._rating(ch?.unconsciousness?.value)} · Death ${this._rating(ch?.death?.value)}</p>
-          <form @submit=${(e) => { e.preventDefault(); this._apply(); }}>
-            <div class="hrow"><span>Take damage</span><input type="number" min="0" step="1" .value=${String(this._take)} aria-label="Damage to take" @input=${(e) => { this._take = Math.max(0, Number(e.target.value) || 0); }} /></div>
-            <p class="mpara hint">A hit at or above the Wound Threshold ${this._rating(ch?.woundThreshold?.value)} records one Wound; a hit five or more over it triggers a Knockdown test. Healing is done through a Recovery test.</p>
-            <div class="hfoot">
-              <span class="hint">Enter applies · Escape closes</span>
-              <button type="submit" class="hbtn" ?disabled=${!(Number(this._take) > 0)}>Apply</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
+    return modalFrame(this._ctl, {
+      title: 'Take damage',
+      layer: 2100,
+      width: '26rem',
+      body: html`
+        <p class="mpara">Current damage <b>${h.damage ?? 0}</b>${stateWord} — Unconscious ${this._rating(ch?.unconsciousness?.value)} · Death ${this._rating(ch?.death?.value)}</p>
+        <form id="dmg-form" @submit=${(e) => { e.preventDefault(); this._apply(); }}>
+          <div class="hrow"><span>Take damage</span><input type="number" min="0" step="1" .value=${String(this._take)} aria-label="Damage to take" @input=${(e) => { this._take = Math.max(0, Number(e.target.value) || 0); }} /></div>
+          <p class="mpara hint">A hit at or above the Wound Threshold ${this._rating(ch?.woundThreshold?.value)} records one Wound; a hit five or more over it triggers a Knockdown test. Healing is done through a Recovery test.</p>
+        </form>`,
+      primary: { label: 'Apply', type: 'submit', form: 'dmg-form', disabled: !(Number(this._take) > 0) },
+    });
   }
 }
 

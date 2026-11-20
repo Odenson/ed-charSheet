@@ -6,6 +6,8 @@ import { rollStep, rollKarmaDice, rollDiceList, rollTotal } from '../engine/dice
 import { knockdownOutcome } from '../engine/health.js';
 import { successCount } from '../engine/combat.js';
 import { resolveOptionalMods } from '../engine/roll-mods.js';
+import { ModalController } from './kit/modal-controller.js';
+import { modalFrame, modalCss } from './kit/modal.js';
 
 export class EdRollModal extends LitElement {
   static properties = {
@@ -37,7 +39,7 @@ export class EdRollModal extends LitElement {
     embedded: { type: Boolean }, // render the panel inline (no full-screen overlay) — used inside the day-reset spend modal
   };
 
-  static styles = css`
+  static styles = [modalCss, css`
     ${diceIconCss}
     :host {
       color-scheme: light dark;
@@ -45,7 +47,6 @@ export class EdRollModal extends LitElement {
       --karma: light-dark(#3d6b4a, #82c39a);
       --karma-bg: light-dark(#e7f0ea, #223029);
     }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 3000; padding: 1rem; }
     .dm {
       width: 340px; max-width: 100%;
       background: light-dark(#ffffff, #232833); color: light-dark(#111418, #f0f3f7);
@@ -86,12 +87,10 @@ export class EdRollModal extends LitElement {
     .kstep button:disabled { opacity: 0.4; cursor: default; }
     .kstep .cnt { min-width: 20px; text-align: center; font-weight: 500; }
     .kstep .cap { font-size: var(--fs-fine); color: light-dark(#8a93a3, #6b7688); }
-    button.commit { font: inherit; font-size: var(--fs-body); font-weight: 500; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--karma); background: var(--karma-bg); color: var(--karma); cursor: pointer; }
     button.adddie { font: inherit; font-size: var(--fs-small); padding: 5px 11px; border-radius: 999px; border: 1px solid var(--karma); background: none; color: var(--karma); cursor: pointer; }
     button.adddie:disabled { opacity: 0.4; cursor: default; }
     .aimlbl { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); }
     .aimlbl input { width: 72px; font: inherit; font-size: var(--fs-value); padding: 5px 8px; border-radius: 8px; border: 1px solid light-dark(#c9ccd3, #3a4150); background: light-dark(#f1f2f5, #1b1f27); color: inherit; }
-    button.commit:disabled { opacity: 0.4; cursor: default; }
     .optmods { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-bottom: 1px solid light-dark(#e2e5ea, #2c313b); }
     .optmod { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: light-dark(#5a6472, #93a0b3); cursor: pointer; }
     .optmod input { accent-color: var(--accent, #b26a00); }
@@ -100,27 +99,48 @@ export class EdRollModal extends LitElement {
     .outcome { margin-top: 8px; font-size: var(--fs-small); font-weight: 500; text-align: right; }
     .outcome.ok { color: light-dark(#3d6b4a, #82c39a); }
     .outcome.fail { color: light-dark(#a63a2b, #e0846f); }
-  `;
+    /* Framed (kit) views: the sub line leads the body, the hint closes it. */
+    .mbody > .sub { margin-bottom: 4px; }
+    p.hint.rollhint { margin: 10px 0 0; }
+  `];
 
-  connectedCallback() {
-    super.connectedCallback();
-    // The modal only exists in the DOM while open, so bind/unbind Escape here.
-    // In embedded mode (the day-reset spend modal) the host owns Escape; the
-    // roll panel just auto-rolls and hands results up via its events.
-    this._onKeydown = (e) => {
-      if (this.embedded) return;
-      if (e.key === 'Escape') this._close();
-      // Enter confirms the deferred choosers (Tier-1 modal contract): commit the
-      // chosen Karma dice, or roll the aim once a target defence is entered.
-      else if (e.key === 'Enter' && this._isSetDice() && !this._committed) this._commit();
-      else if (e.key === 'Enter' && this._isAim() && !this._aimRolled && this._aimTargetNum() != null) this._commitAim();
-    };
-    document.addEventListener('keydown', this._onKeydown);
+  constructor() {
+    super();
+    // The framed views (chooser / result) run on the UI kit controller: one
+    // capture-phase key router, focus in/trap/return, Escape = top only. The
+    // embedded panel (day-reset) never opens it and keeps today's markup.
+    this._ctl = new ModalController(this, {
+      kind: () => this._viewKind(),
+      onConfirm: () => this._onPrimary(),
+      canConfirm: () => !(this._isAim() && !this._aimRolled) || this._aimTargetNum() != null,
+      initialFocus: '.aimlbl input',
+      // Dispatches `close` for any reason; ed-app owns the trigger restore.
+      onClose: () => this._close(),
+    });
   }
 
-  disconnectedCallback() {
-    document.removeEventListener('keydown', this._onKeydown);
-    super.disconnectedCallback();
+  firstUpdated() {
+    if (this.embedded) return;
+    this._ctl.opened(null);
+    // The first render only reaches the result/chooser after updated() sets
+    // state, so re-run the initial-focus order once that render has landed.
+    this.updateComplete.then(() => this._ctl.refocus());
+  }
+
+  // The kit kind follows the view: choosers and an apply result take input
+  // ([Cancel] [Primary]); the plain result (and the Knockdown result) is read-only.
+  _viewKind() {
+    if (this._isSetDice() && !this._committed) return 'input';
+    if (this._isAim() && !this._aimRolled) return 'input';
+    if (this.apply && this.apply.action !== 'knockdown-result') return 'input';
+    return 'info';
+  }
+
+  // What Enter / the primary button does in the current input view.
+  _onPrimary() {
+    if (this._isSetDice() && !this._committed) this._commit();
+    else if (this._isAim() && !this._aimRolled) this._commitAim();
+    else if (this.apply && this.apply.action !== 'knockdown-result') this._apply();
   }
 
   updated(changed) {
@@ -305,6 +325,7 @@ export class EdRollModal extends LitElement {
     this.dispatchEvent(new CustomEvent('ed-edit-karma', { detail: { spend: c }, bubbles: true, composed: true }));
     if (this.strain) this.dispatchEvent(new CustomEvent('ed-strain', { detail: { amount: this.strain }, bubbles: true, composed: true }));
     this._log();
+    this._ctl.refocus(); // the chooser became the result: keep focus inside
   }
 
   // The top-up rule (D9): after commit, the player may add Karma dice one at a
@@ -342,6 +363,7 @@ export class EdRollModal extends LitElement {
     // before this costs nothing.
     if (this.aim?.strain) this.dispatchEvent(new CustomEvent('ed-strain', { detail: { amount: this.aim.strain }, bubbles: true, composed: true }));
     this._log();
+    this._ctl.refocus(); // the chooser became the result: keep focus inside
   }
 
   // Log this completed roll interaction (PLAN-NOTES-TAB, decision #5): fire on
@@ -456,63 +478,159 @@ export class EdRollModal extends LitElement {
   }
 
   // Set-dice chooser (True Shot): pick the initial Karma dice, then commit. No
-  // dice are rolled and nothing is charged until "Roll" — Escape/✕ costs nothing.
+  // dice are rolled and nothing is charged until "Roll" — Escape/✕/Cancel costs nothing.
   _renderChooser() {
     const max = this._maxDice();
     const rank = this.karma?.rank ?? max;
-    return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="dm" @click=${(e) => e.stopPropagation()}>
-          <div class="head">
-            <div>
-              <div class="title">${diceIcon} ${this.label}</div>
-              <div class="sub">Step ${this.stepRow.step} · ${this.stepRow.dice ?? ''} · exploding${this.difficulty?.value != null ? html` · vs Difficulty ${this.difficulty.value}` : ''}</div>
-            </div>
-            <button class="x" @click=${this._close} aria-label="Close">✕</button>
-          </div>
-          <div class="kdice">
-            <div class="kstep">
-              <button ?disabled=${this._diceCount <= 1} @click=${() => this._setCount(this._diceCount - 1)} aria-label="Fewer Karma dice">−</button>
-              <span class="cnt">✦ ${this._diceCount}</span>
-              <button ?disabled=${this._diceCount >= max} @click=${() => this._setCount(this._diceCount + 1)} aria-label="More Karma dice">+</button>
-              <span class="cap">of up to ${rank}${max < rank ? html` (${this.karma?.available ?? 0} Karma)` : ''}</span>
-            </div>
-          </div>
-          <div class="foot">
-            <span class="hint">${this.strain ? html`${this.strain} Strain on roll.` : ''}${this.strain && this.difficulty?.value == null ? ' ' : ''}${this.difficulty?.value == null ? '' : 'Add dice one at a time after the roll to reach the target.'}</span>
-            <button class="commit" @click=${this._commit}>Roll ✦ ${this._diceCount}</button>
+    return modalFrame(this._ctl, {
+      title: html`${diceIcon} ${this.label}`,
+      label: this.label,
+      layer: 3000,
+      width: '340px',
+      body: html`
+        <div class="sub">Step ${this.stepRow.step} · ${this.stepRow.dice ?? ''} · exploding${this.difficulty?.value != null ? html` · vs Difficulty ${this.difficulty.value}` : ''}</div>
+        <div class="kdice">
+          <div class="kstep">
+            <button ?disabled=${this._diceCount <= 1} @click=${() => this._setCount(this._diceCount - 1)} aria-label="Fewer Karma dice">−</button>
+            <span class="cnt">✦ ${this._diceCount}</span>
+            <button ?disabled=${this._diceCount >= max} @click=${() => this._setCount(this._diceCount + 1)} aria-label="More Karma dice">+</button>
+            <span class="cap">of up to ${rank}${max < rank ? html` (${this.karma?.available ?? 0} Karma)` : ''}</span>
           </div>
         </div>
-      </div>
-    `;
+        <p class="hint rollhint">${this.strain ? html`${this.strain} Strain on roll.` : ''}${this.strain && this.difficulty?.value == null ? ' ' : ''}${this.difficulty?.value == null ? '' : 'Add dice one at a time after the roll to reach the target.'}</p>`,
+      primary: { label: `Roll ✦ ${this._diceCount}`, tone: 'karma' },
+    });
   }
 
-  // Aim chooser (Mystic Aim): enter the target's defence, then roll. Deferred —
+  // Aim chooser (Mystic Aim): enter the target defence, then roll. Deferred —
   // nothing rolls or is charged until "Roll".
   _renderAimChooser() {
     const ready = this._aimTargetNum() != null;
-    return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="dm" @click=${(e) => e.stopPropagation()}>
-          <div class="head">
-            <div>
-              <div class="title">${diceIcon} ${this.label}</div>
-              <div class="sub">Step ${this.stepRow.step} · ${this.stepRow.dice ?? ''} · exploding · vs the target's ${this._aimVsLabel()}</div>
-            </div>
-            <button class="x" @click=${this._close} aria-label="Close">✕</button>
-          </div>
-          <div class="kdice">
-            <label class="aimlbl">Target's ${this._aimVsLabel()}
-              <input type="number" inputmode="numeric" .value=${this._aimTarget ?? ''} @input=${(e) => (this._aimTarget = e.target.value)} aria-label="Target's ${this._aimVsLabel()}" />
-            </label>
-          </div>
-          <div class="foot">
-            <span class="hint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}</span>
-            <button class="commit" ?disabled=${!ready} @click=${this._commitAim}>Roll</button>
-          </div>
+    return modalFrame(this._ctl, {
+      title: html`${diceIcon} ${this.label}`,
+      label: this.label,
+      layer: 3000,
+      width: '340px',
+      body: html`
+        <div class="sub">Step ${this.stepRow.step} · ${this.stepRow.dice ?? ''} · exploding · vs the target's ${this._aimVsLabel()}</div>
+        <div class="kdice">
+          <label class="aimlbl">Target's ${this._aimVsLabel()}
+            <input type="number" inputmode="numeric" .value=${this._aimTarget ?? ''} @input=${(e) => (this._aimTarget = e.target.value)} aria-label="Target's ${this._aimVsLabel()}" />
+          </label>
         </div>
-      </div>
+        <p class="hint rollhint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}</p>`,
+      primary: { label: 'Roll', tone: 'accent', disabled: !ready },
+    });
+  }
+
+  // The result body shared by the framed view and the embedded panel: the dice
+  // groups, mods, total, Strain/outcome lines and the Karma control. Class names
+  // are unchanged (the embedded panel and day-reset depend on them).
+  _resultBody(r) {
+    return html`
+    <div>
+      ${r.groups.map(
+        (g) => html`
+          <div class="grp">
+            <span class="glbl">${g.label}</span>
+            <span class="chain">
+              ${g.rolls.map(
+                (v, i) => html`<span class="die ${v === g.die ? 'max' : ''}">${v}</span>${i < g.rolls.length - 1
+                    ? html`<span class="arrow" aria-hidden="true">↦</span>`
+                    : ''}`,
+              )}
+              ${g.exploded ? html`<span class="boom">exploded</span>` : ''}
+            </span>
+            <span class="gsub">${g.subtotal}</span>
+          </div>
+        `,
+      )}
+      ${r.modifier
+        ? html`<div class="grp"><span class="glbl">Mod</span><span class="chain"></span><span class="gsub">${r.modifier > 0 ? '+' : ''}${r.modifier}</span></div>`
+        : ''}
+      ${this._karmaResult
+        ? html`<div class="grp karma-grp">
+            <span class="glbl" title="Karma die (D6)">✦</span>
+            <span class="chain">
+              ${this._karmaResult.groups
+                .flatMap((g) => g.rolls)
+                .map(
+                  (v, i, arr) => html`<span class="die kdie">${v}</span>${i < arr.length - 1
+                      ? html`<span class="arrow" aria-hidden="true">↦</span>`
+                      : ''}`,
+                )}
+            </span>
+            <span class="gsub">${this._karmaResult.total}</span>
+          </div>`
+        : ''}
+      ${this._bonusResult
+        ? html`<div class="grp">
+            <span class="glbl" title=${(this.bonusDice ?? []).map((b) => b.label).filter(Boolean).join(', ') || 'Bonus Dice'}>Bonus${this._bonusDiceText() ? html`<br><b class="bdie">${this._bonusDiceText()}</b>` : ''}</span>
+            <span class="chain">
+              ${this._bonusResult.dice.map(
+                (d) => html`${d.rolls.map(
+                  (v, i) => html`<span class="die ${v === d.sides ? 'max' : ''}">${v}</span>${i < d.rolls.length - 1
+                      ? html`<span class="arrow" aria-hidden="true">↦</span>`
+                      : ''}`,
+                )}${d.rolls.length > 1 ? html`<span class="boom">exploded</span>` : ''}`,
+              )}
+            </span>
+            <span class="gsub">${this._bonusResult.total}</span>
+          </div>`
+        : ''}
+      ${this._resultModsAll().length || this._stepModsAll().length
+        ? html`<div class="grp">
+            <span class="glbl">Mods</span>
+            <span class="chain">
+              ${this._resultModsAll().map(
+                (m) => html`<span class="modchip" title=${m.label}>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}</span>`,
+              )}
+              ${this._stepModsAll().map(
+                (m) => html`<span class="modchip" title="${m.label} (Step modifier, already in the Step)">${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value} Step</span>`,
+              )}
+            </span>
+            <span class="gsub">${this._resultModsAll().reduce((s, m) => s + (Number(m.value) || 0), 0)}</span></div>`
+        : ''}
+      ${(this.optionalMods ?? []).length
+        ? html`<div class="optmods" role="group" aria-label="Situational penalties for this roll">
+            ${this.optionalMods.map(
+              (m) => html`<label class="optmod">
+                <input type="checkbox" data-enter="local" .checked=${!this._off?.has(m.label)} @change=${() => this._toggleOptional(m)} />
+                <span>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}${m.measure === 'step' ? ' Step' : ''}</span>
+              </label>`,
+            )}
+          </div>`
+        : ''}
+    </div>
+    <div class="total">
+      <span class="sub">Total</span>
+      <span class="n">${this._grandTotal()}</span>
+    </div>
+    ${this.strain > 0 && !this._isSetDice() && !this._isAim() ? html`<div class="strainln">Strain ${this.strain} — charged to Health</div>` : ''}
+    ${this._outcome() ? html`<div class="outcome ${this._outcome().ok ? 'ok' : 'fail'}">${this._difficultyLabel() ? html`${this._difficultyLabel()} — ` : ''}${this._outcome().word}</div>` : ''}
+    ${this._isSetDice()
+      ? html`<div class="karma-ctl">
+          <button class="adddie" ?disabled=${!this._canAddDie()} @click=${this._addDie}
+            title=${this._canAddDie() ? 'Spend 1 more Karma to add a die' : 'No more dice can be added'}
+          >✦ Add 1 Karma die</button>
+          <span class="kavail">${this._diceUsed} of ${this.karma?.rank ?? '—'} dice · ${Math.max(0, (this.karma?.available ?? 0) - this._diceUsed)} Karma left</span>
+        </div>`
+      : this.karma?.grants?.length
+      ? html`<div class="karma-ctl">
+          <button
+            class="kbtn ${this._karmaOn ? 'on' : ''}"
+            ?disabled=${!this._karmaOn && !this._canSpendKarma()}
+            title=${!this._karmaOn && !this._canSpendKarma() ? 'No Karma left to spend' : this.karma.grants.map((g) => g.summary).filter(Boolean).join(' · ')}
+            @click=${this._toggleKarma}
+          >✦ ${this._karmaLabel()}${this._karmaOn ? '' : ' (+D6)'}</button>
+          <span class="kavail">${this.karma.available ?? '—'} Karma</span>
+        </div>`
+      : ''}
     `;
+  }
+
+  _strainHint() {
+    return this.strain > 0 && !this._isSetDice() && !this._isAim() ? `${this.strain} Strain on roll. ` : '';
   }
 
   render() {
@@ -521,115 +639,21 @@ export class EdRollModal extends LitElement {
     if (this._isAim() && !this._aimRolled) return this._renderAimChooser();
     const r = this._result;
     if (!r) return html``;
-    const dm = html`
+    const sub = html`Step ${r.step} · ${r.dice ?? ''} · exploding${this._difficultyLabel() ? html` · ${this._difficultyLabel()}` : ''}`;
+    if (this.embedded) {
+      // Embedded in the day-reset modal: the bare panel, no frame, no controller.
+      return html`
         <div class="dm" @click=${(e) => e.stopPropagation()}>
           <div class="head">
             <div>
               <div class="title">${diceIcon} ${this.label}</div>
-              <div class="sub">Step ${r.step} · ${r.dice ?? ''} · exploding${this._difficultyLabel() ? html` · ${this._difficultyLabel()}` : ''}</div>
+              <div class="sub">${sub}</div>
             </div>
             <button class="x" @click=${this._close} aria-label="Close">✕</button>
           </div>
-          <div>
-            ${r.groups.map(
-              (g) => html`
-                <div class="grp">
-                  <span class="glbl">${g.label}</span>
-                  <span class="chain">
-                    ${g.rolls.map(
-                      (v, i) => html`<span class="die ${v === g.die ? 'max' : ''}">${v}</span>${i < g.rolls.length - 1
-                          ? html`<span class="arrow" aria-hidden="true">↦</span>`
-                          : ''}`,
-                    )}
-                    ${g.exploded ? html`<span class="boom">exploded</span>` : ''}
-                  </span>
-                  <span class="gsub">${g.subtotal}</span>
-                </div>
-              `,
-            )}
-            ${r.modifier
-              ? html`<div class="grp"><span class="glbl">Mod</span><span class="chain"></span><span class="gsub">${r.modifier > 0 ? '+' : ''}${r.modifier}</span></div>`
-              : ''}
-            ${this._karmaResult
-              ? html`<div class="grp karma-grp">
-                  <span class="glbl" title="Karma die (D6)">✦</span>
-                  <span class="chain">
-                    ${this._karmaResult.groups
-                      .flatMap((g) => g.rolls)
-                      .map(
-                        (v, i, arr) => html`<span class="die kdie">${v}</span>${i < arr.length - 1
-                            ? html`<span class="arrow" aria-hidden="true">↦</span>`
-                            : ''}`,
-                      )}
-                  </span>
-                  <span class="gsub">${this._karmaResult.total}</span>
-                </div>`
-              : ''}
-            ${this._bonusResult
-              ? html`<div class="grp">
-                  <span class="glbl" title=${(this.bonusDice ?? []).map((b) => b.label).filter(Boolean).join(', ') || 'Bonus Dice'}>Bonus${this._bonusDiceText() ? html`<br><b class="bdie">${this._bonusDiceText()}</b>` : ''}</span>
-                  <span class="chain">
-                    ${this._bonusResult.dice.map(
-                      (d) => html`${d.rolls.map(
-                        (v, i) => html`<span class="die ${v === d.sides ? 'max' : ''}">${v}</span>${i < d.rolls.length - 1
-                            ? html`<span class="arrow" aria-hidden="true">↦</span>`
-                            : ''}`,
-                      )}${d.rolls.length > 1 ? html`<span class="boom">exploded</span>` : ''}`,
-                    )}
-                  </span>
-                  <span class="gsub">${this._bonusResult.total}</span>
-                </div>`
-              : ''}
-            ${this._resultModsAll().length || this._stepModsAll().length
-              ? html`<div class="grp">
-                  <span class="glbl">Mods</span>
-                  <span class="chain">
-                    ${this._resultModsAll().map(
-                      (m) => html`<span class="modchip" title=${m.label}>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}</span>`,
-                    )}
-                    ${this._stepModsAll().map(
-                      (m) => html`<span class="modchip" title="${m.label} (Step modifier, already in the Step)">${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value} Step</span>`,
-                    )}
-                  </span>
-                  <span class="gsub">${this._resultModsAll().reduce((s, m) => s + (Number(m.value) || 0), 0)}</span></div>`
-              : ''}
-            ${(this.optionalMods ?? []).length
-              ? html`<div class="optmods" role="group" aria-label="Situational penalties for this roll">
-                  ${this.optionalMods.map(
-                    (m) => html`<label class="optmod">
-                      <input type="checkbox" .checked=${!this._off?.has(m.label)} @change=${() => this._toggleOptional(m)} />
-                      <span>${m.label} ${Number(m.value) > 0 ? '+' : ''}${m.value}${m.measure === 'step' ? ' Step' : ''}</span>
-                    </label>`,
-                  )}
-                </div>`
-              : ''}
-          </div>
-          <div class="total">
-            <span class="sub">Total</span>
-            <span class="n">${this._grandTotal()}</span>
-          </div>
-          ${this.strain > 0 && !this._isSetDice() && !this._isAim() ? html`<div class="strainln">Strain ${this.strain} — charged to Health</div>` : ''}
-          ${this._outcome() ? html`<div class="outcome ${this._outcome().ok ? 'ok' : 'fail'}">${this._difficultyLabel() ? html`${this._difficultyLabel()} — ` : ''}${this._outcome().word}</div>` : ''}
-          ${this._isSetDice()
-            ? html`<div class="karma-ctl">
-                <button class="adddie" ?disabled=${!this._canAddDie()} @click=${this._addDie}
-                  title=${this._canAddDie() ? 'Spend 1 more Karma to add a die' : 'No more dice can be added'}
-                >✦ Add 1 Karma die</button>
-                <span class="kavail">${this._diceUsed} of ${this.karma?.rank ?? '—'} dice · ${Math.max(0, (this.karma?.available ?? 0) - this._diceUsed)} Karma left</span>
-              </div>`
-            : this.karma?.grants?.length
-            ? html`<div class="karma-ctl">
-                <button
-                  class="kbtn ${this._karmaOn ? 'on' : ''}"
-                  ?disabled=${!this._karmaOn && !this._canSpendKarma()}
-                  title=${!this._karmaOn && !this._canSpendKarma() ? 'No Karma left to spend' : this.karma.grants.map((g) => g.summary).filter(Boolean).join(' · ')}
-                  @click=${this._toggleKarma}
-                >✦ ${this._karmaLabel()}${this._karmaOn ? '' : ' (+D6)'}</button>
-                <span class="kavail">${this.karma.available ?? '—'} Karma</span>
-              </div>`
-            : ''}
+          ${this._resultBody(r)}
           <div class="foot">
-            <span class="hint">${this.strain > 0 && !this._isSetDice() && !this._isAim() ? `${this.strain} Strain on roll. ` : ''}Max on a die explodes: reroll and add.</span>
+            <span class="hint">${this._strainHint()}Max on a die explodes: reroll and add.</span>
             ${this.apply && this.apply.action !== 'knockdown-result'
               ? html`<span class="appfoot">
                   <button class="appbtn" @click=${this._apply}>${this._applyLabel()}</button>
@@ -637,8 +661,21 @@ export class EdRollModal extends LitElement {
               : html`<button class="ok" @click=${this._close}>OK</button>`}
           </div>
         </div>
-    `;
-    return this.embedded ? dm : html`<div class="overlay" @click=${this._close}>${dm}</div>`;
+      `;
+    }
+    const hasApply = this.apply && this.apply.action !== 'knockdown-result';
+    return modalFrame(this._ctl, {
+      title: html`${diceIcon} ${this.label}`,
+      label: this.label,
+      layer: 3000,
+      width: '340px',
+      body: html`
+        <div class="sub">${sub}</div>
+        ${this._resultBody(r)}
+        <p class="hint rollhint">${this._strainHint()}Max on a die explodes: reroll and add.</p>`,
+      primary: hasApply ? { label: this._applyLabel(), tone: 'accent' } : undefined,
+      ack: hasApply ? undefined : { label: 'OK' },
+    });
   }
 }
 
