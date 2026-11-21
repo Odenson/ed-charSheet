@@ -10,7 +10,7 @@
       },
       {
         "type": "fixed",
-        "text": "Legend Spent now prices an additional Discipline's Rank-1 talents from the lowest Circle among the Disciplines you had before joining it."
+        "text": "Legend Spent now prices an additional Discipline's Rank-1 talents from the lowest Circle among the Disciplines you had before joining it. Characters with a second Discipline may see a lower Legend Spent (and higher Available Legend) than before."
       }
     ]
   },

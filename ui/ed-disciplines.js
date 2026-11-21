@@ -17,7 +17,7 @@ import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
 import { describeRequirement } from '../engine/advancement.js';
 
-// The kit kind of each Disciplines modal (one controller serves all nine):
+// The kit kind of each Disciplines modal (one controller serves all ten):
 // info modals (talent/skill/knack/granted) are read-only; the pickers act on a
 // focused option; Train is a confirm.
 const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', advance: 'confirm', 'start-discipline': 'confirm' };

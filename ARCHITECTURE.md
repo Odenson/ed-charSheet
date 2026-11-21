@@ -599,7 +599,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     weight.js                # item-weight totals
     spells.js                # spell/matrix fold (grandfathered display parser, §5.5)
     legend.js                # Legend Point totals
-    legend-spent.js          # Legend-spent reconciliation audit
+    legend-spent.js          # Legend-spent reconciliation audit; an additional Discipline's Rank-1 row is the lowest Circle among the Disciplines before it (lowestPriorCircle)
     advancement.js           # Circle-advancement status (supported Circle, eligibility, next requirement; no costs): gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
     potions.js               # potion/consumable effects
     formula.js               # rule-expression evaluator (§4.2)
@@ -607,7 +607,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ability-actions.js       # action-modifier resolver (effective talent/skill action, fastest wins)
     knack-options.js         # knack availability / restrictions
     skill-options.js         # skill option resolution
-    talent-options.js        # talent combat/option resolution
+    talent-options.js        # Talent Option slots/pools, next-Circle grant, and the start-a-Discipline quote (initiationQuote / addableDisciplines); derived, never stored
     free-talents.js          # Discipline free talents (rules/disciplines.json circles[].freeTalents) as derived model rows: rank = that Discipline's Circle, duplicates kept, a same-Discipline stored talent of that name suppresses the row; never stored, no Legend pricing, not counted by the Circle-advancement gate
     validate-item.js         # item shape validation
     # *.test.js siblings run under node --test (see `npm test`)

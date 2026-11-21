@@ -17,6 +17,7 @@ Nethermancer (2nd Discipline), Rank 3.
 - First-Discipline baseline: 100 + 200 + 300 = **600**.
 - Standard additional-Discipline model (current app): Rank 1 = 500 (New
   Discipline table, lowest Circle 3) + 300 + 500 (Journeyman) = **1300**.
+  > *Superseded 2026-11-21 (start-new-discipline, rules.md R2): the Rank-1 row is now the lowest Circle among the Disciplines held before this one (Archer 4), so the standard model gives 300 + 300 + 500 = **1100**. The Rule-ON figure (1000) is unchanged.*
 - **Rule ON:** at own tier bumped once → Journeyman column, 200 + 300 + 500
   = **1000**.
 
