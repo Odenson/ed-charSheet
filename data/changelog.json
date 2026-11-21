@@ -3,11 +3,20 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": [
-      {"type": "added", "text": "Disciplines now show their free talents (Archer's Call Missile, Thief's Danger Sense, Nethermancer's two Standard Matrices) at the Discipline's Circle, and rollable ones can be rolled from the Disciplines and Combat tabs."}
-    ]
+    "changes": []
   },
   "releases": [
+    {
+      "version": "1.41.0",
+      "date": "2026-11-21",
+      "summary": "Disciplines now show their free talents (Archer's Call Missile, Thief's Danger Sense, Nethermancer's two Standard Matrices) at the Discipline's Circle, and rollable ones can be rolled from the Disciplines and Combat tabs.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Disciplines now show their free talents (Archer's Call Missile, Thief's Danger Sense, Nethermancer's two Standard Matrices) at the Discipline's Circle, and rollable ones can be rolled from the Disciplines and Combat tabs."
+        }
+      ]
+    },
     {
       "version": "1.40.0",
       "date": "2026-11-20",

@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.41.0
 ---
 # Delivery Plan: Display free talents (display-free-talents)
 
