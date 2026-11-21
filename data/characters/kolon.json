@@ -87,7 +87,7 @@
           "circle": 1
         },
         {
-          "name": "Taunt",
+          "name": "Melee Weapons",
           "rank": 4,
           "circle": 1
         },
@@ -130,11 +130,6 @@
         {
           "name": "Avoid Blow",
           "rank": 3,
-          "circle": 1
-        },
-        {
-          "name": "Melee Weapon",
-          "rank": 5,
           "circle": 1
         },
         {
