@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v1.42.0
 ---
 # Delivery Plan: Start a new Discipline (start-new-discipline)
 
