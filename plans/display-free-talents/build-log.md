@@ -20,3 +20,28 @@
   - UI-GUIDELINES (Disciplines tab): "Free talents (derived, `free: true`) show a Free chip beside the name and a read-only rank; no stepper or remove control in edit mode."
   - ARCHITECTURE: "engine/free-talents.js derives free-talent model rows from rules/disciplines.json freeTalents at rank = Circle; appended after learned rows, pricing null; nothing stored."
   - RULES-FAQ: record owner decisions R3, R5, R6 (Q036) and Call Missile entry (Q037).
+
+## Review and doc sync
+- Dev Lead review of 14c384c: clean (matches spec/rules; engine pure; nothing stored; pricing skipped for free rows; tests untouched, verified against snapshot). No revision needed.
+- Doc sync applied (all Tier 3, no sign-off needed): ARCHITECTURE.md (engine file list; §4.1 free-talents note), docs/UI-GUIDELINES.md (dated Disciplines free-talents note), plan.md status `implemented`, `shipped: unreleased`.
+- Deferred / owner actions: docs/RULES-FAQ.md Q036/Q037 cross-reference (owner decisions R3, R5, R6; Call Missile entry) — file has uncommitted changes, not touched. design-agent D5 (plans/update-shadow-meld/plan.md `shipped: v1.33.0`) is unrelated; not applied.
+
+## Owner handoff
+### GUARDRAILS PR checklist
+- Tier classification: all Tier 3 — pass.
+- No schema/version tag change, no new stored field — pass.
+- Engine pure/DOM-free, reads `freeTalents` as structured data — pass.
+- UI renders model data, dispatches nothing new, computes nothing — pass.
+- Placeholder rule: step-less free talents show `—` — pass.
+- Theme: chip uses existing CSS variables, weights 500 — pass (visual check pending).
+- Gate: `npm test` 1491 pass, 0 fail — pass.
+- Taxonomy unchanged; talents.json uses existing schema; conformance test passes.
+
+### Manual UI verification (owner, on dev)
+1. Chakka > Disciplines > Archer: Call Missile in Circle 1 group with "Free" chip, rank = Circle.
+2. Roll Call Missile (dice button): Perception step, Karma offered, Strain 1.
+3. Info modal: "Free" chip, summary text present.
+4. Edit mode: free row shows plain rank, no stepper, no price.
+5. Kolon > Thief: Danger Sense Free row; Kolon v2 Warrior unaffected.
+6. Combat tab > Talent / Skill picker: Call Missile / Danger Sense listed; Standard Matrix never.
+7. Light and dark mode; mobile width (chip must not break the row grid); Overview fit.
