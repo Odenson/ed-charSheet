@@ -7,6 +7,7 @@
 // are never stored.
 
 import { attributeValue, talentStep, makeDiceForStep, knackRoll } from './engine/derive.js';
+import { freeTalentRows } from './engine/free-talents.js';
 import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
@@ -923,7 +924,7 @@ export function deriveModel(character, rules, session = {}) {
       ...UNIVERSAL_TALENTS,
       ...(ref.circles ?? []).flatMap((c) => [...(c.talents ?? []), ...(c.freeTalents ?? [])]),
     ]);
-    const talents = (d.talents ?? []).map((t) => {
+    const buildTalentRow = (t) => {
       const cat = talentCatalog[t.name] || {};
       const attribute = cat.attribute || null;
       const aStep = attribute ? attrStepByName[attribute] : undefined;
@@ -986,7 +987,11 @@ export function deriveModel(character, rules, session = {}) {
           documented: !!cat.summary,
         },
       };
-    });
+    };
+    // Learned rows first (raw index alignment with pricing), derived free rows last.
+    const learnedRows = (d.talents ?? []).map(buildTalentRow);
+    const freeRows = freeTalentRows(ref, d.circle, new Set((d.talents ?? []).map((x) => x.name))).map((f) => ({ ...buildTalentRow(f), free: true }));
+    const talents = [...learnedRows, ...freeRows];
     // Discipline abilities granted at circles up to the character's current circle.
     const abilities = (ref.circles ?? [])
       .filter((c) => c.circle <= d.circle)
@@ -1433,6 +1438,7 @@ export function deriveModel(character, rules, session = {}) {
     disciplines = disciplines.map((disc, di) => ({
       ...disc,
       talents: disc.talents.map((t, ti) => {
+        if (t.free) return { ...t, pricing: null };
         const raw = discInputs[di]?.talents?.[ti] ?? {};
         const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, { tierShift });
         const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, { tierShift }) : null;

@@ -154,6 +154,11 @@ into the property store at load:
 > (since `ed-character/2`): it is the Circle band of the discipline placement
 > the talent was learned at (`rules/legend.json` `costs.tiers`; PG pp. 85,
 > 457–458). Skills keep a stored `tier` — no circle exists to derive one from.
+> A Discipline's **free talents** (`rules/disciplines.json`
+> `circles[].freeTalents`) are never stored either: their rank always equals
+> that Discipline's Circle, so `store.js` derives them as `free: true` talent
+> rows appended after the learned ones (`engine/free-talents.js`), with no
+> Legend price.
 
 ### 4.2 Game rules data (`rules/*.json`) — shared, versioned reference
 Static Earthdawn data, split so the browser only fetches what a view needs:
@@ -603,6 +608,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     knack-options.js         # knack availability / restrictions
     skill-options.js         # skill option resolution
     talent-options.js        # talent combat/option resolution
+    free-talents.js          # Discipline free talents (rules/disciplines.json circles[].freeTalents) as derived model rows: rank = that Discipline's Circle, duplicates kept, a same-Discipline stored talent of that name suppresses the row; never stored, no Legend pricing, not counted by the Circle-advancement gate
     validate-item.js         # item shape validation
     # *.test.js siblings run under node --test (see `npm test`)
     # planned: dddice.js (optional 3D dice adapter)
