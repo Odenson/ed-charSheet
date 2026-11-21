@@ -9,7 +9,7 @@
     "weight": "120 kg",
     "sex": "Male",
     "height": "6'8",
-    "sourceSheetVersion": "7.13.1",
+    "sourceSheetVersion": "7.13.3",
     "id": "kolon-v2"
   },
   "attributes": {
@@ -85,8 +85,8 @@
           "circle": 1
         },
         {
-          "name": "Taunt",
-          "rank": 4,
+          "name": "Melee Weapons",
+          "rank": 5,
           "circle": 1
         },
         {
@@ -115,9 +115,9 @@
           "circle": 4
         },
         {
-          "name": "Sprint",
+          "name": "Taunt",
           "rank": 1,
-          "circle": 4
+          "circle": 3
         }
       ]
     },
