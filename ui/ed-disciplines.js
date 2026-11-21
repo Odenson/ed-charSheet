@@ -150,7 +150,7 @@ export class EdDisciplines extends LitElement {
       transition: filter 0.12s ease, border-color 0.12s ease; }
     .tinfo.req { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-bg); }
     .tinfo.opt { background: transparent; border: 1.5px solid var(--muted); color: var(--muted); box-sizing: border-box; }
-    .fchip { flex: none; font-size: var(--fs-small); font-weight: 500; line-height: 1; padding: 2px 5px; border-radius: 999px; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); }
+    .fchip { flex: none; box-sizing: border-box; height: 14px; display: inline-flex; align-items: center; font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 0 5px; border-radius: 999px; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); }
     .tinfo:hover { filter: brightness(1.12); }
     .tinfo.opt:hover { border-color: var(--accent); color: var(--fg); }
     .tinfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
