@@ -1,5 +1,6 @@
 ---
-status: draft
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: Create new adept (create-new-adept)
 

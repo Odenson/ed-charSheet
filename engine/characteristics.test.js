@@ -349,6 +349,31 @@ test('maxKarma optional cap (homebrew karma.maxCap): min(mod×circle, maximum); 
   assert.equal(maxKarma(null, 4, 25), null); // missing base still null
 });
 
+// create-new-adept A2: maxKarma(karmaModifier, circle, maximum = null, bonus = 0):
+// base = karmaModifier * circle + bonus, THEN min(base, maximum) - the leftover-attribute bonus
+// sits INSIDE the race cap (rules.md R4 round-2 decision; R3: unspent attribute points -> Karma).
+test('maxKarma bonus (leftover attribute points) is added before the cap: Troll 3 + 25 unspent -> 20, never 28', () => {
+  assert.equal(maxKarma(3, 1, 20, 25), 20); // Troll: 3 + 25 = 28 -> capped at the Troll cap 20
+  assert.equal(maxKarma(5, 1, 40, 25), 30); // Human: 5 + 25 = 30, inside the cap 40
+  assert.equal(maxKarma(5, 1, 40, 36), 40); // 41 -> capped
+  assert.equal(maxKarma(4, 1, null, 25), 29); // no house cap: the plain sum
+  assert.equal(maxKarma(6, 3, 60, 10), 28); // modifier x Circle + bonus: 18 + 10, inside the cap
+});
+
+test('maxKarma bonus defaults to 0: existing 2- and 3-argument callers are unchanged', () => {
+  assert.equal(maxKarma(5, 4), 20);
+  assert.equal(maxKarma(5, 10, 40), 40);
+  assert.equal(maxKarma(5, 1, null, 0), 5);
+  assert.equal(maxKarma(5, 1, null, undefined), 5);
+  assert.equal(maxKarma(3, 1, 20), 3);
+});
+
+test('maxKarma bonus keeps the missing-input guards: no modifier or circle is still null', () => {
+  assert.equal(maxKarma(null, 1, 20, 25), null);
+  assert.equal(maxKarma(undefined, 1, null, 5), null);
+  assert.equal(maxKarma(5, undefined, 40, 25), null);
+});
+
 test('karmaUse finds grant-karma-use permissions by test name, with scope', () => {
   const effects = [
     { type: 'grant-karma-use', target: { domain: 'test', name: 'Initiative' }, origin: { kind: 'discipline', name: 'Archer', circle: 3 } },

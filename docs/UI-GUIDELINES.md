@@ -77,6 +77,8 @@ Attack and Damage taken cards, tabbed combat modifiers, log as a table).*
 
 *Disciplines free talents (display-free-talents, 2026-11-21): a Discipline's free talents (Archer Call Missile, Thief Danger Sense, Nethermancer's two Standard Matrix) render in their granting Circle's group with a small "Free" chip beside the name; the legend row adds "Free — granted by Discipline" and the talent info modal shows a "Free" chip in place of Required/Optional. Their rank equals that Discipline's Circle and is read-only: in edit mode they show the plain rank, with no rank stepper and no Increase price. A free talent with a Rank+attribute Step rolls like any learned talent (dice button, Karma, Strain on roll, thread/item rank bonuses) and appears in the Combat Talent / Skill picker, deduped by name keeping the highest Step; a step-less one (Standard Matrix) shows `—` and a disabled dice button and never appears in the picker. A stored talent of the same name in the same Discipline replaces the free row; the same talent from another Discipline shows as its own row.*
 
+*Creation mode (create-new-adept, 2026-11-22): while a character's creation is open and edit mode is on, the Overview, Disciplines and Spells tabs carry free-point steppers, chips and pickers instead of the Legend controls; see §6b. Characters without a `creation` block are unchanged.*
+
 *Overview Health card redesigned 2026-11-15 by owner decision ([update-health-overview plan](../plans/update-health-overview/plan.md), decisions in its qa-log). Damage and Wounds are emphasised rows with no grey backing, numbers right-aligned with the stats below (the ⚄ sits left of the Recoveries value); the gauge is Damage out of Death with a tick at Unconscious. Damage goes amber from Unconscious−10 (an owner UI choice, not a rule) and red at or past Unconscious; Wounds are red at 1+. The state chip and title carry headroom text, so colour is never the only signal. A missing Death rating shows the dashed placeholder pill instead of a gauge. The ✚ free-entry Take/Heal/Recovery-used modal was removed: damage goes in through the shared Take-damage modal, and healing only through the Recovery test.*
 
 ## 5. Derived values are placeholder pills
@@ -100,19 +102,90 @@ The header row carries a **load icon** (always visible, before the theme toggle)
 that opens the character chooser. The chooser:
 - Opens automatically on first run when there is no valid saved character
   (`localStorage 'ed-character'` is stale or absent) and the store holds more
-  than one character; a single-entry store auto-loads instead.
+  than one character; a single-entry store (a saved character or a local draft)
+  auto-loads instead. An **empty store** — no index yet (a 404 is an empty store,
+  not an error) and no drafts — also opens it, showing only the "Start a new
+  character" section below; a real list failure (network, a malformed index)
+  still shows the error.
 - Lists every character in the store, sorted by id, each row showing the portrait
   thumbnail and a label of `meta.name` (falling back to the id). The rows come
   from the **discovery index** (`data/characters/index.json`, one fetch) — the
   create-only index row carries `{ name, portrait }` copied from `meta` at
   creation, so a character renamed later still shows the original label/portrait
   until the index is refreshed (accepted; the file is authoritative).
+- Also lists the **local drafts** (new characters not saved to GitHub yet) among
+  the rows. A draft row carries an "unsaved draft" badge and a **Discard ✕**
+  button beside it (a sibling of the row's load button, never nested in it, and
+  keyboard reachable). Discard asks first (`ed-confirm`, "Discard this draft?"),
+  removes only the local draft (its base, its edits and its device-local roll log
+  and Discord settings) and never touches the branch. A character on the branch
+  with the same id hides its draft. A loaded draft shows the usual Save dot
+  (it is always unsaved) and the Save tooltip says it creates the character;
+  "Discard local changes" is not offered for a draft.
+- Ends with a **"Start a new character"** section: one button per Discipline
+  in `rules/disciplines.json` (today Archer, Nethermancer, Thief, Warrior), each an inline "+" glyph and the
+  Discipline name, shown even when the list is empty. A button opens the
+  name-and-race modal (`ui/ed-new-character.js`, stacked above the chooser):
+  a name field (autofocused) and a race select with a disabled "Choose a race"
+  placeholder; **Create** needs a valid name and a race. The character's id is
+  derived from the name and is never suffixed: when the id already exists (on the
+  branch or as a draft) a blocking inline warning names the clashing id and
+  disables Create. On Create the draft loads in edit mode on the Disciplines tab
+  (see §6b). The first Save re-checks the id against a fresh index read and, on a
+  clash, posts nothing and opens the same modal in rename mode.
 - Is a modal: **Escape/backdrop closes** it, **Enter confirms** the focused row,
-  and the first row is autofocused.
+  and the first row is autofocused. Escape closes only the top modal (the
+  new-character modal or the discard confirm above the chooser); a focused "+" or
+  Discard button activates natively on Enter, and focus returns to it on close.
 - With pending unsaved edits, a switch asks for confirmation first (drafts stay in
   the browser — closing the chooser abandons the switch, not the edits).
 - Closing without a selection leaves the app in a **"No character selected"**
   state with a "Choose a character" button to reopen the picker.
+
+## 6b. Creation mode (a new character)
+A character whose `creation.open` is true (a new draft, or a saved character still
+in creation) opens in edit mode, and **while creation is open and edit mode is on**
+the existing tabs spend the free creation points instead of Legend. Leaving edit
+mode hides the controls (nothing is changed); a character with no `creation` block,
+and a finished one, show none of this and look exactly as they always did. Every
+number below is the engine's (`model.creation`): the views only dispatch
+`ed-creation-edit`, and a refused change (the engine says why) shows a notice and
+changes nothing.
+- **Disciplines tab.** A *creation bar* replaces the Available Legend bar: a
+  "Talent points left N" chip on a Discipline sub-tab; "Skill ranks left N" plus a
+  chip for each free skill pool with ranks left (Knowledge, Artisan, Speak Language,
+  Read/Write Language) on the Skills sub-tab; and a **Finish creation** button.
+  A chip whose budget is over-spent takes the warning colour. The Circle 1
+  Discipline Talents each get a −/+ stepper (Rank 0 to 3, unlearned ones shown at
+  Rank 0 with the Step as `—` and the dice disabled); Durability, Karma Ritual and
+  free talents stay plain. Skill rows get a −/+ stepper (its tooltip names the pool
+  a raise draws on) and a ✕ to remove the skill. "+ add skill" opens a picker of
+  starting skills (Knowledge with a free-text subject and Horror Lore, Artisan with
+  the Discipline's skills first and a free-text craft, Speak Language, Read/Write
+  Language, General Novice skills, one search box); each option is badged "free
+  rank" or "uses 1 of N", and a free-text field has its own Add button (Enter in the
+  field adds). "+ Add Discipline", "Seed Circle 1", "+ add option", "+ add knack"
+  and the Legend steppers are not offered, and the green next-Circle pill is a plain
+  pill, not a Train button.
+- **Overview.** The Attributes heading carries a "Points left N" chip, and each
+  attribute tile has a compact −/+ pair at the right end of its **existing name
+  line** (no new row or column; the circles' outer height stays under the name
+  line's own text height, so the Overview keeps its no-vertical-scroll fit; the
+  pair is touch-sized on mobile, where the layout scrolls anyway). The tooltips name
+  the points a step costs or returns.
+- **Spells tab (magicians).** "+ Learn spell" becomes **+ Pick spell**, opening a
+  picker of the Discipline's Circle 1 and 2 spells by Circle with their cost (a free
+  pick: no roll, no silver); a "Spell points left N / Perception Step M" chip sits
+  beside the Karma chip (a dashed placeholder pill while the Perception Step cannot
+  be resolved, never a made-up budget); ✕ removes a spell and returns its points; a
+  spell above the character's Circle cannot be placed in a matrix.
+- **Finish creation.** Disabled, with a tooltip (and a visible line) listing what is
+  over-spent, until every budget is valid. Otherwise it opens a confirm
+  (`ed-confirm`, heading "Finish creation?", Enter confirms, Escape cancels): unspent
+  attribute points become Max Karma, unspent talent points, skill ranks and spell
+  points are forfeited (listed in a warning line), and from then on ranks cost
+  Legend. A cancelled or refused confirm changes nothing. After Finish the creation
+  points are locked.
 
 ## 7. Modal keyboard conventions
 Every modal/overlay follows the same keyboard contract:

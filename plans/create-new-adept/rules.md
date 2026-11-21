@@ -73,3 +73,21 @@ Sources: docs/RULES-FAQ.md Q036–Q040 (CC = rulebook extracts/manual/text-playe
 - **Sources:** Q039
 - **Decision:** Warn, then forfeit unspent talent/skill/spell points (house, 2026-11-21).
 - **Used by:** T7
+
+## R11 — Skill `category`, `generic`, `artisanKey` data (round 3, I2)
+- **Status:** ANSWERED; CONFLICT / NOT-COVERED / APP-DIFFERS items decided by the owner (below)
+- **Source:** docs/RULES-FAQ.md Q041 (full citations there). Category is decided by book list membership, never by name guessing.
+- **Ruling (the data to write into `rules/skills.json`, all 154 entries; duplicates Bribery and Skinning each get the same value on both copies):**
+  - `language-speak` (12): `Speak Language` + `Speak Language (X)` for X in Drake, Dwarf, Elf, Human, Obsidiman, Ork, T`skrang, Theran, Throalic, Troll, Windling.
+  - `language-readwrite` (12): `Read/Write Language` + `Read/Write Language (X)` for the same 11 X.
+  - `knowledge` (2): `Knowledge`, `Horror Lore`.
+  - `artisan` (22): `Acting`, `Arrow Fletching (Artisan)`, `Artisan`, `Body Painting (Artisan)`, `Bone Carving (Artisan)`, `Braiding (Artisan)`, `Craft Armor`, `Craft Weapon`, `Craftsman`, `Embroidery`, `Manuscript Illumination`, `Map Making`, `Painting`, `Poetry`, `Robe Embroidery`, `Rune Carving`, `Sail Embroidery`, `Sculpting`, `Tailor`, `Tanning`, `Tattooist`, `Wood Carving`.
+  - `general` (106): every other entry (includes Artist, Entertaining, Animal Tracking, Hunting, Public Speaking, Riding, Skinning x2, Bribery x2).
+  - `generic: true` on exactly four entries: `Knowledge`, `Artisan`, `Speak Language`, `Read/Write Language` (stored as `<Entry> (<text>)`). Horror Lore, Artist, Entertaining and Craftsman are NOT generic.
+  - `artisanKey` on every `artisan` entry except the `Artisan` template = catalog name with a trailing " (Artisan)" removed (Arrow Fletching, Body Painting, Bone Carving, Braiding keep the suffix only in the catalog name; the others equal their name). The eight Discipline strings resolve exactly: Archer "Arrow Fletching", "Wood Carving"; Nethermancer "Bone Carving", "Robe Embroidery"; Thief "Acting", "Poetry"; Warrior "Sculpting", "Rune Carving".
+  - Tier: all `tier` values stay as in the file EXCEPT `Impressive Display` and `Tactics` -> `tier: 2`.
+  - Creation gate (general picks from the 8 free ranks): `category: general` AND `tier: 1` only. Artisan, Knowledge and Language categories are not tiered for the gate.
+- **Decision (owner, 2026-11-21):** dual-use Artisan/General skills and NOT-COVERED entries follow the defaults listed above (Acting, Craft Armor, Craft Weapon, Craftsman, Map Making, Tailor, Tanning, Tattooist = artisan; Artist, Entertaining and the others = general).
+- **Decision (owner, 2026-11-21):** Impressive Display and Tactics are set to `tier: 2` (APP-DIFFERS fixed to the book).
+- **Decision (owner, 2026-11-21):** the fixed Artisan rank comes from the Discipline's `artisanSkills` only; the 8 extra free ranks may go to any `artisan`-category catalog skill or a free-text `Artisan (<text>)` (refines R5; the I7 "anything else is refused" applies to the fixed Artisan rank only).
+- **Used by:** T5, T6, T8 (I2, I7)

@@ -38,6 +38,11 @@
 //     talent step at Rank = the spell's Circle (spellCost). The Circle is read off the
 //     spell catalog passed in as opts.spellCatalog (rules/spells.json spells), resolved
 //     apostrophe-insensitively; an unknown name contributes 0, never a fabricated cost.
+//   • creation ledger (create-new-adept, the additive `creation` block): while a character
+//     carries `creation.free`, the first-Discipline ranks, skill ranks and spells it lists
+//     were granted free (0 Legend) — a line costs cum(rank) − cum(min(free, rank)) at its own
+//     tier, a free spell costs 0, and the Karma sink drops the creation Karma
+//     (`opts.creationKarma`). Everything above is unchanged for a character with no block.
 // It then reconciles the modeled total against the character's recorded
 //
 // Talents are grouped into one section per Discipline so the additional-Discipline
@@ -97,9 +102,35 @@ export function spellCost(circle, rankTable) {
 // Normalise a spell name for catalog lookup: the catalog uses the rulebook's
 // typographic apostrophe (’ U+2019) while a character may record a straight one
 // (') — "Death’s Head" must find "Death's Head". Mirrors spells.js's normName so
-// the audit resolves the same spell the join does.
-function normSpellName(s) {
+// the audit resolves the same spell the join does. Exported so the creation engine
+// (engine/creation.js) matches spells in `creation.free.spells` the same way.
+export function normSpellName(s) {
   return String(s ?? '').replace(/[‘’]/g, "'").trim();
+}
+
+// The ledger key for a talent: `${discipline}/${talent}` (spec "creation.free ledger
+// semantics" 1). engine/creation.js exposes it as `freeKey`; one definition, here.
+export function ledgerTalentKey(discipline, talent) {
+  return `${discipline}/${talent}`;
+}
+
+// Free ranks recorded for `key` in a ledger section ({ key: count }): a positive count or 0.
+function freeCount(section, key) {
+  const n = Number(section?.[key]);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Net cumulative cost of a ranked line whose first `free` ranks were granted free:
+// `cum(rank) − cum(min(free, rank))` (clamped — a rank lowered below its free ranks never
+// goes negative and never refunds). `cumFn(r)` is the plain cumulative cost to rank r
+// (a number, or null when unpriceable); null propagates exactly as the plain audit flags
+// it. With no free ranks it IS cumFn(rank), so a character without a ledger is
+// byte-identical to before.
+function netRankCost(rank, free, cumFn) {
+  const hi = cumFn(rank);
+  if (!(free > 0)) return hi;
+  const lo = cumFn(Math.min(free, rank));
+  return hi == null || lo == null ? null : hi - lo;
 }
 
 /** Look a known-spell name up in the spell catalog (apostrophe-insensitive)
@@ -255,17 +286,23 @@ export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowest
  * @param {number|null} lowestCircle  lowestPriorCircle(character.disciplines, thisDisciplineIndex)
  * @param {object} costs  rules/legend.json `costs` block
  * @param {number} toRank  the rank the step brings the talent to
- * @param {{tierShift?: number, tier?: string}} opts  homebrew additional-tier
- *   shift (rules/homebrew.json): when `tierShift > 0`, an ordinal-2+ talent is
- *   priced from its own tier bumped up instead of the New-Discipline/Equivalent
- *   tables — the step cost then matches the shifted audit exactly.
+ * @param {{tierShift?: number, tier?: string, freeRank?: number}} opts  homebrew
+ *   additional-tier shift (rules/homebrew.json): when `tierShift > 0`, an ordinal-2+
+ *   talent is priced from its own tier bumped up instead of the New-Discipline/Equivalent
+ *   tables — the step cost then matches the shifted audit exactly. `freeRank` (first
+ *   Discipline only, from `character.creation.free.talents[disc/name]`): the ranks
+ *   granted free at creation, so the step is `net(toRank) − net(toRank − 1)` —
+ *   identical to the audit's ledger line, and 0 for a rank inside the free count.
+ *   Ignored for an additional Discipline, exactly as the audit ignores its keys.
  */
 export function talentRankStepCost(t, ordinal, lowestCircle, costs, toRank, opts = {}) {
   if (!toRank || toRank <= 0) return 0;
   const tier = tierForCircle(t?.circle, costs);
   if (ordinal <= 1) {
-    const hi = talentRanksCost(toRank, tier, costs?.talentRank);
-    const lo = talentRanksCost(toRank - 1, tier, costs?.talentRank);
+    const free = Number(opts?.freeRank) || 0;
+    const cum = (r) => talentRanksCost(r, tier, costs?.talentRank);
+    const hi = netRankCost(toRank, free, cum);
+    const lo = netRankCost(toRank - 1, free, cum);
     return hi == null || lo == null ? null : hi - lo;
   }
   const shiftOpts = { ...opts, tier: opts?.tier ?? tier ?? 'Novice' };
@@ -285,12 +322,17 @@ export function talentRankStepCost(t, ordinal, lowestCircle, costs, toRank, opts
  * @param {{tier?: string}} s  the raw character skill input
  * @param {object} costs  rules/legend.json `costs` block
  * @param {number} toRank  the rank the step brings the skill to
+ * @param {{freeRank?: number}} opts  `freeRank`: the ranks granted free at creation
+ *   (`character.creation.free.skills[name]`); the step is then `net(toRank) − net(toRank − 1)`,
+ *   identical to the audit's ledger line.
  */
-export function skillRankStepCost(s, costs, toRank) {
+export function skillRankStepCost(s, costs, toRank, opts = {}) {
   if (!toRank || toRank <= 0) return 0;
   const tier = s?.tier ?? 'Novice';
-  const hi = skillRanksCost(toRank, tier, costs?.skillRank);
-  const lo = skillRanksCost(toRank - 1, tier, costs?.skillRank);
+  const free = Number(opts?.freeRank) || 0;
+  const cum = (r) => skillRanksCost(r, tier, costs?.skillRank);
+  const hi = netRankCost(toRank, free, cum);
+  const lo = netRankCost(toRank - 1, free, cum);
   return hi == null || lo == null ? null : hi - lo;
 }
 
@@ -314,6 +356,10 @@ function ordinalLabel(n) {
 export function auditLegendSpent(character, costs, opts = {}) {
   const sections = [];
   const { knacks: knacksOpt, threadItemCatalog = {}, spellCatalog = {} } = opts;
+  // The additive `creation` block (create-new-adept): `free` is the ledger of ranks and
+  // spells granted free at creation. Absent block => empty ledger => byte-identical output.
+  const creation = character?.creation && typeof character.creation === 'object' ? character.creation : null;
+  const freeLedger = creation?.free ?? {};
 
   // --- Attributes: only Legend-bought `increases` cost Legend (points are free) ---
   const attrLines = [];
@@ -340,7 +386,13 @@ export function auditLegendSpent(character, costs, opts = {}) {
     const lines = (disc?.talents ?? []).map((t) => {
       if (!additional) {
         const tier = tierForCircle(t.circle, costs);
-        return { name: t.name, detail: `${tier ?? '—'} · Rank ${t.rank}`, cost: talentRanksCost(t.rank, tier, costs?.talentRank) };
+        const free = freeCount(freeLedger.talents, ledgerTalentKey(disc?.name, t.name));
+        const freeNote = free > 0 && t.rank > 0 ? ` · ${Math.min(free, t.rank)} free` : '';
+        return {
+          name: t.name,
+          detail: `${tier ?? '—'} · Rank ${t.rank}${freeNote}`,
+          cost: netRankCost(t.rank, free, (r) => talentRanksCost(r, tier, costs?.talentRank)),
+        };
       }
       const base = tierForCircle(t.circle, costs);
       const { cost, tier } = additionalDisciplineTalentCost(t.rank, t.circle ?? 1, ordinal, lowestCircle, costs, {
@@ -367,11 +419,15 @@ export function auditLegendSpent(character, costs, opts = {}) {
   //     (plus a separate silver training fee, not tracked here). ---
   const skills = character?.skills ?? [];
   if (skills.length) {
-    const skillLines = skills.map((s) => ({
-      name: s.name,
-      detail: `${s.tier ?? 'Novice'} · Rank ${s.rank}`,
-      cost: skillRanksCost(s.rank, s.tier ?? 'Novice', costs?.skillRank),
-    }));
+    const skillLines = skills.map((s) => {
+      const free = freeCount(freeLedger.skills, s.name);
+      const freeNote = free > 0 && s.rank > 0 ? ` · ${Math.min(free, s.rank)} free` : '';
+      return {
+        name: s.name,
+        detail: `${s.tier ?? 'Novice'} · Rank ${s.rank}${freeNote}`,
+        cost: netRankCost(s.rank, free, (r) => skillRanksCost(r, s.tier ?? 'Novice', costs?.skillRank)),
+      };
+    });
     sections.push({ key: 'skills', kind: 'skills', label: 'Skills', total: sumLines(skillLines), lines: skillLines });
   }
 
@@ -425,12 +481,15 @@ export function auditLegendSpent(character, costs, opts = {}) {
   const spellsKnown = character?.spells?.known ?? [];
   if (spellsKnown.length) {
     const spellMultiplier = opts.spellCostMultiplier ?? 1;
+    // `creation.free.spells`: spells granted free at creation cost 0 whatever the multiplier.
+    const freeSpells = new Set((freeLedger.spells ?? []).map(normSpellName));
     const spellLines = spellsKnown.map((k) => {
       const circle = spellCircleByName(spellCatalog, k?.name);
+      const free = freeSpells.has(normSpellName(k?.name));
       return {
         name: k?.name ?? 'Spell',
-        detail: circle != null ? `Circle ${circle}` : 'not in the catalog',
-        cost: circle != null ? spellCost(circle, costs?.talentRank) * spellMultiplier : 0,
+        detail: circle != null ? `Circle ${circle}${free ? ' · free' : ''}` : 'not in the catalog',
+        cost: free ? 0 : circle != null ? spellCost(circle, costs?.talentRank) * spellMultiplier : 0,
       };
     });
     sections.push({ key: 'spells', kind: 'spells', label: 'Spells', total: sumLines(spellLines), lines: spellLines });
@@ -444,14 +503,24 @@ export function auditLegendSpent(character, costs, opts = {}) {
   //     (`resources.karma.rituals`, which stay for display/undo). The section breaks
   //     that figure into a virtual historic line (points from before the ritual log)
   //     plus one line per dated event, all priced at the *current* cost, so its total
-  //     always equals `converted × cost`. Rule off (absent/zero cost) ⇒ no sink. ---
+  //     always equals `converted × cost`. Rule off (absent/zero cost) ⇒ no sink.
+  //     With a `creation` block (round-2 "starting Karma is free"), the creation Karma —
+  //     `opts.creationKarma`, the Circle-1 maximum incl. any unused-attribute bonus — costs no
+  //     Legend: only `max(0, converted − creationKarma)` is charged; a non-finite
+  //     `creationKarma` (no race modifier) charges nothing rather than a fabricated sink. ---
   const karmaRitualCost = Number(opts?.karmaRitualCost);
   const karmaLedger = character?.resources?.karma ?? {};
   const converted = Number(karmaLedger.converted) || 0;
   const rituals = karmaLedger.rituals ?? [];
-  if (Number.isFinite(karmaRitualCost) && karmaRitualCost > 0 && converted > 0) {
+  const creationKarma = opts?.creationKarma;
+  const paidKarma = creation
+    ? typeof creationKarma === 'number' && Number.isFinite(creationKarma)
+      ? Math.max(0, converted - creationKarma)
+      : 0
+    : converted;
+  if (Number.isFinite(karmaRitualCost) && karmaRitualCost > 0 && paidKarma > 0) {
     const eventsPoints = rituals.reduce((s, r) => s + (Number(r?.points) || 0), 0);
-    const historic = converted - eventsPoints;
+    const historic = paidKarma - eventsPoints;
     const ritualLines = [];
     if (historic > 0) {
       ritualLines.push({
@@ -471,7 +540,7 @@ export function auditLegendSpent(character, costs, opts = {}) {
       key: 'karma-rituals',
       kind: 'karma-rituals',
       label: 'Karma Rituals',
-      total: converted * karmaRitualCost,
+      total: paidKarma * karmaRitualCost,
       lines: ritualLines,
     });
   }

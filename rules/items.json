@@ -4984,6 +4984,29 @@
         "shortEffect": "Thrown climbing hook"
       }
     },
+    "Grimoire": {
+      "kind": "gear",
+      "ref": {
+        "cost": 0,
+        "weight": {
+          "amount": 1,
+          "unit": "lb"
+        },
+        "availability": "average",
+        "description": "A spellbook for recording a magician's spells. The books give no stats for it; this is a house stat block (no cost, 1 lb)."
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Holds the magician's known spells; a house stat block (cost 0, 1 lb)."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "A magician's spellbook"
+      }
+    },
     "Healing Kit: Basic (3 applications)": {
       "kind": "gear",
       "ref": {
@@ -5511,6 +5534,52 @@
       ],
       "presentation": {
         "shortEffect": "Lights 10-yard radius"
+      }
+    },
+    "Trail Rations (1 week)": {
+      "kind": "gear",
+      "ref": {
+        "cost": 10,
+        "weight": {
+          "amount": 8,
+          "unit": "lb"
+        },
+        "availability": "average",
+        "description": "A week of dried, packed food for the road."
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "Feeds one person for one week."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "One week of food"
+      }
+    },
+    "Traveler's Garb": {
+      "kind": "gear",
+      "ref": {
+        "cost": 8,
+        "weight": {
+          "amount": 3,
+          "unit": "lb"
+        },
+        "availability": "average",
+        "description": "Sturdy clothing for a life on the road, as issued with starting equipment."
+      },
+      "effects": [
+        {
+          "type": "note",
+          "condition": "always",
+          "source": "item",
+          "summary": "A set of everyday traveling clothes."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Everyday traveling clothes"
       }
     },
     "Water or Wine Skin": {

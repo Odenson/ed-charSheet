@@ -138,3 +138,34 @@ test('honors a custom endpoint', async () => {
     mock.restore();
   }
 });
+
+// --- create-new-adept A3: the first Save of a new character (draft) -------------------------
+// A draft has no file on the branch, so its first Save is `saveServer(forSave(draft), { id, base: null })`
+// (spec A4/B2; no worker change - tools/worker/worker.test.js already covers "save with a base but no
+// file (404) -> creates; base ignored" and a portrait-less create-only index row `portrait: null`).
+// The builder (engine/new-character.js) is imported lazily so a missing module only fails this test.
+test('a draft-shaped first Save sends { character, id, base: null } with the builder output (creation block intact)', async () => {
+  const { buildNewCharacter } = await import('./engine/new-character.js');
+  const { readFileSync } = await import('node:fs');
+  const file = (p) => JSON.parse(readFileSync(new URL(`./rules/${p}`, import.meta.url), 'utf8'));
+  const rules = { racesFile: file('races.json'), disciplinesFile: file('disciplines.json'), attributesFile: file('attributes.json') };
+  const draft = buildNewCharacter({ name: 'Fresh Face', race: 'Dwarf', discipline: 'Thief' }, rules, { karmaMaxCap: 25 });
+  const mock = mockFetch(() => ({ status: 200, body: { ok: true, commit: { sha: 'new-file-sha', url: 'u' } } }));
+  try {
+    const commit = await saveServer(draft, { saveKey: 'k', id: draft.meta.id, base: null });
+    assert.deepEqual(commit, { sha: 'new-file-sha', url: 'u' }, 'the returned sha becomes the next base');
+    const sent = JSON.parse(mock.calls[0].options.body);
+    assert.deepEqual(Object.keys(sent).sort(), ['base', 'character', 'id']);
+    assert.equal(sent.base, null, 'the create path: no base token');
+    assert.equal(sent.id, 'fresh-face');
+    assert.deepEqual(sent.character, JSON.parse(JSON.stringify(draft)));
+    assert.equal(sent.character.schema, 'ed-character/2');
+    assert.deepEqual(Object.keys(sent.character.creation).sort(), ['free', 'open']);
+    // The worker's own validation (mirrored): schema tag, id rule, size cap.
+    assert.ok(['ed-character/1', 'ed-character/2'].includes(sent.character.schema));
+    assert.match(sent.id, /^[a-z0-9][a-z0-9-]{0,63}$/);
+    assert.ok(JSON.stringify(sent.character).length <= 512 * 1024);
+  } finally {
+    mock.restore();
+  }
+});

@@ -160,6 +160,53 @@ into the property store at load:
 > rows appended after the learned ones (`engine/free-talents.js`), with no
 > Legend price.
 
+**The `creation` block (optional, additive; `schema` stays `ed-character/2`).**
+A character built from the loader's "Start a new character" flow carries one extra
+top-level block while it is being created and after:
+
+```jsonc
+"creation": { "open": true,
+  "free": { "talents": { "Nethermancer/Durability": 1, "Nethermancer/Karma Ritual": 1, "Nethermancer/Spellcasting": 2 },
+            "skills":  { "Knowledge (Barsaive History)": 1 },
+            "spells":  [ "Astral Spear" ] } }
+```
+
+It holds exactly these inputs (`open`, and `free` with exactly `talents`, `skills`,
+`spells`): any other field needs the owner's sign-off. An absent block means every
+reader behaves exactly as before. It is read by `engine/legend-spent.js`,
+`engine/creation.js` and `store.js`; only `engine/creation.js` (the `apply*` functions, and
+`finishCreation`, which sets `open: false`) and the builder `engine/new-character.js` write it;
+`store.js` only carries it as the whole-block overlay category.
+
+- **`free` is the ledger of ranks granted free** (0 Legend). `talents["<Discipline>/<Talent>"] = n`
+  and `skills["<stored skill name>"] = n` mean the first `n` ranks (a count `>= 1`; a zero is
+  deleted, never stored) were free; `spells` lists catalog spell names whose learn cost is 0
+  (matched apostrophe-insensitively). While `open`, every ability changed through creation has
+  `free[k]` equal to its stored rank; the seeded `Durability` and `Karma Ritual` (Rank 1,
+  Circle 1) are in the ledger and are not steppable.
+- **The audit subtracts the ledger**: a talent line (first Discipline only, `ordinal === 1`; the
+  keys of a later Discipline are ignored) or a skill line (skills have no Discipline) costs
+  `cum(rank) - cum(min(free, rank))` at its own tier, so ranks up to the free count cost 0, ranks
+  above cost the normal step, and lowering below `free` never refunds and never goes negative.
+  The rank-step prices (`talentRankStepCost` / `skillRankStepCost`, `opts.freeRank`) still equal
+  `audit(after) - audit(before)`.
+- **Creation Karma is free.** With the Karma economy on, the Karma sink is
+  `max(0, converted - creationKarma) x ritualCost`, where `creationKarma` is the Circle-1 Max
+  Karma incl. the bonus below. `resources.karma.converted` is seeded to the Circle-1 maximum and
+  raised at Finish by the bonus, so the sink is 0 before and after.
+- **Legend 0.** While `creation` exists and there is no legacy `totalEarnt` and no `earned`
+  entry, Total Earned derives as 0 (Available = 0 - spent = 0). No stored form; a character
+  without the block keeps the placeholder.
+- **Attribute creation spending is not in the ledger:** it is `attributes[n].points` (the raise over
+  the racial `base`, priced by the cumulative `rules/attributes.json` `pointCost` table, range
+  -2..+8). The **Max Karma bonus** is derived, never stored: `max(0, 25 - sum cost(points))`, and
+  only when `creation.open === false`; Max Karma is then `min(Karma Modifier x Circle + bonus, race
+  karma.maxCap)` (`maxKarma(modifier, circle, cap, bonus)`). `attributes[n].points` are locked after
+  Finish (later gains use `increases` and Legend).
+- **Overlay.** The edits overlay gains the whole-map category `attributes` and the whole-block
+  category `creation` (both replaced, never merged on load), and the previously missing `spells`
+  category joins `SAVED_CATEGORIES` so a spells edit shows as unsaved and a save clears it.
+
 ### 4.2 Game rules data (`rules/*.json`) — shared, versioned reference
 Static Earthdawn data, split so the browser only fetches what a view needs:
 
@@ -172,7 +219,8 @@ rules/
                       #   not formulas — Carrying Capacity has no closed form)
   talents.json        # talent → linked attribute, action type, strain, tier
   disciplines.json    # discipline → talents per circle (+ per-circle effects)
-  skills.json
+  skills.json         # skill → attribute, tier, category (general|knowledge|artisan|language-speak|
+                      #   language-readwrite), generic templates, artisanKey (creation allotments; RULES-FAQ Q041)
   races.json          # racial abilities, each carrying effects[] (+ movement, karma)
   spells.json         # (loaded only when the Magic view opens)
   homebrew.json       # OPTIONAL campaign rules (ed-homebrew/3): data-only `formula`
@@ -368,6 +416,31 @@ control (edit mode, shown when there are unsaved edits, `ui/ed-confirm.js`): it
 a stale local copy and take the saved version. Discard is explicit (a confirm) —
 the model never drops edits on its own.
 
+**Drafts (new characters, `store-drafts.js`).** A character started from the
+loader's "Start a new character" flow has no file on the branch yet, so it lives in
+the browser as a **draft**: a base envelope `ed-character-draft:${id}` =
+`{ "v": 1, "createdAt": "<ISO>", "character": <ed-character/2> }` (the builder's
+output, `engine/new-character.js`) **plus the same edits overlay as any character**
+(`ed-character-edits:${id}`). Edits never rewrite the base, and every edit handler
+(including the creation steppers, via `persistCreationEdit`, which writes each
+overlay category the engine reports as touched) is unchanged. A corrupt or `v !== 1`
+envelope reads as absent and never blocks a load. Drafts are listed in the loader
+beside the index rows (`mergeRows`: sorted by id; an id that exists on the branch
+wins and hides the draft), survive a reload and a switch to another character, and
+a rename moves both keys. **A draft is never auto-saved to GitHub (the Settings idle
+auto-save skips it), never flushes on hide and never posts silently** (its local overlay
+still records every edit as usual): its first Save is manual only, and a loaded draft is always dirty
+(there is no file to match). That first Save re-reads the index **fresh** and
+re-checks the id (`store-first-save.js`, I/O injected): if the id has appeared on the
+branch since the draft was made it posts nothing and asks for another name (ids are
+never suffixed; the window after the check is accepted), otherwise it posts through
+the ordinary worker create path with `base: null` (no worker change). On success
+`promoteDraft` drops the base and clears the overlay, and the character is a normal
+saved one (autosaving like any other, still in creation if `creation.open`).
+Discard removes only the base, its overlay and the device-local roll-log and Discord
+keys; the branch is never touched. An absent index is an empty store, not an error
+(`listCharacters` returns `[]` for a 404; any other failure still throws).
+
 ### 7.2 Export — portable download (`store-export.js`)
 The **Export** button (download icon, shown in edit mode) downloads the character
 as a `.json` file — a local backup, independent of the GitHub save. A plain
@@ -547,6 +620,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   store-rolllog.js    # device-local Roll Log (localStorage), never exported or saved
   store-discord.js    # device-local per-character Discord webhook config {url, enabled, format} (localStorage `ed-discord:<id>`); webhook-URL validator
   discord-send.js     # the one Discord I/O call: POST JSON to the webhook; never throws, never logs, never echoes the URL
+  store-drafts.js     # localStorage drafts of new characters: base envelope `ed-character-draft:<id>` + the ordinary edits overlay; list/discard/rename/promote, mergeRows, loadDraftCharacter (imports store.js, never the reverse)
+  store-first-save.js # first Save of a draft: fresh index re-check (id-taken blocks, nothing posted), then post with base: null (I/O injected)
   store-server.test.js# node --test (see `npm test`)
   ui/                 # Lit components (Web Components)
     ed-app.js         # root: loads the model, renders the tab shell, routes tabs
@@ -568,7 +643,9 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-save-key.js    # GitHub save key prompt
     ed-confirm.js     # reusable confirmation modal
     ed-conflict.js    # save-conflict modal (§7.5, UI-GUIDELINES §8)
-    ed-character-picker.js # character chooser modal (first-run picker, §7.5)
+    ed-character-picker.js # character chooser modal (first-run picker, §7.5); rows incl. local drafts (unsaved-draft badge, Discard), and the "Start a new character" section (one "+" per Discipline)
+    ed-new-character.js # new-character modal (name + race, kind `input`, layer 2150); also the rename modal when a draft's first Save finds its id taken (dispatches create-character / rename-draft)
+    creation-text.js  # pure wording of creation mode: refusal-reason sentences, the "Finish creation?" confirm message and forfeit warning (no game logic; numbers come from the engine's finishPlan)
     ed-changelog.js   # changelog badge/modal
     kit/                   # the UI kit: the modal keyboard + focus contract (docs/MODALS.md)
       modal-stack.js       # pure stack + key router + footer hint
@@ -599,7 +676,9 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     weight.js                # item-weight totals
     spells.js                # spell/matrix fold (grandfathered display parser, §5.5)
     legend.js                # Legend Point totals
-    legend-spent.js          # Legend-spent reconciliation audit; an additional Discipline's Rank-1 row is the lowest Circle among the Disciplines before it (lowestPriorCircle)
+    legend-spent.js          # Legend-spent reconciliation audit; an additional Discipline's Rank-1 row is the lowest Circle among the Disciplines before it (lowestPriorCircle); honours the additive `creation.free` ledger (free ranks/spells cost 0, creation Karma is free) — §4.1
+    new-character.js         # pure builder for a new Circle-1 draft (buildNewCharacter) + id helpers (slugifyId, idTaken, validateNewName); inputs only, seeded Durability/Karma Ritual, starting kit and 100 silver, opens `creation`
+    creation.js              # creation-mode engine: talent/attribute/skill/spell budgets and `apply*` edits that return new characters (refusals return the same reference), creationStatus, finishPlan/finishCreation; Karma-bonus helpers (karmaBonus, creationKarma) — §4.1
     advancement.js           # Circle-advancement status (supported Circle, eligibility, next requirement; no costs): gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
     potions.js               # potion/consumable effects
     formula.js               # rule-expression evaluator (§4.2)

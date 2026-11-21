@@ -127,3 +127,15 @@
 ## 2026-11-21 — asked by reviewer (owner-requested round 2, main session)
 **Q:** The free Artisan rank comes from the Discipline's list or with GM approval. What should the creation picker offer?
 **A:** The Discipline's artisanSkills list only.
+
+## 2026-11-21 — asked by dev-lead
+**Q:** Skill classification for the new `category` data: the books list five skills as both Artisan and General (Acting, Craft Armor, Craft Weapon, Craftsman, Map Making), and nine have no book text (Animal Tracking, Hunting, Skinning, Public Speaking, Riding -> General; Tailor, Tanning, Tattooist -> Artisan). Accept the rule-agent's defaults?
+**A:** Accept defaults (artisan list membership wins; the nine NOT-COVERED as proposed). Recorded on RULES-FAQ Q041 and rules.md R11.
+
+## 2026-11-21 — asked by dev-lead
+**Q:** Impressive Display and Tactics are `tier: 1` in rules/skills.json but Journeyman in the Player's Guide (they would wrongly pass the Novice-only creation gate; no saved character owns either). Correct to tier 2?
+**A:** Set tier 2. Recorded on Q041 and R11.
+
+## 2026-11-21 — asked by dev-lead
+**Q:** The book limits only the fixed free Artisan rank to the Discipline list; the 8 extra ranks may go to any Artisan skill. For the 8 extra ranks, should the picker offer any `artisan` skill (and `Artisan (<text>)`)?
+**A:** Any Artisan from the 8 (fixed Artisan rank: Discipline list only). Recorded on Q041 and R11.

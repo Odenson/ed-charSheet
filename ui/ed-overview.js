@@ -85,6 +85,21 @@ export class EdOverview extends LitElement {
        signed pill in the accent colour sits on the name line, leaving the number
        untouched. Presentation only — the value is the engine's folded number. */
     .acell .adelt { font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 1px 5px; border-radius: 999px; white-space: nowrap; text-transform: none; background: var(--accent-bg); color: var(--accent); cursor: help; }
+    /* Creation mode (create-new-adept, edit mode only): a compact -/+ pair at the right end of the
+       existing name line spends the attribute points. It adds no row or column: the circles are
+       14px with -2px vertical margins, so their outer height (10px) stays under the name line's own
+       text height and the cell, the grid and the Overview keep their height. */
+    .acell .astep { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; flex: none; }
+    .acell .astepbtn { width: 14px; height: 14px; margin: -2px 0; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); color: light-dark(#111418, #f0f3f7); font: inherit; font-size: var(--fs-small); line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .acell .astepbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .acell .astepbtn:disabled { opacity: 0.35; cursor: default; }
+    .acell .astepbtn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-bg); border-color: var(--accent); }
+    /* The "Points left N" chip rides inline in the Attributes heading (same -2px trick: its outer
+       height stays under the heading's line, so the block does not grow). Over-spent: warning tone. */
+    .blk h4 .ptchip { display: inline-flex; align-items: center; gap: 4px; margin: -3px 0 -3px 8px; padding: 1px 8px; vertical-align: middle; font-size: var(--fs-fine); font-weight: 400; line-height: 1; letter-spacing: 0; text-transform: none; color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; white-space: nowrap; }
+    .blk h4 .ptchip b { font-weight: 500; color: var(--accent); }
+    .blk h4 .ptchip.over { color: light-dark(#c0392b, #e06557); border-color: light-dark(#c0392b, #e06557); }
+    .blk h4 .ptchip.over b { color: inherit; }
     .roll { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: var(--fs-fine); flex: none; padding: 0; }
     .roll.km { border-color: var(--karma); background: var(--karma-bg); color: var(--karma); }
     .kmark { color: var(--karma); }
@@ -212,6 +227,8 @@ export class EdOverview extends LitElement {
       .toprow { grid-template-columns: 1fr; }
       .portrait { display: none; }
       .avatar { display: block; }
+      /* Touch-sized creation steppers (one column scrolls, so the extra height is harmless). */
+      .acell .astepbtn { width: 20px; height: 20px; margin: -4px 0; }
     }
   `,
   ];
@@ -322,6 +339,34 @@ export class EdOverview extends LitElement {
     return html`<span class="val" title=${title}>${c.value}</span>${this._rollBtn(label, c.value, c.karma, false, key)}`;
   }
 
+  // The creation view (`model.creation`) while creation is open and the sheet is in edit mode,
+  // else null (a saved character, a finished creation, or read mode: nothing below renders).
+  get _cr() {
+    const cr = this.model?.creation;
+    return cr?.open && this.editMode ? cr : null;
+  }
+
+  // Creation mode: the compact -/+ pair in an attribute's name line. The engine's row says whether
+  // each step is possible and what it costs or returns in points; the click only dispatches the
+  // next `points` value up (ed-app applies it through the pure engine, which enforces the limits).
+  _attrStepper(a, row) {
+    const pts = (n) => `${n} point${n === 1 ? '' : 's'}`;
+    const downTitle = row.canLower ? `Lower ${a.name} (returns ${pts(row.lowerRefund)})` : `${a.name} cannot go any lower`;
+    const upTitle = row.canRaise ? `Raise ${a.name} (costs ${pts(row.raiseCost)})` : row.raiseCost != null ? `Not enough attribute points left (${pts(row.raiseCost)} needed)` : `${a.name} cannot go any higher`;
+    const send = (points) => this.dispatchEvent(new CustomEvent('ed-creation-edit', { detail: { kind: 'attribute', name: a.name, points }, bubbles: true, composed: true }));
+    return html`<span class="astep" role="group" aria-label="Spend attribute points on ${a.name}">
+      <button type="button" class="astepbtn" ?disabled=${!row.canLower} title=${downTitle} aria-label="Lower ${a.name}" @click=${() => send(row.points - 1)}>−</button>
+      <button type="button" class="astepbtn" ?disabled=${!row.canRaise} title=${upTitle} aria-label="Raise ${a.name}" @click=${() => send(row.points + 1)}>+</button>
+    </span>`;
+  }
+
+  // The Attributes heading's "Points left N" chip while creation is open (over-spent: warning tone).
+  _attrPointsChip() {
+    const at = this._cr?.attributes;
+    if (!at) return '';
+    return html`<span class="ptchip ${at.left < 0 ? 'over' : ''}" title="Attribute points left to spend. Points still unspent when you finish creation become Max Karma.">Points left <b>${at.left}</b></span>`;
+  }
+
   // One attribute tile. When an always-on effect (a magic item, a racial or thread
   // bonus) changes the attribute, the number is tinted and a signed badge names the
   // net change; hovering explains it from the engine's `modifiers` (base + each
@@ -336,9 +381,10 @@ export class EdOverview extends LitElement {
     const title = changed
       ? `${a.name}: Value ${a.value}${valueMods.length ? ` (base ${a.rawValue}${this._modSummary(valueMods)})` : ''} · Step ${a.step}${stepMods.length ? ` (base ${a.baseStep}${this._modSummary(stepMods)} step)` : ''}`
       : '';
+    const row = this._cr ? (this._cr.attributes?.rows ?? []).find((r) => r.name === a.name) ?? null : null;
     return html`
       <div class="acell">
-        <div class="an"><span>${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</span>${changed ? html`<span class="adelt" title=${title}>${badge}</span>` : ''}</div>
+        <div class="an"><span>${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</span>${changed ? html`<span class="adelt" title=${title}>${badge}</span>` : ''}${row ? this._attrStepper(a, row) : ''}</div>
         <div class="r">
           <span class="av">${a.value}</span>
           <span class="asd">${a.step} · ${a.dice}</span>
@@ -935,7 +981,7 @@ export class EdOverview extends LitElement {
         <div class="right">
           <div class="toprow">
             <div class="blk">
-              <h4>Attributes</h4>
+              <h4>Attributes${this._attrPointsChip()}</h4>
               <div class="agrid">
                 ${(m.attributes ?? []).map((a) => this._attrCell(a))}
               </div>

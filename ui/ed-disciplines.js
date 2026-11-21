@@ -20,7 +20,17 @@ import { describeRequirement } from '../engine/advancement.js';
 // The kit kind of each Disciplines modal (one controller serves all ten):
 // info modals (talent/skill/knack/granted) are read-only; the pickers act on a
 // focused option; Train is a confirm.
-const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', advance: 'confirm', 'start-discipline': 'confirm' };
+const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', 'creation-skill': 'picker', advance: 'confirm', 'start-discipline': 'confirm' };
+
+// Creation mode (create-new-adept): the fixed free skill ranks, in the order the creation bar
+// lists their remainders. Display labels only — the pool sizes and what is left come from
+// `model.creation.skills.fixed`; nothing here knows how many ranks a pool holds.
+const FIXED_POOLS = [
+  ['knowledge', 'Knowledge'],
+  ['artisan', 'Artisan'],
+  ['language-speak', 'Speak Language'],
+  ['language-readwrite', 'Read/Write Language'],
+];
 
 // Hover text for an ability whose action an effect changed (taxonomy v5
 // action-modifier). Pure formatting of the engine's pre-resolved fields: the
@@ -45,6 +55,10 @@ export class EdDisciplines extends LitElement {
     _startEdited: { state: true },
     _skillSilver: { state: true },
     _skillSearch: { state: true },
+    // Creation-skill picker (create-new-adept): its search box and the two free-text fields
+    // (Knowledge subject, Artisan craft). Declared here, initialised in the constructor.
+    _creationSearch: { state: true },
+    _creationText: { state: true },
   };
 
   static styles = [modalCss, css`
@@ -124,6 +138,7 @@ export class EdDisciplines extends LitElement {
     .addopt:hover { border-color: var(--accent); }
     .addopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
     .addopt.muted { color: var(--muted); cursor: default; font-style: italic; }
+    .addopt:disabled { opacity: 0.5; cursor: not-allowed; }
     .lopt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font: inherit; font-size: var(--fs-body); text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--fg); cursor: pointer; }
     .lopt:hover { border-color: var(--accent); }
     .lopt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
@@ -136,6 +151,14 @@ export class EdDisciplines extends LitElement {
     .searchin:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
     .pill { font-size: var(--fs-fine); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
     .pill.attr { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+    /* Creation-skill picker: a free starting rank wears the Karma green; the generic
+       Knowledge / Artisan rows carry a free-text field with its own Add button. */
+    .pill.free { color: var(--karma); border-color: var(--karma); background: var(--karma-bg); }
+    .lname { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0; }
+    .ftrow { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: var(--fs-body); }
+    .ftin { display: flex; align-items: center; gap: 8px; }
+    .ftin .searchin { margin: 0; flex: 1 1 auto; min-width: 0; }
+    .mmuted { color: var(--muted); }
     .mcell .k { font-size: var(--fs-eyebrow); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .mcell .v { font-size: var(--fs-body); margin-top: 1px; }
     .card { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
@@ -191,9 +214,22 @@ export class EdDisciplines extends LitElement {
     .step:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .step:disabled { opacity: 0.35; cursor: default; }
     .srank { min-width: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+    /* Creation mode (create-new-adept): a skill row's stepper also carries a remove ✕, so the
+       rank column is wider. Same -/+ circles as the Legend steppers. */
+    .trow.edit.cedit { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 124px 100px 76px 24px; }
+    .step.rmv { font-size: var(--fs-small); }
+    .step.rmv:hover:not(:disabled) { border-color: light-dark(#c0392b, #e06557); color: light-dark(#c0392b, #e06557); }
     .legendbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .lchip { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
     .lchip b { font-weight: 500; color: var(--accent); font-family: var(--mono); }
+    /* Creation bar: an over-spent chip takes the warning tone; Finish sits at the right end. */
+    .lchip.over { color: light-dark(#c0392b, #e06557); border-color: light-dark(#c0392b, #e06557); }
+    .lchip.over b { color: inherit; }
+    .fin { margin-left: auto; font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 4px 14px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
+    .fin:hover:not(:disabled) { background: var(--accent); color: var(--bg-card); }
+    .fin:disabled { opacity: 0.5; cursor: not-allowed; }
+    .fin:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+    .cwarn { flex-basis: 100%; font-size: var(--fs-fine); color: light-dark(#c0392b, #e06557); }
     .hint { font-size: var(--fs-small); color: var(--karma); }
     .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
     /* Rank-grant chip (PLAN-RANK-GRANTS.md D5): the folded +N beside the learned
@@ -243,6 +279,7 @@ export class EdDisciplines extends LitElement {
     @media (max-width: 620px) {
       .trow { grid-template-columns: minmax(0, 1fr) 40px 92px 24px; }
       .trow.edit { grid-template-columns: minmax(0, 1fr) 88px 92px 24px; }
+      .trow.edit.cedit { grid-template-columns: minmax(0, 1fr) 116px 92px 24px; }
       .trow .action, .effcol { display: none; }
       .meta { flex-direction: column; }
       .mcell.dur, .mcell.half, .mcell.art { flex: 1 1 auto; }
@@ -253,6 +290,8 @@ export class EdDisciplines extends LitElement {
     super();
     this._sel = 0;
     this._modal = null;
+    this._creationSearch = '';
+    this._creationText = { knowledge: '', artisan: '' };
     this._knackInfo = {}; // picker rows expanded to show their description (name -> bool)
     // Shared modal focus contract (docs/MODALS.md): Escape closes, focus moves
     // into the dialog on open and returns to the trigger on close (ring
@@ -283,6 +322,17 @@ export class EdDisciplines extends LitElement {
     // Karma characteristic, exactly like the Overview.
     const karmaCtx = this._karmaCtx(t.karma);
     const status = t.shared ? `Discipline talent shared with ${t.sharedFrom}` : t.free ? 'free Discipline talent' : t.required ? 'required Discipline talent' : 'chosen Talent option';
+    // Creation mode: the five Circle-1 Discipline Talents take a free-point stepper (Rank 0..3);
+    // every other row (Durability, Karma Ritual, free talents) is plain and not steppable.
+    const cr = this._cr;
+    const crow = cr && !t.free && !t.shared ? (cr.talents?.rows ?? []).find((r) => r.discipline === discName && r.name === t.name) ?? null : null;
+    const rankCell = cr
+      ? crow
+        ? this._creationTalentCtl(t, discName, crow)
+        : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`
+      : this.editMode && !t.free && !t.shared
+        ? this._rankCtl(t, discName)
+        : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`;
     return html`
       <div class="trow ${t.required ? '' : 'opt'}${this.editMode ? ' edit' : ''}">
         <span class="tname">
@@ -297,7 +347,7 @@ export class EdDisciplines extends LitElement {
           ${t.shared ? html`<span class="fchip" title=${`Known through ${t.sharedFrom}; rank is raised there`}>Shared · ${t.sharedFrom}</span>` : nothing}
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
-        ${this.editMode && !t.free && !t.shared ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
+        ${rankCell}
         <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}</span>
         <span class=${t.actionBase != null ? 'action sd changed' : 'action sd'} title=${t.actionBase != null ? actionHoverText(t) : nothing}>${t.action ?? ''}</span>
         <button
@@ -388,6 +438,210 @@ export class EdDisciplines extends LitElement {
     );
   }
 
+  // --- Creation mode (create-new-adept) ------------------------------------------------------
+  // While `model.creation.open` AND the sheet is in edit mode, the Legend steppers give way to
+  // free-point steppers. Everything shown here comes off `model.creation` (the engine's budgets:
+  // each row already says whether it can be raised or lowered); this view only dispatches
+  // `ed-creation-edit` up — ed-app applies it through the pure engine, which enforces every limit.
+
+  // The creation view (`model.creation`) while creation is open and the sheet is in edit mode,
+  // else null. Leaving edit mode hides the controls (nothing is changed); a saved character with
+  // no `creation` block, or a finished one (`{ open: false }`), never has one.
+  get _cr() {
+    const cr = this.model?.creation;
+    return cr?.open && this.editMode ? cr : null;
+  }
+
+  _creationEdit(detail) {
+    this.dispatchEvent(new CustomEvent('ed-creation-edit', { detail, bubbles: true, composed: true }));
+  }
+
+  // One Circle-1 Discipline Talent's -/+ stepper (Rank 0..3, a talent point each).
+  _creationTalentCtl(t, discName, row) {
+    const downTitle = row.canLower ? `Return a talent point (Rank ${row.rank} → ${row.rank - 1})` : 'Already at Rank 0';
+    const upTitle = row.canRaise
+      ? `Spend a talent point (Rank ${row.rank} → ${row.rank + 1})`
+      : row.rank >= row.max
+        ? `Rank ${row.max} is the most a talent can start at`
+        : 'No talent points left';
+    return html`
+      <span class="stepctl" role="group" aria-label="Edit ${t.name} rank">
+        <button class="step" ?disabled=${!row.canLower} title=${downTitle} aria-label="Decrease ${t.name} rank" @click=${() => this._creationEdit({ kind: 'talent', discipline: discName, name: t.name, rank: row.rank - 1 })}>−</button>
+        <span class="srank">${row.rank}</span>
+        <button class="step" ?disabled=${!row.canRaise} title=${upTitle} aria-label="Increase ${t.name} rank" @click=${() => this._creationEdit({ kind: 'talent', discipline: discName, name: t.name, rank: row.rank + 1 })}>+</button>
+      </span>
+    `;
+  }
+
+  // A skill row's creation controls: -/+ (the pool a raise draws on is named in the tooltip) and a
+  // remove ✕ (removal is its own action: the stepper stops at Rank 1).
+  _creationSkillCtl(s, cr) {
+    const row = (cr.skills?.rows ?? []).find((r) => r.name === s.name);
+    if (!row) return html`<span class="num">${s.rank}</span>`;
+    const poolText = row.pool === 'fixed' ? 'uses a free starting rank' : `uses 1 of the ${cr.skills.extra.total} extra ranks`;
+    const upTitle = row.canRaise
+      ? `Rank ${row.rank} → ${row.rank + 1}, ${poolText}`
+      : row.rank >= row.max
+        ? `Rank ${row.max} is the most ${s.name} can start at`
+        : 'No skill ranks left';
+    const downTitle = row.canLower ? `Rank ${row.rank} → ${row.rank - 1}` : 'Use ✕ to remove the skill';
+    return html`
+      <span class="stepctl" role="group" aria-label="Edit ${s.name} rank">
+        <button class="step" ?disabled=${!row.canLower} title=${downTitle} aria-label="Decrease ${s.name} rank" @click=${() => this._creationEdit({ kind: 'skill-rank', name: s.name, rank: row.rank - 1 })}>−</button>
+        <span class="srank">${row.rank}</span>
+        <button class="step" ?disabled=${!row.canRaise} title=${upTitle} aria-label="Increase ${s.name} rank" @click=${() => this._creationEdit({ kind: 'skill-rank', name: s.name, rank: row.rank + 1 })}>+</button>
+        <button class="step rmv" title=${`Remove ${s.name}`} aria-label="Remove ${s.name}" @click=${() => this._creationEdit({ kind: 'skill-remove', name: s.name })}>✕</button>
+      </span>
+    `;
+  }
+
+  // The creation bar (replaces the Legend bar): the points left on this tab (talent points on a
+  // Discipline sub-tab; skill ranks plus each fixed pool's remainder on the Skills sub-tab) and
+  // Finish creation, disabled with the engine's blockers while a budget is over-spent. An
+  // over-spent chip takes the warning tone. Nothing is computed here.
+  _creationBar(d, cr) {
+    const chip = (label, n, title) => html`<span class="lchip ${n < 0 ? 'over' : ''}" title=${title}>${label} <b>${n}</b></span>`;
+    const blockers = cr.blockers ?? [];
+    const sk = cr.skills;
+    const chips = d
+      ? chip('Talent points left', cr.talents.left, 'Unspent talent points are forfeited when you finish creation')
+      : html`${chip('Skill ranks left', sk.extra.left, 'Extra ranks for Knowledge, Artisan, Language or General skills')}${FIXED_POOLS.filter(([key]) => sk.fixed?.[key]?.left > 0).map(([key, label]) =>
+          chip(`${label} left`, sk.fixed[key].left, `Free starting ranks for ${label}; unused ones are forfeited when you finish creation`),
+        )}`;
+    return html`
+      <div class="legendbar">
+        ${chips}
+        <button class="fin" ?disabled=${!cr.canFinish} title=${cr.canFinish ? 'Finish creation' : blockers.join('\n')}
+          @click=${() => this.dispatchEvent(new CustomEvent('ed-creation-finish', { bubbles: true, composed: true }))}>Finish creation</button>
+        ${cr.canFinish ? '' : html`<span class="cwarn">${blockers.join(' ')}</span>`}
+      </div>
+    `;
+  }
+
+  // The Discipline's talents for the group render while creation is open: the five Circle-1
+  // Discipline Talents come after the other learned rows (Durability, Karma Ritual) and before the
+  // free ones, in the Discipline's own order, so a stepper never jumps as ranks change. A Rank-0
+  // talent is never stored, so it is shown as a synthesised row that can be raised.
+  _creationTalents(d, cr) {
+    const all = [...d.talents, ...(d.sharedTalents ?? [])];
+    const rows = (cr.talents?.rows ?? []).filter((r) => r.discipline === d.name);
+    if (!rows.length) return all;
+    const creation = rows.map(
+      (r) => d.talents.find((t) => t.name === r.name && !t.free && !t.shared) ?? {
+        name: r.name, rank: 0, circle: 1, required: true, step: null, dice: '', brief: r.brief ?? null,
+        action: r.action ?? null, attribute: r.attribute ?? null, detail: r.detail ?? null, karma: null,
+      },
+    );
+    const rest = all.filter((t) => !creation.includes(t));
+    return [...rest.filter((t) => !t.free), ...creation, ...rest.filter((t) => t.free)];
+  }
+
+  // Creation's "+ add skill": opens the picker of starting skills (free; no Legend, no silver).
+  _creationAddSkillSlot(cr) {
+    const can = (cr.skills?.candidates ?? []).some((c) => c.canPick);
+    return html`<button class="addopt" ?disabled=${!can} title=${can ? 'Add a starting skill (no Legend or silver)' : 'No skill ranks left to spend'} @click=${(e) => this._openCreationSkill(e)}>＋ add skill</button>`;
+  }
+
+  _openCreationSkill(e) {
+    this._creationSearch = '';
+    this._creationText = { knowledge: '', artisan: '' };
+    this._openModal({ type: 'creation-skill' }, e);
+  }
+
+  // Pick a starting skill: close the picker (focus returns to the "+ add skill"), then dispatch
+  // up. A generic Knowledge / Artisan pick carries its free text; the engine validates it.
+  _creationSkillPick(name, text) {
+    this._modalCtl.close();
+    this._creationEdit({ kind: 'skill-add', name, ...(text != null ? { text } : {}) });
+  }
+
+  // Where a pick would draw its rank from (the engine's `pool`): a free starting rank, one of the
+  // extra ranks, or nothing left.
+  _poolBadge(pool, extra) {
+    if (pool === 'fixed') return html`<span class="pill free">free rank</span>`;
+    if (pool === 'extra') return html`<span class="pill">uses 1 of ${extra.total}</span>`;
+    return html`<span class="pill">no ranks left</span>`;
+  }
+
+  // The generic Knowledge / Artisan row: a free-text field with its own Add (Enter in the field
+  // adds too, `data-enter="local"`); stored as `Knowledge (<text>)` / `Artisan (<text>)`.
+  _creationTextRow(c, extra) {
+    const key = c.freeText;
+    const label = key === 'knowledge' ? 'Knowledge' : 'Artisan';
+    const text = this._creationText?.[key] ?? '';
+    return html`
+      <div class="ftrow">
+        <span class="lname">${label} (…)${this._poolBadge(c.pool, extra)}</span>
+        <span class="ftin">
+          <input class="searchin" data-enter="local" type="text" maxlength="40" autocomplete="off"
+            placeholder=${key === 'knowledge' ? 'e.g. Barsaive History' : 'e.g. Pottery'} aria-label="${label} subject" .value=${text}
+            @input=${(e) => { this._creationText = { ...this._creationText, [key]: e.target.value }; }}
+            @keydown=${(e) => {
+              if (e.key !== 'Enter' || e.isComposing) return;
+              e.preventDefault();
+              if (c.canPick && e.target.value.trim()) this._creationSkillPick(c.name, e.target.value);
+            }} />
+          <button class="lpick" ?disabled=${!c.canPick || !text.trim()} title=${c.canPick ? `Add ${label} (${text.trim() || '…'})` : 'No skill ranks left'}
+            @click=${() => this._creationSkillPick(c.name, text)}>Add</button>
+        </span>
+      </div>
+    `;
+  }
+
+  _creationSkillCandidate(c, extra) {
+    return html`
+      <button class="lopt" ?disabled=${!c.canPick} title=${c.canPick ? `${c.name}${c.attribute ? ` · ${c.attribute}` : ''}` : 'No skill ranks left'}
+        @click=${() => this._creationSkillPick(c.name)}>
+        <span class="lname">${c.name}${c.disciplineList ? html`<span class="pill">Discipline</span>` : ''}${this._poolBadge(c.pool, extra)}${c.attribute ? html`<span class="pill attr">${c.attribute}</span>` : ''}</span>
+        ${c.brief ? html`<span class="lbrief">${c.brief}</span>` : ''}
+      </button>
+    `;
+  }
+
+  // The starting-skill picker (kind `picker`; Escape / backdrop / ✕ close, Enter activates the
+  // focused option). Sections by the engine's skill `category`; each option names the pool it
+  // draws on. The search box filters the lists; the Knowledge / Artisan text fields stay.
+  _creationSkillModal() {
+    const cr = this._cr;
+    const sk = cr?.skills ?? null;
+    const extra = sk?.extra ?? { total: 0 };
+    const cands = sk?.candidates ?? [];
+    const q = (this._creationSearch ?? '').trim().toLowerCase();
+    const matches = (c) => !q || c.name.toLowerCase().includes(q) || (c.attribute ?? '').toLowerCase().includes(q) || (c.brief ?? '').toLowerCase().includes(q);
+    const inCategory = (category) => cands.filter((c) => c.category === category);
+    const sections = [
+      ['Knowledge', inCategory('knowledge')],
+      // The Discipline's own Artisan skills first (they can use the free Artisan rank).
+      ['Artisan', [...inCategory('artisan').filter((c) => c.disciplineList), ...inCategory('artisan').filter((c) => !c.disciplineList)]],
+      ['Speak Language', inCategory('language-speak')],
+      ['Read/Write Language', inCategory('language-readwrite')],
+      ['General', inCategory('general')],
+    ];
+    const rendered = sections.map(([title, list]) => {
+      const texts = list.filter((c) => c.freeText);
+      const plain = list.filter((c) => !c.freeText && matches(c));
+      if (!texts.length && !plain.length) return '';
+      return html`
+        <h4 class="section-gap">${title}</h4>
+        <div class="hmopts">
+          ${texts.map((c) => this._creationTextRow(c, extra))}
+          ${plain.map((c) => this._creationSkillCandidate(c, extra))}
+        </div>`;
+    });
+    return modalFrame(this._modalCtl, {
+      title: html`Add a starting skill`,
+      label: 'Add a starting skill',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext mmuted">Starting skills cost no Legend or silver. A pick uses a free rank where one is left (marked free rank), otherwise one of your extra ranks.</div>
+    <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._creationSearch ?? ''} aria-label="Search skills" autofocus
+      @input=${(e) => (this._creationSearch = e.target.value)} />
+    ${rendered}`,
+    });
+  }
+
   _talentModal(t) {
     const dt = t.detail ?? {};
     const chips = [
@@ -423,8 +677,9 @@ export class EdDisciplines extends LitElement {
   // until that data is added, and the roll enables once a skill has a step. Tier
   // lives in the detail modal, matching how talents show their tier.
   _skillRow(s) {
+    const cr = this._cr;
     return html`
-      <div class="trow${this.editMode ? ' edit' : ''}">
+      <div class="trow${this.editMode ? ' edit' : ''}${cr ? ' cedit' : ''}">
         <span class="tname">
           <button
             class="sinfo"
@@ -435,7 +690,7 @@ export class EdDisciplines extends LitElement {
           <span class="lbl">${s.name}</span>
         </span>
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
-        ${this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}${this._modChip(s)}</span>`}
+        ${cr ? this._creationSkillCtl(s, cr) : this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}${this._modChip(s)}</span>`}
         <span class="sd">${s.step != null ? html`${s.step} · ${s.dice}` : '—'}</span>
         <span class=${s.actionBase != null ? 'action sd changed' : 'action sd'} title=${s.actionBase != null ? actionHoverText(s) : nothing}>${s.action ?? ''}</span>
         <button
@@ -472,9 +727,12 @@ export class EdDisciplines extends LitElement {
           return m;
         })()
       : new Map();
+    // While creation is open the Skills sub-tab adds starting skills for free ("+ add skill"
+    // opens the creation picker) and carries no knack slot.
+    const cr = this._cr;
     return html`
       <div class="card">
-        <div class="trow h${this.editMode ? ' edit' : ''}">
+        <div class="trow h${this.editMode ? ' edit' : ''}${cr ? ' cedit' : ''}">
           <span class="thpad">Skill</span>
           <span class="effcol">Effect</span>
           <span class="num">Rank</span>
@@ -486,8 +744,8 @@ export class EdDisciplines extends LitElement {
           ${this._skillRow(s)}
           ${(knacksBySkill.get(s.name) ?? []).map((k) => this._knackRow(k))}
         `)}
-        ${this.editMode ? this._addSkillSlot() : ''}
-        ${this.editMode ? this._addSkillKnackSlot() : ''}
+        ${cr ? this._creationAddSkillSlot(cr) : this.editMode ? this._addSkillSlot() : ''}
+        ${this.editMode && !cr ? this._addSkillKnackSlot() : ''}
       </div>
     `;
   }
@@ -885,7 +1143,11 @@ export class EdDisciplines extends LitElement {
         <span class="cpill cur ${cs.consistent ? '' : 'warn'}" title=${curTitle}>Circle ${at}</span>
         <span class="clnk ${cs.eligible ? 'ready' : ''}"></span>
         ${cs.eligible
-          ? html`<button class="cpill edge ready" title=${`Ready to advance — train to Circle ${cs.next}`} aria-label=${`Train to Circle ${cs.next}`} @click=${(e) => this._trainClick(d, cs, e)}><span aria-hidden="true">↑</span>${cs.next}</button>`
+          ? this._cr
+            // While creation is open the next Circle cannot be trained: the green pill is shown
+            // but is not a button.
+            ? html`<span class="cpill edge ready" title=${nextTitle}><span aria-hidden="true">↑</span>${cs.next}</span>`
+            : html`<button class="cpill edge ready" title=${`Ready to advance — train to Circle ${cs.next}`} aria-label=${`Train to Circle ${cs.next}`} @click=${(e) => this._trainClick(d, cs, e)}><span aria-hidden="true">↑</span>${cs.next}</button>`
           : html`<span class="cpill edge" title=${cs.next == null ? 'No higher Circle in the optional advancement table.' : nextTitle}>${cs.next ?? '—'}</span>`}
       </span>
     `;
@@ -1333,6 +1595,9 @@ export class EdDisciplines extends LitElement {
     const hasSkillsTab = skills.length > 0 || this.editMode;
     const showSkills = hasSkillsTab && this._sel === list.length;
     const d = list[Math.min(this._sel, list.length - 1)];
+    // Creation mode: the creation view (null for a saved character, a finished creation, or
+    // outside edit mode — then everything below renders exactly as it always has).
+    const cr = this._cr;
     // Knacks governed by a talent render beneath that talent's row. Skill-governed
     // knacks render on the Skills tab only when the knackParents homebrew lever is on
     // (handled in _skillsView); talent-governed knacks never appear under the skill tab.
@@ -1364,7 +1629,7 @@ export class EdDisciplines extends LitElement {
           : this._circleTrack(d)}
       </div>
 
-      ${this.editMode ? this._legendBar(showSkills ? null : d) : ''}
+      ${cr ? this._creationBar(showSkills ? null : d, cr) : this.editMode ? this._legendBar(showSkills ? null : d) : ''}
 
       ${showSkills
         ? this._skillsView(skills)
@@ -1397,7 +1662,7 @@ export class EdDisciplines extends LitElement {
                   </div>
                 </div>
               </div>
-              ${this._talentGroups([...d.talents, ...(d.sharedTalents ?? [])]).map(
+              ${this._talentGroups(cr ? this._creationTalents(d, cr) : [...d.talents, ...(d.sharedTalents ?? [])]).map(
                 ([circle, talents], gi, arr) => html`
                   <div class="tgroup">
                     <div class="tspine">
@@ -1411,14 +1676,14 @@ export class EdDisciplines extends LitElement {
                           ${(knacksByTalent.get(t.name) ?? []).map((k) => this._knackRow(k))}
                         `,
                       )}
-                      ${this.editMode ? this._addOptionSlot(d, circle) : ''}
+                      ${this.editMode && !cr ? this._addOptionSlot(d, circle) : ''}
                     </div>
                   </div>
                 `,
               )}
             </div>
 
-            ${this.editMode ? this._addKnackSlot(d) : ''}
+            ${this.editMode && !cr ? this._addKnackSlot(d) : ''}
 
             ${d.abilities?.length
               ? html`
@@ -1454,11 +1719,13 @@ export class EdDisciplines extends LitElement {
                     ? this._learnSkillModal(this._modal)
                     : this._modal.type === 'learn-knack'
                       ? this._learnKnackModal(this._modal)
-                      : this._modal.type === 'advance'
-                        ? this._advanceModal(this._modal)
-                        : this._modal.type === 'start-discipline'
-                          ? this._startModal(this._modal)
-                          : this._talentModal(this._modal)
+                      : this._modal.type === 'creation-skill'
+                        ? this._creationSkillModal()
+                        : this._modal.type === 'advance'
+                          ? this._advanceModal(this._modal)
+                          : this._modal.type === 'start-discipline'
+                            ? this._startModal(this._modal)
+                            : this._talentModal(this._modal)
         : ''}
     `;
   }
