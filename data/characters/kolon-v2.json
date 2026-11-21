@@ -121,11 +121,6 @@
         }
       ]
     },
-    {
-      "name": "Warrior",
-      "circle": 1,
-      "talents": []
-    }
   ],
   "skills": [
     {
