@@ -151,3 +151,36 @@ export function initiationQuote(ref, disciplines, costs, { tierShift = 0 } = {})
 export function addableDisciplines(refs, disciplines, costs, opts = {}) {
   return (refs ?? []).map((r) => initiationQuote(r, disciplines, costs, opts)).filter(Boolean);
 }
+
+/**
+ * Discipline Talents of `ref` (Circles <= `circle`) that the character does not hold
+ * under this Discipline but knows through ANOTHER Discipline. Shared talents are
+ * learned once and count for every Discipline that lists them (rules.md R6; Q038 (5),
+ * PG p.457), so they gate Circle advancement here and show as read-only rows.
+ * Highest rank across the other Disciplines wins; `circle` is the Circle at which
+ * `ref` grants the talent (never stored). Free and universal talents are excluded.
+ * @param {object} ref  rules entry for this Discipline
+ * @param {number} circle  attained Circle
+ * @param {{name:string,rank:number}[]} ownTalents  talents stored under this Discipline
+ * @param {{name:string,talents?:{name:string,rank:number}[]}[]} others  the character's OTHER Disciplines
+ * @returns {{name:string,rank:number,circle:number,from:string}[]}
+ */
+export function sharedDisciplineTalents(ref, circle, ownTalents, others) {
+  const own = new Set((ownTalents ?? []).map((t) => t.name));
+  const frees = freeTalentSet(ref);
+  const out = [];
+  for (const c of ref?.circles ?? []) {
+    if (c.circle > (circle ?? 1)) continue;
+    for (const name of c.talents ?? []) {
+      if (own.has(name) || frees.has(name) || UNIVERSAL_TALENTS.has(name) || out.some((o) => o.name === name)) continue;
+      let best = null;
+      for (const d of others ?? []) {
+        for (const t of d?.talents ?? []) {
+          if (t.name === name && t.viaVersatility !== true && (!best || t.rank > best.rank)) best = { rank: t.rank, from: d.name };
+        }
+      }
+      if (best) out.push({ name, rank: best.rank, circle: c.circle, from: best.from });
+    }
+  }
+  return out;
+}

@@ -11,6 +11,10 @@
       {
         "type": "fixed",
         "text": "Legend Spent now prices an additional Discipline's Rank-1 talents from the lowest Circle among the Disciplines you had before joining it. Characters with a second Discipline may see a lower Legend Spent (and higher Available Legend) than before."
+      },
+      {
+        "type": "fixed",
+        "text": "Discipline Talents you already know through another Discipline now count toward this Discipline's next-Circle requirement and show as read-only \"Shared\" rows, so a second Discipline sharing talents (e.g. Archer and Thief) can advance."
       }
     ]
   },

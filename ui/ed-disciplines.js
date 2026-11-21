@@ -282,7 +282,7 @@ export class EdDisciplines extends LitElement {
     // t.karma carries the grant. Pull the pool's amount/die step from the derived
     // Karma characteristic, exactly like the Overview.
     const karmaCtx = this._karmaCtx(t.karma);
-    const status = t.free ? 'free Discipline talent' : t.required ? 'required Discipline talent' : 'chosen Talent option';
+    const status = t.shared ? `Discipline talent shared with ${t.sharedFrom}` : t.free ? 'free Discipline talent' : t.required ? 'required Discipline talent' : 'chosen Talent option';
     return html`
       <div class="trow ${t.required ? '' : 'opt'}${this.editMode ? ' edit' : ''}">
         <span class="tname">
@@ -294,9 +294,10 @@ export class EdDisciplines extends LitElement {
           >i</button>
           <span class="lbl">${t.name}</span>
           ${t.free ? html`<span class="fchip">Free</span>` : nothing}
+          ${t.shared ? html`<span class="fchip" title=${`Known through ${t.sharedFrom}; rank is raised there`}>Shared · ${t.sharedFrom}</span>` : nothing}
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
-        ${this.editMode && !t.free ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
+        ${this.editMode && !t.free && !t.shared ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
         <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}</span>
         <span class=${t.actionBase != null ? 'action sd changed' : 'action sd'} title=${t.actionBase != null ? actionHoverText(t) : nothing}>${t.action ?? ''}</span>
         <button
@@ -1396,7 +1397,7 @@ export class EdDisciplines extends LitElement {
                   </div>
                 </div>
               </div>
-              ${this._talentGroups(d.talents).map(
+              ${this._talentGroups([...d.talents, ...(d.sharedTalents ?? [])]).map(
                 ([circle, talents], gi, arr) => html`
                   <div class="tgroup">
                     <div class="tspine">
