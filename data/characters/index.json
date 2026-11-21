@@ -12,6 +12,10 @@
     "test-char": {
       "name": "TEST-Char",
       "portrait": "data/test-orc.jpeg"
+    },
+    "kolon-v2": {
+      "name": "Kolon v2",
+      "portrait": "data/kolon.jpeg"
     }
   }
 }
