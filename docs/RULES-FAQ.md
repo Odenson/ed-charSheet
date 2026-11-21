@@ -873,5 +873,59 @@ Sources:
 - text-RB-players-guide.txt:6617-6621 (skills Strain as per talents), 7298-7301, 7349-7352 (language skills no Strain)
 - text-RB-players-guide.txt:2769-2775 (p. 81-82, Half-Magic tests)
 - text-RB-players-guide.txt:6391-6401 (Versatility talent), 4155-4157
+
+### Q035 — Legend Point / training cost to learn a Fourth Circle talent from a character's SECOND Discipline; does it differ from first Discipline; does current Circle matter
+Keywords: second discipline, additional discipline, multi-discipline, fourth circle talent, circle 4 talent, equivalent talent circle table, talent cost table, new discipline talent cost table, rank 1 cost, legend cost, training time, 40 hours, circle training cost, journeyman column, tier shift · Resolved: 2026-11-21 · Context: ad hoc
+
+Yes, it differs. First-Discipline talents use the Talent Cost Table by the talent's own Circle band (1-4 Novice, 5-8 Journeyman...). Talents from additional Disciplines are priced via the Equivalent Talent Circle Table, keyed by how many Disciplines the character has and the Circle range: for a SECOND Discipline, Circles 1-4 are bought as Circle 5-8 (Journeyman column), 5-8 as 9-12 (Warden), 9-15 as 13-15 (Master). So a Circle-4 talent in a second Discipline costs Journeyman prices: Rank 1 = 200 LP, then 300 (R2), 500 (R3), 800 (R4), 1,300 (R5), 2,100 (R6)... each rank bought in order. For a third Discipline the same range is 1-4 -> 9-12 (Warden: Rank 1 = 300); fourth+ -> 13-15 (Master: 500).
+Current Circle matters: the book's example shifts ALL of a Discipline's talents when its Circle changes ("when he reaches Fifth Circle, those talents will be bought as if they were Circle 9-12"), so the band follows the second Discipline's current Circle, not only the Circle a talent was learned at (reading of the example; the table header says only "Discipline Circle Range"). Order of learning Disciplines (second vs third) also matters. Talents available in several Disciplines are bought at the lowest cost, in the cheapest Discipline.
+The separate New Discipline Talent Cost Table (500 LP etc.) applies only to the Rank 1 buy of First Circle talents when first joining a Discipline (keyed by lowest current Circle), not to a Circle-4 talent.
+Other costs: raising a rank = 8 hours uninterrupted meditation, rested and undamaged, one Rank per talent per day, max two talents per day. Gaining Circle 4 itself in that Discipline: a higher-Circle member of that Discipline as teacher, 40 hours within three weeks, fee per Circle Training Cost Table (Circle-4 instructor avg 500 sp; guideline only, instructor circle column), and prerequisite talent ranks. Learning a new Discipline costs 40 hours/talent and 100 sp x other Circles per talent but that is the initiation only. Buying the Circle's talent at the new Circle is stated as entitlement ("purchase the Discipline Talent and one Talent Option"); the book does not restate which table prices that Rank 1 buy, so using the Equivalent Talent Circle Table is by the p.457 rule that all additional-Discipline talents use it (inference).
+
+Sources:
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17319-17344 (p. 457 - Advancing in a New Discipline, Mica example)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17384-17394 (p. 458 - Equivalent Talent Circle Table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17049-17070 (p. 450 - Talent Cost Table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:16992-17020 (pp. 449-450 - rank-increase conditions, how to read the table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17177-17234 (p. 454 - training requirements, Reaching the Next Circle, Circle Training Cost Table)
+- rulebook extracts/rulebook extracts/text-RB-players-guide.txt:17278-17283, 17361-17372 (p. 456-457 - New Discipline Talent Cost Table)
 - text-RB-players-guide.txt:14359 (Strain blocks Wound healing)
 - rules/talents.json:31,94,174 (numeric strain), rules/skills.json:7, rules/knacks.json:1751 etc.
+
+### Q036 — Free Talents: advancement, rank, counting toward Circle/option slots, second Discipline, Karma/Strain, Standard->Enhanced Matrix, same-name stacking
+Keywords: free talent, free talents, rank equals circle, Call Missile, Danger Sense, Air Sailing, Navigation, Standard Matrix, Enhanced Matrix upgrade, Fifth Circle, nethermancer, second discipline free talent, additional discipline, karma on free talent, strain, increasing free talent ranks, same talent two ranks, versatility, display free talents · Resolved: 2026-11-21 · Context: display-free-talents
+
+(1) A Discipline's free talent is given on gaining a Circle and "advances with the character's Circle"; no Legend Points are spent on its rank. The example: Air Sailing at "a Rank equal to his Circle". Standard Matrices likewise: Rank "advances with the character's Circle". Standard rule: no way to buy it up with LP. OPTIONAL Companion rule "Increasing Free Talent Ranks": ranks ABOVE Circle may be bought at Novice-tier cost (3rd Circle buying rank 4 = 500 LP... text example: "a Third Circle character buying an extra rank ... 500 Legend Points"), with refund/credit/lost options when Circle catches up. So rank = Circle unless that optional rule is in play.
+(2) Free talents do not count for qualifying for the next Circle ("in all other respects behaves as a talent"). Option slots: not occupied (see Q002); a Wizard may still spend his First Circle Talent Option on a THIRD standard matrix, bought with LP.
+(3) Book text says nothing explicit about free talents in a second Discipline. Related: PG p.457 prices additional-Discipline talents via the Equivalent Talent Circle Table and says Discipline Talents known via multiple Disciplines count for all; durability/defense/Karma bonuses use highest across Disciplines. The Mica example learns only the four non-known First Circle (Discipline) talents on joining; no free talent is mentioned. NOT COVERED whether a second Discipline's free talents are granted or what Circle rank follows (Discipline Circle vs overall). Owner decision needed.
+(4) Yes to Karma: the free-talent rule explicitly includes "the ability to spend Karma on tests for that talent" and weaving threads. Strain follows the talent's own entry (Call Missile Strain 1, Danger Sense Strain 1, Standard/Enhanced Matrix Strain 0, Action NA). Karma exclusions: always-active/unrolled talents (e.g. matrices, NA) "do not benefit from the use of Karma"; only one Karma Point per talent even across Disciplines; Karma not allowed on talents outside the Discipline (racial, Versatility, item-granted).
+(5) Magicians (Elementalist, Illusionist, Nethermancer, Wizard) get two free Standard Matrices at First Circle; each matrix is a separate talent with its own Rank, improved independently (talent description), though the free ones follow Circle. Nethermancer Fifth Circle text: "One of the adept's free Standard Matrix talents is upgraded to an Enhanced Matrix." The book does not say which one, nor what rank the Enhanced Matrix takes (presumably Circle by the free-talent rule: inference) nor whether the Standard Matrix remains. Enhanced Matrix: rank = max spell circle, holds spell plus one pre-woven thread. Same Fifth Circle line is printed for Elementalist, Illusionist, Wizard.
+(6) Duplicate names: for Discipline Talents learned through several Disciplines, one talent counts for all (PG p.457). Talent Options in several Disciplines are handled separately, using the Discipline's cost. Versatility duplicate: "the character essentially knows the same talent at two different Ranks ... may use either". Free-talent-vs-option/other-Discipline same-name: NOT COVERED (no stacking or highest-rank rule stated); one Karma Point per talent regardless of Disciplines.
+App: rules/disciplines.json freeTalents lists Archer Call Missile, Nethermancer 2x Standard Matrix, Thief Danger Sense; the Circle 5 matrix upgrade is only a `note` effect (disciplines.json:127), not structured. engine/advancement.js excludes free talents from the gate, consistent with the book. No APP-DIFFERS found; note Air Sailor/Troubadour/etc. free talents not yet in file (only 3 Disciplines present).
+
+Sources:
+- text-RB-players-guide.txt:2905-2927 (p. 85-86 Free Talents, Spell Matrices, Tomas example)
+- text-RB-players-guide.txt:9578-9583 (casting from matrix: two free Standard Matrices)
+- text-RB-players-guide.txt:3466-3490 (Nethermancer First and Fifth Circle; also :3313-3331, :3390-3408, :4029-4046)
+- text-RB-players-guide.txt:4140-4157 (p. 121 Karma limits)
+- text-talents-players.txt:126-129, 186-189, 279, 584 (Call Missile, Danger Sense, Enhanced/Standard Matrix)
+- text-RB-players-guide.txt:17319-17359, 17424-17444 (pp. 457-459 multi-Discipline)
+- text-RB-companions-guide.txt:16690-16716 (p. 435 Increasing Free Talent Ranks optional rule)
+- rules/disciplines.json:26,98,127,169; engine/advancement.js:11-13,119-135
+
+Decision: 2026-11-21 — Owner rulings (house rule), display-free-talents:
+- Item 1: the optional "Increasing Free Talent Ranks" rule (Companion p.435) is out of scope for the app; free-talent rank = Circle.
+- Item 3 (second Discipline): every Discipline the character has grants its free talents; rank = that Discipline's own Circle.
+- Item 5 (matrices): display two Standard Matrix rows, read-only; the Nethermancer Circle 5 Enhanced Matrix upgrade stays a note only, with no Enhanced Matrix row.
+- Item 6 (same name): separate rows per Discipline; a stored same-name talent in the same Discipline suppresses that Discipline's free row; the Combat picker dedupes by name using the highest rank.
+
+### Q037 — Call Missile talent: step, action, Strain, skill use, effect, range/limits, tier, knacks
+Keywords: Call Missile, call missile, archer free talent, thrown weapons, missiles return, Perception, Simple action, strain 1, skill use no, Call Any Missile, Catch Missile, thief journeyman option, 20 yards · Resolved: 2026-11-21 · Context: display-free-talents
+
+Step Rank + PER (Perception); Action Simple; Strain 1; Skill Use: No. The adept makes a Call Missile test (no target/difficulty stated in the base entry; no versus test) and the result sets how many unbroken missiles or thrown weapons he fired/threw fly back to him into quiver/container/hand. Affects all his own missiles/thrown weapons within Rank x 20 yards, with a relatively straight unblocked path; extracts missiles from bodies; secured or "locked away" objects (roped, behind closed door) cannot be retrieved. Tier: it is the Archer's Free Talent at First Circle (see Q036); the Thief lists it as a Journeyman Talent Option. Companion knack Call Any Missile (Rank 6, Step Rank+CHA, Simple, Strain 1, no skill use): any thrown/fired objects, and may be used versus a target's Mystic Defense to steal unsecured missiles (1 throwing weapon or 3 missiles per success). Deeper Secrets knack Catch Missile (Rank 11, Archer Circle 11, Free, Strain 3, once per round): test vs the higher of the Attack test result and the projectile's Mystic Defense.
+
+Sources:
+- text-RB-players-guide.txt:4622-4633; text-talents-players.txt:126-129
+- text-RB-players-guide.txt:3088-3089 (p. 91 Archer First Circle free talent); :3761 (Journeyman option list, Thief per text-discipline-players.txt:377)
+- text-RB-companions-guide.txt:3168-3182 (p. 86 Call Any Missile)
+- text-RB-deeper-secrets.txt:9464-9476 (p. 224 Catch Missile)
