@@ -11,7 +11,7 @@ import { freeTalentRows } from './engine/free-talents.js';
 import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
-import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle, tierForCircle } from './engine/legend-spent.js';
+import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestPriorCircle, tierForCircle } from './engine/legend-spent.js';
 import { damageState, healthDanger, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
@@ -40,7 +40,7 @@ import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { circleStatus, normalizeOptionalTable } from './engine/advancement.js';
-import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
+import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant, addableDisciplines, sharedDisciplineTalents } from './engine/talent-options.js';
 import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { learnableKnacks } from './engine/knack-options.js';
@@ -1023,14 +1023,21 @@ export function deriveModel(character, rules, session = {}) {
     // talent-supported Circle so the UI can flag a stored value the talents don't
     // justify (imported/edited data) and surface eligibility to advance. Pure
     // derivation — nothing stored (ARCHITECTURE §4.1).
-    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries((d.talents ?? []).map((t) => [t.name, t.rank])),
+    // Shared talents (known through another Discipline) count for this one too
+    // (rules.md R6; Q038 (5)): they join the gate's ranks and show as read-only rows.
+    const otherDiscs = (character.disciplines ?? []).filter((_, i) => i !== dIdx);
+    const shared = sharedDisciplineTalents(ref, d.circle, d.talents, otherDiscs);
+    const circleInfo = circleStatus(ref, d.circle, Object.fromEntries([...shared, ...(d.talents ?? [])].map((t) => [t.name, t.rank])),
       // raw d.talents (not model rows): rows drop `viaVersatility`.
-      optionalAdvTable ? { table: optionalAdvTable, talents: d.talents ?? [] } : undefined);
+      optionalAdvTable ? { table: optionalAdvTable, talents: [...(d.talents ?? []), ...shared] } : undefined);
+    const sharedTalents = shared.map((s) => ({ ...buildTalentRow(s), shared: true, sharedFrom: s.from }));
     // Per-Circle option slots (PLAN-LEARN-TALENTS §7). Each open slot carries its
     // learnable pool (status-eligible talents minus already-known), enriched with
     // the terse effect for the picker; a Circle with no pool data (Warden+) is
     // flagged `available:false`. All derived from rule data — nothing stored.
     const knownNames = new Set((d.talents ?? []).map((t) => t.name));
+    // Talents already held anywhere never re-grant on training (shared, Q038 (5)).
+    const grantKnown = new Set([...knownNames, ...otherDiscs.flatMap((o) => (o.talents ?? []).map((t) => t.name))]);
     const slots = optionSlots(ref, d.talents, d.circle).map((s) => {
       if (!s.open) return s;
       const pool = learnableTalents(ref, s.circle, { costs: legendFile?.costs, knownNames });
@@ -1043,15 +1050,15 @@ export function deriveModel(character, rules, session = {}) {
       optionSlots: slots,
       // Discipline Talent(s) the next Circle would grant (not already known) —
       // what the "train to next Circle" action adds at Rank 1 (PLAN-LEARN-TALENTS §7).
-      nextGrant: nextCircleGrant(ref, d.circle, knownNames),
+      nextGrant: nextCircleGrant(ref, d.circle, grantKnown),
       // The advance quote (only when eligible): the Legend to purchase the granted
       // Discipline Talent(s) at Rank 1, and the suggested silver training fee from
       // the Circle Training Cost Table (ED4 p.454 — an editable, negotiable
       // default). Null/absent leaves the modal to show a placeholder.
       advanceCost: circleInfo.eligible
         ? (() => {
-            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestDisciplineCircle(character.disciplines), legendFile?.costs, 1);
-            const grantCount = nextCircleGrant(ref, d.circle, knownNames).length;
+            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestPriorCircle(character.disciplines, dIdx), legendFile?.costs, 1);
+            const grantCount = nextCircleGrant(ref, d.circle, grantKnown).length;
             return {
               legend: perDT == null ? null : perDT * grantCount,
               trainingSilver: legendFile?.costs?.circleTraining?.[String(circleInfo.next)] ?? null,
@@ -1063,6 +1070,7 @@ export function deriveModel(character, rules, session = {}) {
       halfMagicRoll,
       artisanSkills: ref.artisanSkills ?? [],
       talents,
+      sharedTalents,
       abilities,
     };
   });
@@ -1434,12 +1442,12 @@ export function deriveModel(character, rules, session = {}) {
     const costs = legendFile.costs;
     const available = legend?.available ?? null;
     const discInputs = character.disciplines ?? [];
-    const lowestCircle = lowestDisciplineCircle(discInputs);
     disciplines = disciplines.map((disc, di) => ({
       ...disc,
       talents: disc.talents.map((t, ti) => {
         if (t.free) return { ...t, pricing: null };
         const raw = discInputs[di]?.talents?.[ti] ?? {};
+        const lowestCircle = lowestPriorCircle(discInputs, di);
         const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, { tierShift });
         const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, { tierShift }) : null;
         return {
@@ -1467,6 +1475,18 @@ export function deriveModel(character, rules, session = {}) {
       };
     });
   }
+
+  // Disciplines the character can start or seed (start-new-discipline): a pure
+  // quote per candidate with the option pool enriched for the picker. Derived only.
+  const addableDisciplinesModel = legendFile?.costs
+    ? addableDisciplines(disciplinesFile?.disciplines ?? [], character.disciplines ?? [], legendFile.costs, { tierShift }).map((c) => ({
+        ...c,
+        optionPool: {
+          ...c.optionPool,
+          items: c.optionPool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })),
+        },
+      }))
+    : [];
 
   // Learnable skills (PLAN-LEARN-SKILLS §7.3): every catalog skill not already
   // known, with Rank-1 Legend + silver previews derived from costs (data, not code).
@@ -1844,6 +1864,7 @@ export function deriveModel(character, rules, session = {}) {
     wealth: deriveWealth(character.wealth ?? {}),
     skills,
     skillOptions,
+    addableDisciplines: addableDisciplinesModel,
     knacks,
     knackOptions,
     skillKnackEnabled,

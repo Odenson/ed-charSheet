@@ -204,7 +204,7 @@ test('set: rule off keeps the standard New-Discipline pricing and tierShift 0', 
   const off = deriveModel(tierShiftChar(), rulesWith(tierShiftRule(false)));
   assert.equal(off.legend.tierShift, 0);
   const neth = off.legend.spent.sections.find((s) => s.key === 'talents:1');
-  assert.equal(neth.total, 1300); // 500 + 300 + 500
+  assert.equal(neth.total, 1100); // 300 (Rank-1 at lowest prior Circle 4, R2) + 300 + 500
   const spell = off.disciplines[1].talents[0];
   assert.equal(spell.pricing.refund, 500); // the Rank-1 New-Discipline step stayed
 });
@@ -213,14 +213,14 @@ test('set: an enabled rule with an absent/zero shift keeps the standard model', 
   const zero = { schema: 'ed-homebrew/2', rules: [{ id: 'hb-tier0', name: 'x', summary: 'x', enabled: true, set: { 'legend.additionalTierShift': 0 } }] };
   const model = deriveModel(tierShiftChar(), rulesWith(zero));
   assert.equal(model.legend.tierShift, 0);
-  assert.equal(model.legend.spent.sections.find((s) => s.key === 'talents:1').total, 1300);
+  assert.equal(model.legend.spent.sections.find((s) => s.key === 'talents:1').total, 1100);
 });
 
 test('set: an unknown legend target is still ignored (registry-gated)', () => {
   const bogus = { schema: 'ed-homebrew/2', rules: [{ id: 'hb-x', name: 'x', summary: 'x', enabled: true, set: { 'legend.bogus': 1 } }] };
   const model = deriveModel(tierShiftChar(), rulesWith(bogus));
   assert.equal(model.legend.tierShift, 0);
-  assert.equal(model.legend.spent.sections.find((s) => s.key === 'talents:1').total, 1300);
+  assert.equal(model.legend.spent.sections.find((s) => s.key === 'talents:1').total, 1100);
 });
 
 test('disabled homebrew rules leave the standard ratings and no homebrew effects', () => {

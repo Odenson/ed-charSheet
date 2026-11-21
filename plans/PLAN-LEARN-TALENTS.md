@@ -162,7 +162,7 @@ implementation.
 
 | # | Question | Decision |
 |---|---|---|
-| Q1 | Scope | **Talent Option slots + Circle-up Discipline Talents.** New-Discipline initiation and Versatility are out (see Q5). Circle-up introduces the first Circle-changing operation: a controlled "train to next Circle" action that grants that Circle's Discipline Talent, bumps the stored `circle`, and opens that Circle's new option slot. |
+| Q1 | Scope | **Talent Option slots + Circle-up Discipline Talents.** Versatility is out (see Q5). New-Discipline initiation was out of this pass and is now covered by the start-new-discipline feature (plans/start-new-discipline). Circle-up introduces the first Circle-changing operation: a controlled "train to next Circle" action that grants that Circle's Discipline Talent, bumps the stored `circle`, and opens that Circle's new option slot. |
 | Q2 | Slot enforcement | **One optional talent per Circle — hard cap, rules-aligned.** Options are editable, but each Circle carries exactly one option slot; adding a second option to a Circle that already has one is blocked. |
 | Q3 | Learned-Circle recording | **Default the current Circle; allow choosing an open earlier Circle.** A deferred fill picks an earlier Circle whose option slot is empty. The recorded `circle` drives the pricing tier, so the choice is explicit. |
 | Q4 | Specific Training tutor gate | **Ignore — GM territory.** Not enforced or noted; consistent with the un-enforced Circle-up training requirement. |

@@ -7,6 +7,25 @@
   },
   "releases": [
     {
+      "version": "1.42.0",
+      "date": "2026-11-21",
+      "summary": "Start a new Discipline (or seed Circle 1) from the Disciplines tab, with shared-talent and Legend-pricing fixes.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Start a new Discipline from the Disciplines tab in edit mode (or seed Circle 1 of a Circle-1 Discipline missing its talents): learns all Circle-1 Discipline Talents, optionally a Circle-1 Talent Option, and charges Legend and an editable silver fee."
+        },
+        {
+          "type": "fixed",
+          "text": "Legend Spent now prices an additional Discipline's Rank-1 talents from the lowest Circle among the Disciplines you had before joining it. Characters with a second Discipline may see a lower Legend Spent (and higher Available Legend) than before."
+        },
+        {
+          "type": "fixed",
+          "text": "Discipline Talents you already know through another Discipline now count toward this Discipline's next-Circle requirement and show as read-only \"Shared\" rows, so a second Discipline sharing talents (e.g. Archer and Thief) can advance."
+        }
+      ]
+    },
+    {
       "version": "1.41.0",
       "date": "2026-11-21",
       "summary": "Disciplines now show their free talents (Archer's Call Missile, Thief's Danger Sense, Nethermancer's two Standard Matrices) at the Discipline's Circle, and rollable ones can be rolled from the Disciplines and Combat tabs.",

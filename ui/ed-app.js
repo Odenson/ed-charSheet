@@ -14,8 +14,9 @@ import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './kit/modal-controller.js';
 import { payFromPurse } from '../engine/wealth.js';
-import { talentRankStepCost, lowestDisciplineCircle, skillRankStepCost } from '../engine/legend-spent.js';
-import { logCircleTraining, logTalentLearned, logSkillLearned, logKnackLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
+import { optionSlots } from '../engine/talent-options.js';
+import { talentRankStepCost, lowestPriorCircle, skillRankStepCost } from '../engine/legend-spent.js';
+import { logCircleTraining, logDisciplineStarted, logTalentLearned, logSkillLearned, logKnackLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -446,6 +447,8 @@ export class EdApp extends LitElement {
     this.addEventListener('ed-learn-knack', (e) => this._learnKnack(e.detail));
     // Train to the next Circle: grant its Discipline Talent(s) and bump the Circle.
     this.addEventListener('ed-advance-circle', (e) => this._advanceCircle(e.detail));
+    // Start (or seed Circle 1 of) a Discipline: grant its Circle-1 DTs, charge Legend + silver.
+    this.addEventListener('ed-start-discipline', (e) => this._startDiscipline(e.detail));
     // Blood-charm activation (global, not tab-local — an effect is an effect): a
     // view toggles an equipped charm's situational test-mods on/off; the engine
     // folds them via session.activeCharms (store) so they reach any roll (Combat
@@ -1264,7 +1267,7 @@ export class EdApp extends LitElement {
     // Standard log — Talent Option learned (Legend cost via tier, no silver)
     {
       const dIdx = (nextCharacter.disciplines ?? []).findIndex((d) => d.name === discipline);
-      const lowest = lowestDisciplineCircle(nextCharacter.disciplines);
+      const lowest = lowestPriorCircle(nextCharacter.disciplines, dIdx);
       const cost = talentRankStepCost({ circle }, dIdx + 1, lowest, this._rules.legendFile?.costs, 1, { tierShift: this._model?.legend?.tierShift ?? 0 });
       logTalentLearned(this._characterId, { discipline, name, circle, legendCost: cost });
     }
@@ -1425,6 +1428,57 @@ export class EdApp extends LitElement {
       silverFee: fee,
       beforeCoins: _beforeCoins,
       afterCoins: nextWealth?.coins ?? _beforeCoins,
+    });
+  }
+
+  // Start a new Discipline, or seed Circle 1 of one already held at Circle 1.
+  // The quote comes from the derived model (never trusted from the event); order
+  // mirrors _advanceCircle: validate, pay silver from the purse, guard Legend, then
+  // persist inputs only and log. Any refusal returns before mutating anything.
+  _startDiscipline({ discipline, option = null, silver } = {}) {
+    if (!this._character || !discipline) return;
+    const cand = (this._model?.addableDisciplines ?? []).find((c) => c.discipline === discipline);
+    if (!cand) return; // unknown, complete, or a duplicate dispatch
+    const chosen = option == null || option === '' ? null : String(option);
+    if (chosen != null) {
+      if (!cand.optionSlotOpen || !(cand.optionPool?.items ?? []).some((i) => (i?.name ?? i) === chosen)) return;
+      const existing = (this._character.disciplines ?? []).find((d) => d.name === discipline);
+      if (existing && !(optionSlots(this._rules.disciplinesFile?.disciplines?.find((r) => r.name === discipline), existing.talents ?? [], 1)[0]?.open ?? true)) return;
+    }
+    const names = [...cand.grants, ...(chosen ? [chosen] : [])];
+    const talents = names.map((name) => ({ name, rank: 1, circle: 1 }));
+    const fee = Math.max(0, Math.round(Number(silver ?? 0)));
+    if (!Number.isFinite(fee)) return;
+    const w = this._character.wealth ?? {};
+    const beforeCoins = w.coins ?? {};
+    let nextWealth = this._character.wealth;
+    if (fee > 0) {
+      const spent = payFromPurse(beforeCoins, fee);
+      if (!spent.ok) return;
+      nextWealth = { ...w, coins: spent.coins };
+    }
+    const current = this._character.disciplines ?? [];
+    const disciplines =
+      cand.mode === 'seed'
+        ? current.map((d) => (d.name === discipline ? { ...d, talents: [...(d.talents ?? []), ...talents] } : d))
+        : [...current, { name: discipline, circle: 1, talents }];
+    const nextCharacter = { ...this._character, wealth: nextWealth, disciplines };
+    if (!this._canAffordRank(nextCharacter)) return;
+    const perTalent = cand.perTalentLegend;
+    const legendCost = perTalent == null ? null : perTalent * talents.length;
+    this._character = nextCharacter;
+    saveAdvancementEdits({ disciplines, skills: nextCharacter.skills ?? [] }, this._characterId);
+    if (fee > 0) saveWealthEdits(nextWealth, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+    logDisciplineStarted(this._characterId, {
+      discipline,
+      mode: cand.mode,
+      grants: names,
+      legendCost,
+      silverFee: fee,
+      beforeCoins,
+      afterCoins: nextWealth?.coins ?? beforeCoins,
     });
   }
 
