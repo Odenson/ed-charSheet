@@ -290,7 +290,11 @@
     "Call Missile": {
       "name": "Call Missile",
       "action": "Simple",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": { "allowed": false },
+      "presentation": { "shortEffect": "Recall your own missiles to hand or quiver" },
+      "summary": "The test result sets how many of the adept's own unbroken missiles or thrown weapons return to their quiver, container or hand. They must lie within Rank x 20 yards on a straight, unblocked path. Missiles lodged in a target are pulled free. Objects that are secured or locked away cannot be retrieved."
     },
     "Charge": {
       "name": "Charge",

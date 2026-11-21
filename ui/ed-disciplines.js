@@ -150,6 +150,7 @@ export class EdDisciplines extends LitElement {
       transition: filter 0.12s ease, border-color 0.12s ease; }
     .tinfo.req { background: var(--accent); border: 1px solid var(--accent); color: var(--accent-bg); }
     .tinfo.opt { background: transparent; border: 1.5px solid var(--muted); color: var(--muted); box-sizing: border-box; }
+    .fchip { flex: none; font-size: var(--fs-small); font-weight: 500; line-height: 1; padding: 2px 5px; border-radius: 999px; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent); }
     .tinfo:hover { filter: brightness(1.12); }
     .tinfo.opt:hover { border-color: var(--accent); color: var(--fg); }
     .tinfo:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
@@ -271,7 +272,7 @@ export class EdDisciplines extends LitElement {
     // t.karma carries the grant. Pull the pool's amount/die step from the derived
     // Karma characteristic, exactly like the Overview.
     const karmaCtx = this._karmaCtx(t.karma);
-    const status = t.required ? 'required Discipline talent' : 'chosen Talent option';
+    const status = t.free ? 'free Discipline talent' : t.required ? 'required Discipline talent' : 'chosen Talent option';
     return html`
       <div class="trow ${t.required ? '' : 'opt'}${this.editMode ? ' edit' : ''}">
         <span class="tname">
@@ -282,9 +283,10 @@ export class EdDisciplines extends LitElement {
             @click=${(e) => this._openModal(t, e)}
           >i</button>
           <span class="lbl">${t.name}</span>
+          ${t.free ? html`<span class="fchip">Free</span>` : nothing}
         </span>
         <span class="effcol eff" title=${t.brief ?? ''}>${t.brief ?? ''}</span>
-        ${this.editMode ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
+        ${this.editMode && !t.free ? this._rankCtl(t, discName) : html`<span class="num">${t.rank}${this._grantChip(t)}${this._modChip(t)}</span>`}
         <span class="sd">${t.step != null ? html`${t.step} · ${t.dice}` : '—'}</span>
         <span class=${t.actionBase != null ? 'action sd changed' : 'action sd'} title=${t.actionBase != null ? actionHoverText(t) : nothing}>${t.action ?? ''}</span>
         <button
@@ -379,7 +381,7 @@ export class EdDisciplines extends LitElement {
     const dt = t.detail ?? {};
     const chips = [
       t.brief ? { c: 'effc', v: t.brief } : null,
-      { v: t.required ? 'Required' : 'Optional' },
+      { v: t.free ? 'Free' : t.required ? 'Required' : 'Optional' },
       t.action ? (t.actionBase != null ? { v: `${t.action} action`, c: 'changed', title: actionHoverText(t) } : { v: `${t.action} action` }) : null,
       t.attribute ? { v: t.attribute } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
@@ -1266,6 +1268,7 @@ export class EdDisciplines extends LitElement {
             <div class="legend">
               <span class="li"><span class="tinfo req" aria-hidden="true">i</span>required</span>
               <span class="li"><span class="tinfo opt" aria-hidden="true">i</span>optional</span>
+              <span class="li"><span class="fchip">Free</span>granted by Discipline</span>
               <span class="li">click a circle for details</span>
             </div>
             <div class="card">
