@@ -20,7 +20,7 @@ import { describeRequirement } from '../engine/advancement.js';
 // The kit kind of each Disciplines modal (one controller serves all nine):
 // info modals (talent/skill/knack/granted) are read-only; the pickers act on a
 // focused option; Train is a confirm.
-const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', advance: 'confirm' };
+const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', advance: 'confirm', 'start-discipline': 'confirm' };
 
 // Hover text for an ability whose action an effect changed (taxonomy v5
 // action-modifier). Pure formatting of the engine's pre-resolved fields: the
@@ -39,6 +39,10 @@ export class EdDisciplines extends LitElement {
     _sel: { state: true },
     _modal: { state: true },
     _trainSilver: { state: true },
+    _startSel: { state: true },
+    _startOption: { state: true },
+    _startSilver: { state: true },
+    _startEdited: { state: true },
     _skillSilver: { state: true },
     _skillSearch: { state: true },
   };
@@ -90,6 +94,10 @@ export class EdDisciplines extends LitElement {
     .cchk { font-size: var(--fs-small); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
     .cchk.ok { color: var(--karma); }
     .cchk.bad { color: light-dark(#c0392b, #e06557); }
+    .startopts { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+    .startopt { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-small); cursor: pointer; }
+    .startopt .csub { margin-top: 0; }
+    .startgrants { margin: 4px 0; }
     .silin { width: 66px; font: inherit; font-size: var(--fs-small); text-align: center; color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px; }
     .mnote2 { display: flex; gap: 7px; align-items: flex-start; font-size: var(--fs-fine); color: var(--muted); line-height: 1.5; margin: 4px 0 12px; }
     /* Durability fits its label, Half-magic grows into the freed space, Artisan
@@ -252,10 +260,12 @@ export class EdDisciplines extends LitElement {
     // the focus trap; this component only opens/closes it.
     this._modalCtl = new ModalController(this, {
       kind: () => DISC_KIND[this._modal?.type] ?? 'info',
-      canConfirm: () => this._modal?.type === 'advance' && this._advanceState(this._modal).canTrain,
-      onConfirm: () => this._confirmAdvance(),
+      canConfirm: () =>
+        (this._modal?.type === 'advance' && this._advanceState(this._modal).canTrain) ||
+        (this._modal?.type === 'start-discipline' && this._startState(this._modal).canStart),
+      onConfirm: () => (this._modal?.type === 'start-discipline' ? this._confirmStart() : this._confirmAdvance()),
       // Train: the primary when allowed, otherwise the fee field.
-      initialFocus: () => (this._modal?.type === 'advance' ? '.silin' : null),
+      initialFocus: () => (this._modal?.type === 'advance' || this._modal?.type === 'start-discipline' ? '.silin' : null),
       onClose: () => { this._modal = null; },
     });
   }
@@ -660,15 +670,22 @@ export class EdDisciplines extends LitElement {
   // placeholder pill (UI-GUIDELINES §5) and a hint explains why the steppers are
   // locked. Unpriced sinks (spells) don't leak into the number: it's the same
   // derived available the audit backs.
-  _legendBar() {
+  _legendBar(d) {
     const legend = this.model?.legend ?? null;
     const available = legend?.available ?? null;
+    const seedCand = (this.model?.addableDisciplines ?? []).find((c) => c.mode === 'seed' && c.discipline === d?.name);
     return html`
       <div class="legendbar">
         <span class="lchip">Available Legend
           ${available != null ? html`<b>${available}</b>` : html`<span class="pend">—</span>`}
         </span>
         ${legend == null ? html`<span class="hint">Enter Total Legend earned to price rank changes.</span>` : ''}
+        ${(this.model?.addableDisciplines ?? []).length
+          ? html`<button class="addopt" title="Start a new Discipline" @click=${(e) => this._startClick(null, e)}>＋ Add Discipline</button>`
+          : ''}
+        ${seedCand
+          ? html`<button class="addopt" title=${`Learn ${d.name}'s Circle 1 Discipline Talents`} @click=${(e) => this._startClick(seedCand.discipline, e)}>Seed Circle 1</button>`
+          : ''}
       </div>
     `;
   }
@@ -971,6 +988,100 @@ export class EdDisciplines extends LitElement {
     this._openModal({ type: 'advance', discipline: d.name, next: cs.next, grants: d.nextGrant ?? [], cost: d.advanceCost ?? null, requirement: cs.nextRequirement ?? null }, e);
   }
 
+  // Start a new Discipline / seed Circle 1 (start-new-discipline). The quote is
+  // derived by the engine (model.addableDisciplines); this view only reads it.
+  _startState(m) {
+    const cands = this.model?.addableDisciplines ?? [];
+    const sel = this._startSel ?? m.discipline ?? cands[0]?.discipline ?? null;
+    const cand = cands.find((c) => c.discipline === sel) ?? null;
+    const items = cand?.optionPool?.items ?? [];
+    const option = cand?.optionSlotOpen && items.some((i) => i.name === this._startOption) ? this._startOption : null;
+    const hasOption = option != null;
+    const available = this.model?.legend?.available ?? null;
+    const coins = this.model?.wealth?.coins ?? {};
+    const purse = coinsSilver(coins);
+    const perTalent = cand?.perTalentLegend ?? null;
+    const legendTotal = cand ? cand.legendTotal(hasOption) : null;
+    const silver = this._startEdited ? Number(this._startSilver) || 0 : cand ? cand.defaultSilver(hasOption) : 0;
+    const priced = legendTotal != null;
+    const legendOk = priced && available != null && available >= legendTotal;
+    const silverOk = silver <= 0 ? true : payFromPurse(coins, silver).ok;
+    const reason = !cand ? 'Choose a Discipline' : !priced ? 'Legend cost cannot be priced' : !legendOk ? 'Not enough Legend' : !silverOk ? 'Not enough silver' : '';
+    return { cands, cand, sel, option, hasOption, available, purse, perTalent, legendTotal, silver, priced, legendOk, silverOk, canStart: !reason, reason };
+  }
+
+  _confirmStart() {
+    const m = this._modal;
+    if (m?.type !== 'start-discipline') return;
+    const st = this._startState(m);
+    if (!st.canStart) return;
+    this._modalCtl.close();
+    this.dispatchEvent(new CustomEvent('ed-start-discipline', { detail: { discipline: st.cand.discipline, option: st.option, silver: st.silver }, bubbles: true, composed: true }));
+  }
+
+  _startClick(discipline, e) {
+    if (!this.editMode) this.dispatchEvent(new CustomEvent('ed-enter-edit', { bubbles: true, composed: true }));
+    this._startSel = discipline;
+    this._startOption = null;
+    this._startSilver = 0;
+    this._startEdited = false;
+    this._openModal({ type: 'start-discipline', discipline, locked: discipline != null }, e);
+  }
+
+  _startModal(m) {
+    const st = this._startState(m);
+    const { cands, cand, option, available, purse, perTalent, legendTotal, silver, legendOk, silverOk, canStart, reason } = st;
+    const seed = cand?.mode === 'seed';
+    const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
+    const pill = (v) => (v == null ? html`<span class="pend">—</span>` : html`${v}`);
+    const items = cand?.optionPool?.items ?? [];
+    return modalFrame(this._modalCtl, {
+      title: seed ? 'Seed Circle 1' : 'Add Discipline',
+      label: seed ? 'Seed Circle 1' : 'Add Discipline',
+      layer: 2000,
+      width: '32rem',
+      scroll: true,
+      body: html`
+    <div class="mtext">
+      <label>Discipline
+        <select aria-label="Discipline" ?disabled=${m.locked} @change=${(e) => { this._startSel = e.target.value; this._startOption = null; this._startEdited = false; }}>
+          ${cands.map((c) => html`<option value=${c.discipline} ?selected=${c.discipline === st.sel}>${c.discipline}</option>`)}
+        </select>
+      </label>
+    </div>
+    ${cand
+      ? html`
+    <div class="mtext">${seed ? 'Learns' : 'Starting at Circle 1 learns'} every Circle 1 Discipline Talent you do not already know, at Rank 1:</div>
+    <div class="cbox startgrants">
+      ${cand.grants.map((g) => html`<div class="crow"><span class="ck">${g}</span><span class="cchk">${pill(perTalent)} Legend</span></div>`)}
+    </div>
+    ${cand.optionSlotOpen && items.length
+      ? html`<div class="mtext">Optional Circle 1 Talent Option (priced like a Discipline Talent; skipping leaves the slot open):</div>
+        <div class="startopts" role="radiogroup" aria-label="Circle 1 Talent Option">
+          <label class="startopt"><input type="radio" name="startopt" .checked=${option == null} @change=${() => { this._startOption = null; }} /><span>No option for now</span></label>
+          ${items.map((i) => html`<label class="startopt"><input type="radio" name="startopt" .checked=${option === i.name} @change=${() => { this._startOption = i.name; }} /><span>${i.name}${i.brief ? html` <span class="csub">${i.brief}</span>` : ''}</span></label>`)}
+        </div>`
+      : html`<div class="mnote2"><span>${cand.optionSlotOpen ? 'No Circle 1 Talent Option pool is available.' : 'The Circle 1 Talent Option slot is already filled.'}</span></div>`}
+    <div class="cbox">
+      <div class="crow">
+        <div><div class="ck">Total Legend</div><div class="csub">Available Legend ${available ?? '—'}</div></div>
+        <span class="cchk ${legendOk ? 'ok' : 'bad'}">${legendTotal == null ? html`<span class="pend">—</span>` : html`${chk(legendOk)}${legendTotal} Legend`}</span>
+      </div>
+      <div class="crow">
+        <div><div class="ck">Initiation fee · silver</div><div class="csub">100 sp x your other Circles x talents — negotiable · purse ${Math.round(purse)} sp</div></div>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <input class="silin" data-enter="local" type="number" min="0" step="1" .value=${String(silver)} aria-label="Initiation fee in silver"
+            @input=${(e) => { this._startSilver = Math.max(0, Math.round(Number(e.target.value) || 0)); this._startEdited = true; }} />
+          <span class="csub" style="margin:0">sp</span>${chk(silverOk)}
+        </span>
+      </div>
+    </div>`
+      : html`<div class="mtext">No Discipline available.</div>`}
+    <div class="mnote2"><span class="ibadge" aria-hidden="true">i</span><span>Finding a tutor and the training time are the GM's call; only Legend and silver are tracked here.</span></div>`,
+      primary: { label: seed ? 'Seed Circle 1' : 'Start Discipline', disabled: !canStart, title: canStart ? '' : reason },
+    });
+  }
+
   // Pick a talent for an open slot: close the picker (returns focus to the "+"),
   // then dispatch up to ed-app to persist it (data up, engine acts).
   _learnPick(discipline, name, circle) {
@@ -1252,7 +1363,7 @@ export class EdDisciplines extends LitElement {
           : this._circleTrack(d)}
       </div>
 
-      ${this.editMode ? this._legendBar() : ''}
+      ${this.editMode ? this._legendBar(showSkills ? null : d) : ''}
 
       ${showSkills
         ? this._skillsView(skills)
@@ -1344,7 +1455,9 @@ export class EdDisciplines extends LitElement {
                       ? this._learnKnackModal(this._modal)
                       : this._modal.type === 'advance'
                         ? this._advanceModal(this._modal)
-                        : this._talentModal(this._modal)
+                        : this._modal.type === 'start-discipline'
+                          ? this._startModal(this._modal)
+                          : this._talentModal(this._modal)
         : ''}
     `;
   }

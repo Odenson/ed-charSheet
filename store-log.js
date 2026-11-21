@@ -85,6 +85,29 @@ export function logCircleTraining(characterId, { discipline, circle, grants = []
 }
 
 /**
+ * Log starting a Discipline (`mode: 'new'`) or seeding Circle 1 of one already
+ * held at Circle 1 (`mode: 'seed'`): talents learned at Rank 1, Legend and silver.
+ */
+export function logDisciplineStarted(characterId, { discipline, mode = 'new', grants = [], legendCost = null, silverFee = 0, beforeCoins = {}, afterCoins = {} }) {
+  const feeDetail = silverFee > 0 ? formatWealthDetail(silverFee, beforeCoins, afterCoins) : 'no silver fee';
+  const detail = grants.length ? `Learned ${grants.join(', ')} at Rank 1 · ${feeDetail}` : feeDetail;
+  const before = Math.round(coinsSilver(beforeCoins));
+  const after = silverFee > 0 ? Math.round(coinsSilver(afterCoins)) : before;
+  return logSystem(characterId, {
+    label: mode === 'seed' ? `Seeded ${discipline} Circle 1` : `Started ${discipline}`,
+    detail,
+    discipline,
+    circle: 1,
+    grants,
+    legendCost,
+    silverFee,
+    coinDelta: formatCoinDelta(beforeCoins, afterCoins).trim(),
+    purseBefore: before,
+    purseAfter: after,
+  });
+}
+
+/**
  * Log learning a Talent Option (or similar single-talent acquire at Rank 1).
  */
 export function logTalentLearned(characterId, { discipline, name, circle, legendCost = null }) {

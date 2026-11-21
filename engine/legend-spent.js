@@ -136,9 +136,19 @@ export function knackCost(requiredRank, rankTable) {
   return rankTable?.[String(requiredRank)]?.Novice ?? null;
 }
 
-/** The character's lowest Discipline Circle — the New-Discipline Rank-1 table row. */
+/** The character's lowest Discipline Circle (not used for pricing; see lowestPriorCircle). */
 export function lowestDisciplineCircle(disciplines) {
   const circles = (disciplines ?? []).map((d) => d?.circle).filter((c) => c != null);
+  return circles.length ? Math.min(...circles) : null;
+}
+
+/**
+ * The New-Discipline Rank-1 table row for the Discipline at `idx`: the lowest Circle
+ * among the Disciplines held BEFORE it (indices < idx; null circles ignored), per
+ * rules.md R2. Null when idx is 0 or no earlier Discipline has a Circle.
+ */
+export function lowestPriorCircle(disciplines, idx) {
+  const circles = (disciplines ?? []).slice(0, Math.max(0, idx)).map((d) => d?.circle).filter((c) => c != null);
   return circles.length ? Math.min(...circles) : null;
 }
 
@@ -242,7 +252,7 @@ export function additionalDisciplineTalentCost(rank, realCircle, ordinal, lowest
  * @param {{circle?: number}} t  the raw character talent input (the cost tier
  *   derives from the learned Circle — never stored on the talent)
  * @param {number} ordinal  1-based position of the Discipline in the character
- * @param {number|null} lowestCircle  lowestDisciplineCircle(character.disciplines)
+ * @param {number|null} lowestCircle  lowestPriorCircle(character.disciplines, thisDisciplineIndex)
  * @param {object} costs  rules/legend.json `costs` block
  * @param {number} toRank  the rank the step brings the talent to
  * @param {{tierShift?: number, tier?: string}} opts  homebrew additional-tier
@@ -322,11 +332,11 @@ export function auditLegendSpent(character, costs, opts = {}) {
   //     Journeyman → Warden → Master, Master stays Master), the New-Discipline and
   //     Equivalent-Tier tables ignored. ---
   const disciplines = character?.disciplines ?? [];
-  const lowestCircle = lowestDisciplineCircle(disciplines);
   const tierShift = Number(opts?.tierShift) || 0;
   disciplines.forEach((disc, idx) => {
     const ordinal = idx + 1;
     const additional = ordinal > 1;
+    const lowestCircle = lowestPriorCircle(disciplines, idx);
     const lines = (disc?.talents ?? []).map((t) => {
       if (!additional) {
         const tier = tierForCircle(t.circle, costs);

@@ -12,6 +12,7 @@ import {
   knackCost,
   skillRanksCost,
   lowestDisciplineCircle,
+  lowestPriorCircle,
   tierForCircle,
   equivalentTier,
   shiftedTier,
@@ -369,8 +370,11 @@ test('auditLegendSpent prices a 2nd Discipline with the surcharge', () => {
   assert.equal(arch.total, 1900); // Missile Weapon R5 Novice, first Discipline
   assert.equal(neth.additional, true);
   assert.equal(neth.ordinalLabel, '2nd');
-  assert.equal(neth.total, 1300); // Spellcasting R3, 2nd Discipline (lowest Circle 3)
-  assert.equal(r.total, 1900 + 1300);
+  // I2 (start-new-discipline, R2): the Rank-1 row is the lowest Circle among Disciplines BEFORE
+  // this one (Archer 4 -> 300), not the lowest including itself (Nethermancer 3 -> 500).
+  // Changed from 1300: Rank 1 300 + Journeyman R2 300 + R3 500.
+  assert.equal(neth.total, 1100);
+  assert.equal(r.total, 1900 + 1100);
 });
 
 test('auditLegendSpent with tierShift prices the 2nd Discipline at the bumped column', () => {
@@ -632,4 +636,52 @@ test('Karma-ritual sink prices the whole `converted` at the current cost (event 
 test('no karma-rituals section when absent cost or zero converted', () => {
   const r = auditLegendSpent({ attributes: {}, disciplines: [], resources: { karma: { converted: 5 } } }, costs);
   assert.equal(r.sections.find((s) => s.key === 'karma-rituals'), undefined);
+});
+
+// --- start-new-discipline I2: Rank-1 row = lowest Circle among PRIOR Disciplines (rules.md R2) ---
+
+test('lowestPriorCircle: minimum Circle over indices before idx; null when none', () => {
+  const ds = [{ circle: 4 }, { circle: 1 }, { circle: 1 }];
+  assert.equal(lowestPriorCircle(ds, 0), null);
+  assert.equal(lowestPriorCircle(ds, 1), 4);
+  assert.equal(lowestPriorCircle(ds, 2), 1);
+  assert.equal(lowestPriorCircle(ds, 3), 1);
+  assert.equal(lowestPriorCircle([{ circle: null }, { circle: 3 }], 1), null); // null circles ignored
+  assert.equal(lowestPriorCircle([{ circle: null }, { circle: 3 }], 2), 3);
+  assert.equal(lowestPriorCircle([], 0), null);
+  assert.equal(lowestDisciplineCircle([{ circle: 4 }, { circle: 3 }]), 3); // still exported
+});
+
+const dts = (names) => names.map((name) => ({ name, rank: 1, circle: 1 }));
+const WARRIOR_DTS = ['Avoid Blow', 'Melee Weapon', 'Thread Weaving (Warrior)', 'Tiger Spring', 'Wood Skin'];
+
+test('audit: Thief 4 + Warrior Circle 1 with 5 Rank-1 DTs prices 5 x 300 = 1500 (not row 1)', () => {
+  const char = {
+    attributes: {},
+    disciplines: [
+      { name: 'Thief', circle: 4, talents: [] },
+      { name: 'Warrior', circle: 1, talents: dts(WARRIOR_DTS) },
+    ],
+    skills: [],
+    resources: { legend: { totalEarnt: 10000 } },
+  };
+  const w = auditLegendSpent(char, costs).sections.find((s) => s.key === 'talents:1');
+  assert.equal(w.total, 5 * 300);
+});
+
+test('audit: a LATER Circle-1 Discipline does not reprice an earlier one (Thief 4, Warrior 1, Archer 1)', () => {
+  const char = {
+    attributes: {},
+    disciplines: [
+      { name: 'Thief', circle: 4, talents: [] },
+      { name: 'Warrior', circle: 1, talents: dts(WARRIOR_DTS) },
+      { name: 'Archer', circle: 1, talents: dts(['Avoid Blow', 'Missile Weapon']) },
+    ],
+    skills: [],
+    resources: { legend: { totalEarnt: 99999 } },
+  };
+  const r = auditLegendSpent(char, costs);
+  assert.equal(r.sections.find((s) => s.key === 'talents:1').total, 5 * 300); // not 5 x 1300
+  // Archer is 3rd: row = lowest of Thief 4 / Warrior 1 = 1, column 3 (legend.json newDisciplineRank1).
+  assert.equal(r.sections.find((s) => s.key === 'talents:2').total, 2 * costs.newDisciplineRank1['3']['1']);
 });

@@ -11,7 +11,7 @@ import { freeTalentRows } from './engine/free-talents.js';
 import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
-import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestDisciplineCircle, tierForCircle } from './engine/legend-spent.js';
+import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestPriorCircle, tierForCircle } from './engine/legend-spent.js';
 import { damageState, healthDanger, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
@@ -40,7 +40,7 @@ import { carriedWeight, weightPounds } from './engine/weight.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { circleStatus, normalizeOptionalTable } from './engine/advancement.js';
-import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant } from './engine/talent-options.js';
+import { UNIVERSAL_TALENTS, optionSlots, learnableTalents, nextCircleGrant, addableDisciplines } from './engine/talent-options.js';
 import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { learnableKnacks } from './engine/knack-options.js';
@@ -1050,7 +1050,7 @@ export function deriveModel(character, rules, session = {}) {
       // default). Null/absent leaves the modal to show a placeholder.
       advanceCost: circleInfo.eligible
         ? (() => {
-            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestDisciplineCircle(character.disciplines), legendFile?.costs, 1);
+            const perDT = talentRankStepCost({ circle: circleInfo.next }, dIdx + 1, lowestPriorCircle(character.disciplines, dIdx), legendFile?.costs, 1);
             const grantCount = nextCircleGrant(ref, d.circle, knownNames).length;
             return {
               legend: perDT == null ? null : perDT * grantCount,
@@ -1434,12 +1434,12 @@ export function deriveModel(character, rules, session = {}) {
     const costs = legendFile.costs;
     const available = legend?.available ?? null;
     const discInputs = character.disciplines ?? [];
-    const lowestCircle = lowestDisciplineCircle(discInputs);
     disciplines = disciplines.map((disc, di) => ({
       ...disc,
       talents: disc.talents.map((t, ti) => {
         if (t.free) return { ...t, pricing: null };
         const raw = discInputs[di]?.talents?.[ti] ?? {};
+        const lowestCircle = lowestPriorCircle(discInputs, di);
         const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, { tierShift });
         const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, { tierShift }) : null;
         return {
@@ -1467,6 +1467,18 @@ export function deriveModel(character, rules, session = {}) {
       };
     });
   }
+
+  // Disciplines the character can start or seed (start-new-discipline): a pure
+  // quote per candidate with the option pool enriched for the picker. Derived only.
+  const addableDisciplinesModel = legendFile?.costs
+    ? addableDisciplines(disciplinesFile?.disciplines ?? [], character.disciplines ?? [], legendFile.costs, { tierShift }).map((c) => ({
+        ...c,
+        optionPool: {
+          ...c.optionPool,
+          items: c.optionPool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })),
+        },
+      }))
+    : [];
 
   // Learnable skills (PLAN-LEARN-SKILLS §7.3): every catalog skill not already
   // known, with Rank-1 Legend + silver previews derived from costs (data, not code).
@@ -1844,6 +1856,7 @@ export function deriveModel(character, rules, session = {}) {
     wealth: deriveWealth(character.wealth ?? {}),
     skills,
     skillOptions,
+    addableDisciplines: addableDisciplinesModel,
     knacks,
     knackOptions,
     skillKnackEnabled,
