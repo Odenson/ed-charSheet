@@ -47,77 +47,47 @@
   "disciplines": [
     {
       "name": "Thief",
-      "circle": 4,
+      "circle": 1,
       "talents": [
         {
           "name": "Awareness",
-          "rank": 4,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Durability",
-          "rank": 5,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Karma Ritual",
-          "rank": 4,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Lock Picking",
-          "rank": 4,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Picking Pockets",
-          "rank": 4,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Stealthy Stride",
-          "rank": 4,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Thread Weaving (Thief)",
-          "rank": 4,
+          "rank": 1,
           "circle": 1
         },
         {
           "name": "Melee Weapon",
-          "rank": 5,
+          "rank": 1,
           "circle": 1
-        },
-        {
-          "name": "Disarm Trap",
-          "rank": 3,
-          "circle": 2
-        },
-        {
-          "name": "First Impression",
-          "rank": 1,
-          "circle": 2
-        },
-        {
-          "name": "Haggle",
-          "rank": 2,
-          "circle": 3
-        },
-        {
-          "name": "Surprise Strike",
-          "rank": 5,
-          "circle": 3
-        },
-        {
-          "name": "Conceal Object",
-          "rank": 1,
-          "circle": 4
-        },
-        {
-          "name": "Taunt",
-          "rank": 1,
-          "circle": 3
         }
       ]
     }
