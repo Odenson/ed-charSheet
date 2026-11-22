@@ -1980,8 +1980,20 @@ export class EdApp extends LitElement {
   // locally). Absent → the deployed worker (default behaviour — no config needed
   // to save). A bare origin or path resolves against the app's own origin.
   _endpointFor(param, fallback) {
-    const raw = new URLSearchParams(location.search).get(param);
-    return raw ? new URL(raw, location.href).href : fallback;
+    const q = new URLSearchParams(location.search);
+    const raw = q.get(param);
+    if (raw) return new URL(raw, location.href).href;
+    // `?save=<origin>/save` alone (the dev-server banner URL) also points the sibling routes
+    // (`/save-image`, `/delete-character`) at that server, instead of the deployed worker.
+    const save = q.get('save');
+    if (save && param !== 'save' && param !== 'save-items') {
+      const u = new URL(save, location.href);
+      if (/\/save$/.test(u.pathname)) {
+        u.pathname = u.pathname.replace(/\/save$/, `/${param}`);
+        return u.href;
+      }
+    }
+    return fallback;
   }
 
   // Roll-time modifiers from live conditions (engine/roll-mods.js decides; this

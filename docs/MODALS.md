@@ -161,9 +161,10 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 |---|---|---|
 | Disciplines, Equipment item | 2000 | 30rem, scroll |
 | confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
-| Notes, Edit details, Add Legend, custom item, day reset, save key, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 26rem / 24rem scroll / 26rem |
+| Notes, Edit details, Add Legend, custom item, day reset, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 24rem scroll / 26rem |
 | Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |
 | trade, new character / rename (`ed-new-character`, kind `input`), delete character (`ed-delete-character`, kind `input`, danger primary) | 2150 | 27rem scroll / 24rem / 26rem |
+| save key (`ed-save-key`, portal; must sit above the picker's delete modal) | 2200 | 26rem |
 | Settings, conflict | 2200 | 26rem |
 | roll | 3000 | 340px |
 
