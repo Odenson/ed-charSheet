@@ -968,7 +968,8 @@ App: compare rules/races.json startingAttributes and karmaModifier (match book p
 
 Decision: 2026-11-21 — Starting Legend Points are 0 current / 0 total (house rule; the book is silent).
 Decision: 2026-11-21 — Starting attribute range is the cost-table range -2..+8 over the racial value (house rule; the book states no other cap).
-Decision: 2026-11-21 — The Talent Option pick is excluded from the 8 creation talent points; it is bought later with Legend Points (house rule; resolves the (10) CONFLICT-ish note).
+Decision: 2026-11-21 — [SUPERSEDED by the 2026-11-22 Decision below] The Talent Option pick is excluded from the 8 creation talent points; it is bought later with Legend Points (house rule; resolves the (10) CONFLICT-ish note).
+Decision: 2026-11-22 — SUPERSEDES the 2026-11-21 Talent Option decision: one Circle-1 Talent Option from the Novice pool may be bought with the 8 creation talent points (Rank 0-3, shares the 8-point budget; one slot; house rule — the book gives the option's Rank only via Legend Points and is silent on creation points; PG p.67-68, text-player-guide-create-character.txt:464-473).
 Decision: 2026-11-21 — Total rank per skill is <= 3 at creation, fixed free allotment ranks included (house rule; the book is silent on whether free ranks count toward the 3).
 Decision: 2026-11-21 — On finishing creation, unspent talent/skill/spell points are forfeited after a warning; unused attribute points convert to extra Max Karma per the book (house rule for the forfeiture; book-derived for the Karma conversion).
 Decision: 2026-11-21 — Starting equipment (adventurer's kit, dagger or knife, traveler's garb, 1 week trail rations, grimoire for magicians) and 100 silver are granted (house rule: artisan tools, which need GM approval, are not auto-granted; see Q040 for item stats).

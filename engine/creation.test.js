@@ -94,7 +94,7 @@ function fresh(discipline = 'Archer', { race = 'Human', open = true } = {}) {
 }
 
 const sameSet = (actual, expected, msg) => assert.deepEqual([...actual].sort(), [...expected].sort(), msg);
-const REASONS = ['creation-closed', 'no-change', 'bad-rank', 'over-budget', 'unknown-discipline', 'not-a-creation-talent', 'unknown-attribute', 'out-of-range', 'unknown-skill', 'duplicate', 'not-allowed-category', 'tier-not-novice', 'bad-text', 'generic-not-allowed', 'rank-cap', 'not-found', 'not-a-magician', 'unknown-spell', 'not-available', 'matrix-circle', 'invalid-budget', 'already-finished'];
+const REASONS = ['creation-closed', 'no-change', 'bad-rank', 'over-budget', 'unknown-discipline', 'not-a-creation-talent', 'unknown-attribute', 'out-of-range', 'unknown-skill', 'duplicate', 'not-allowed-category', 'tier-not-novice', 'bad-text', 'generic-not-allowed', 'rank-cap', 'not-found', 'not-a-magician', 'unknown-spell', 'not-available', 'matrix-circle', 'invalid-budget', 'already-finished', 'option-slot-full'];
 
 // A successful apply returns { ok: true, character, touched }; keep the new character.
 function good(res, touched) {
@@ -337,15 +337,46 @@ describe('talentBudget and applyTalentRank (R1: 8 points, max Rank 3, the five C
     good(talent(lowered, 'Archer', 'Avoid Blow', 1)); // a refund frees a point
   });
 
-  test('refusal: not-a-creation-talent for Durability, Karma Ritual, a free talent, a Talent Option and a Discipline-less name', () => {
+  test('refusal: not-a-creation-talent for Durability, Karma Ritual, a free talent, a non-pool talent and a Discipline-less name', () => {
     const c = fresh('Archer');
-    const archerOptions = disciplinesFile.disciplines.find((d) => d.name === 'Archer').talentOptions ?? [];
-    const option = (Array.isArray(archerOptions) ? archerOptions : Object.values(archerOptions).flat()).map((o) => (typeof o === 'string' ? o : o.name)).find((n) => n && !DT('Archer').includes(n));
-    for (const name of ['Durability', 'Karma Ritual', 'Call Missile', ...(option ? [option] : []), 'Lock Picking', 'Basket Weaving']) {
+    for (const name of ['Durability', 'Karma Ritual', 'Call Missile', 'Lock Picking', 'Basket Weaving']) {
       refused(talent(c, 'Archer', name, 1), c, 'not-a-creation-talent');
     }
     const neth = fresh('Nethermancer');
     refused(talent(neth, 'Nethermancer', 'Standard Matrix', 1), neth, 'not-a-creation-talent');
+  });
+
+  // Owner ruling 2026-11-22: one Novice-pool Talent Option may be bought with the 8 talent points.
+  const novicePool = (d) => disciplinesFile.disciplines.find((x) => x.name === d).talentOptions.novice;
+
+  test('the one Circle-1 Talent Option: offered while open, a stepper row once chosen, counted in the 8, slot-limited', () => {
+    let c = fresh('Warrior');
+    const pool = novicePool('Warrior');
+    const before = talentBudget(c, ctx);
+    assert.equal(before.option.open, true);
+    assert.deepEqual([...before.option.candidates].sort(), [...pool].sort());
+    c = good(talent(c, 'Warrior', pool[0], 1));
+    const after = talentBudget(c, ctx);
+    assert.equal(after.spent, 1);
+    assert.equal(after.option.open, false);
+    assert.equal(after.option.held, pool[0]);
+    assert.ok(after.rows.some((r) => r.option && r.name === pool[0] && r.rank === 1 && r.canRaise && r.canLower));
+    assert.equal(c.creation.free.talents[`Warrior/${pool[0]}`], 1);
+    refused(talent(c, 'Warrior', pool[1], 1), c, 'option-slot-full');
+    c = good(talent(c, 'Warrior', pool[0], 3));
+    assert.equal(talentBudget(c, ctx).spent, 3);
+    c = good(talent(c, 'Warrior', pool[0], 0)); // lowering to 0 returns the slot
+    assert.equal(talentBudget(c, ctx).option.open, true);
+    assert.equal(c.creation.free.talents[`Warrior/${pool[0]}`], undefined);
+  });
+
+  test('the Talent Option shares the 8 points with the five Discipline Talents', () => {
+    let c = fresh('Warrior');
+    const opt = novicePool('Warrior')[0];
+    for (const n of DT('Warrior').slice(0, 2)) c = good(talent(c, 'Warrior', n, 3)); // 6 spent
+    c = good(talent(c, 'Warrior', opt, 2)); // 8 spent
+    refused(talent(c, 'Warrior', opt, 3), c, 'over-budget');
+    assert.equal(talentBudget(c, ctx).left, 0);
   });
 
   test('refusal: unknown-discipline for a Discipline that does not exist', () => {

@@ -13,7 +13,8 @@ const REFUSALS = {
   'bad-rank': 'That rank is not allowed.',
   'over-budget': 'Not enough points left for that.',
   'unknown-discipline': 'That Discipline is not part of creation.',
-  'not-a-creation-talent': 'Only the Circle 1 Discipline Talents take talent points.',
+  'not-a-creation-talent': 'Only the Circle 1 Discipline Talents and one Talent Option take talent points.',
+  'option-slot-full': 'You already have your one Talent Option. Remove it to pick another.',
   'unknown-attribute': 'Unknown attribute.',
   'out-of-range': 'That attribute value is outside the allowed range.',
   'unknown-skill': 'That skill is not in the skill catalog.',
@@ -79,4 +80,26 @@ export function finishWarn(plan) {
   if (!parts.length) return '';
   const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
   return `${list} will be forfeited.`;
+}
+
+/** The opening line of the "Creating your character" pop-up. */
+export function guideIntro(name) {
+  const who = String(name ?? '').trim();
+  return `${who ? `${who} is` : 'Your character is'} saved on this device as a draft. Work through these steps in any order, then press Finish creation in the top bar.`;
+}
+
+/**
+ * The steps of the creation pop-up, in the order a player works through them. `magician` adds the
+ * spell-picking step. Wording only — every number mirrors the creation budgets (engine/creation.js
+ * CREATION_RULES: 25 attribute points, 8 talent points, 8 extra skill ranks).
+ * @returns {Array<{where: string, text: string}>}
+ */
+export function guideSteps({ magician = false } = {}) {
+  return [
+    { where: 'Overview', text: 'Spend your 25 attribute points with the − and + beside each attribute. Any you leave unspent become extra Max Karma when you finish.' },
+    { where: 'Disciplines', text: 'Spend your 8 talent points on your Discipline’s Circle 1 talents and, if you want, one Talent Option (up to Rank 3 each). On the Skills sub-tab, add your starting skills.' },
+    ...(magician ? [{ where: 'Spells', text: 'Pick your starting spells from the Grimoire view. You have as many spell points as your Perception Step.' }] : []),
+    { where: 'Equipment', text: 'You start with an adventuring kit, a dagger, traveler’s garb, trail rations and 100 silver. Buy anything else here.' },
+    { where: 'Finish', text: 'When you are done, press Finish creation in the top bar. Unspent talent points, skill ranks and spell points are lost, and from then on raising a rank costs Legend.' },
+  ];
 }

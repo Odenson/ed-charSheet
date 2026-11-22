@@ -20,7 +20,7 @@ import { describeRequirement } from '../engine/advancement.js';
 // The kit kind of each Disciplines modal (one controller serves all ten):
 // info modals (talent/skill/knack/granted) are read-only; the pickers act on a
 // focused option; Train is a confirm.
-const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', 'creation-skill': 'picker', advance: 'confirm', 'start-discipline': 'confirm' };
+const DISC_KIND = { halfmagic: 'picker', learn: 'picker', 'learn-skill': 'picker', 'learn-knack': 'picker', 'creation-skill': 'picker', 'creation-option': 'picker', advance: 'confirm', 'start-discipline': 'confirm' };
 
 // Creation mode (create-new-adept): the fixed free skill ranks, in the order the creation bar
 // lists their remainders. Display labels only — the pool sizes and what is left come from
@@ -225,10 +225,6 @@ export class EdDisciplines extends LitElement {
     /* Creation bar: an over-spent chip takes the warning tone; Finish sits at the right end. */
     .lchip.over { color: light-dark(#c0392b, #e06557); border-color: light-dark(#c0392b, #e06557); }
     .lchip.over b { color: inherit; }
-    .fin { margin-left: auto; font: inherit; font-size: var(--fs-small); font-weight: 500; padding: 4px 14px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); cursor: pointer; }
-    .fin:hover:not(:disabled) { background: var(--accent); color: var(--bg-card); }
-    .fin:disabled { opacity: 0.5; cursor: not-allowed; }
-    .fin:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
     .cwarn { flex-basis: 100%; font-size: var(--fs-fine); color: light-dark(#c0392b, #e06557); }
     .hint { font-size: var(--fs-small); color: var(--karma); }
     .pend { font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 7px; }
@@ -511,8 +507,6 @@ export class EdDisciplines extends LitElement {
     return html`
       <div class="legendbar">
         ${chips}
-        <button class="fin" ?disabled=${!cr.canFinish} title=${cr.canFinish ? 'Finish creation' : blockers.join('\n')}
-          @click=${() => this.dispatchEvent(new CustomEvent('ed-creation-finish', { bubbles: true, composed: true }))}>Finish creation</button>
         ${cr.canFinish ? '' : html`<span class="cwarn">${blockers.join(' ')}</span>`}
       </div>
     `;
@@ -534,6 +528,35 @@ export class EdDisciplines extends LitElement {
     );
     const rest = all.filter((t) => !creation.includes(t));
     return [...rest.filter((t) => !t.free), ...creation, ...rest.filter((t) => t.free)];
+  }
+
+  // Creation's "+ add option": the one Circle-1 Talent Option (owner ruling 2026-11-22), shown
+  // while the slot is open. Opens the pool picker; a pick dispatches Rank 1 up.
+  _creationAddOptionSlot(cr) {
+    const opt = cr.talents?.option;
+    if (!opt?.open) return '';
+    const can = (opt.candidates ?? []).length > 0 && cr.talents.left >= 1;
+    return html`<button class="addopt" ?disabled=${!can} title=${can ? 'Spend a talent point on your one Talent Option' : cr.talents.left < 1 ? 'No talent points left' : 'No Talent Options available'} @click=${(e) => this._openModal({ type: 'creation-option', discipline: this.model?.disciplines?.[this._sel]?.name }, e)}>＋ add option</button>`;
+  }
+
+  _creationOptionModal(m) {
+    const cands = this._cr?.talents?.option?.candidates ?? [];
+    return modalFrame(this._modalCtl, {
+      title: html`Choose your Talent Option`,
+      label: 'Choose your Talent Option',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="mtext mmuted">You may start with one talent from ${m.discipline}'s Novice option pool. It takes one of your talent points per Rank, like the Circle 1 talents.</div>
+    <div class="hmopts">
+      ${cands.map((o, i) => html`
+        <button class="lopt" ?autofocus=${i === 0} @click=${() => { this._modalCtl.close(); this._creationEdit({ kind: 'talent', discipline: m.discipline, name: o.name, rank: 1 }); }}>
+          <span>${o.name}</span>
+          ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
+        </button>`)}
+    </div>`,
+    });
   }
 
   // Creation's "+ add skill": opens the picker of starting skills (free; no Legend, no silver).
@@ -1677,6 +1700,7 @@ export class EdDisciplines extends LitElement {
                         `,
                       )}
                       ${this.editMode && !cr ? this._addOptionSlot(d, circle) : ''}
+                      ${cr && circle === 1 ? this._creationAddOptionSlot(cr) : ''}
                     </div>
                   </div>
                 `,
@@ -1721,6 +1745,8 @@ export class EdDisciplines extends LitElement {
                       ? this._learnKnackModal(this._modal)
                       : this._modal.type === 'creation-skill'
                         ? this._creationSkillModal()
+                        : this._modal.type === 'creation-option'
+                          ? this._creationOptionModal(this._modal)
                         : this._modal.type === 'advance'
                           ? this._advanceModal(this._modal)
                           : this._modal.type === 'start-discipline'

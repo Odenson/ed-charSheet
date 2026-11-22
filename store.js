@@ -2008,6 +2008,10 @@ export function deriveModel(character, rules, session = {}) {
           ...status,
           talents: {
             ...status.talents,
+            option: {
+              ...status.talents.option,
+              candidates: status.talents.option.candidates.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })),
+            },
             rows: status.talents.rows.map((r) => {
               const cat = talentCatalog[r.name] ?? {};
               return {

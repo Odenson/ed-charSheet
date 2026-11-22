@@ -35,6 +35,7 @@ import './ed-notes.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
+import './ed-creation-guide.js';
 import './ed-day-reset.js';
 import './ed-spells.js';
 import './ed-character-picker.js';
@@ -91,6 +92,7 @@ export class EdApp extends LitElement {
     // The Finish-creation plan (engine finishPlan) while its confirm is open, else null. Reactive
     // state: setting it opens the confirm; declared here and initialised in the constructor.
     _confirmFinish: { state: true },
+    _creationGuide: { state: true }, // { name, magician } while the "Creating your character" pop-up is open
     _conflict: { state: true },
     _settings: { state: true }, // Settings modal open?
     // Session-only armed-potion state (dies on reload). At most ONE armed
@@ -187,6 +189,16 @@ export class EdApp extends LitElement {
     .icon-btn[disabled] { opacity: 0.5; cursor: default; }
     .ico-svg { width: 15px; height: 15px; display: block; }
     .icon-btn.edit { margin-left: auto; }
+    /* Finish creation: sits between the tab names and the round buttons (create-new-adept). */
+    .fin-top {
+      margin-left: auto; margin-right: 8px; font: inherit; font-size: var(--fs-small); font-weight: 500;
+      padding: 4px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+      border: 1px solid var(--accent, #b26a00); background: var(--accent-bg, light-dark(#f6e9dc, #3a2a17)); color: var(--accent, #b26a00);
+    }
+    .fin-top:hover:not(:disabled) { background: var(--accent, #b26a00); color: var(--bg-card, light-dark(#fff, #232833)); }
+    .fin-top:disabled { opacity: 0.5; cursor: not-allowed; }
+    .fin-top:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg, light-dark(#f6e9dc, #3a2a17)); }
+    .fin-top + .icon-btn.edit { margin-left: 0; }
     .icon-btn.edit.active {
       background: var(--accent, #b26a00); border-color: var(--accent, #b26a00); color: #fff;
     }
@@ -667,6 +679,7 @@ export class EdApp extends LitElement {
       if (this._characterId === character.meta.id) {
         this._editMode = true;
         this._tab = 'disciplines';
+        this._creationGuide = { name: character.meta.name, magician: this._model?.creation?.spells != null };
       }
     } catch (e) {
       this._showNotice(`Couldn't start the new character: ${e?.message ?? e}`);
@@ -2338,6 +2351,14 @@ export class EdApp extends LitElement {
             </button>
           `,
         )}
+        ${this._model?.creation?.open
+          ? html`<button
+              class="fin-top"
+              ?disabled=${!this._model.creation.canFinish}
+              title=${this._model.creation.canFinish ? 'Finish creation' : (this._model.creation.blockers ?? []).join('\n')}
+              @click=${() => this._finishCreation()}
+            >Finish creation</button>`
+          : ''}
         <button
           class="icon-btn edit ${this._editMode ? 'active' : ''}"
           role="switch"
@@ -2496,6 +2517,13 @@ export class EdApp extends LitElement {
             }}
             @close=${() => (this._confirmSwitch = false)}
           ></ed-confirm>`
+        : ''}
+      ${this._creationGuide
+        ? html`<ed-creation-guide
+            .name=${this._creationGuide.name}
+            .magician=${this._creationGuide.magician}
+            @close=${() => (this._creationGuide = null)}
+          ></ed-creation-guide>`
         : ''}
       ${this._confirmFinish
         ? html`<ed-confirm

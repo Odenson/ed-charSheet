@@ -154,7 +154,8 @@ changes nothing.
 - **Disciplines tab.** A *creation bar* replaces the Available Legend bar: a
   "Talent points left N" chip on a Discipline sub-tab; "Skill ranks left N" plus a
   chip for each free skill pool with ranks left (Knowledge, Artisan, Speak Language,
-  Read/Write Language) on the Skills sub-tab; and a **Finish creation** button.
+  Read/Write Language) on the Skills sub-tab. The **Finish creation** button lives in the
+  top bar, between the tab names and the round buttons, on every tab (owner, 2026-11-22).
   A chip whose budget is over-spent takes the warning colour. The Circle 1
   Discipline Talents each get a −/+ stepper (Rank 0 to 3, unlearned ones shown at
   Rank 0 with the Step as `—` and the dice disabled); Durability, Karma Ritual and
@@ -164,8 +165,9 @@ changes nothing.
   the Discipline's skills first and a free-text craft, Speak Language, Read/Write
   Language, General Novice skills, one search box); each option is badged "free
   rank" or "uses 1 of N", and a free-text field has its own Add button (Enter in the
-  field adds). "+ Add Discipline", "Seed Circle 1", "+ add option", "+ add knack"
-  and the Legend steppers are not offered, and the green next-Circle pill is a plain
+  field adds). On the Disciplines tab, one "+ add option" button (Circle 1 group) picks the
+  single Novice-pool Talent Option, which then steps like the five (owner, 2026-11-22).
+  "+ Add Discipline", "Seed Circle 1", "+ add knack" and the Legend steppers are not offered, and the green next-Circle pill is a plain
   pill, not a Train button.
 - **Overview.** The Attributes heading carries a "Points left N" chip, and each
   attribute tile has a compact −/+ pair at the right end of its **existing name
@@ -179,7 +181,7 @@ changes nothing.
   beside the Karma chip (a dashed placeholder pill while the Perception Step cannot
   be resolved, never a made-up budget); ✕ removes a spell and returns its points; a
   spell above the character's Circle cannot be placed in a matrix.
-- **Finish creation.** Disabled, with a tooltip (and a visible line) listing what is
+- **Finish creation.** Disabled, with a tooltip (and a visible line on the Disciplines bar) listing what is
   over-spent, until every budget is valid. Otherwise it opens a confirm
   (`ed-confirm`, heading "Finish creation?", Enter confirms, Escape cancels): unspent
   attribute points become Max Karma, unspent talent points, skill ranks and spell

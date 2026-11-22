@@ -139,3 +139,7 @@
 ## 2026-11-21 — asked by dev-lead
 **Q:** The book limits only the fixed free Artisan rank to the Discipline list; the 8 extra ranks may go to any Artisan skill. For the 8 extra ranks, should the picker offer any `artisan` skill (and `Artisan (<text>)`)?
 **A:** Any Artisan from the 8 (fixed Artisan rank: Discipline list only). Recorded on Q041 and R11.
+
+## 2026-11-22 — asked by owner follow-up
+**Q:** May the 8 talent points be spent on an optional (Talent Option) talent?
+**A:** Yes — one Circle-1 Talent Option from the Novice pool, Rank 0-3, inside the 8 points (supersedes R1's 2026-11-21 exclusion). Also: Finish creation moved to the top bar; a creation guide pop-up shows after a new character is made.

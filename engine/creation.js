@@ -30,6 +30,7 @@
 
 import { maxKarma } from './characteristics.js';
 import { ledgerTalentKey, normSpellName } from './legend-spent.js';
+import { disciplineTalentSet, freeTalentSet } from './talent-options.js';
 
 /**
  * The creation allotments (rules.md R1, R3, R5, R6). Constants of the rule, not data a
@@ -121,6 +122,23 @@ function creationTalentNames(entry) {
   return (entry?.circles ?? []).find((c) => c.circle === 1)?.talents ?? [];
 }
 
+// The Circle-1 Talent Option pool (PG p.67: "one talent from a pool of talents available at First
+// Circle") — the Novice pool of the Discipline, minus any name the Discipline already grants.
+// Owner ruling 2026-11-22: one option may be bought with the 8 talent points like the five.
+function optionPool(entry) {
+  const dts = disciplineTalentSet(entry);
+  const frees = freeTalentSet(entry);
+  return (entry?.talentOptions?.novice ?? []).filter((n) => !dts.has(n) && !frees.has(n));
+}
+
+// The held Circle-1 Talent Option row of the first Discipline (null when the slot is open): a
+// Circle-1 talent that is neither a Discipline Talent, universal, nor free.
+function heldOption(disc, entry) {
+  const dts = disciplineTalentSet(entry);
+  const frees = freeTalentSet(entry);
+  return (disc?.talents ?? []).find((t) => t.circle === 1 && !dts.has(t.name) && !frees.has(t.name)) ?? null;
+}
+
 // A magician holds Spellcasting among its Circle-1 Discipline Talents (the engine's own
 // caster test, engine/spells.js) — not `halfMagic`, which every Discipline carries.
 const isMagicianEntry = (entry) => creationTalentNames(entry).includes('Spellcasting');
@@ -137,6 +155,8 @@ const creationWith = (character, free) => ({ open: character.creation.open, free
 
 function talentSpent(disc, entry) {
   const names = new Set(creationTalentNames(entry));
+  const opt = heldOption(disc, entry);
+  if (opt) names.add(opt.name);
   return (disc?.talents ?? []).filter((t) => names.has(t.name)).reduce((s, t) => s + (Number(t.rank) || 0), 0);
 }
 
@@ -165,11 +185,20 @@ export function talentBudget(character, ctx) {
       canLower: open && rank > 0,
     };
   });
-  return { total, spent, left, valid: spent <= total && rows.every((r) => r.rank <= max), rows };
+  // The one Circle-1 Talent Option (owner ruling 2026-11-22): once chosen it is a stepper row like
+  // the five (Rank 1..3; lowering to 0 returns the slot); while the slot is open the pool is offered.
+  const held = heldOption(disc, entry);
+  if (held) {
+    const rank = Number(held.rank) || 0;
+    rows.push({ discipline: disc.name, name: held.name, rank, max, option: true, canRaise: open && rank < max && left >= 1, canLower: open && rank > 0 });
+  }
+  const option = { open: !held, held: held?.name ?? null, candidates: held ? [] : optionPool(entry).filter((n) => !(disc?.talents ?? []).some((t) => t.name === n)) };
+  return { total, spent, left, valid: spent <= total && rows.every((r) => r.rank <= max), rows, option };
 }
 
 /**
- * Set one Circle-1 Discipline Talent to Rank 0..3 (R1). Raising from 0 appends
+ * Set one Circle-1 Discipline Talent — or the single Circle-1 Talent Option, owner ruling
+ * 2026-11-22 — to Rank 0..3 (R1). Raising from 0 appends
  * `{ name, rank, circle: 1 }`; lowering to 0 removes the row and its ledger key; the ledger
  * `free.talents["<Discipline>/<name>"]` always equals the rank. Touches advancements + creation.
  */
@@ -178,7 +207,11 @@ export function applyTalentRank(character, ctx, { discipline, name, rank }) {
   if (!isInt(rank) || rank < 0 || rank > CREATION_RULES.talentMaxRank) return refuse(character, 'bad-rank');
   const { disc, entry } = firstDiscipline(character, ctx);
   if (!disc || !entry || discipline !== disc.name) return refuse(character, 'unknown-discipline');
-  if (!creationTalentNames(entry).includes(name)) return refuse(character, 'not-a-creation-talent');
+  const held = heldOption(disc, entry);
+  if (!creationTalentNames(entry).includes(name)) {
+    if (!optionPool(entry).includes(name) && held?.name !== name) return refuse(character, 'not-a-creation-talent');
+    if (held && held.name !== name) return refuse(character, 'option-slot-full');
+  }
   const row = (disc.talents ?? []).find((t) => t.name === name);
   const current = Number(row?.rank) || 0;
   if (rank === current) return refuse(character, 'no-change');

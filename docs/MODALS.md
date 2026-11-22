@@ -171,7 +171,8 @@ Creation mode (UI-GUIDELINES §6b) adds three more uses of the kit and no new
 host: the Disciplines `creation-skill` picker (kind `picker`, layer 2000, 30rem
 scroll; its Knowledge and Artisan free-text fields carry `data-enter="local"` and
 handle their own Enter), the Spells starting-spell picker (kind `picker`, layer
-2100, 30rem scroll, its own controller in the Spells shadow root), and the "Finish
+2100, 30rem scroll, its own controller in the Spells shadow root), the one-off "Creating your character" guide (`ed-creation-guide`, kind `info`, layer 2150,
+30rem scroll, "Got it") shown after a new character is created, and the "Finish
 creation?" `ed-confirm` (tone `accent`, with a warning line) rendered by ed-app.
 
 **Footers (D5) and hint (V4).** Input and confirm modals: `[Cancel] [Primary]`,

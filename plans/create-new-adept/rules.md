@@ -6,7 +6,7 @@ Sources: docs/RULES-FAQ.md Q036–Q040 (CC = rulebook extracts/manual/text-playe
 - **Status:** ANSWERED
 - **Ruling:** 8 talent points, +1 Rank each, max 3 per talent (start max Rank 3); only First-Circle Discipline Talents; unassigned talents are Rank 0 (unrecorded). Durability is automatic (not a talent, no ranks). Karma Ritual is not a talent.
 - **Sources:** Q039; CC:451-473, 509-518 (p. 67–68)
-- **Decision:** Talent Option excluded from the 8 points, bought later with Legend (2026-11-21).
+- **Decision:** ~~Talent Option excluded from the 8 points, bought later with Legend (2026-11-21).~~ **Superseded 2026-11-22 (owner):** one Circle-1 Talent Option from the Discipline's Novice pool may be bought with the 8 points like the five Discipline Talents (Rank 0–3, ledger key `<Discipline>/<Talent>`). The book is silent on this (PG p.67–68 gives the option's Rank only via Legend), so it is a house ruling.
 - **Decision (round 2):** Durability and Karma Ritual are seeded as Rank-1, Circle-1 talents (the app's stored model), free, outside the 8 points (2026-11-21).
 - **Used by:** T1, T5
 

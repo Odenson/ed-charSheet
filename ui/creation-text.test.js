@@ -12,7 +12,7 @@ const ENGINE_CODES = [
   'creation-closed', 'no-change', 'bad-rank', 'over-budget', 'unknown-discipline', 'not-a-creation-talent',
   'unknown-attribute', 'out-of-range', 'unknown-skill', 'duplicate', 'not-allowed-category', 'tier-not-novice',
   'bad-text', 'generic-not-allowed', 'rank-cap', 'not-found', 'not-a-magician', 'unknown-spell', 'not-available',
-  'matrix-circle', 'invalid-budget', 'already-finished',
+  'matrix-circle', 'invalid-budget', 'already-finished', 'option-slot-full',
 ];
 
 test('every engine refusal code has its own non-empty sentence', () => {
@@ -57,4 +57,17 @@ test('finishMessage: no leftovers, one leftover, and a race with no Karma Modifi
   const noKarma = finishMessage({ karmaBonus: 6, oldMaxKarma: null, newMaxKarma: null });
   assert.match(noKarma, /6 unused attribute points become Max Karma\./);
   assert.doesNotMatch(noKarma, /\(.* to .*\)/);
+});
+
+import { guideIntro, guideSteps } from './creation-text.js';
+
+test('guideSteps: Overview, Disciplines, Equipment, Finish for a non-magician; Spells joins for a magician', () => {
+  assert.deepEqual(guideSteps({ magician: false }).map((s) => s.where), ['Overview', 'Disciplines', 'Equipment', 'Finish']);
+  assert.deepEqual(guideSteps({ magician: true }).map((s) => s.where), ['Overview', 'Disciplines', 'Spells', 'Equipment', 'Finish']);
+  assert.deepEqual(guideSteps().map((s) => s.where), ['Overview', 'Disciplines', 'Equipment', 'Finish']);
+});
+
+test('guideIntro names the character, or falls back', () => {
+  assert.match(guideIntro('Fighter'), /^Fighter is saved/);
+  assert.match(guideIntro(''), /^Your character is saved/);
 });
