@@ -10,7 +10,8 @@
     "height": "6'10",
     "weight": "138 kg",
     "skinTone": "Light Grey",
-    "background": "Test Background"
+    "background": "Test Background",
+    "portrait": "data/fighter-test-1795317647612.jpg"
   },
   "attributes": {
     "Dexterity": {
