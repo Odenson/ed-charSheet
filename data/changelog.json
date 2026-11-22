@@ -2,8 +2,21 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "summary": "",
-    "changes": []
+    "summary": "Air Sailor joins the Disciplines: start a new Air Sailor from the loader, with all eight Circles and every Air Sailor talent fully written out.",
+    "changes": [
+      {
+        "type": "added",
+        "text": "Air Sailor Discipline (Circles 1-8): start a new Air Sailor from the loader, with the free talent Air Sailing, Durability 5, its Talent Options and per-Circle abilities (karma on board an airship, Physical and Social Defense bonuses, Collaborate, an extra Recovery test)."
+      },
+      {
+        "type": "improved",
+        "text": "Full talent details (step, action, strain, skill use, effects) for all 33 Air Sailor talents, including options shared with other Disciplines such as Navigation, Distract and Etiquette."
+      },
+      {
+        "type": "fixed",
+        "text": "A newly created character now opens on the Overview tab in edit mode, instead of Disciplines."
+      }
+    ]
   },
   "releases": [
     {
