@@ -538,7 +538,7 @@ legacy no-base callers).
 split).** Each character is its **own file** `data/characters/<id>.json` (a raw
 `ed-character` entry — no grouped wrapper; current tag `/2`, legacy `/1`
 accepted until rewritten), discovered through a small
-create-only index `data/characters/index.json`
+discovery index `data/characters/index.json` (created on create; each save refreshes only its `portrait`, name is create-only)
 (`{ schema: "ed-characters-index/1", characters: { "<id>": { name, portrait? } } }`).
 A save always carries an `id` (required since v1.6.0); the worker writes
 `data/characters/<id>.json` with an optimistic-concurrency check — the client
@@ -614,6 +614,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
+  store-portrait.js   # staged portrait image overlay (ed-character-image:<id>), branch image listing, runPortraitSave (image-then-JSON save ordering)
   store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl / discordAvatarUrl
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
@@ -635,6 +636,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
+    ed-edit-portrait.js  # "Change portrait" modal (edit mode): upload / pick a branch image / remove; dispatches ed-edit-portrait (selection state in portrait-modal-state.js, image downscale in portrait-image.js)
     ed-edit-meta.js   # "Edit character details" modal: descriptive meta (dispatches ed-edit-meta); for Orks also the Gahad trigger summary/description (dispatches ed-edit-gahad-trigger -> traits[] via store.js applyGahadTrigger)
     ed-add-legend.js  # add Legend Points modal
     ed-day-reset.js   # new-day / recovery reset modal
@@ -783,7 +785,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   plus a portable Export.** A per-character localStorage edits overlay
   (`ed-character-edits:${id}`, always on, every browser) is the resilient
   autosave *beneath* the primary Save, which writes `data/characters/<id>.json`
-  (raw `ed-character`, current tag `/2`, per-character files + a create-only index,
+  (raw `ed-character`, current tag `/2`, per-character files + a discovery index (name create-only, portrait refreshed on save),
   plans/PLAN-SAVE-CONCURRENCY.md) straight to the `character-data` branch via the
   serverless worker with a per-file optimistic-concurrency check (stale saves
   surface a keep-mine/take-theirs conflict); on success the overlay

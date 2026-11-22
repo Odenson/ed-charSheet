@@ -109,8 +109,11 @@ the only offline path; this is strictly an additional option.
      theirs, §4.5).
    - file missing (`404`) → **create** it (a brand-new character), and add an
      entry to the discovery index `data/characters/index.json` (`{ "<id>": {
-     name, portrait } }`) — the index is written **only on create**, never on a
-     save, and never read for a save.
+     name, portrait } }`) — the entry is created on create; every later 2xx
+     save refreshes **only** that entry's `portrait` when it differs (name is
+     create-only; a client-supplied portrait is accepted only if `null` or
+     `<images dir>/<file>.(jpg|jpeg|png|webp)`, else the index write is skipped).
+     The index is never read for a save base.
 5. **No rebuild.** The deploy workflow (WORKFLOW.md) fires on `main` and `dev`
    only; `character-data` is not a trigger, so a save never rebuilds the app. The
    character file is source info the app reads at runtime — it needs no build.
@@ -130,9 +133,23 @@ would give only filenames and force an N+1 fetch on every picker open. The index
 (`{ schema: "ed-characters-index/1", characters: { "<id>": { name, portrait? }
 } }`) answers that in one fetch. It is **never trusted for save bases** — bases
 come only from file reads and save responses — so a stale index (a rename or a
-changed portrait leaves the entry lagging, the file's `meta.name`/`meta.portrait`
+renamed character leaves the entry's name lagging, the file's `meta.name`/`meta.portrait`
 being authoritative) can mis-label a picker row but can never corrupt a save or
 cause a false conflict.
+
+**Portrait images — `POST /save-image`** (plans/add-char-portrait). Body
+`{ id, filename, content }` (`content` = base64 of the already-downscaled image, no
+data-URL prefix), same `x-save-key` gate. The worker pins the path to
+`${GITHUB_IMAGES_DIR ?? 'data'}/<filename>` (never from the request); `filename`
+must be `<id>-<10-17 digit timestamp>.(jpg|png|webp)` with the id prefix equal to
+`id`; the decoded size is capped at 1,500,000 bytes (`too_large`) and the magic
+bytes must match the extension (`invalid_image`). Create-only: an existing file with
+identical content (git blob sha) is an idempotent `{ ok:true, path, sha, url }` with
+no PUT; different content at the same path is `409 exists` (never overwritten). The
+app uploads the image **before** posting the character JSON (so `meta.portrait`
+never points at an uncommitted file) and treats only `ok:true` as success; a flush-on-hide
+(keepalive) save with an image pending sends nothing and stays dirty. The local dev
+server mirrors it and adds `GET /list-images` for the pick-list.
 
 **The companion write — `/save-items`.** The same flow, for the player-created
 custom-item catalog (`data/custom-items.json`, `ed-items/2`) instead of the
@@ -155,7 +172,7 @@ for durability/versioning (PLAN-CUSTOM-ITEMS.md §3).
 | 200 | `{ "ok": true, "commit": { "sha": "…", "url": "https://github.com/…/commit/…" } }` — `commit.sha` is the **new blob sha**, the client's next `base` |
 | 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "invalid_id" \| "invalid_base", "message": "…" } }` — `invalid_base`: `base` present but not a string |
 | 401 | `{ "ok": false, "error": { "code": "unauthorized", "message": "bad save key" } }` |
-| 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save or POST /save-items only" } }` |
+| 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save, POST /save-items or POST /save-image only" } }` |
 | 409 | `{ "ok": false, "error": { "code": "stale_base", "message": "…", "sha": "<current blob sha>" } }` — the character changed on the branch since the client's `base`; **no write, no retry**. No-base (legacy) saves retry internally (bounded, 3 attempts); only surfaced if retries exhaust |
 | 502/504 | Upstream GitHub failure; `{ "ok": false, "error": { "code": "upstream", "message": "…" } }` |
 
@@ -227,7 +244,7 @@ A single ES-module handler. Design sketch:
 // and the write targets ONE file per character — GET contents/<id>.json (sha),
 // compare the request `base` (stale → 409 stale_base + sha, no retry), PUT the
 // raw ed-character/1 content; a 404 creates the file and adds a
-// data/characters/index.json entry (name + portrait) on create only. The legacy
+// data/characters/index.json entry (name + portrait) on create, and refreshes only its portrait on later saves. The legacy
 // grouped-store upsert shown below was removed with the per-character split.
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const GITHUB = "https://api.github.com";
@@ -341,7 +358,7 @@ created by the repo owner, never committed and never in the app:
 |---|---|
 | `GITHUB_TOKEN` | **Fine-grained PAT**, scoped to this repo only, `Contents: read/write`. Created once by the repo owner in GitHub → Settings → Developer settings → Fine-grained tokens. |
 | `GITHUB_OWNER` / `GITHUB_REPO` | The repo that hosts the app (e.g. `odenson` / `ed-charSheet`). |
-| `GITHUB_CHARS_DIR` | The per-character files dir, default `data/characters` — one raw `ed-character/1` file per character at `<id>.json`, plus a create-only `index.json` (`ed-characters-index/1` — `{ name, portrait? }` per id). Saves write the character file; the index row is ensured on create only (PLAN-SAVE-CONCURRENCY). The grouped `GITHUB_STORE`/`data/characters.json` target was removed with the per-character split. |
+| `GITHUB_CHARS_DIR` | The per-character files dir, default `data/characters` — one raw `ed-character/1` file per character at `<id>.json`, plus an `index.json` (`ed-characters-index/1` — `{ name, portrait? }` per id). Saves write the character file; the index row is created on create and later saves refresh only its `portrait` (name is create-only). `GITHUB_IMAGES_DIR` (optional, default `data`) is where `POST /save-image` commits portrait images. **Redeploy the worker (runbook) before a Pages portrait upload works.** The grouped `GITHUB_STORE`/`data/characters.json` target was removed with the per-character split. |
 | `GITHUB_ITEMS_PATH` | The custom-item catalog, default `data/custom-items.json` — `{ "schema": "ed-items/2", "items": { "<name>": <item> } }`; `/save-items` merges + deletes here. |
 | `GITHUB_BRANCH` | Default `character-data` — a data-only branch the deploy workflow does not watch, so saves never rebuild the app. |
 | `SAVE_KEY` | **Required** shared endpoint key — fail-closed (see §5). |
@@ -484,8 +501,8 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
   a matching `base` → PUT carries that sha; a stale `base` → `409 stale_base`
   + the current sha, **no PUT, no retry**; a raced read→write `409` for a
   base-caller → `stale_base` with a fresh sha; a missing file (`404`) → create +
-  an `index.json` entry `{ name, portrait }` (create-only — an already-indexed
-  character is never re-indexed, and a failed index write is logged, not fatal);
+  an `index.json` entry `{ name, portrait }` (an already-indexed character only has its `portrait`
+  refreshed, never its name, and a failed index write is logged, not fatal);
   a missing/invalid id (incl. `'../evil'`, `'A/b'`, `'a b'`, `'..'`, `'a.b'`,
   `'É'`, `42`, `''`) → `400 invalid_id`; no-base (legacy) saves retry `409` with
   the new sha (bounded) and surface `conflict` when exhausted; cross-character
@@ -611,7 +628,7 @@ CLAUDE.md, but it is bound by the same protected surfaces as any feature:
   `ed-character/1` file at `data/characters/<id>.json` (the file name is the
   character's id, a path-safe class), plus a discovery index
   `data/characters/index.json` (`ed-characters-index/1` — `{ name, portrait? }`
-  per id, written on create only and never trusted for save bases). The legacy
+  per id, created on create, portrait refreshed on save, never trusted for save bases). The legacy
   single-file `data/character.json`, the worker's no-`id` path, and the grouped
   `data/characters.json` store were removed with their layouts. The
   custom-item feature adds `ed-items/2` (`data/custom-items.json` +
@@ -636,7 +653,7 @@ worker redeployed, two-browser smoke passed.
 | Endpoint URL in app | Hardcoded default (Settings override deferred) |
 | Save model | One primary Save → GitHub, over the autosave overlay; Export = local download (§4.5) |
 | Read-after-write | App reads the branch via the git-consistent GitHub contents API (§4.5) |
-| Concurrency | **Per-character files + optimistic concurrency** (plans/PLAN-SAVE-CONCURRENCY.md, Option C): `/save` writes `data/characters/<id>.json` with a `base` (ETag==blob-sha) check; stale → `409 stale_base` + sha → keep-mine/take-theirs modal; index (`ed-characters-index/1`) is create-only and never a save base. The grouped `ed-characters/1` store is retired. |
+| Concurrency | **Per-character files + optimistic concurrency** (plans/PLAN-SAVE-CONCURRENCY.md, Option C): `/save` writes `data/characters/<id>.json` with a `base` (ETag==blob-sha) check; stale → `409 stale_base` + sha → keep-mine/take-theirs modal; index (`ed-characters-index/1`) has a create-only name, a portrait refreshed on save, and is never a save base. The grouped `ed-characters/1` store is retired. |
 
 ---
 

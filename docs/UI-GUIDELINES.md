@@ -95,6 +95,18 @@ character store (the bundle ships no character data), referenced by
 (e.g. `data/chakka.jpg`). On the Pages site the app reads it live from that
 branch's raw CDN; locally it uses the gitignored working copy. If the field is
 absent **or the image fails to load** the UI falls back to a placeholder icon.
+**Changing the portrait (edit mode only).** In edit mode the desktop portrait panel and
+the mobile header avatar (image or placeholder; a same-size placeholder avatar
+appears in edit mode when there is no image) get the dashed edit outline and open
+the **Change portrait** modal (`ui/ed-edit-portrait.js`, kit modal): upload a
+JPEG/PNG/WebP (source <= 10 MB), pick any image already on the branch, or
+**Remove portrait**. An upload is downscaled in the browser (longest side 1024,
+JPEG q0.85, PNG if transparent, stored blob <= ~1 MB), named
+`data/<charId>-<timestamp>.<ext>` (never overwritten), and kept in the browser
+(`ed-character-image:<id>`, not in the character JSON) until the next **Save**,
+which uploads the image first and then the character JSON (`POST /save-image`
+then `POST /save`). Discard drops it. View mode is unchanged (lightbox). Removing
+the portrait sets `meta.portrait` to `null` and leaves the file on the branch.
 The same public portrait URL is used as the Discord embed thumbnail and, on the Pages site, as the Discord message avatar (§8a).
 
 ## 6a. Character chooser (first-run picker + load icon)
@@ -110,9 +122,10 @@ that opens the character chooser. The chooser:
 - Lists every character in the store, sorted by id, each row showing the portrait
   thumbnail and a label of `meta.name` (falling back to the id). The rows come
   from the **discovery index** (`data/characters/index.json`, one fetch) — the
-  create-only index row carries `{ name, portrait }` copied from `meta` at
-  creation, so a character renamed later still shows the original label/portrait
-  until the index is refreshed (accepted; the file is authoritative).
+  index row carries `{ name, portrait }` copied from `meta` at creation; a later
+  save refreshes only its `portrait` (name stays create-only), so a character
+  renamed later still shows the original label until the index is refreshed
+  (accepted; the file is authoritative).
 - Also lists the **local drafts** (new characters not saved to GitHub yet) among
   the rows. A draft row carries an "unsaved draft" badge and a **Discard ✕**
   button beside it (a sibling of the row's load button, never nested in it, and

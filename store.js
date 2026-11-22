@@ -46,6 +46,7 @@ import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { learnableKnacks } from './engine/knack-options.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
+import { loadStagedPortrait, savedPortraitDataUrl, listBranchImages } from './store-portrait.js';
 
 // UNIVERSAL_TALENTS (Durability, Karma Ritual) — talents every adept receives
 // automatically, counted as "required" (Discipline) talents, not options. The
@@ -184,10 +185,28 @@ export function indexToRows(index) {
 // tier that the store does (docs/GITHUB-SERVERLESS-SAVE.md §4.5). Locally the
 // working copy is served from the bundle. The UI handles a load failure with
 // its placeholder fallback (docs/UI-GUIDELINES.md §6).
-export function portraitUrlFor(portrait) {
+//
+// With a character `id`, the portrait that is STAGED for that character (an
+// upload not yet saved — store-portrait.js) resolves to its data URL so it shows
+// before any commit; a just-saved image keeps its data URL for the session (the
+// raw CDN can lag a fresh commit). The Discord helpers below never pass an id, so
+// they only ever see the public URL.
+export function portraitUrlFor(portrait, id) {
   if (!portrait) return null;
+  if (id) {
+    const staged = loadStagedPortrait(id);
+    if (staged && staged.path === portrait) return staged.dataUrl;
+    const saved = savedPortraitDataUrl(portrait);
+    if (saved) return saved;
+  }
   if (onPages()) return `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/${portrait}`;
   return `./${portrait}`;
+}
+
+// The images already on the data branch (the portrait modal's pick-list):
+// `[{ path, name, url }]`, newest first; `[]` on any failure (store-portrait.js).
+export function loadBranchImages() {
+  return listBranchImages({ pages: onPages(), owner: CHARACTER_OWNER, repo: CHARACTER_REPO, branch: CHARACTER_BRANCH });
 }
 
 // Discord embed thumbnail (plans/thumbnail-in-roll). Discord fetches the URL, so
@@ -2038,7 +2057,7 @@ export function deriveModel(character, rules, session = {}) {
     creation: creationModel,
     // Derived, never stored: the loadable URL for `meta.portrait` (branch raw
     // CDN on Pages, bundle-relative working copy locally).
-    portraitUrl: portraitUrlFor(character.meta?.portrait),
+    portraitUrl: portraitUrlFor(character.meta?.portrait, session.characterId),
     attributes,
     resources: character.resources ?? {},
     disciplines,

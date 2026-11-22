@@ -12,6 +12,9 @@
 // the app needs no configuration to save.
 export const DEFAULT_ENDPOINT = 'https://ed-charsheet-save.edsavechar.workers.dev/save';
 
+// The portrait-image route on the same worker (POST /save-image).
+export const DEFAULT_IMAGE_ENDPOINT = DEFAULT_ENDPOINT.replace(/\/save$/, '/save-image');
+
 /** A save failure with a stable `code` the UI maps to feedback. */
 export class SaveError extends Error {
   constructor(code, message) {
@@ -46,6 +49,13 @@ function messageForCode(code) {
       return 'The character failed validation and was not saved.';
     case 'invalid_id':
       return 'The character id failed validation and was not saved.';
+    case 'exists':
+      return 'A different image already exists at that path. Pick the portrait again.';
+    case 'too_large':
+      return 'The portrait image is too large to upload.';
+    case 'invalid_image':
+    case 'invalid_name':
+      return 'The portrait image was rejected. Pick it again.';
     case 'conflict':
       return 'The saved file kept changing under us — try saving again.';
     case 'upstream':
@@ -96,4 +106,37 @@ export async function saveServer(character, { endpoint = DEFAULT_ENDPOINT, saveK
     throw new SaveError(code, out?.error?.message || messageForCode(code));
   }
   return out.commit; // { sha, url } — sha is the new file blob sha (next base)
+}
+
+/**
+ * Upload a staged portrait image (`{ path, mime, dataUrl }` from the
+ * `ed-character-image:<id>` overlay) via the worker's `POST /save-image`. The
+ * worker pins the path (`data/<filename>`); only the filename travels. Resolves
+ * ONLY on `ok:true` (an identical-content retry is ok server-side); `exists`
+ * (different content at that path) and every other failure throw a `SaveError`
+ * with the worker's code — `no_key` before any request, `offline` on a network
+ * failure. Mirrors `saveServer`'s error handling.
+ */
+export async function saveImage(staged, { endpoint = DEFAULT_IMAGE_ENDPOINT, saveKey, id } = {}) {
+  if (!saveKey) throw new SaveError('no_key', 'Enter your save key to save to GitHub.');
+  const filename = String(staged.path).split('/').pop();
+  const content = String(staged.dataUrl).replace(/^data:[^,]*,/, '');
+
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-save-key': saveKey },
+      body: JSON.stringify({ id, filename, content }),
+    });
+  } catch {
+    throw new SaveError('offline', 'Could not reach the save service. Check your connection and try again.');
+  }
+
+  const out = await res.json().catch(() => null);
+  if (!res.ok || !out || out.ok !== true) {
+    const code = out?.error?.code ?? `http_${res.status}`;
+    throw new SaveError(code, out?.error?.message || messageForCode(code));
+  }
+  return { path: out.path, sha: out.sha, url: out.url };
 }

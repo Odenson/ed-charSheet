@@ -65,7 +65,8 @@ that never leaves the worker's secret store.
 | `SAVE_KEY` | **secret** | 64-char hex from `openssl rand -hex 32` | `wrangler secret put` |
 | `GITHUB_OWNER` | var | `odenson` | `wrangler.toml [vars]` |
 | `GITHUB_REPO` | var | `ed-charSheet` | `wrangler.toml [vars]` |
-| `GITHUB_CHARS_DIR` | var | `data/characters` — per-character files dir (`<id>.json`, raw `ed-character` — current tag `/2`, `/1` accepted) + create-only `index.json` (`ed-characters-index/1`); saves write one file per character (PLAN-SAVE-CONCURRENCY) | `wrangler.toml [vars]` |
+| `GITHUB_CHARS_DIR` | var | `data/characters` — per-character files dir (`<id>.json`, raw `ed-character` — current tag `/2`, `/1` accepted) + `index.json` (`ed-characters-index/1`, name create-only, portrait refreshed on save); saves write one file per character (PLAN-SAVE-CONCURRENCY) | `wrangler.toml [vars]` |
+| `GITHUB_IMAGES_DIR` | var (optional) | `data` (default) — where `POST /save-image` commits portrait images (`<charId>-<timestamp>.<ext>`, create-only). Also the prefix the index accepts for `meta.portrait`. | `wrangler.toml [vars]` |
 | `GITHUB_ITEMS_PATH` | var | `data/custom-items.json` — the custom-item catalog (`ed-items/2`) written by `/save-items` (PLAN-CUSTOM-ITEMS.md) | `wrangler.toml [vars]` |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
@@ -221,7 +222,7 @@ retired. See ARCHITECTURE §7 and design §4.5.
   Extended for multi-character + concurrency: an `id` writes its own file
   (`data/characters/<id>.json`), a stale `base` → `409 stale_base` + current sha
   (no retry), invalid ids → `400 invalid_id`, a `404` file is created fresh, and
-  the create-only `index.json` row is ensured once (plans/PLAN-MULTI-CHARACTER.md
+  the `index.json` row is created once and its `portrait` refreshed on later saves (plans/PLAN-MULTI-CHARACTER.md
   Phase E, plans/PLAN-SAVE-CONCURRENCY.md Phases A–C). Since v1.6.0 the id is
   **required** — the legacy no-id path and its tests were removed.
 
@@ -343,7 +344,7 @@ commit's sha.
 
 `npm start` boots `tools/dev-server.mjs` (README → Running locally). It mirrors
 the two worker routes on the same origin — `POST /save` →
-`data/characters/<id>.json` (+ create-only `index.json`), `POST /save-items` →
+`data/characters/<id>.json` (+ `index.json`: created on create, portrait refreshed on save), `POST /save-image` → `data/<charId>-<ts>.<ext>` (create-only), `GET /list-images`, `POST /save-items` →
 `data/custom-items.json` — writing to the gitignored working copies that
 `store.js` already reads off-Pages, so the whole save → read-after-write loop
 runs with no GitHub or Cloudflare in sight.

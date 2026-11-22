@@ -102,7 +102,8 @@ re-sync). The server:
   the `/dev/` self-symlink it creates if missing;
 - implements the worker's two save routes on the same origin —
   `POST /save` (write `data/characters/<id>.json`, raw `ed-character/1` + a
-  create-only `index.json` entry) and
+  `index.json` entry, portrait refreshed on later saves),
+  `POST /save-image` (portrait upload to `data/`) and `GET /list-images`, and
   `POST /save-items` (merge `data/custom-items.json`, `ed-items/2`) — with the
   same validation and error codes, so the app's `SaveError` handling runs
   unchanged (the save-key prompt still appears — type anything);
