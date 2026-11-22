@@ -225,7 +225,7 @@ retired. See ARCHITECTURE §7 and design §4.5.
   the `index.json` row is created once and its `portrait` refreshed on later saves (plans/PLAN-MULTI-CHARACTER.md
   Phase E, plans/PLAN-SAVE-CONCURRENCY.md Phases A–C). Since v1.6.0 the id is
   **required** — the legacy no-id path and its tests were removed. The portrait
-  route and index portrait sync are tested in `tools/worker/worker-portrait.test.js`.
+  route and index portrait sync are tested in `tools/worker/worker-portrait.test.js` (delete: `tools/worker/worker-delete.test.js`).
 
 ### Phase 5 — Docs & status flip (CLAUDE)
 
@@ -344,7 +344,7 @@ commit's sha.
 ### 6.1 Local dev — the full save loop, fully offline
 
 `npm start` boots `tools/dev-server.mjs` (README → Running locally). It mirrors
-the three worker routes (plus dev-only `GET /list-images`) on the same origin — `POST /save` →
+the four worker routes (plus dev-only `GET /list-images`) on the same origin — `POST /delete-character` → removes `data/characters/<id>.json`, its index row and optionally its own unshared portrait (`base` optional, no stale detection); `POST /save` →
 `data/characters/<id>.json` (+ `index.json`: created on create, portrait refreshed on save), `POST /save-image` → `data/<charId>-<ts>.<ext>` (create-only), `GET /list-images`, `POST /save-items` →
 `data/custom-items.json` — writing to the gitignored working copies that
 `store.js` already reads off-Pages, so the whole save → read-after-write loop
@@ -377,6 +377,7 @@ override (5.3) still works against it for cross-origin test rigs.
 | v1.6.0 promotion | Released 2026-08-07 — grouped store is the only save target; legacy `GITHUB_PATH`/`data/character.json` and the worker no-`id` path removed. **Redeploy the worker after this release** (`npx wrangler deploy`). |
 | Per-character split + concurrency | **Verified 2026-08-12.** `character-data` migrated (grouped file deleted; `data/characters/` per-character files + `index.json`), worker redeployed with `GITHUB_CHARS_DIR`, app shipped on `dev` (`457e39d`). Owner two-browser smoke passed (conflict modal, keep-mine/take-theirs, cross-character no false conflict). See plans/PLAN-SAVE-CONCURRENCY.md. |
 | Portrait upload (`/save-image`) | Built on `dev` — new route + optional `GITHUB_IMAGES_DIR`; `/save` now also refreshes the index portrait. **Redeploy the worker** (`npx wrangler deploy`) before a Pages upload works. Smoke: owner, pending. |
+| Delete character (`/delete-character`) | Built on `dev` - new worker route. **Redeploy the worker** (`npx wrangler deploy`) before a Pages delete works (release-time owner step), then smoke a delete of a throwaway character. |
 | Custom items (`/save-items`) | Built (PLAN-CUSTOM-ITEMS.md P1–P6); worker route + `GITHUB_ITEMS_PATH` shipped. **Phase B verified 2026-08-09** — all four smoke curls passed (401 / 400 invalid_items / 200 upsert + branch file / 200 delete). Owner rollout runsheet: §8 below. |
 
 ---

@@ -163,7 +163,7 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 | confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
 | Notes, Edit details, Add Legend, custom item, day reset, save key, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 26rem / 24rem scroll / 26rem |
 | Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |
-| trade, new character / rename (`ed-new-character`, kind `input`) | 2150 | 27rem scroll / 24rem |
+| trade, new character / rename (`ed-new-character`, kind `input`), delete character (`ed-delete-character`, kind `input`, danger primary) | 2150 | 27rem scroll / 24rem / 26rem |
 | Settings, conflict | 2200 | 26rem |
 | roll | 3000 | 340px |
 
@@ -204,14 +204,18 @@ carries no trigger:
 
 The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-edit-portrait`, `ed-custom-item`,
 `ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key`,
-`ed-character-picker` and `ed-new-character` also own their controller. Unlike
+`ed-character-picker`, `ed-new-character` and `ed-delete-character` also own their controller. Unlike
 `ed-confirm`, they dispatch their domain event (for example `ed-conflict`,
 `ed-edit-meta`, `create-character`) and then `close` for any reason (`onClose`
 always dispatches `close`). Hosts act on the domain event and clear their mount
 state in `@close`.
 
 **Modals nested in a picker (`ed-character-picker`).** The loader renders
-`<ed-new-character>` (input, layer 2150) and an `<ed-confirm>` (the draft Discard,
+`<ed-new-character>` (input, layer 2150), `<ed-delete-character>` (input, layer 2150, opened by
+a row's Delete button; type-the-name confirm: Enter confirms only when the typed name matches and
+nothing is in flight, and it stays open while busy or showing an inline error until the host removes
+it; the picker stops its `close` and dispatches `delete-dismissed`, but deliberately does not stop
+`delete-character { id, deleteImage }`, which ed-app acts on) and an `<ed-confirm>` (the draft Discard,
 layer 2100, which DOM order puts on top) as children in its own shadow root, after
 its frame, so the kit stack routes Escape to the top one only. Their `close` and
 `confirm` events bubble composed, so the picker calls `e.stopPropagation()` on the

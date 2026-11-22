@@ -135,6 +135,15 @@ that opens the character chooser. The chooser:
   with the same id hides its draft. A loaded draft shows the usual Save dot
   (it is always unsaved) and the Save tooltip says it creates the character;
   "Discard local changes" is not offered for a draft.
+- **Every** row (saved or draft) carries a trash **Delete** button (a sibling of the
+  load button, `aria-label="Delete <name>"`). It opens `ui/ed-delete-character.js`, a
+  type-the-name modal stacked above the chooser: Delete stays disabled until the typed
+  name matches (trimmed, case-sensitive), Enter confirms only then, Escape closes only
+  that modal. It warns the deletion is permanent (saved: recovery only via git history;
+  draft: nothing was saved), warns about unsaved edits, and offers an unchecked "Also
+  delete the portrait image" box when the character has one (never removed while another
+  character uses it). A failure shows inline; deleting the open character empties the
+  sheet to the loader.
 - Ends with a **"Start a new character"** section: one button per Discipline
   in `rules/disciplines.json` (today Archer, Nethermancer, Thief, Warrior), each an inline "+" glyph and the
   Discipline name, shown even when the list is empty. A button opens the

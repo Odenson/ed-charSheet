@@ -3,7 +3,12 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": []
+    "changes": [
+      {
+        "type": "added",
+        "text": "Delete a character from the loader: type its name to confirm, and optionally delete its portrait image too (kept by default, and never removed while another character uses it)."
+      }
+    ]
   },
   "releases": [
     {

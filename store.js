@@ -150,7 +150,7 @@ const CHARACTER_REPO = 'ed-charSheet';
 const CHARACTER_BRANCH = 'character-data';
 const CHARACTERS_DIR = 'data/characters';
 
-function onPages() {
+export function onPages() {
   return location.protocol === 'https:' && location.hostname.endsWith('.github.io');
 }
 
@@ -318,6 +318,11 @@ async function readCharacterFile(id) {
     /* network/CORS hiccup — fall through to the CDN */
   }
   return { character: await loadJSON(`${RAW_CDN}/${id}.json?t=${Date.now()}`), base: null };
+}
+
+/** Confirm-time read for delete: `{ character, base }` (base null off Pages / CDN fallback). */
+export function readCharacterWithBase(id) {
+  return readCharacterFile(id);
 }
 
 const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-items.json?ref=${CHARACTER_BRANCH}`;

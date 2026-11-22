@@ -556,7 +556,7 @@ every later save reads it and rewrites only that row's portrait when it differs
 (name is create-only, so renames lag — the file's `meta.name` is authoritative;
 the index is never a save base). Portrait images go via `POST /save-image`
 (create-only, path `data/<id>-<ts>.<ext>`), called before the character JSON
-(docs/GITHUB-SERVERLESS-SAVE.md §3). The app fetches the index once to list characters, then loads
+(docs/GITHUB-SERVERLESS-SAVE.md §3). A character is deleted via `POST /delete-character` (file + index row, optionally its own unshared portrait; stale base is a 409 with no writes). The app fetches the index once to list characters, then loads
 one file per character. The grouped `ed-characters/1` store was **retired** with
 the split; the legacy `data/character.json` and the worker's no-`id` path were
 **removed at the v1.6.0 promotion**.
