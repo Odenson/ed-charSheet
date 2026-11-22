@@ -701,6 +701,7 @@ export class EdApp extends LitElement {
     discardDraft(id);
     clearRollLog(id);
     clearDiscordConfig(id);
+    clearStagedPortrait(id); // a draft's unsaved portrait upload goes with it
     this._refreshRows();
     if (id !== this._characterId) return;
     this._clearAutosaveTimers();

@@ -444,8 +444,8 @@ never suffixed; the window after the check is accepted), otherwise it posts thro
 the ordinary worker create path with `base: null` (no worker change). On success
 `promoteDraft` drops the base and clears the overlay, and the character is a normal
 saved one (autosaving like any other, still in creation if `creation.open`).
-Discard removes only the base, its overlay and the device-local roll-log and Discord
-keys; the branch is never touched. An absent index is an empty store, not an error
+Discard removes only the base, its overlay, any staged portrait image
+(`ed-character-image:<id>`) and the device-local roll-log and Discord keys; the branch is never touched. An absent index is an empty store, not an error
 (`listCharacters` returns `[]` for a 404; any other failure still throws).
 
 ### 7.2 Export — portable download (`store-export.js`)

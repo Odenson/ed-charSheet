@@ -130,8 +130,8 @@ that opens the character chooser. The chooser:
   the rows. A draft row carries an "unsaved draft" badge and a **Discard ✕**
   button beside it (a sibling of the row's load button, never nested in it, and
   keyboard reachable). Discard asks first (`ed-confirm`, "Discard this draft?"),
-  removes only the local draft (its base, its edits and its device-local roll log
-  and Discord settings) and never touches the branch. A character on the branch
+  removes only the local draft (its base, its edits, any staged portrait image and
+  its device-local roll log and Discord settings) and never touches the branch. A character on the branch
   with the same id hides its draft. A loaded draft shows the usual Save dot
   (it is always unsaved) and the Save tooltip says it creates the character;
   "Discard local changes" is not offered for a draft.
