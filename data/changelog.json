@@ -7,6 +7,25 @@
   },
   "releases": [
     {
+      "version": "2.3.0",
+      "date": "2026-11-22",
+      "summary": "Air Sailor joins the Disciplines: start a new Air Sailor from the loader, with all eight Circles and every Air Sailor talent fully written out.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Air Sailor Discipline (Circles 1-8): start a new Air Sailor from the loader, with the free talent Air Sailing, Durability 5, its Talent Options and per-Circle abilities (karma on board an airship, Physical and Social Defense bonuses, Collaborate, an extra Recovery test)."
+        },
+        {
+          "type": "improved",
+          "text": "Full talent details (step, action, strain, skill use, effects) for all 33 Air Sailor talents, including options shared with other Disciplines such as Navigation, Distract and Etiquette."
+        },
+        {
+          "type": "fixed",
+          "text": "A newly created character now opens on the Overview tab in edit mode, instead of Disciplines."
+        }
+      ]
+    },
+    {
       "version": "2.2.0",
       "date": "2026-11-22",
       "summary": "Delete a character from the loader: type its name to confirm, with an optional checkbox to also delete its portrait image (kept by default, never removed while another character uses it).",

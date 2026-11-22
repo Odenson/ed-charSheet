@@ -697,7 +697,7 @@ export class EdApp extends LitElement {
       await this._loadCharacter(character.meta.id);
       if (this._characterId === character.meta.id) {
         this._editMode = true;
-        this._tab = 'disciplines';
+        this._tab = 'overview';
         this._creationGuide = { name: character.meta.name, magician: this._model?.creation?.spells != null };
       }
     } catch (e) {
