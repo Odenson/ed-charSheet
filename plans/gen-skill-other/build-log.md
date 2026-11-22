@@ -9,3 +9,20 @@
 - Gate: `npm test` green (2386 tests, 0 fail; check-imports and check-ui-kit pass). No tester test touched; no dispute.
 - Deviations: `model.customSkills` also carries `coreNames`/`customNames` (data-down props for the form's live duplicate check). Learn picker reads `model.skillOptions` live (not the open-time snapshot) so a created skill appears at once. Worker/dev-server import/read `rules/attributes.json` + `rules/skills.json` (JSON import attributes bundled by wrangler; not run through wrangler here). docs/UI-GUIDELINES.md and docs/TAXONOMY-AUDIT.md not edited.
 - UI (chips, Create form, badges) is untested by automation: owner manual check in light and dark.
+
+## Dev Lead review and ship
+- **Review:** clean. Diff matches spec; tester's tests unchanged (cmp vs snapshot); core entries returned by reference when no custom file; `custom` added only when true; UI dispatches `ed-create-custom-skill` up, state/validation pure; engine DOM-free; no Tier-1 change. Nit (not fixed): `this._dirty =hasPendingEdits` spacing in ed-app.js Save-all path.
+- **Doc sync:** applied D1/D2 to docs/MODALS.md (layer row, §8 list, picker sentence). **Deferred (Tier-1 doc, needs owner sign-off):** docs/UI-GUIDELINES.md §6b (~l.185-190): add category filter chips, Custom tag, and the "Create custom skill" form (gated by `skills.allowCustom`); same for the edit-mode learn picker and the Custom badge on skill rows/modal.
+- **Owner ops:** redeploy the Cloudflare worker (new `/save-skills` route; confirm wrangler bundles the JSON imports of rules/attributes.json + rules/skills.json); the fold workflow must also exist on `character-data` for its push trigger.
+
+### PR checklist
+- [x] No Tier-1 invariant changed (stored skill `{name, rank, tier}` unchanged; `ed-homebrew/3` shape unchanged)
+- [ ] Overview viewport fit — owner to verify (Overview not touched)
+- [x] Derived values: no new derived display; custom skill with no description shows existing "not yet recorded" text
+- [ ] Light and dark; Escape/Enter — owner to verify
+- [x] Modals use ui/kit (`modalFrame`); check-ui-kit part of `npm test` (green, 2386)
+- [x] No taxonomy change
+- [x] New fetch paths: only the custom-skills data URL, mirroring custom items
+
+### Manual UI checklist
+See "UI test requirements" in the final report.

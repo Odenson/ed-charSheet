@@ -165,13 +165,14 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 | Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |
 | trade, new character / rename (`ed-new-character`, kind `input`), delete character (`ed-delete-character`, kind `input`, danger primary) | 2150 | 27rem scroll / 24rem / 26rem |
 | save key (`ed-save-key`, portal; must sit above the picker's delete modal) | 2200 | 26rem |
+| create custom skill (`ed-custom-skill`, kind `input`; dispatches `ed-create-custom-skill`, then closes; opened from the Disciplines skill pickers) | 2200 | 30rem scroll |
 | Settings, conflict | 2200 | 26rem |
 | roll | 3000 | 340px |
 
 Creation mode (UI-GUIDELINES §6b) adds three more uses of the kit and no new
 host: the Disciplines `creation-skill` picker (kind `picker`, layer 2000, 30rem
 scroll; its Knowledge and Artisan free-text fields carry `data-enter="local"` and
-handle their own Enter), the Spells starting-spell picker (kind `picker`, layer
+handle their own Enter; it and the edit-mode learn-skill picker also carry category filter chips, `ui/skill-filter.js`, and, when the homebrew rule `skills.allowCustom` is on, a per-section "Create custom skill" button that opens `ed-custom-skill` above the picker so Escape closes only the form, which is not dirty-guarded), the Spells starting-spell picker (kind `picker`, layer
 2100, 30rem scroll, its own controller in the Spells shadow root), the one-off "Creating your character" guide (`ed-creation-guide`, kind `info`, layer 2150,
 30rem scroll, "Got it") shown after a new character is created, and the "Finish
 creation?" `ed-confirm` (tone `accent`, with a warning line) rendered by ed-app.
@@ -203,7 +204,7 @@ carries no trigger:
 
 ## 8. Separate-component modals
 
-The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-edit-portrait`, `ed-custom-item`,
+The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-edit-portrait`, `ed-custom-item`, `ed-custom-skill`,
 `ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key`,
 `ed-character-picker`, `ed-new-character` and `ed-delete-character` also own their controller. Unlike
 `ed-confirm`, they dispatch their domain event (for example `ed-conflict`,
