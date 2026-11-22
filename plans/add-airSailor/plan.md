@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.3.0
 ---
 # Delivery Plan: Add Air Sailor discipline (add-airSailor)
 
