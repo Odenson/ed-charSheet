@@ -16,6 +16,7 @@ import { modalFrame, modalCss } from './kit/modal.js';
 import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
 import { describeRequirement } from '../engine/advancement.js';
+import { SKILL_CHIPS, chipMatches } from './skill-filter.js';
 
 // The kit kind of each Disciplines modal (one controller serves all ten):
 // info modals (talent/skill/knack/granted) are read-only; the pickers act on a
@@ -55,6 +56,9 @@ export class EdDisciplines extends LitElement {
     _startEdited: { state: true },
     _skillSilver: { state: true },
     _skillSearch: { state: true },
+    _skillFilter: { state: true },    // learn-picker category chip id (default 'all')
+    _creationFilter: { state: true }, // creation-picker category chip id (default 'all')
+    _customForm: { state: true },     // open create-custom-skill form: { kind, templateAttribute }
     // Creation-skill picker (create-new-adept): its search box and the two free-text fields
     // (Knowledge subject, Artisan craft). Declared here, initialised in the constructor.
     _creationSearch: { state: true },
@@ -151,6 +155,7 @@ export class EdDisciplines extends LitElement {
     .searchin { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin: 6px 0; box-sizing: border-box; }
     .searchin:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
     .pill { font-size: var(--fs-fine); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
+    .pill.custom { color: var(--accent); border-color: var(--accent); }
     .pill.attr { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
     /* Creation-skill picker: a free starting rank wears the Karma green; the generic
        Knowledge / Artisan rows carry a free-text field with its own Add button. */
@@ -195,6 +200,16 @@ export class EdDisciplines extends LitElement {
     .abil { display: flex; gap: 10px; padding: 5px 0; font-size: var(--fs-body); align-items: baseline; }
     .cbadge { font-size: var(--fs-eyebrow); padding: 1px 7px; border-radius: 999px; background: var(--bg-chip); color: var(--muted); flex: none; }
     .section-gap { margin-top: 14px; }
+    /* Skill-picker category chips + per-section create button (plans/gen-skill-other). */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+    .chipbtn { font: inherit; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+    .chipbtn:hover { border-color: var(--accent); }
+    .chipbtn[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+    .chipbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .sechead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .newskill { font: inherit; font-size: var(--fs-fine); color: var(--accent); background: none; border: 1px dashed var(--accent); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+    .newskill:hover { background: var(--accent-bg); }
+    .newskill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 
     /* Talent grouping by learned Circle (Option 2 — left circle spine). Each
        group is a flex row: a fixed left gutter carrying the Circle badge and a
@@ -288,6 +303,9 @@ export class EdDisciplines extends LitElement {
     this._sel = 0;
     this._modal = null;
     this._creationSearch = '';
+    this._creationFilter = 'all';
+    this._skillFilter = 'all';
+    this._customForm = null;
     this._creationText = { knowledge: '', artisan: '' };
     this._learnText = { knowledge: '', artisan: '' };
     this._knackInfo = {}; // picker rows expanded to show their description (name -> bool)
@@ -569,6 +587,7 @@ export class EdDisciplines extends LitElement {
 
   _openCreationSkill(e) {
     this._creationSearch = '';
+    this._creationFilter = 'all';
     this._creationText = { knowledge: '', artisan: '' };
     this._openModal({ type: 'creation-skill' }, e);
   }
@@ -617,10 +636,37 @@ export class EdDisciplines extends LitElement {
     return html`
       <button class="lopt" ?disabled=${!c.canPick} title=${c.canPick ? `${c.name}${c.attribute ? ` · ${c.attribute}` : ''}` : 'No skill ranks left'}
         @click=${() => this._creationSkillPick(c.name)}>
-        <span class="lname">${c.name}${c.disciplineList ? html`<span class="pill">Discipline</span>` : ''}${this._poolBadge(c.pool, extra)}${c.attribute ? html`<span class="pill attr">${c.attribute}</span>` : ''}</span>
+        <span class="lname">${c.name}${c.disciplineList ? html`<span class="pill">Discipline</span>` : ''}${c.custom === true ? html`<span class="pill custom">Custom</span>` : ''}${this._poolBadge(c.pool, extra)}${c.attribute ? html`<span class="pill attr">${c.attribute}</span>` : ''}</span>
         ${c.brief ? html`<span class="lbrief">${c.brief}</span>` : ''}
       </button>
     `;
+  }
+
+  // Category filter chips shared by both skill pickers (pure matching in ./skill-filter.js).
+  // Toggle buttons: role=group, aria-pressed; never autofocused.
+  _chipRow(current, onPick) {
+    return html`<div class="chips" role="group" aria-label="Filter skills by category">
+      ${SKILL_CHIPS.map((c) => html`<button type="button" class="chipbtn" aria-pressed=${current === c.id ? 'true' : 'false'} @click=${() => onPick(c.id)}>${c.label}</button>`)}
+    </div>`;
+  }
+
+  // Per-section "Create custom skill" button (only when the homebrew rule is on). The form's
+  // Knowledge / Artisan attribute prefill is the generic template entry's attribute, from data.
+  _createSkillBtn(kind, items) {
+    const tpl = kind === 'general' ? null : (items ?? []).find((o) => o.freeText === kind)?.attribute ?? null;
+    return html`<button type="button" class="newskill" title="Create your own ${kind} skill" @click=${() => { this._customForm = { kind, templateAttribute: tpl }; }}>＋ Create custom skill</button>`;
+  }
+
+  // The create form: a nested modal above the picker (its own kit controller, so Escape closes
+  // only the form). `ed-create-custom-skill` bubbles up to ed-app.
+  _customSkillForm() {
+    const f = this._customForm;
+    if (!f) return '';
+    const cs = this.model?.customSkills ?? {};
+    return html`<ed-custom-skill .kind=${f.kind} .templateAttribute=${f.templateAttribute}
+      .attributes=${(this.model?.attributes ?? []).map((a) => a.name)}
+      .coreNames=${cs.coreNames ?? []} .customNames=${cs.customNames ?? []}
+      @close=${(e) => { e.stopPropagation(); this._customForm = null; }}></ed-custom-skill>`;
   }
 
   // The starting-skill picker (kind `picker`; Escape / backdrop / ✕ close, Enter activates the
@@ -633,21 +679,24 @@ export class EdDisciplines extends LitElement {
     const cands = sk?.candidates ?? [];
     const q = (this._creationSearch ?? '').trim().toLowerCase();
     const matches = (c) => !q || c.name.toLowerCase().includes(q) || (c.attribute ?? '').toLowerCase().includes(q) || (c.brief ?? '').toLowerCase().includes(q);
+    const chip = this._creationFilter ?? 'all';
+    const canCreate = this.model?.customSkills?.enabled === true;
     const inCategory = (category) => cands.filter((c) => c.category === category);
     const sections = [
-      ['Knowledge', inCategory('knowledge')],
+      ['Knowledge', inCategory('knowledge'), 'knowledge'],
       // The Discipline's own Artisan skills first (they can use the free Artisan rank).
-      ['Artisan', [...inCategory('artisan').filter((c) => c.disciplineList), ...inCategory('artisan').filter((c) => !c.disciplineList)]],
-      ['Speak Language', inCategory('language-speak')],
-      ['Read/Write Language', inCategory('language-readwrite')],
-      ['General', inCategory('general')],
+      ['Artisan', [...inCategory('artisan').filter((c) => c.disciplineList), ...inCategory('artisan').filter((c) => !c.disciplineList)], 'artisan'],
+      ['Speak Language', inCategory('language-speak'), null],
+      ['Read/Write Language', inCategory('language-readwrite'), null],
+      ['General', inCategory('general'), 'general'],
     ];
-    const rendered = sections.map(([title, list]) => {
-      const texts = list.filter((c) => c.freeText);
-      const plain = list.filter((c) => !c.freeText && matches(c));
-      if (!texts.length && !plain.length) return '';
+    const rendered = sections.map(([title, list, kind]) => {
+      const texts = list.filter((c) => c.freeText && chipMatches(chip, c));
+      const plain = list.filter((c) => !c.freeText && matches(c) && chipMatches(chip, c));
+      const showCreate = canCreate && kind && (chip === 'all' || chip === 'custom' || chip === kind);
+      if (!texts.length && !plain.length && !showCreate) return '';
       return html`
-        <h4 class="section-gap">${title}</h4>
+        <h4 class="section-gap sechead"><span>${title}</span>${showCreate ? this._createSkillBtn(kind, list) : ''}</h4>
         <div class="hmopts">
           ${texts.map((c) => this._creationTextRow(c, extra))}
           ${plain.map((c) => this._creationSkillCandidate(c, extra))}
@@ -663,6 +712,7 @@ export class EdDisciplines extends LitElement {
     <div class="mtext mmuted">Starting skills cost no Legend or silver. A pick uses a free rank where one is left (marked free rank), otherwise one of your extra ranks.</div>
     <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._creationSearch ?? ''} aria-label="Search skills" autofocus
       @input=${(e) => (this._creationSearch = e.target.value)} />
+    ${this._chipRow(chip, (id) => { this._creationFilter = id; })}
     ${rendered}`,
     });
   }
@@ -712,7 +762,7 @@ export class EdDisciplines extends LitElement {
             title="${s.name} — click for details"
             @click=${(e) => this._openModal({ type: 'skill', skill: s }, e)}
           >i</button>
-          <span class="lbl">${s.name}</span>
+          <span class="lbl">${s.name}</span>${s.custom === true ? html`<span class="pill custom">Custom</span>` : ''}
         </span>
         <span class="effcol eff" title=${s.brief ?? ''}>${s.brief ?? ''}</span>
         ${cr ? this._creationSkillCtl(s, cr) : this.editMode ? this._rankCtl(s, null) : html`<span class="num">${s.rank}${this._grantChip(s)}${this._modChip(s)}</span>`}
@@ -789,6 +839,7 @@ export class EdDisciplines extends LitElement {
     // Seed fee from costs.skillTraining[1] (data), or 10 sp if costs missing (fallback).
     this._skillSilver = opts[0]?.trainingSilver != null ? opts[0].trainingSilver : 10;
     this._skillSearch = '';
+    this._skillFilter = 'all';
     this._learnText = { knowledge: '', artisan: '' };
     this._openModal({ type: 'learn-skill', options: opts }, e);
   }
@@ -927,6 +978,7 @@ export class EdDisciplines extends LitElement {
     const chips = [
       { v: `Rank ${s.rank}` },
       s.tier ? { v: s.tier } : null,
+      s.custom === true ? { v: 'Custom' } : null,
       s.action ? (s.actionBase != null ? { v: `${s.action} action`, c: 'changed', title: actionHoverText(s) } : { v: `${s.action} action` }) : null,
       s.attribute ? { v: s.attribute } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
@@ -1416,7 +1468,9 @@ export class EdDisciplines extends LitElement {
   // costs.skillTraining[1] (data, not code), negotiable like Circle training.
   // Adds search + attribute pills for the long catalog.
   _learnSkillModal(m) {
-    const opts = m.options ?? [];
+    // Live from the model (so a just-created custom skill appears at once); the open-time
+    // snapshot is only a fallback.
+    const opts = this.model?.skillOptions ?? m.options ?? [];
     const available = this.model?.legend?.available ?? null;
     const coins = this.model?.wealth?.coins ?? {};
     const purse = coinsSilver(coins);
@@ -1456,26 +1510,29 @@ export class EdDisciplines extends LitElement {
         <button class="lopt" ?disabled=${!canPick}
           title=${canPick ? `${o.name} · ${o.tier} · ${o.attribute ?? ''} · ${costOf(o)}` : whyNot(o)}
           @click=${() => canPick && this._learnSkillPick(o.name)}>
-          <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}<span class="pill">${o.tier}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
+          <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}${o.custom === true ? html`<span class="pill custom">Custom</span>` : ''}<span class="pill">${o.tier}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
           <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costOf(o)}</span>
         </button>`;
     };
     const inCategory = (category) => opts.filter((o) => o.category === category);
+    const chip = this._skillFilter ?? 'all';
+    const canCreate = this.model?.customSkills?.enabled === true;
     const sections = [
-      ['Knowledge', inCategory('knowledge')],
-      ['Artisan', inCategory('artisan')],
-      ['Speak Language', inCategory('language-speak')],
-      ['Read/Write Language', inCategory('language-readwrite')],
-      ['General', opts.filter((o) => !['knowledge', 'artisan', 'language-speak', 'language-readwrite'].includes(o.category))],
+      ['Knowledge', inCategory('knowledge'), 'knowledge'],
+      ['Artisan', inCategory('artisan'), 'artisan'],
+      ['Speak Language', inCategory('language-speak'), null],
+      ['Read/Write Language', inCategory('language-readwrite'), null],
+      ['General', opts.filter((o) => !['knowledge', 'artisan', 'language-speak', 'language-readwrite'].includes(o.category)), 'general'],
     ];
     let shown = 0;
-    const rendered = sections.map(([title, list]) => {
-      const texts = list.filter((o) => o.freeText);
-      const plain = list.filter((o) => !o.freeText && matches(o));
-      if (!texts.length && !plain.length) return '';
+    const rendered = sections.map(([title, list, kind]) => {
+      const texts = list.filter((o) => o.freeText && chipMatches(chip, o));
+      const plain = list.filter((o) => !o.freeText && matches(o) && chipMatches(chip, o));
+      const showCreate = canCreate && kind && (chip === 'all' || chip === 'custom' || chip === kind);
+      if (!texts.length && !plain.length && !showCreate) return '';
       shown += texts.length + plain.length;
       return html`
-        <h4 class="section-gap">${title}</h4>
+        <h4 class="section-gap sechead"><span>${title}</span>${showCreate ? this._createSkillBtn(kind, list) : ''}</h4>
         <div class="hmopts">${texts.map(textRow)}${plain.map(plainRow)}</div>`;
     });
     return modalFrame(this._modalCtl, {
@@ -1488,6 +1545,7 @@ export class EdDisciplines extends LitElement {
     <div class="mtext" style="color: var(--muted)">Pick a skill — it joins at Rank 1, priced by its tier. Knowledge and Artisan skills take a subject you name (stored as Knowledge (subject)). Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</div>
     <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._skillSearch ?? ''} aria-label="Search skills" autofocus
       @input=${(e) => (this._skillSearch = e.target.value)} />
+    ${this._chipRow(chip, (id) => { this._skillFilter = id; })}
     <div class="cbox" style="margin: 4px 0 8px">
       <div class="crow">
         <div><div class="ck">Training fee · silver</div><div class="csub">Average — negotiable · purse ${Math.round(purse)} sp</div></div>
@@ -1499,7 +1557,8 @@ export class EdDisciplines extends LitElement {
       </div>
     </div>
     <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${shown} of ${opts.length} skills${q ? html` matching “${q}”` : ''}</div>
-    ${shown ? rendered : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
+    ${rendered}
+    ${shown ? '' : html`<div class="mtext" style="color: var(--muted)">${q || chip !== 'all' ? html`No skills match${q ? html` “${q}”` : ' this filter'}.` : 'No skills left to learn.'}</div>`}
     <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>`,
     });
   }
@@ -1790,6 +1849,7 @@ export class EdDisciplines extends LitElement {
                             ? this._startModal(this._modal)
                             : this._talentModal(this._modal)
         : ''}
+      ${this._customSkillForm()}
     `;
   }
 }

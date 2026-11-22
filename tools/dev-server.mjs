@@ -5,6 +5,7 @@
 //
 //   POST /save        { character, id } → write data/characters/<id>.json (ed-character/1)
 //   POST /save-items  { items, delete } → merge  data/custom-items.json (ed-items/3)
+//   POST /save-skills { skills } → merge  data/custom-skills.json (ed-skills/1)
 //   POST /save-image  { id, filename, content } → write data/<filename> (create-only)
 //   POST /delete-character { id, base?, deleteImage? } → delete data/characters/<id>.json,
 //                          drop its index row, optionally its own unshared portrait
@@ -43,6 +44,7 @@ import { join, resolve, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { validateItem, validateItemsFile } from '../engine/validate-item.js';
+import { validateSkill, validateSkillsFile } from '../engine/validate-skill.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEP = process.platform === 'win32' ? '\\' : '/';
@@ -75,6 +77,13 @@ const IMAGES_DIR = 'data';                // mirrors worker GITHUB_IMAGES_DIR de
 const MAX_IMAGE_BYTES = 1_500_000;        // mirrors worker.js MAX_IMAGE_BYTES
 const IMAGE_EXT_RE = /\.(jpg|jpeg|png|webp)$/i;
 const ITEMS_STORE = 'data/custom-items.json';
+const SKILLS_STORE = 'data/custom-skills.json';
+const FRESH_SKILLS = {
+  schema: 'ed-skills/1',
+  source: 'custom',
+  notes: 'Owner-created skills, folded from data/custom-skills.json by CI.',
+  skills: [],
+};
 const FRESH_CATALOG = {
   schema: 'ed-items/3',
   effectTaxonomy: 'docs/EFFECT-TAXONOMY.md (v6)',
@@ -82,6 +91,31 @@ const FRESH_CATALOG = {
   notes: 'Player-created items, folded into rules/custom-items.json on dev by CI.',
   items: {},
 };
+
+// Mirror worker.js: core skill names and attribute names come from the repo's rules/, so the
+// local server applies the same server-side checks as the deployed worker.
+let skillRulesCache = null;
+async function skillRules() {
+  if (!skillRulesCache) {
+    const read = async (f) => JSON.parse(await readFile(join(ROOT, 'rules', f), 'utf8'));
+    const [attrs, skills] = await Promise.all([read('attributes.json'), read('skills.json')]);
+    skillRulesCache = { attributeNames: attrs.order, coreNames: skills.skills.map((s) => s.name) };
+  }
+  return skillRulesCache;
+}
+
+// Mirror worker.js checkSkillsDelta: `{ skills: { name: skill } }`; the first error is the message.
+function checkSkillsDelta(body, opts) {
+  const errors = [];
+  const skills = body?.skills;
+  if (typeof skills !== 'object' || skills === null || Array.isArray(skills)) {
+    errors.push('skills: must be an object of name → skill');
+  } else {
+    for (const [name, skill] of Object.entries(skills))
+      for (const e of validateSkill(name, skill, opts).errors) errors.push(`skills["${name}"]: ${e}`);
+  }
+  return { ok: errors.length === 0, errors };
+}
 
 function writeJson(res, status, body) {
   res.writeHead(status, { ...JSON_HEADERS, ...CORS });
@@ -245,9 +279,10 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
     if (method === 'POST') {
       if (url.pathname === '/save') return handleSave(req, res);
       if (url.pathname === '/save-items') return handleSaveItems(req, res);
+      if (url.pathname === '/save-skills') return handleSaveSkills(req, res);
       if (url.pathname === '/save-image') return handleSaveImage(req, res);
       if (url.pathname === '/delete-character') return handleDeleteCharacter(req, res);
-      return writeJson(res, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, /save-items, /save-image or /delete-character only' } });
+      return writeJson(res, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, /save-items, /save-skills, /save-image or /delete-character only' } });
     }
     if (method !== 'GET' && method !== 'HEAD') {
       res.writeHead(405, { Allow: 'GET, HEAD, POST, OPTIONS' });
@@ -462,6 +497,37 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
     return writeJson(res, 200, { ok: true, commit: { sha: 'local', url: '' } });
   }
 
+  async function handleSaveSkills(req, res) {
+    let body;
+    try {
+      body = await readJson(req);
+    } catch {
+      return writeJson(res, 400, { ok: false, error: { code: 'invalid_json', message: 'body is not JSON' } });
+    }
+    const opts = await skillRules();
+    const checked = checkSkillsDelta(body, opts);
+    if (!checked.ok)
+      return writeJson(res, 400, { ok: false, error: { code: 'invalid_skills', message: checked.errors[0] } });
+    const skillsPath = join(resolvedRoot, SKILLS_STORE);
+    const bad = await enqueue(async () => {
+      const file = (await readJsonFile(skillsPath)) ?? { ...FRESH_SKILLS, skills: [] };
+      if (!Array.isArray(file.skills)) file.skills = [];
+      const prior = await readRaw(skillsPath);
+      for (const [name, skill] of Object.entries(body.skills)) {
+        const i = file.skills.findIndex((s) => s?.name === name);
+        if (i >= 0) file.skills[i] = skill;
+        else file.skills.push(skill);
+      }
+      const v = validateSkillsFile(file, opts);
+      if (!v.ok) return { status: 400, body: { ok: false, error: { code: 'invalid_skills', message: v.errors[0] } } };
+      await writePretty(skillsPath, file);
+      await recordWrite(skillsPath, prior);
+      return null;
+    });
+    if (bad) return writeJson(res, bad.status, bad.body);
+    return writeJson(res, 200, { ok: true, commit: { sha: 'local', url: '' } });
+  }
+
   async function serveStatic(res, pathname, isHead) {
     const rel = safeRel(pathname);
     if (rel === null) return writeJson(res, 403, { ok: false, error: { code: 'not_found', message: 'forbidden' } });
@@ -539,10 +605,11 @@ if (isMain) {
     console.log(`  site:    http://localhost:${port}/  and  http://localhost:${port}/dev/`);
     console.log(`  save:    POST http://localhost:${port}/save  (data/characters/<id>.json)`);
     console.log(`  save-it: POST http://localhost:${port}/save-items  (custom-items.json)`);
+    console.log(`  save-sk: POST http://localhost:${port}/save-skills  (custom-skills.json)`);
     console.log(`  save-im: POST http://localhost:${port}/save-image  (data/<id>-<ts>.<ext>)`);
     console.log(`  list-im: GET  http://localhost:${port}/list-images  (image files in data/)`);
     if (lag > 0) console.log(`  lag:     ${lag}ms one-shot stale-read simulation on`);
     console.log(`  open the app with the endpoint override, e.g.`);
-    console.log(`  http://localhost:${port}/?save=http://localhost:${port}/save&save-items=http://localhost:${port}/save-items`);
+    console.log(`  http://localhost:${port}/?save=http://localhost:${port}/save&save-items=http://localhost:${port}/save-items&save-skills=http://localhost:${port}/save-skills`);
   });
 }

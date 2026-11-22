@@ -14,7 +14,7 @@ app**.
 
 ## 1. What it is
 
-A handful of tiny routes (`/save`, `/save-items`, `/save-image`, `/delete-character`; the last is the only one that removes data) — a single Cloudflare Worker (the decided host, §4.1;
+A handful of tiny routes (`/save`, `/save-items`, `/save-skills`, `/save-image`, `/delete-character`; the last is the only one that removes data) — a single Cloudflare Worker (the decided host, §4.1;
 Deno Deploy and a Vercel function are portability alternatives) — that commit
 the character store (one file per character, `data/characters/<id>.json`, via
 `/save`) **and** the shared custom-item catalog `data/custom-items.json` (via
@@ -176,6 +176,20 @@ the deletes, and commits the whole file — the same bounded 409 retry. The
 catalog is shared by all characters and both environments, and a CI fold job
 (tools/fold-custom-items.mjs) mirrors it into `rules/custom-items.json` on `dev`
 for durability/versioning (PLAN-CUSTOM-ITEMS.md §3).
+
+**The skills write — `/save-skills`** (plans/gen-skill-other). The same shape for the
+owner-created custom-skill catalog (`data/custom-skills.json`, `ed-skills/1`, an array
+under `skills`): the app POSTs `{ skills: { "<name>": <skill> } }`; the worker validates
+every skill with the shared `engine/validate-skill.js` gate (ALWAYS supplying the attribute
+list from `rules/attributes.json` and the core skill names from `rules/skills.json`, both
+bundled into the worker), re-validates the whole merged file, upserts by name and commits
+(`400 invalid_skills` on failure, bounded 409 retry). Env var `GITHUB_SKILLS_PATH` (default
+`data/custom-skills.json`). A CI fold job (`tools/fold-custom-skills.mjs`,
+`.github/workflows/fold-custom-skills.yml`) mirrors it into `rules/custom-skills.json` on
+`dev`, dropping and reporting (issue) any invalid entry while folding the rest. The
+`skills.allowCustom` homebrew toggle gates only the Create actions in the UI; the worker does
+not read it and custom skill names are globally unique. The worker must be redeployed and the
+fold workflow must exist on `character-data` (same as custom items).
 
 ### 3.2 Request / response contract
 
@@ -375,6 +389,7 @@ created by the repo owner, never committed and never in the app:
 | `GITHUB_OWNER` / `GITHUB_REPO` | The repo that hosts the app (e.g. `odenson` / `ed-charSheet`). |
 | `GITHUB_CHARS_DIR` | The per-character files dir, default `data/characters` — one raw `ed-character/1` file per character at `<id>.json`, plus an `index.json` (`ed-characters-index/1` — `{ name, portrait? }` per id). Saves write the character file; the index row is created on create and later saves refresh only its `portrait` (name is create-only). `GITHUB_IMAGES_DIR` (optional, default `data`) is where `POST /save-image` commits portrait images. **Redeploy the worker (runbook) before a Pages portrait upload works.** The grouped `GITHUB_STORE`/`data/characters.json` target was removed with the per-character split. |
 | `GITHUB_ITEMS_PATH` | The custom-item catalog, default `data/custom-items.json` — `{ "schema": "ed-items/2", "items": { "<name>": <item> } }`; `/save-items` merges + deletes here. |
+| `GITHUB_SKILLS_PATH` | The custom-skill catalog, default `data/custom-skills.json` (`ed-skills/1`) written by `/save-skills`. |
 | `GITHUB_BRANCH` | Default `character-data` — a data-only branch the deploy workflow does not watch, so saves never rebuild the app. |
 | `SAVE_KEY` | **Required** shared endpoint key — fail-closed (see §5). |
 
@@ -634,6 +649,7 @@ server-side, plus honest limits:
 | `store.js` live read | On the Pages site the discovery index + the per-character file are fetched from the `character-data` branch; local runs read the gitignored working copies |
 | `save-action.js` | Pure conflict-choice → next-step mapping (keep mine / take theirs / cancel) |
 | `ui/ed-conflict.js` | The keep-mine / take-theirs conflict modal (UI kit, own shadow root) |
+| `store-custom-skills.js` | The `/save-skills` twin — custom-skill delta POST + the `ed-custom-skills` overlay (plans/gen-skill-other) |
 | `store-custom-items.js` | The `/save-items` twin — custom-item delta POST + the `ed-custom-items` overlay (PLAN-CUSTOM-ITEMS.md §4.2) |
 | `data/custom-items.json` | Shared player-created catalog on `character-data` (`ed-items/2`), folded into `rules/custom-items.json` on `dev` by CI (PLAN-CUSTOM-ITEMS.md §3) |
 | Settings toggle | "Save to GitHub (server)" — enables the target and holds the required `SAVE_KEY` for the session |

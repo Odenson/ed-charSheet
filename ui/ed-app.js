@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, deriveModel, onPages, readCharacterWithBase, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, loadCustomSkills, mergeSkillCatalog, deriveModel, onPages, readCharacterWithBase, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -16,6 +16,8 @@ import { saveDraftFirstTime } from '../store-first-save.js';
 import { buildNewCharacter, slugifyId, validateNewName } from '../engine/new-character.js';
 import { applyTalentRank, applyAttributePoints, applySkillAdd, applySkillRank, applySkillRemove, applySpellPick, applySpellRemove, checkSpellMatrices, finishPlan, finishCreation } from '../engine/creation.js';
 import { creationRefusalText, finishMessage, finishWarn } from './creation-text.js';
+import { saveCustomSkills, saveCustomSkillEdits, loadCustomSkillEdits, reconcileCustomSkillEdits, hasCustomSkillPendingEdits, applyCustomSkillEdits, isSkillsReflected, DEFAULT_SKILLS_ENDPOINT } from '../store-custom-skills.js';
+import { validateSkill } from '../engine/validate-skill.js';
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
@@ -31,6 +33,7 @@ import './ed-equipment.js';
 import { clearCombatScratch } from './ed-combat.js';
 import { unequipSpentCharms } from './item-equip-state.js';
 import './ed-custom-item.js';
+import './ed-custom-skill.js';
 import './ed-roll-modal.js';
 import './ed-changelog.js';
 import './ed-homebrew.js';
@@ -524,12 +527,15 @@ export class EdApp extends LitElement {
       this._keyPrompt = false;
       const pending = this._pendingCustomSave;
       this._pendingCustomSave = null;
+      const pendingSkills = this._pendingSkillSave;
+      this._pendingSkillSave = null;
       const silent = this._pendingSaveSilent ?? false;
       this._pendingSaveSilent = null;
       const pendingDelete = this._pendingDelete;
       this._pendingDelete = null;
       if (!this._saveKey) return;
       if (pendingDelete) this._deleteCharacter(pendingDelete);
+      else if (pendingSkills) this._saveCustomSkills(pendingSkills);
       else if (pending) this._saveCustomItems(pending.items, pending.delete);
       else this._doSave({ silent });
     });
@@ -543,6 +549,9 @@ export class EdApp extends LitElement {
     // items resolve this session; 'save' POSTs to /save-items with the session
     // key (re-prompting via ed-save-key if absent), reconciles on success.
     this.addEventListener('ed-edit-custom-items', (e) => this._editCustomItems(e.detail));
+    // A new custom skill from the picker's create form (plans/gen-skill-other): validate, write
+    // the `ed-custom-skills` overlay, re-derive so it is selectable at once, then save.
+    this.addEventListener('ed-create-custom-skill', (e) => this._createCustomSkill(e.detail));
     // The character picker dispatched a choice — load that character.
     this.addEventListener('load-character', (e) => {
       if (e.detail?.id) this._loadCharacter(e.detail.id);
@@ -654,7 +663,7 @@ export class EdApp extends LitElement {
       this._baseSha = base; // null for a draft: its first Save takes the create path
       // A loaded draft is ALWAYS dirty (no branch file to match); a saved character is dirty
       // only with pending edits. A draft never arms the autosave timer.
-      this._dirty = draft || hasPendingEdits(id) || hasCustomPendingEdits();
+      this._dirty = draft || hasPendingEdits(id) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
       if (this._dirty) this._scheduleAutosave();
       // A character still in creation (draft or saved-mid-creation) opens in edit mode, where
       // the creation controls live; any other character keeps the current edit mode.
@@ -1671,7 +1680,7 @@ export class EdApp extends LitElement {
     const plan = learnSkillPlan({
       name, text, silver,
       character: this._character,
-      catalog: this._rules?.skillsFile?.skills ?? [],
+      catalog: mergeSkillCatalog(this._rules?.skillsFile, this._rules?.customSkillsFile)?.skills ?? [],
       costs: this._rules?.legendFile?.costs,
       coins: beforeCoins,
     });
@@ -1906,7 +1915,7 @@ export class EdApp extends LitElement {
       const delta = { items: items ?? {}, delete: deleteNames ?? [] };
       if (Object.keys(delta.items).length || delta.delete.length) saveCustomEdits(delta);
       else reconcileCustomEdits();
-      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      this._dirty = hasPendingEdits(this._characterId) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
       this._rules = {
         ...this._rules,
         customItemsFile: applyCustomEdits(this._rules.customItemsCommittedFile, loadCustomEdits()),
@@ -1938,7 +1947,7 @@ export class EdApp extends LitElement {
       clearTimeout(this._saveOkTimer);
       this._saveOkTimer = setTimeout(() => { this._saveOk = null; }, 3500);
       await this._refreshCustomItems({ savedItems: items, deletedNames: deleteNames });
-      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      this._dirty = hasPendingEdits(this._characterId) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
     } catch (e) {
       if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
       this._saveError = e?.message ? String(e.message) : String(e);
@@ -1973,8 +1982,80 @@ export class EdApp extends LitElement {
     }
   }
 
+  // A new custom skill from the create form (plans/gen-skill-other). The view only dispatches
+  // { name, skill }; this handler validates (the shared gate, layer 1 of 3), writes the
+  // `ed-custom-skills` overlay instantly (survives a reload / an offline worker), re-derives so
+  // the skill is selectable at once (it is NOT auto-learned), then saves it.
+  _createCustomSkill({ name, skill } = {}) {
+    if (!this._character || !name || !skill) return;
+    const existing = (this._rules?.customSkillsFile?.skills ?? []).map((s) => s.name);
+    const check = validateSkill(name, skill, {
+      coreNames: (this._rules?.skillsFile?.skills ?? []).map((s) => s.name),
+      attributeNames: this._rules?.attributesFile?.order ?? [],
+      customNames: existing,
+    });
+    if (!check.ok) {
+      this._saveError = check.errors[0];
+      return;
+    }
+    const pending = loadCustomSkillEdits() ?? { skills: {} };
+    saveCustomSkillEdits({ skills: { ...pending.skills, [name]: skill } });
+    this._dirty = true;
+    this._rules = {
+      ...this._rules,
+      customSkillsFile: applyCustomSkillEdits(this._rules.customSkillsCommittedFile, loadCustomSkillEdits()),
+    };
+    this._model = this._derive();
+    this._saveCustomSkills({ [name]: skill });
+  }
+
+  // POST the delta to /save-skills with the session key (re-prompting via ed-save-key when
+  // absent, replaying on confirm) and re-read the catalog. On failure the overlay keeps the
+  // delta so nothing is lost.
+  async _saveCustomSkills(skills) {
+    if (!this._saveKey) {
+      this._pendingSkillSave = skills;
+      this._keyPrompt = true;
+      return;
+    }
+    this._saving = true;
+    this._saveError = null;
+    this._saveOk = null;
+    try {
+      const commit = await saveCustomSkills(skills, { endpoint: this._endpointFor('save-skills', DEFAULT_SKILLS_ENDPOINT), saveKey: this._saveKey });
+      this._saveOk = commit;
+      clearTimeout(this._saveOkTimer);
+      this._saveOkTimer = setTimeout(() => { this._saveOk = null; }, 3500);
+      await this._refreshCustomSkills({ savedSkills: skills });
+      this._dirty = hasPendingEdits(this._characterId) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
+    } catch (e) {
+      if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
+      this._saveError = e?.message ? String(e.message) : String(e);
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  // Re-read the custom-skill catalog from the branch; the overlay is reconciled only once the
+  // re-read actually reflects the saved skills (content-aware, like custom items), so a read
+  // that lags the PUT never blanks a freshly created skill.
+  async _refreshCustomSkills({ savedSkills } = {}) {
+    try {
+      const committed = await loadCustomSkills();
+      if (isSkillsReflected(savedSkills, committed?.skills ?? [])) reconcileCustomSkillEdits();
+      this._rules = {
+        ...this._rules,
+        customSkillsCommittedFile: committed,
+        customSkillsFile: applyCustomSkillEdits(committed, loadCustomSkillEdits()),
+      };
+      this._model = this._derive();
+    } catch (e) {
+      this._saveError = `Couldn't refresh custom skills: ${e?.message ? String(e.message) : String(e)}`;
+    }
+  }
+
   // Local dev save targets: point the POSTs somewhere else via
-  // `?save=<url>` / `?save-items=<url>` (tools/dev-server.mjs, README → Running
+  // `?save=<url>` / `?save-items=<url>` / `?save-skills=<url>` (tools/dev-server.mjs, README → Running
   // locally). Absent → the deployed worker (default behaviour — no config needed
   // to save). A bare origin or path resolves against the app's own origin.
   _endpointFor(param, fallback) {
@@ -1984,7 +2065,7 @@ export class EdApp extends LitElement {
     // `?save=<origin>/save` alone (the dev-server banner URL) also points the sibling routes
     // (`/save-image`, `/delete-character`) at that server, instead of the deployed worker.
     const save = q.get('save');
-    if (save && param !== 'save' && param !== 'save-items') {
+    if (save && param !== 'save' && param !== 'save-items' && param !== 'save-skills') {
       const u = new URL(save, location.href);
       if (/\/save$/.test(u.pathname)) {
         u.pathname = u.pathname.replace(/\/save$/, `/${param}`);
@@ -2333,7 +2414,13 @@ export class EdApp extends LitElement {
         commit = customCommit; // last commit link wins
         await this._refreshCustomItems({ savedItems: pending.items ?? {}, deletedNames: pending.delete ?? [] });
       }
-      this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+      // ...and a pending custom-skill overlay the same way (/save-skills).
+      const pendingSkills = loadCustomSkillEdits();
+      if (pendingSkills && Object.keys(pendingSkills.skills ?? {}).length) {
+        commit = await saveCustomSkills(pendingSkills.skills, { endpoint: this._endpointFor('save-skills', DEFAULT_SKILLS_ENDPOINT), saveKey: this._saveKey });
+        await this._refreshCustomSkills({ savedSkills: pendingSkills.skills });
+      }
+      this._dirty =hasPendingEdits(this._characterId) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
       if (!silent) {
         this._saveOk = commit; // { sha, url }
         clearTimeout(this._saveOkTimer);
@@ -2357,7 +2444,7 @@ export class EdApp extends LitElement {
         if (!silent) this._saveError = e?.message ? String(e.message) : String(e);
         // A draft that did not land stays dirty and stays a draft (a failed index read or post
         // leaves it exactly as it was).
-        this._dirty = this._isDraft || hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+        this._dirty = this._isDraft || hasPendingEdits(this._characterId) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
       }
     } finally {
       this._saving = false;
@@ -2440,7 +2527,7 @@ export class EdApp extends LitElement {
       this._rules = rules;
       this._model = this._derive();
       this._baseSha = base;
-      this._dirty = hasCustomPendingEdits();
+      this._dirty = (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
       this._saveError = null;
     } catch (e) {
       this._saveError = `Couldn't reload the saved version: ${e?.message ? String(e.message) : String(e)}`;

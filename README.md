@@ -75,7 +75,7 @@ npm start
 ```
 to ensure save uses local data remember to pass the url params:
 ```
-http://localhost:8000/dev/?save=http://localhost:8000/save&save-items=http://localhost:8000/save-items
+http://localhost:8000/dev/?save=http://localhost:8000/save&save-items=http://localhost:8000/save-items&save-skills=http://localhost:8000/save-skills
 ```
 
 > **Windows — one-time setup on a fresh machine.** The npm scripts are bash
@@ -104,7 +104,8 @@ re-sync). The server:
   `POST /save` (write `data/characters/<id>.json`, raw `ed-character/1` + a
   `index.json` entry, portrait refreshed on later saves),
   `POST /save-image` (portrait upload to `data/`) and `GET /list-images`, and
-  `POST /save-items` (merge `data/custom-items.json`, `ed-items/2`) — with the
+  `POST /save-items` (merge `data/custom-items.json`, `ed-items/2`) and
+  `POST /save-skills` (merge `data/custom-skills.json`, `ed-skills/1`) — with the
   same validation and error codes, so the app's `SaveError` handling runs
   unchanged (the save-key prompt still appears — type anything);
 - writes land in the gitignored local working copies that `store.js` already
@@ -113,7 +114,7 @@ re-sync). The server:
 - accepts `--lag <ms>` for a one-shot stale-read simulation
   (`tools/dev-server.test.js`, PLAN-CUSTOM-ITEMS.md §6.6).
 
-Because the app and the save endpoints are same-origin, no `?save=`/`?save-items=`
+Because the app and the save endpoints are same-origin, no `?save=`/`?save-items=`/`?save-skills=`
 override is needed — the query-param override exists for cross-origin test rigs
 (see below) and just works against this server too.
 

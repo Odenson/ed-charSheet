@@ -1,0 +1,6 @@
+{
+  "schema": "ed-skills/1",
+  "source": "custom",
+  "notes": "Owner-created skills, folded from data/custom-skills.json by CI.",
+  "skills": []
+}

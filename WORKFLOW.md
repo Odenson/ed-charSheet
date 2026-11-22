@@ -57,6 +57,9 @@ real rule file, part of the build input. The consequence is deliberate and
 `dev`-only (plans/PLAN-CUSTOM-ITEMS.md §3): a custom-item save triggers one extra
 `dev` rebuild (so `/dev/` bundles the catalog as a durability fallback), while
 `main`'s tree is untouched — production never rebuilds from a custom-item save.
+The same holds for **custom skills**: `.github/workflows/fold-custom-skills.yml` mirrors
+`data/custom-skills.json` into `rules/custom-skills.json` on `dev`, dropping (and reporting
+via an issue) any entry that fails `engine/validate-skill.js`.
 The fold validates every item and the merged catalog through the shared
 `engine/validate-item.js` gate and only writes when the mirrored file would
 change.
@@ -199,7 +202,7 @@ entirely while reconnecting the histories, then push.
   dedicated `character-data`
   branch — a file store, not a build input (see "The `character-data` branch"
   above and docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed. The one
-  exception: a **custom-item** save (via `/save-items`) triggers the fold job,
+  exception: a **custom-item** save (via `/save-items`) or **custom-skill** save (via `/save-skills`) triggers the fold job,
   which mirrors the catalog into `rules/custom-items.json` **on `dev`** — a
   build input — so `/dev/` rebuilds while `main` stays untouched
   (plans/PLAN-CUSTOM-ITEMS.md §3).

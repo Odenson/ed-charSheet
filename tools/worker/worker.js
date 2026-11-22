@@ -39,6 +39,15 @@
 // the PUT: this endpoint is the first gate between the open endpoint and
 // rules/custom-items.json on dev.
 //
+// POST /save-skills  { "skills": { "<name>": <skill> } }
+//
+// The write endpoint for owner-created custom skills (plans/gen-skill-other): GET
+// `data/custom-skills.json` (ed-skills/1, an array under `skills`), upsert the posted
+// skills by name, PUT it back — same bounded GET-sha → PUT 409-retry contract. Every skill
+// is validated by engine/validate-skill.js (shared with the UI and the fold job) with the
+// attribute list (rules/attributes.json) and core skill names (rules/skills.json) ALWAYS
+// supplied, and the whole merged file is re-checked before the PUT.
+//
 // POST /delete-character  { "id": "<id>", "base": "<file sha>", "deleteImage"?: "<imagesDir>/<file>" }
 //
 // Deletes `data/characters/<id>.json` and drops the id's row from the discovery
@@ -55,6 +64,14 @@
 // worker holds nothing between calls.
 
 import { validateItem, validateItemsFile } from '../../engine/validate-item.js';
+import { validateSkill, validateSkillsFile } from '../../engine/validate-skill.js';
+import attributesData from '../../rules/attributes.json' with { type: 'json' };
+import coreSkillsData from '../../rules/skills.json' with { type: 'json' };
+
+// Bundled at deploy time (wrangler/esbuild inlines JSON): the worker always checks a posted
+// skill against the real attribute list and core skill names — never optional here.
+const ATTRIBUTE_NAMES = attributesData.order;
+const CORE_SKILL_NAMES = coreSkillsData.skills.map((s) => s.name);
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const GITHUB = 'https://api.github.com';
@@ -69,14 +86,14 @@ export default {
     const origin = env.ALLOWED_ORIGIN ?? 'https://odenson.github.io';
     const cors = {
       'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS', // /save, /save-items, /save-image, /delete-character
+      'Access-Control-Allow-Methods': 'POST, OPTIONS', // /save, /save-items, /save-skills, /save-image, /delete-character
       'Access-Control-Allow-Headers': 'Content-Type, x-save-key',
     };
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
-    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items' && url.pathname !== '/save-image' && url.pathname !== '/delete-character'))
-      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, /save-items, /save-image or /delete-character only' } });
+    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items' && url.pathname !== '/save-skills' && url.pathname !== '/save-image' && url.pathname !== '/delete-character'))
+      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, /save-items, /save-skills, /save-image or /delete-character only' } });
 
     // SAVE_KEY is required (fail closed): reject if unconfigured, missing, or
     // wrong. The key is compared in constant time (hash-then-compare, see
@@ -119,6 +136,15 @@ export default {
         await ensureBranch(repo, branch, gh); // first save only
         const itemsPath = env.GITHUB_ITEMS_PATH ?? 'data/custom-items.json';
         return await upsertItems(repo, branch, gh, itemsPath, body, cors);
+      }
+
+      if (url.pathname === '/save-skills') {
+        const checked = checkSkillsDelta(body);
+        if (!checked.ok)
+          return json(cors, 400, { ok: false, error: { code: 'invalid_skills', message: checked.errors[0] } });
+        await ensureBranch(repo, branch, gh); // first save only
+        const skillsPath = env.GITHUB_SKILLS_PATH ?? 'data/custom-skills.json';
+        return await upsertSkills(repo, branch, gh, skillsPath, body, cors);
       }
 
       const character = body?.character;
@@ -555,6 +581,67 @@ function checkItemsDelta(body) {
   }
   if (dels !== undefined && (!Array.isArray(dels) || dels.some((d) => typeof d !== 'string' || d === '')))
     errors.push('delete: must be an array of non-empty names');
+  return { ok: errors.length === 0, errors };
+}
+
+// Upsert custom skills into the shared catalog at `skillsPath` (ed-skills/1, array under
+// `skills`): GET, replace-by-name or append, re-validate the WHOLE merged file, PUT with a
+// bounded 409 retry. A missing file (first save) is created fresh.
+async function upsertSkills(repo, branch, gh, skillsPath, delta, cors) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { sha, file } = await readSkillsFile(repo, skillsPath, branch, gh);
+    for (const [name, skill] of Object.entries(delta.skills)) {
+      const i = file.skills.findIndex((s) => s?.name === name);
+      if (i >= 0) file.skills[i] = skill;
+      else file.skills.push(skill);
+    }
+    const checked = validateSkillsFile(file, { coreNames: CORE_SKILL_NAMES, attributeNames: ATTRIBUTE_NAMES });
+    if (!checked.ok)
+      return json(cors, 400, { ok: false, error: { code: 'invalid_skills', message: checked.errors[0] } });
+    const content = toBase64(JSON.stringify(file, null, 2) + '\n');
+    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${skillsPath}`, {
+      method: 'PUT',
+      headers: { ...gh, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Save custom skills (serverless)', content, sha, branch }),
+    });
+    if (res.ok) return ok(cors, res);
+    if (res.status !== 409) {
+      console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
+      return upstreamResponse(cors, res.status);
+    }
+  }
+  return json(cors, 409, { ok: false, error: { code: 'conflict', message: 'sha kept moving' } });
+}
+
+// Read the custom-skills catalog: `{ sha, file }`. A 404 yields a fresh empty ed-skills/1 file.
+async function readSkillsFile(repo, skillsPath, branch, gh) {
+  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${skillsPath}?ref=${branch}`, { headers: gh });
+  if (res.status === 404)
+    return {
+      sha: undefined,
+      file: { schema: 'ed-skills/1', source: 'custom', notes: 'Owner-created skills, folded from data/custom-skills.json by CI.', skills: [] },
+    };
+  if (!res.ok) throw new GitHubError(res.status);
+  const obj = await res.json();
+  const file = JSON.parse(base64ToString(obj.content));
+  if (!Array.isArray(file?.skills)) file.skills = [];
+  return { sha: obj.sha, file };
+}
+
+// Validate the /save-skills delta: `{ skills: { name: skill } }`. Core-name and attribute
+// checks always run; collisions with already-saved custom names are caught on the merged
+// file (upsertSkills), where a same-name entry is a replace and a case-variant is a duplicate.
+function checkSkillsDelta(body) {
+  const errors = [];
+  const skills = body?.skills;
+  if (typeof skills !== 'object' || skills === null || Array.isArray(skills)) {
+    errors.push('skills: must be an object of name → skill');
+  } else {
+    for (const [name, skill] of Object.entries(skills)) {
+      for (const e of validateSkill(name, skill, { coreNames: CORE_SKILL_NAMES, attributeNames: ATTRIBUTE_NAMES }).errors)
+        errors.push(`skills["${name}"]: ${e}`);
+    }
+  }
   return { ok: errors.length === 0, errors };
 }
 

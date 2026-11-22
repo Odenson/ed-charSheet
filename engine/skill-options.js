@@ -88,6 +88,7 @@ export function learnableSkills(skillCatalog, knownNames = new Set(), costs = nu
       brief: s.presentation?.shortEffect ?? s.summary ?? null,
       rank1Cost,
       trainingSilver,
+      ...(s.custom === true ? { custom: true } : {}),
     });
   }
   // Novice first, then Journeyman, alphabetical within each tier group

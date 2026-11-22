@@ -131,6 +131,8 @@ script that edits protected files without naming them) is not caught.
 - `.github/workflows/deploy-pages.yml` — dev → `/dev`, main → root.
 - `.github/workflows/fold-custom-items.yml` — folds player-created catalog
   items into `rules/custom-items.json` on dev.
+- `.github/workflows/fold-custom-skills.yml` — folds owner-created custom
+  skills into `rules/custom-skills.json` on dev.
 
 ## Memory
 

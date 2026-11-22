@@ -1143,3 +1143,19 @@ Sources:
 - text-RB-players-guide.txt:1856-1859 (p. 60 Dexterity), :1884-1887 (Charisma), :1987-1988 (Social Defense based on Charisma)
 - text-RB-players-guide.txt:7061-7062, 7088-7089, 7114-7115 (Craft Armor/Craft Weapon/Craftsman Rank + PER, each usable as Artisan); :7184-7185 (Knowledge PER)
 - text-RB-players-guide.txt:2300-2314 (Horror-taint origin of artisan skills); manual/text-player-guide-skill-concepts.txt:132-157 (p. 186 Using Artisan Skills, Making an Impression)
+
+### Q045 — Custom (owner-created) Knowledge/Artisan/General skills: tier, attribute, creation rule, General-skill tier and cost, skill Step formula
+Keywords: custom skill, homebrew skill, new skill, invent skill, general skill tier, novice, journeyman, skill step, rank plus attribute, default attribute, knowledge PER, artisan CHA, skill training table, rank 1 cost · Resolved: 2026-11-23 · Context: gen-skill-other
+
+(1) Knowledge and Artisan: Cost Novice (Strain 0); default attribute Knowledge = Rank + PER, Artisan = Rank + CHA (see Q043, Q044). Player defines the subject; GM approves (Q043 (1)).
+(2) General skills have no single tier: each entry prints its own Cost, and the "Talents Available as Skills" lists split into Novice skills and Journeyman skills (e.g. Blade Juggle, Conceal Object, Leadership, Tactics, Second Attack are Journeyman). Creation: only Novice-tier skills can be bought with the starting skill points. Rank 1 costs 200 LP (Novice) or 300 LP (Journeyman); training 1 week, fee 10 sp for Rank 1, then 2 weeks wait before Rank 2; cost tier is "the tier listed with the skill description".
+(3) The book does not provide rules for creating new General skills; only Knowledge and Artisan skills are explicitly player-inventable (GM approval). The Default Skill Table says other skills "could be added at the gamemaster's discretion" (default use only). No attribute-assignment rule for inventing a skill is given beyond the generic templates. NOT COVERED for custom General skills (owner decision needed on tier/attribute). Optional rule: GMs may let Artisan/General skills double as Knowledge via rank + PER.
+(4) Yes: skill Step = skill Rank + the attribute Step named in the skill description (e.g. Dex 6 + Melee Weapons Rank 5 = Step 11).
+
+Sources:
+- text-RB-players-guide.txt:6726-6735 (p. 186 General Skills), :6675-6699 (p. 185 Novice/Journeyman lists), :2354-2360 (p. 70 creation: only Novice-tier skills)
+- text-RB-players-guide.txt:7000-7002 (Artisan invent), :7184-7201 (Knowledge); :6736-6745 (Practical Knowledge optional rule)
+- text-RB-players-guide.txt:17045-17102 (pp. 450-451 Skill Training Table, tier from skill description, fee, wait)
+- manual/text-player-guide-skill-concepts.txt:41-46 (p. 184 Using Skills, Step = rank + attribute), :52-55 (Default Skill Table, GM may add)
+
+Decision: 2026-11-22 — Custom General skills get an owner-chosen attribute and a selectable tier (Novice or Journeyman); custom Knowledge/Artisan skills stay Novice with an editable default attribute (PER / CHA) (house rule).

@@ -652,6 +652,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-day-reset.js   # new-day / recovery reset modal
     ed-damage-modal.js # shared Take-damage modal (Overview Damage row + Combat Damage taken); applies a hit via engine resolveHit, dispatches ed-edit-health and the Knockdown ed-roll
     ed-custom-item.js # player-created custom item modal
+    ed-custom-skill.js # create-custom-skill form modal (state: custom-skill-state.js; chip filter: skill-filter.js)
     ed-save-key.js    # GitHub save key prompt
     ed-confirm.js     # reusable confirmation modal
     ed-conflict.js    # save-conflict modal (§7.5, UI-GUIDELINES §8)
@@ -720,7 +721,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     steps.json attributes.json characteristics.json talents.json
     disciplines.json races.json skills.json items.json
     spells.json knacks.json legend.json combat.json thread-items.json
-    custom-items.json homebrew.json
+    custom-items.json custom-skills.json homebrew.json
     # hand-curated; schema-tagged per EFFECT-TAXONOMY
   vendor/
     lit-3.2.1.js         # self-hosted Lit bundle (no external runtime dep)

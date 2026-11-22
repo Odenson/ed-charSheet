@@ -68,6 +68,7 @@ that never leaves the worker's secret store.
 | `GITHUB_CHARS_DIR` | var | `data/characters` — per-character files dir (`<id>.json`, raw `ed-character` — current tag `/2`, `/1` accepted) + `index.json` (`ed-characters-index/1`, name create-only, portrait refreshed on save); saves write one file per character (PLAN-SAVE-CONCURRENCY) | `wrangler.toml [vars]` |
 | `GITHUB_IMAGES_DIR` | var (optional) | `data` (default) — where `POST /save-image` commits portrait images (`<charId>-<timestamp>.<ext>`, create-only). Also the prefix the index accepts for `meta.portrait`. | `wrangler.toml [vars]` |
 | `GITHUB_ITEMS_PATH` | var | `data/custom-items.json` — the custom-item catalog (`ed-items/2`) written by `/save-items` (PLAN-CUSTOM-ITEMS.md) | `wrangler.toml [vars]` |
+| `GITHUB_SKILLS_PATH` | var | `data/custom-skills.json` — the custom-skill catalog (`ed-skills/1`) written by `/save-skills` (plans/gen-skill-other). After pulling this feature: redeploy the worker (`npm run deploy` in `tools/worker`) and commit `.github/workflows/fold-custom-skills.yml` to `character-data` so the fold fires. |
 | `GITHUB_BRANCH` | var | `character-data` | `wrangler.toml [vars]` |
 
 Only the two **secrets** are sensitive; the five vars are plain config and live
@@ -349,7 +350,7 @@ the four worker routes (plus dev-only `GET /list-images`) on the same origin —
 `data/custom-items.json` — writing to the gitignored working copies that
 `store.js` already reads off-Pages, so the whole save → read-after-write loop
 runs with no GitHub or Cloudflare in sight.
-Same-origin means no `?save=`/`?save-items=` override is needed; the query-param
+Same-origin means no `?save=`/`?save-items=`/`?save-skills=` override is needed; the query-param
 override (5.3) still works against it for cross-origin test rigs.
 
 - Validation, ordering (400 before any file I/O), merged-file re-check, response
