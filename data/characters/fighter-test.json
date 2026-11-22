@@ -1,0 +1,236 @@
+{
+  "schema": "ed-character/2",
+  "meta": {
+    "id": "fighter-test",
+    "name": "Fighter-Test",
+    "race": "Troll",
+    "description": "Test Descriptions",
+    "age": 15,
+    "sex": "Male",
+    "height": "6'10",
+    "weight": "138 kg",
+    "skinTone": "Light Grey",
+    "background": "Test Background"
+  },
+  "attributes": {
+    "Dexterity": {
+      "base": 10,
+      "points": 6,
+      "increases": 0
+    },
+    "Strength": {
+      "base": 14,
+      "points": 5,
+      "increases": 0
+    },
+    "Toughness": {
+      "base": 12,
+      "points": 4,
+      "increases": 0
+    },
+    "Perception": {
+      "base": 9,
+      "points": 1,
+      "increases": 0
+    },
+    "Willpower": {
+      "base": 11,
+      "points": 2,
+      "increases": 0
+    },
+    "Charisma": {
+      "base": 10,
+      "points": 1,
+      "increases": 0
+    }
+  },
+  "disciplines": [
+    {
+      "name": "Warrior",
+      "circle": 1,
+      "talents": [
+        {
+          "name": "Durability",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Karma Ritual",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Unarmed Combat",
+          "rank": 2,
+          "circle": 1
+        },
+        {
+          "name": "Avoid Blow",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Melee Weapon",
+          "rank": 2,
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Warrior)",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Tiger Spring",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Wood Skin",
+          "rank": 1,
+          "circle": 1
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Knowledge (Great Wepons)",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Horror Lore",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Sculpting",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Troll)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Speak Language (Throalic)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Read/Write Language (Throalic)",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Map Making",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Knowledge (Barter)",
+      "rank": 2,
+      "tier": "Novice"
+    },
+    {
+      "name": "Swimming",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Climbing",
+      "rank": 1,
+      "tier": "Novice"
+    },
+    {
+      "name": "Taunt",
+      "rank": 2,
+      "tier": "Novice"
+    }
+  ],
+  "knacks": [],
+  "traits": [],
+  "resources": {
+    "karma": {
+      "converted": 3,
+      "spent": 0
+    },
+    "legend": {
+      "earned": []
+    },
+    "health": {
+      "damage": 0,
+      "wounds": 0,
+      "recoveriesUsed": 0
+    }
+  },
+  "items": [
+    {
+      "name": "Adventuring Kit",
+      "equipped": false
+    },
+    {
+      "name": "Dagger",
+      "equipped": true
+    },
+    {
+      "name": "Traveler's Garb",
+      "equipped": true
+    },
+    {
+      "name": "Trail Rations (1 week)",
+      "equipped": false
+    },
+    {
+      "name": "Troll Axe",
+      "equipped": true
+    },
+    {
+      "name": "Hardened Leather",
+      "equipped": true
+    }
+  ],
+  "wealth": {
+    "coins": {
+      "copper": 0,
+      "silver": 15,
+      "gold": 0,
+      "earth": 0,
+      "water": 0,
+      "air": 0,
+      "fire": 0,
+      "orichalcum": 0
+    },
+    "gems": []
+  },
+  "creation": {
+    "open": false,
+    "free": {
+      "talents": {
+        "Warrior/Durability": 1,
+        "Warrior/Karma Ritual": 1,
+        "Warrior/Unarmed Combat": 2,
+        "Warrior/Avoid Blow": 1,
+        "Warrior/Melee Weapon": 2,
+        "Warrior/Thread Weaving (Warrior)": 1,
+        "Warrior/Tiger Spring": 1,
+        "Warrior/Wood Skin": 1
+      },
+      "skills": {
+        "Knowledge (Great Wepons)": 2,
+        "Horror Lore": 1,
+        "Sculpting": 1,
+        "Speak Language (Troll)": 1,
+        "Speak Language (Throalic)": 1,
+        "Read/Write Language (Throalic)": 1,
+        "Map Making": 1,
+        "Knowledge (Barter)": 2,
+        "Swimming": 1,
+        "Climbing": 1,
+        "Taunt": 2
+      },
+      "spells": []
+    }
+  }
+}
