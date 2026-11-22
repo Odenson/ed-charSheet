@@ -50,6 +50,7 @@ const GITHUB = 'https://api.github.com';
 const MAX_BYTES = 512 * 1024; // a character entry is a few KB; cap generously
 const MAX_RETRIES = 3;        // bounded 409 (sha moved) retries
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const MAX_IMAGE_BYTES = 1_500_000; // decoded portrait image ceiling (client stores <= 1,000,000)
 
 export default {
   async fetch(request, env) {
@@ -57,14 +58,14 @@ export default {
     const origin = env.ALLOWED_ORIGIN ?? 'https://odenson.github.io';
     const cors = {
       'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS', // /save, /save-items, /save-image
       'Access-Control-Allow-Headers': 'Content-Type, x-save-key',
     };
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
-    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items'))
-      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save or POST /save-items only' } });
+    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items' && url.pathname !== '/save-image'))
+      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, POST /save-items or POST /save-image only' } });
 
     // SAVE_KEY is required (fail closed): reject if unconfigured, missing, or
     // wrong. The key is compared in constant time (hash-then-compare, see
@@ -93,6 +94,8 @@ export default {
     };
 
     try {
+      if (url.pathname === '/save-image') return await saveImage(env, body, repo, branch, gh, cors);
+
       if (url.pathname === '/save-items') {
         // Custom items are the shared catalog (ed-items/3). The delta shape and
         // every posted item are validated first (fail fast, before any GitHub
@@ -119,7 +122,8 @@ export default {
 
       await ensureBranch(repo, branch, gh); // first save only
       const charsDir = env.GITHUB_CHARS_DIR ?? 'data/characters';
-      return await upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors);
+      const imagesDir = env.GITHUB_IMAGES_DIR ?? 'data';
+      return await upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors, imagesDir);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(JSON.stringify({ message: 'save failed (upstream)', error: message, status: err instanceof GitHubError ? err.status : undefined }));
@@ -137,18 +141,18 @@ export default {
 // 409 in the read→write window also returns `stale_base` (with the current sha,
 // freshly read). Without a `base` (legacy caller) keep the current bounded
 // GET-sha → PUT 409-retry contract.
-async function upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors) {
+async function upsertCharacterFile(repo, branch, gh, charsDir, id, character, base, cors, imagesDir = 'data') {
   const filePath = `${charsDir}/${id}.json`;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { sha, exists } = await readCharacterFile(repo, filePath, branch, gh);
     if (base && exists && base !== sha) return staleBase(cors, sha);
     const res = await putCharacterFile(repo, branch, gh, filePath, character, exists ? sha : undefined, cors);
     if (res) {
-      // Only a brand-new file that was ACTUALLY created (a 2xx PUT) touches the
-      // discovery index — never a non-409 upstream failure (`putCharacterFile`
-      // returns its 502 Response here), which would leave a dangling index entry
-      // for a file that was never written.
-      if (!exists && res.status < 300) await ensureIndexEntry(repo, branch, gh, charsDir, id, character);
+      // Every ACTUALLY written (2xx PUT) character syncs the discovery index
+      // (create the entry, or refresh its `portrait`) — never a non-409 upstream
+      // failure (`putCharacterFile` returns its 502 Response here), which would
+      // leave an index entry for a file that was never written.
+      if (res.status < 300) await syncIndexEntry(repo, branch, gh, charsDir, id, character, imagesDir);
       return res;
     }
     // PUT 409 — the file sha moved in the read→write window. A base-caller
@@ -197,16 +201,18 @@ async function putCharacterFile(repo, branch, gh, filePath, character, sha, cors
   return null;
 }
 
-// Create-only discovery-index maintenance. Touched ONLY when a save created a
-// brand-new character file: ensure `id → { name, portrait }` is discoverable in
-// `data/characters/index.json` (creating the index file if absent), so the new
-// character appears in the picker in one fetch. Best-effort by design — a failed
-// index write is logged and tolerated (the file is truth; a created-but-
-// unindexed character is invisible to the picker until the index is refreshed).
-// Renames and portrait changes never touch the index: an entry may go stale (the
-// file's `meta.name`/`meta.portrait` are authoritative) and the index is never
-// trusted for save bases.
-async function ensureIndexEntry(repo, branch, gh, charsDir, id, character) {
+// Discovery-index maintenance, run after every 2xx character PUT: ensure
+// `id → { name, portrait }` is discoverable in `data/characters/index.json`
+// (creating the index file / entry if absent) and refresh ONLY the entry's
+// `portrait` when it differs. `name` is create-only (never rewritten) and other
+// ids are never touched. The client-supplied portrait is validated first (null or
+// `<imagesDir>/<file>.(jpg|jpeg|png|webp)`); anything else skips the index write
+// entirely (the character save still succeeds). Best-effort by design — a failed
+// index write is logged and tolerated (the file is truth; the index is never
+// trusted for save bases).
+async function syncIndexEntry(repo, branch, gh, charsDir, id, character, imagesDir = 'data') {
+  const portrait = character.meta?.portrait ?? null;
+  if (!isValidIndexPortrait(portrait, imagesDir)) return;
   const indexPath = `${charsDir}/index.json`;
   // Bounded read→write retry: a concurrent create moves the index sha, so a PUT
   // 409 is re-read and re-applied (without it, a raced create silently drops an
@@ -231,8 +237,13 @@ async function ensureIndexEntry(repo, branch, gh, charsDir, id, character) {
       return;
     }
     file.characters = file.characters ?? {};
-    if (file.characters[id]) return; // already indexed — nothing to write
-    file.characters[id] = { name: character.meta?.name ?? '', portrait: character.meta?.portrait ?? null };
+    const entry = file.characters[id];
+    if (entry) {
+      if ((entry.portrait ?? null) === portrait) return; // nothing to write
+      entry.portrait = portrait; // only the portrait; name and shape left alone
+    } else {
+      file.characters[id] = { name: character.meta?.name ?? '', portrait };
+    }
     const content = toBase64(JSON.stringify(file, null, 2) + '\n');
     const res = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}`, {
       method: 'PUT',
@@ -245,6 +256,87 @@ async function ensureIndexEntry(repo, branch, gh, charsDir, id, character) {
     return; // non-409 upstream failure — tolerated (the file is truth)
   }
   console.error(JSON.stringify({ message: 'index ensure gave up (sha kept moving)', id }));
+}
+
+// A portrait value the index accepts: null, or a one-level `<imagesDir>/<name>`
+// image path. The dir comes from env (never the request).
+function isValidIndexPortrait(portrait, imagesDir) {
+  if (portrait === null) return true;
+  if (typeof portrait !== 'string') return false;
+  const prefix = `${imagesDir}/`;
+  if (!portrait.startsWith(prefix)) return false;
+  const name = portrait.slice(prefix.length);
+  return /^[^/]+\.(jpg|jpeg|png|webp)$/i.test(name) && !name.startsWith('.');
+}
+
+// POST /save-image { id, filename, content: <base64> } — commit one downscaled
+// portrait to `<GITHUB_IMAGES_DIR|data>/<filename>`. The path is worker-pinned
+// (never from the request); create-only: an existing file with identical content
+// is an idempotent ok (no PUT), different content is 409 `exists` (no PUT).
+async function saveImage(env, body, repo, branch, gh, cors) {
+  const id = body?.id;
+  if (!isValidId(id))
+    return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
+  const filename = body?.filename;
+  if (typeof filename !== 'string' || !new RegExp(`^${id}-\\d{10,17}\\.(jpg|png|webp)$`).test(filename))
+    return json(cors, 400, { ok: false, error: { code: 'invalid_name', message: 'filename must be <id>-<timestamp>.(jpg|png|webp)' } });
+  if (typeof body?.content !== 'string' || body.content === '')
+    return json(cors, 400, { ok: false, error: { code: 'invalid_image', message: 'content must be a base64 string' } });
+  let bytes;
+  try {
+    const binary = atob(body.content);
+    bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  } catch {
+    return json(cors, 400, { ok: false, error: { code: 'invalid_image', message: 'content is not valid base64' } });
+  }
+  if (bytes.length > MAX_IMAGE_BYTES)
+    return json(cors, 400, { ok: false, error: { code: 'too_large', message: `image exceeds ${MAX_IMAGE_BYTES} bytes` } });
+  if (!magicMatches(bytes, filename.slice(filename.lastIndexOf('.') + 1)))
+    return json(cors, 400, { ok: false, error: { code: 'invalid_image', message: 'bytes do not match the file extension' } });
+
+  const path = `${env.GITHUB_IMAGES_DIR ?? 'data'}/${filename}`;
+  const read = await fetch(`${GITHUB}/repos/${repo}/contents/${path}?ref=${branch}`, { headers: gh });
+  if (read.ok) {
+    const existing = await read.json();
+    const sha = await gitBlobSha(bytes);
+    if (existing.sha === sha)
+      return json(cors, 200, { ok: true, path, sha, url: `https://github.com/${repo}/blob/${branch}/${path}` });
+    return json(cors, 409, { ok: false, error: { code: 'exists', message: 'a different image already exists at this path' } });
+  }
+  if (read.status !== 404) throw new GitHubError(read.status);
+
+  await ensureBranch(repo, branch, gh);
+  const res = await fetch(`${GITHUB}/repos/${repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { ...gh, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'Save portrait image (serverless)', content: body.content, branch }),
+  });
+  if (!res.ok) {
+    console.error(JSON.stringify({ message: 'github PUT failed', status: res.status }));
+    return upstreamResponse(cors, res.status);
+  }
+  const c = await res.json();
+  if (!c?.content?.sha) throw new Error('GitHub returned no content.sha for the saved image');
+  return json(cors, 200, { ok: true, path, sha: c.content.sha, url: c.commit?.html_url ?? c.html_url ?? null });
+}
+
+function magicMatches(b, ext) {
+  const at = (off, arr) => arr.every((v, i) => b[off + i] === v);
+  if (ext === 'jpg') return at(0, [0xff, 0xd8, 0xff]);
+  if (ext === 'png') return at(0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (ext === 'webp') return at(0, [0x52, 0x49, 0x46, 0x46]) && at(8, [0x57, 0x45, 0x42, 0x50]);
+  return false;
+}
+
+// Git blob sha: sha1("blob <len>\0" + bytes) — what the contents API reports.
+async function gitBlobSha(bytes) {
+  const head = new TextEncoder().encode(`blob ${bytes.length}\0`);
+  const all = new Uint8Array(head.length + bytes.length);
+  all.set(head, 0);
+  all.set(bytes, head.length);
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-1', all));
+  return Array.from(digest, (x) => x.toString(16).padStart(2, '0')).join('');
 }
 
 // Upsert custom items into the shared catalog at `itemsPath` (ed-items/3): GET

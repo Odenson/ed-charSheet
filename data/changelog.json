@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.1.0",
+      "date": "2026-11-22",
+      "summary": "Change your character's portrait in edit mode: upload a new image, pick one already saved, or remove it.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Change your character's portrait in edit mode: upload a new image, pick one already saved, or remove it."
+        }
+      ]
+    },
+    {
       "version": "2.0.0",
       "date": "2026-11-22",
       "summary": "Start a new Circle-1 Archer, Nethermancer, Thief or Warrior from the loader and spend your creation points (attributes, talents including one Talent Option, skills, spells) before finishing creation from the top bar.",

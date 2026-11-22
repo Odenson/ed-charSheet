@@ -11,6 +11,7 @@ import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
+import './ed-edit-portrait.js';
 import './ed-add-legend.js';
 import './ed-damage-modal.js';
 import { humanize, cap } from './format.js';
@@ -23,6 +24,13 @@ export class EdOverview extends LitElement {
   static properties = {
     model: { attribute: false },
     editMode: { attribute: false },
+    // Portrait picker inputs from ed-app (data down): the character id (for the upload
+    // filename), the branch image list, and an unsaved staged upload.
+    characterId: { attribute: false },
+    portraitImages: { attribute: false },
+    portraitLoading: { attribute: false },
+    portraitStaged: { attribute: false },
+    _editPortrait: { state: true },
     // Armed-potion session state from ed-app: { pending, potions } (data down).
     arming: { attribute: false },
     _modal: { state: true },
@@ -227,11 +235,46 @@ export class EdOverview extends LitElement {
       .toprow { grid-template-columns: 1fr; }
       .portrait { display: none; }
       .avatar { display: block; }
+      .avatar.ph { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: var(--fs-title); }
       /* Touch-sized creation steppers (one column scrolls, so the extra height is harmless). */
       .acell .astepbtn { width: 20px; height: 20px; margin: -4px 0; }
     }
   `,
   ];
+
+  // Edit mode: the portrait (desktop panel / mobile avatar, image or placeholder) opens
+  // the portrait picker; ed-app loads the branch image list on the event. View mode
+  // keeps the lightbox (avatar only) and is otherwise unchanged.
+  _openPortraitEdit() {
+    if (!this.editMode) return;
+    this._editPortrait = true;
+    this.dispatchEvent(new CustomEvent('ed-portrait-open', { bubbles: true, composed: true }));
+  }
+
+  _portraitKeydown(e) {
+    if (this.editMode && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      this._openPortraitEdit();
+    }
+  }
+
+  // The mobile header avatar. View mode: the image opens the lightbox (nothing
+  // without a portrait). Edit mode: the image, or a same-size placeholder, opens the
+  // portrait picker.
+  _avatar(portrait, meta) {
+    const on = this.editMode;
+    if (!portrait && !on) return '';
+    const click = (e) => {
+      if (on) this._openPortraitEdit();
+      else { this._lightbox = true; this._lightboxCtl.opened(e.currentTarget); }
+    };
+    return portrait
+      ? html`<img class="avatar${on ? ' editable' : ''}" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`}
+          role=${on ? 'button' : nothing} tabindex=${on ? '0' : nothing} aria-label=${on ? 'Change portrait' : nothing}
+          title=${on ? 'Change portrait' : 'View portrait'} @error=${this._portraitError} @click=${click} @keydown=${(e) => this._portraitKeydown(e)} />`
+      : html`<div class="avatar ph editable" role="button" tabindex="0" aria-label="Change portrait" title="Change portrait"
+          @click=${click} @keydown=${(e) => this._portraitKeydown(e)}>▢</div>`;
+  }
 
   _pend() { return html`<span class="pend">—</span>`; }
 
@@ -944,9 +987,7 @@ export class EdOverview extends LitElement {
       <div class="grid">
         <div class="hero">
           <div class="head">
-            ${portrait
-              ? html`<img class="avatar" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} title="View portrait" @error=${this._portraitError} @click=${(e) => { this._lightbox = true; this._lightboxCtl.opened(e.currentTarget); }} />`
-              : ''}
+            ${this._avatar(portrait, meta)}
             ${this._editRegion(
               'details',
               html`
@@ -971,7 +1012,10 @@ export class EdOverview extends LitElement {
             </div>
           </div>
           ${meta.description ? this._editRegion('blurb', meta.description) : ''}
-          <div class="portrait">
+          <div class="portrait${this.editMode ? ' editable' : ''}"
+            role=${this.editMode ? 'button' : nothing} tabindex=${this.editMode ? '0' : nothing}
+            aria-label=${this.editMode ? 'Change portrait' : nothing} title=${this.editMode ? 'Change portrait' : nothing}
+            @click=${() => this._openPortraitEdit()} @keydown=${(e) => this._portraitKeydown(e)}>
             ${portrait
               ? html`<img src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />`
               : html`<span class="ph">▢</span>`}
@@ -1069,6 +1113,11 @@ export class EdOverview extends LitElement {
             primary: { label: `Buy${this._karmaN() > 0 ? ` ${this._karmaN()}` : ''}`, tone: 'karma', disabled: this._karmaN() <= 0 },
             body: this._karmaRitualBody(),
           })
+        : ''}
+      ${this._editPortrait
+        ? html`<ed-edit-portrait .current=${meta.portrait ?? null} .currentUrl=${m.portraitUrl ?? null} .images=${this.portraitImages ?? []}
+            .staged=${this.portraitStaged ?? null} .loadingImages=${!!this.portraitLoading} .characterId=${this.characterId}
+            @close=${() => (this._editPortrait = false)}></ed-edit-portrait>`
         : ''}
       ${this._edit
         ? html`<ed-edit-meta .meta=${meta} .gahadTrigger=${this._traitsFor('Gahad').find((t) => t.type === 'trigger') ?? null} @close=${() => (this._edit = false)}></ed-edit-meta>`

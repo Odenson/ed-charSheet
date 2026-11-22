@@ -408,6 +408,11 @@ category; a successful save clears the saved categories (`reconcileOverlay`, §4
 of the feature doc) so the live branch read becomes the source of truth — the
 overlay would otherwise mask a save made from another device.
 
+A staged portrait upload lives in its own key, `ed-character-image:${id}`
+(`{ path, mime, dataUrl }`) — an input that is never part of the character JSON or
+`SAVED_CATEGORIES`. It is cleared after the JSON save succeeds, on **Discard local
+changes**, and on take-theirs.
+
 Because the overlay masks the branch until a save clears it, a draft that was
 never saved (stale cruft, or edits superseded by a save elsewhere) can linger
 over the newer GitHub version. The escape hatch is a **Discard local changes**
@@ -427,7 +432,9 @@ overlay category the engine reports as touched) is unchanged. A corrupt or `v !=
 envelope reads as absent and never blocks a load. Drafts are listed in the loader
 beside the index rows (`mergeRows`: sorted by id; an id that exists on the branch
 wins and hides the draft), survive a reload and a switch to another character, and
-a rename moves both keys. **A draft is never auto-saved to GitHub (the Settings idle
+a rename moves both keys (and the staged portrait image: `moveStagedPortrait`
+re-prefixes the `data/<id>-<ts>` path and points `meta.portrait` at it before the
+re-save). **A draft is never auto-saved to GitHub (the Settings idle
 auto-save skips it), never flushes on hide and never posts silently** (its local overlay
 still records every edit as usual): its first Save is manual only, and a loaded draft is always dirty
 (there is no file to match). That first Save re-reads the index **fresh** and
@@ -437,8 +444,8 @@ never suffixed; the window after the check is accepted), otherwise it posts thro
 the ordinary worker create path with `base: null` (no worker change). On success
 `promoteDraft` drops the base and clears the overlay, and the character is a normal
 saved one (autosaving like any other, still in creation if `creation.open`).
-Discard removes only the base, its overlay and the device-local roll-log and Discord
-keys; the branch is never touched. An absent index is an empty store, not an error
+Discard removes only the base, its overlay, any staged portrait image
+(`ed-character-image:<id>`) and the device-local roll-log and Discord keys; the branch is never touched. An absent index is an empty store, not an error
 (`listCharacters` returns `[]` for a 404; any other failure still throws).
 
 ### 7.2 Export — portable download (`store-export.js`)
@@ -538,15 +545,18 @@ legacy no-base callers).
 split).** Each character is its **own file** `data/characters/<id>.json` (a raw
 `ed-character` entry — no grouped wrapper; current tag `/2`, legacy `/1`
 accepted until rewritten), discovered through a small
-create-only index `data/characters/index.json`
+discovery index `data/characters/index.json` (created on create; each save refreshes only its `portrait`, name is create-only)
 (`{ schema: "ed-characters-index/1", characters: { "<id>": { name, portrait? } } }`).
 A save always carries an `id` (required since v1.6.0); the worker writes
 `data/characters/<id>.json` with an optimistic-concurrency check — the client
 sends `base` (the file's blob sha from the read ETag) and a stale base returns
 `409 stale_base`, surfacing a keep-mine/take-theirs conflict instead of a silent
-lost write (plans/PLAN-SAVE-CONCURRENCY.md). The index row is ensured only on
-create, so saves never read or rewrite it (renames lag — the file's `meta.name`
-is authoritative). The app fetches the index once to list characters, then loads
+lost write (plans/PLAN-SAVE-CONCURRENCY.md). The index row is created on create;
+every later save reads it and rewrites only that row's portrait when it differs
+(name is create-only, so renames lag — the file's `meta.name` is authoritative;
+the index is never a save base). Portrait images go via `POST /save-image`
+(create-only, path `data/<id>-<ts>.<ext>`), called before the character JSON
+(docs/GITHUB-SERVERLESS-SAVE.md §3). The app fetches the index once to list characters, then loads
 one file per character. The grouped `ed-characters/1` store was **retired** with
 the split; the legacy `data/character.json` and the worker's no-`id` path were
 **removed at the v1.6.0 promotion**.
@@ -614,6 +624,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
 /                     # served by GitHub Pages
   index.html          # tiny shell: importmap + entry point (Lit self-hosted)
   app.js              # application entry point: wires store, dispatch, persistence
+  store-portrait.js   # staged portrait image overlay (ed-character-image:<id>), branch image listing, runPortraitSave (image-then-JSON save ordering)
   store.js            # loads the per-character store (data/characters/<id>.json + index.json) + rules/*.json, builds the view-model (pure); URL resolvers portraitUrlFor / itemImageUrl / discordThumbnailUrl / discordAvatarUrl
   store-server.js     # GitHub save target (Cloudflare Worker client, §7.5)
   store-export.js     # character export (Blob download)
@@ -635,6 +646,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
+    ed-edit-portrait.js  # "Change portrait" modal (edit mode): upload / pick a branch image / remove; dispatches ed-edit-portrait (selection state in portrait-modal-state.js, image downscale in portrait-image.js)
     ed-edit-meta.js   # "Edit character details" modal: descriptive meta (dispatches ed-edit-meta); for Orks also the Gahad trigger summary/description (dispatches ed-edit-gahad-trigger -> traits[] via store.js applyGahadTrigger)
     ed-add-legend.js  # add Legend Points modal
     ed-day-reset.js   # new-day / recovery reset modal
@@ -654,6 +666,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
       dirty.js             # pure isDirty(snapshot, draft) for the free-text discard guard
       scope-css.js         # pure scopeCss(cssText, selector): scopes kit CSS under .kit-portal
       button-css.js        # buttonCss
+    portrait-image.js      # portrait image prep: validate JPEG/PNG/WebP <= 10 MB, fit 1024->768->512 shrink ladder, JPEG q0.85 (PNG if transparent), <= 1,000,000-byte cap, filename `<id>-<ms>.<ext>`; canvas injectable; never imported by engine/*
+    portrait-modal-state.js # portrait-modal selection state, isDirty, toDetail (pure)
     item-equip-state.js    # input-time equip rules (one armour worn)
     combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)
     combat-log-rows.js     # Combat-log row to table-cell mapping (pure)
@@ -783,7 +797,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
   plus a portable Export.** A per-character localStorage edits overlay
   (`ed-character-edits:${id}`, always on, every browser) is the resilient
   autosave *beneath* the primary Save, which writes `data/characters/<id>.json`
-  (raw `ed-character`, current tag `/2`, per-character files + a create-only index,
+  (raw `ed-character`, current tag `/2`, per-character files + a discovery index (name create-only, portrait refreshed on save),
   plans/PLAN-SAVE-CONCURRENCY.md) straight to the `character-data` branch via the
   serverless worker with a per-file optimistic-concurrency check (stale saves
   surface a keep-mine/take-theirs conflict); on success the overlay

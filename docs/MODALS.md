@@ -202,7 +202,7 @@ carries no trigger:
 
 ## 8. Separate-component modals
 
-The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-custom-item`,
+The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-edit-portrait`, `ed-custom-item`,
 `ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key`,
 `ed-character-picker` and `ed-new-character` also own their controller. Unlike
 `ed-confirm`, they dispatch their domain event (for example `ed-conflict`,

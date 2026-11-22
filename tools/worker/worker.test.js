@@ -243,7 +243,7 @@ test('save with id → writes the raw ed-character/1 file, no grouped wrapper', 
     // Byte-identical to the local file save: the raw character, pretty + newline.
     const expected = JSON.stringify(CHAR, null, 2) + '\n';
     assert.equal(Buffer.from(sent.content, 'base64').toString('utf8'), expected);
-    assert.ok(!mock.calls.some((c) => c.url.includes('index.json')), 'ordinary save never touches the index');
+    assert.ok(!mock.calls.some((c) => c.url.includes('index.json') && c.method === 'PUT'), 'ordinary save (portrait unchanged) never writes the index (add-char-portrait: reads allowed)');
   } finally {
     mock.restore();
   }
@@ -449,7 +449,7 @@ test('a rename save (existing file, new meta.name) touches only the character fi
     const renamed = { ...CHAR, meta: { name: 'Chakka II' } };
     const { status } = await call(req({ character: renamed, id: 'chakka' }));
     assert.equal(status, 200);
-    assert.ok(!mock.calls.some((c) => c.url.includes('index.json')), 'rename never touches the index (entry goes stale)');
+    assert.ok(!mock.calls.some((c) => c.url.includes('index.json') && c.method === 'PUT'), 'rename never writes the index (name is create-only; entry goes stale)');
     const written = JSON.parse(Buffer.from(JSON.parse(mock.calls.find((c) => c.method === 'PUT').options.body).content, 'base64').toString('utf8'));
     assert.equal(written.meta.name, 'Chakka II');
   } finally {
@@ -572,7 +572,7 @@ test('two characters save to two separate files with no false conflict', async (
     assert.ok(puts.some((c) => c.url.endsWith('/contents/data/characters/chakka.json')));
     assert.ok(puts.some((c) => c.url.endsWith('/contents/data/characters/sarn.json')));
     const gets = mock.calls.filter((c) => c.method === 'GET' && c.url.includes('/contents/'));
-    assert.ok(!gets.some((c) => c.url.includes('index.json')), 'no index traffic on ordinary saves');
+    assert.ok(!mock.calls.some((c) => c.url.includes('index.json') && c.method === 'PUT'), 'no index writes on ordinary saves (add-char-portrait: index reads allowed)');
   } finally {
     mock.restore();
   }

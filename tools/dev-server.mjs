@@ -5,14 +5,17 @@
 //
 //   POST /save        { character, id } → write data/characters/<id>.json (ed-character/1)
 //   POST /save-items  { items, delete } → merge  data/custom-items.json (ed-items/3)
+//   POST /save-image  { id, filename, content } → write data/<filename> (create-only)
+//   GET  /list-images → { images: [<filename>, …] } image files directly in data/
 //
 // No Cloudflare, no GitHub, no secrets: writes land in the gitignored local
 // working copies that store.js already reads off-Pages, and any/missing
 // `x-save-key` is accepted. Validation and response shapes mirror
 // tools/worker/worker.js so the app's SaveError mapping runs unchanged (the key
 // prompt still appears locally — type anything). `/save` mirrors the worker's
-// create-only index maintenance: a brand-new character file also gets an entry
-// in `data/characters/index.json` (name + portrait). Local saves take the
+// index maintenance: every save creates the character's entry in
+// `data/characters/index.json` (name + portrait) if absent, or refreshes ONLY its
+// `portrait` when it differs (name is create-only; invalid portraits skip it). Local saves take the
 // legacy overwrite path — local reads carry no ETag, so the app never sends a
 // `base` here; a malformed base is still rejected 400 for mirror-shape.
 // CORS is permissive `*` because this is a local-only server that writes only
@@ -32,10 +35,11 @@
 // (tools/dev-server.test.js); exports keep the routes testable without a fork.
 
 import { createServer } from 'node:http';
-import { readFile, writeFile, realpath, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, realpath, mkdir, readdir } from 'node:fs/promises';
 import { statSync } from 'node:fs';
 import { join, resolve, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 import { validateItem, validateItemsFile } from '../engine/validate-item.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,6 +60,7 @@ const MIME = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
+  '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json',
   '.txt': 'text/plain; charset=utf-8',
@@ -64,6 +69,9 @@ const MIME = {
 const MAX_BYTES = 512 * 1024;          // mirrors worker.js isValidCharacter
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/; // mirrors worker.js isValidId
 const CHARACTERS_DIR = 'data/characters';
+const IMAGES_DIR = 'data';                // mirrors worker GITHUB_IMAGES_DIR default
+const MAX_IMAGE_BYTES = 1_500_000;        // mirrors worker.js MAX_IMAGE_BYTES
+const IMAGE_EXT_RE = /\.(jpg|jpeg|png|webp)$/i;
 const ITEMS_STORE = 'data/custom-items.json';
 const FRESH_CATALOG = {
   schema: 'ed-items/3',
@@ -125,6 +133,23 @@ function isValidCharacter(c) {
     (c.schema === 'ed-character/1' || c.schema === 'ed-character/2') &&
     JSON.stringify(c).length <= MAX_BYTES
   );
+}
+
+// Mirror worker.js isValidIndexPortrait: null, or a one-level data/<name>.<img ext>.
+function isValidIndexPortrait(portrait) {
+  if (portrait === null) return true;
+  if (typeof portrait !== 'string' || !portrait.startsWith(`${IMAGES_DIR}/`)) return false;
+  const name = portrait.slice(IMAGES_DIR.length + 1);
+  return /^[^/]+\.(jpg|jpeg|png|webp)$/i.test(name) && !name.startsWith('.');
+}
+
+// Mirror worker.js magicMatches (JPEG / PNG / WebP signatures).
+function magicMatches(b, ext) {
+  const at = (off, arr) => arr.every((v, i) => b[off + i] === v);
+  if (ext === 'jpg') return at(0, [0xff, 0xd8, 0xff]);
+  if (ext === 'png') return at(0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (ext === 'webp') return at(0, [0x52, 0x49, 0x46, 0x46]) && at(8, [0x57, 0x45, 0x42, 0x50]);
+  return false;
 }
 
 function isValidId(id) {
@@ -218,12 +243,14 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
     if (method === 'POST') {
       if (url.pathname === '/save') return handleSave(req, res);
       if (url.pathname === '/save-items') return handleSaveItems(req, res);
-      return writeJson(res, 404, { ok: false, error: { code: 'not_found', message: 'POST /save or POST /save-items only' } });
+      if (url.pathname === '/save-image') return handleSaveImage(req, res);
+      return writeJson(res, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, POST /save-items or POST /save-image only' } });
     }
     if (method !== 'GET' && method !== 'HEAD') {
       res.writeHead(405, { Allow: 'GET, HEAD, POST, OPTIONS' });
       return res.end();
     }
+    if (method === 'GET' && url.pathname === '/list-images') return handleListImages(res);
     return serveStatic(res, url.pathname, method === 'HEAD');
   }
 
@@ -249,20 +276,74 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
     const indexPath = join(resolvedRoot, CHARACTERS_DIR, 'index.json');
     await enqueue(async () => {
       const prior = await readRaw(filePath);
-      const created = prior === null;
       await writePretty(filePath, body.character);
       await recordWrite(filePath, prior);
-      if (!created) return; // index is create-only, mirroring the worker
+      // Mirror worker.js syncIndexEntry: validated portrait only; create the entry
+      // (name + portrait) or refresh ONLY its portrait; no write when equal.
+      const portrait = body.character.meta?.portrait ?? null;
+      if (!isValidIndexPortrait(portrait)) return;
       const index = (await readJsonFile(indexPath)) ?? { schema: 'ed-characters-index/1', characters: {} };
       index.characters = index.characters ?? {};
-      if (!index.characters[id]) {
-        index.characters[id] = { name: body.character.meta?.name ?? '', portrait: body.character.meta?.portrait ?? null };
-        const priorIndex = await readRaw(indexPath);
-        await writePretty(indexPath, index);
-        await recordWrite(indexPath, priorIndex);
+      const entry = index.characters[id];
+      if (entry) {
+        if ((entry.portrait ?? null) === portrait) return;
+        entry.portrait = portrait;
+      } else {
+        index.characters[id] = { name: body.character.meta?.name ?? '', portrait };
       }
+      const priorIndex = await readRaw(indexPath);
+      await writePretty(indexPath, index);
+      await recordWrite(indexPath, priorIndex);
     });
     return writeJson(res, 200, { ok: true, commit: { sha: 'local', url: '' } });
+  }
+
+  async function handleSaveImage(req, res) {
+    let body;
+    try {
+      body = await readJson(req);
+    } catch {
+      return writeJson(res, 400, { ok: false, error: { code: 'invalid_json', message: 'body is not JSON' } });
+    }
+    const fail = (status, code, message) => writeJson(res, status, { ok: false, error: { code, message } });
+    const id = body?.id;
+    if (!isValidId(id)) return fail(400, 'invalid_id', 'character id must match [a-z0-9][a-z0-9-]{0,63}');
+    const filename = body?.filename;
+    if (typeof filename !== 'string' || !new RegExp(`^${id}-\\d{10,17}\\.(jpg|png|webp)$`).test(filename))
+      return fail(400, 'invalid_name', 'filename must be <id>-<timestamp>.(jpg|png|webp)');
+    if (typeof body?.content !== 'string' || body.content === '' || !/^[A-Za-z0-9+/]*={0,2}$/.test(body.content))
+      return fail(400, 'invalid_image', 'content must be a base64 string');
+    const bytes = Buffer.from(body.content, 'base64');
+    if (bytes.length > MAX_IMAGE_BYTES) return fail(400, 'too_large', `image exceeds ${MAX_IMAGE_BYTES} bytes`);
+    if (!magicMatches(bytes, filename.slice(filename.lastIndexOf('.') + 1)))
+      return fail(400, 'invalid_image', 'bytes do not match the file extension');
+    const filePath = join(resolvedRoot, IMAGES_DIR, filename);
+    const sha = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+    const out = await enqueue(async () => {
+      let existing = null;
+      try {
+        existing = await readFile(filePath);
+      } catch {
+        /* absent - create below */
+      }
+      if (existing !== null) return { status: existing.equals(bytes) ? 200 : 409 };
+      await mkdir(dirname(filePath), { recursive: true });
+      await writeFile(filePath, bytes);
+      return { status: 200 };
+    });
+    if (out.status === 409) return fail(409, 'exists', 'a different image already exists at this path');
+    return writeJson(res, 200, { ok: true, path: `${IMAGES_DIR}/${filename}`, sha, url: '' });
+  }
+
+  async function handleListImages(res) {
+    let entries = [];
+    try {
+      entries = await readdir(join(resolvedRoot, IMAGES_DIR), { withFileTypes: true });
+    } catch {
+      /* no data/ yet */
+    }
+    const images = entries.filter((e) => e.isFile() && IMAGE_EXT_RE.test(e.name)).map((e) => e.name);
+    return writeJson(res, 200, { images });
   }
 
   async function handleSaveItems(req, res) {
@@ -370,6 +451,8 @@ if (isMain) {
     console.log(`  site:    http://localhost:${port}/  and  http://localhost:${port}/dev/`);
     console.log(`  save:    POST http://localhost:${port}/save  (data/characters/<id>.json)`);
     console.log(`  save-it: POST http://localhost:${port}/save-items  (custom-items.json)`);
+    console.log(`  save-im: POST http://localhost:${port}/save-image  (data/<id>-<ts>.<ext>)`);
+    console.log(`  list-im: GET  http://localhost:${port}/list-images  (image files in data/)`);
     if (lag > 0) console.log(`  lag:     ${lag}ms one-shot stale-read simulation on`);
     console.log(`  open the app with the endpoint override, e.g.`);
     console.log(`  http://localhost:${port}/?save=http://localhost:${port}/save&save-items=http://localhost:${port}/save-items`);

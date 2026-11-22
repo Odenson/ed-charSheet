@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -8,7 +8,8 @@ import { successCount, tickArmedTalents } from '../engine/combat.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
-import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../store-server.js';
+import { saveServer, saveImage, SaveError, SaveConflictError, DEFAULT_ENDPOINT, DEFAULT_IMAGE_ENDPOINT } from '../store-server.js';
+import { stagePortraitImage, loadStagedPortrait, clearStagedPortrait, moveStagedPortrait, rememberSavedPortrait, invalidateImageListing, runPortraitSave } from '../store-portrait.js';
 import { listDrafts, mergeRows, saveDraft, discardDraft, renameDraft, promoteDraft, loadDraftCharacter } from '../store-drafts.js';
 import { saveDraftFirstTime } from '../store-first-save.js';
 import { buildNewCharacter, slugifyId, validateNewName } from '../engine/new-character.js';
@@ -94,6 +95,9 @@ export class EdApp extends LitElement {
     _confirmFinish: { state: true },
     _creationGuide: { state: true }, // { name, magician } while the "Creating your character" pop-up is open
     _conflict: { state: true },
+    _portraitImages: { state: true },  // branch image list for the portrait modal
+    _portraitLoading: { state: true },
+    _portraitStaged: { state: true },  // the unsaved staged upload, snapshotted when the modal opens
     _settings: { state: true }, // Settings modal open?
     // Session-only armed-potion state (dies on reload). At most ONE armed
     // recovery entry (no stacking); never persisted (store-only-inputs), same
@@ -439,6 +443,8 @@ export class EdApp extends LitElement {
     // re-derive the model from inputs — the UI never mutates derived state.
     this.addEventListener('ed-edit-meta', (e) => this._editMeta(e.detail));
     this.addEventListener('ed-edit-gahad-trigger', (e) => this._editGahadTrigger(e.detail));
+    this.addEventListener('ed-edit-portrait', (e) => this._editPortrait(e.detail));
+    this.addEventListener('ed-portrait-open', () => this._openPortrait());
     this.addEventListener('ed-edit-items', (e) => this._editItems(e.detail));
     // Drink/Use a consumable potion (Equipment or Combat). Clear an armed one-shot
     // benefit (the pending pill's ✕).
@@ -695,6 +701,7 @@ export class EdApp extends LitElement {
     discardDraft(id);
     clearRollLog(id);
     clearDiscordConfig(id);
+    clearStagedPortrait(id); // a draft's unsaved portrait upload goes with it
     this._refreshRows();
     if (id !== this._characterId) return;
     this._clearAutosaveTimers();
@@ -729,7 +736,15 @@ export class EdApp extends LitElement {
       this._showNotice("Couldn't rename the draft — that name is already in use.");
       return;
     }
-    this._character = { ...this._character, meta: { ...this._character.meta, id: newId, name: newName } };
+    // A staged portrait image follows the rename: its filename prefix must equal the
+    // save id, and meta.portrait must keep pointing at it (never at an uncommitted file).
+    const movedImage = moveStagedPortrait(oldId, newId);
+    const metaPatch = { id: newId, name: newName };
+    if (movedImage) {
+      metaPatch.portrait = movedImage.path;
+      saveMetaEdits({ portrait: movedImage.path }, newId);
+    }
+    this._character = { ...this._character, meta: { ...this._character.meta, ...metaPatch } };
     this._characterId = newId;
     localStorage.setItem('ed-character', newId);
     this._refreshRows();
@@ -754,6 +769,38 @@ export class EdApp extends LitElement {
     // Local edits are now ahead of the last GitHub commit until the next Save.
     this._markDirty();
     this._model = this._derive();
+  }
+
+  // The portrait modal opened (edit mode): snapshot the staged (unsaved) upload and
+  // load the branch's image list for the pick-list (data down; [] on any failure).
+  _openPortrait() {
+    this._portraitStaged = loadStagedPortrait(this._characterId);
+    this._portraitImages = [];
+    this._portraitLoading = true;
+    loadBranchImages()
+      .then((rows) => { this._portraitImages = rows; })
+      .catch(() => { this._portraitImages = []; })
+      .finally(() => { this._portraitLoading = false; });
+  }
+
+  // The portrait modal confirmed `{ portrait, staged? }`. A new upload is staged in
+  // its own localStorage key (never in the character JSON; a quota failure leaves
+  // meta.portrait unchanged); picking an existing image or removing drops any stale
+  // staged one. Then meta.portrait goes through the same overlay path as _editMeta.
+  _editPortrait(detail) {
+    if (!this._character || !detail) return;
+    const id = this._characterId;
+    const { portrait, staged } = detail;
+    if (staged) {
+      const res = stagePortraitImage(id, staged);
+      if (!res.ok) {
+        this._saveError = 'Not enough browser storage to keep that image. Try a smaller or simpler one.';
+        return;
+      }
+    } else {
+      clearStagedPortrait(id);
+    }
+    this._editMeta({ portrait });
   }
 
   // A view changed the character's item list. Same flow as meta: replace the
@@ -1118,6 +1165,7 @@ export class EdApp extends LitElement {
   // gives the situational buff globally — no tab boundary).
   _derive() {
     return deriveModel(this._character, this._rules, {
+      characterId: this._characterId,
       knockedDown: this._knockedDown,
       situations: this._situations ?? [],
       activeSpells: this._activeSpells ?? [],
@@ -2123,6 +2171,10 @@ export class EdApp extends LitElement {
   async _doSave({ silent = false, base = this._baseSha, keepalive = false } = {}) {
     if (!this._character || this._saving) return;
     if (this._isDraft && silent) return;
+    // A staged portrait image cannot ride a keepalive flush (browser body limit) and
+    // meta.portrait must never point at an uncommitted file: send nothing, stay dirty.
+    const staged = loadStagedPortrait(this._characterId);
+    if (staged && keepalive) return;
     if (!this._saveKey) {
       // Never prompt for the key from a background/flush save — those are
       // key-gated by the caller, so this only fires on a manual Save.
@@ -2137,6 +2189,24 @@ export class EdApp extends LitElement {
       this._saveOk = null;
       clearTimeout(this._saveOkTimer);
     }
+    // Image first, then JSON (store-portrait.js runPortraitSave): an upload failure
+    // throws before the character is posted and leaves the overlay dirty.
+    const portrait = this._character.meta?.portrait ?? null;
+    const withPortrait = (postCharacter) => runPortraitSave({
+      id: this._characterId,
+      portrait,
+      staged,
+      keepalive,
+      uploadImage: (s) => saveImage(s, { endpoint: this._endpointFor('save-image', DEFAULT_IMAGE_ENDPOINT), saveKey: this._saveKey, id: this._characterId }),
+      postCharacter,
+      clearStaged: (cid) => {
+        if (staged && staged.path === portrait) {
+          rememberSavedPortrait(staged.path, staged.dataUrl); // raw CDN may lag the commit
+          invalidateImageListing();
+        }
+        clearStagedPortrait(cid);
+      },
+    }).then((r) => r.result);
     try {
       let commit;
       if (this._isDraft) {
@@ -2151,7 +2221,7 @@ export class EdApp extends LitElement {
             this._freshTakenIds = (await listCharacters()).map((r) => r.id);
             return this._freshTakenIds;
           },
-          post: (c, cid) => saveServer(c, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: cid, base: null, keepalive }),
+          post: (c, cid) => withPortrait(() => saveServer(c, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: cid, base: null, keepalive })),
         });
         if (!res.ok) {
           // The id is taken on the branch: nothing was posted. Ask for another name; Escape
@@ -2162,7 +2232,7 @@ export class EdApp extends LitElement {
         commit = res.commit;
         this._firstSaveLanded(id, name, commit);
       } else {
-        commit = await saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
+        commit = await withPortrait(() => saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive }));
         this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
         reconcileOverlay(undefined, this._characterId);
       }
@@ -2237,6 +2307,7 @@ export class EdApp extends LitElement {
     if (step.action === 'resave') this._doSave({ silent, base: step.base });
     else if (step.action === 'reload') {
       reconcileOverlay(undefined, this._characterId); // clear the local draft
+      clearStagedPortrait(this._characterId); // take-theirs drops a staged portrait image too
       this._reloadSaved();
     }
   }
@@ -2266,6 +2337,7 @@ export class EdApp extends LitElement {
   _discardLocal() {
     this._confirmDiscard = false;
     reconcileOverlay(undefined, this._characterId); // clear every saved category from the overlay
+    clearStagedPortrait(this._characterId); // Discard drops a staged portrait image too
     this._reloadSaved();
   }
 
@@ -2301,7 +2373,8 @@ export class EdApp extends LitElement {
     const m = this._model;
     switch (this._tab) {
       case 'overview':
-        return html`<ed-overview .model=${m} .editMode=${this._editMode} .arming=${this._arming()}></ed-overview>`;
+        return html`<ed-overview .model=${m} .editMode=${this._editMode} .arming=${this._arming()}
+          .characterId=${this._characterId} .portraitImages=${this._portraitImages ?? []} .portraitLoading=${!!this._portraitLoading} .portraitStaged=${this._portraitStaged ?? null}></ed-overview>`;
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
