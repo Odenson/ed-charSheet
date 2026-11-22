@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.4.0
 ---
 # Delivery Plan: Skill model (skill-model)
 
