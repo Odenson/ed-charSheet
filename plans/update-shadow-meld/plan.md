@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.0.0
 ---
 # Delivery Plan: Update Shadow Meld (update-shadow-meld)
 
