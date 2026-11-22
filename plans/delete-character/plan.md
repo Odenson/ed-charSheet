@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.2.0
 ---
 # Delivery Plan: Delete character (delete-character)
 
