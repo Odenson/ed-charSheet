@@ -3,7 +3,8 @@
   "meta": {
     "id": "hum-war",
     "name": "Hum-War",
-    "race": "Human"
+    "race": "Human",
+    "portrait": "data/hum-war-1795342953275.jpg"
   },
   "attributes": {
     "Dexterity": {
