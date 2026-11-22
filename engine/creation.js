@@ -29,6 +29,7 @@
 // to persist (store.persistCreationEdit). No input is ever mutated.
 
 import { maxKarma } from './characteristics.js';
+import { isLanguage, resolveSkillName } from './skill-options.js';
 import { ledgerTalentKey, normSpellName } from './legend-spent.js';
 import { disciplineTalentSet, freeTalentSet } from './talent-options.js';
 
@@ -306,7 +307,6 @@ export function applyAttributePoints(character, ctx, { name, points }) {
 // --- skills ------------------------------------------------------------------------------
 
 const FIXED_CATEGORIES = Object.keys(CREATION_RULES.skillFixed);
-const isLanguage = (category) => category === 'language-speak' || category === 'language-readwrite';
 const maxRankFor = (category) => (isLanguage(category) ? CREATION_RULES.languageMaxRank : CREATION_RULES.skillMaxRank);
 
 // Which fixed pool a catalog entry draws from, or null (it then draws the 8 extra ranks).
@@ -413,8 +413,6 @@ export function skillBudget(character, ctx) {
   return { extra, fixed: alloc.fixed, valid: extra.spent <= extraTotal && problems.length === 0, problems, rows, candidates };
 }
 
-const MAX_TEXT = 40;
-
 /**
  * Add a starting skill at Rank 1, free (no Legend, no silver). `name` is a catalog name; a
  * generic Knowledge / Artisan entry also takes `text` (trimmed, 1-40 chars, no parentheses) and
@@ -426,16 +424,11 @@ export function applySkillAdd(character, ctx, { name, text } = {}) {
   if (!isOpen(character)) return refuse(character, 'creation-closed');
   const catalogEntry = (ctx?.skillCatalog ?? []).find((s) => s.name === name);
   if (!catalogEntry) return refuse(character, 'unknown-skill');
-  let storedName = catalogEntry.name;
-  if (catalogEntry.generic) {
-    if (isLanguage(catalogEntry.category)) return refuse(character, 'generic-not-allowed');
-    const t = typeof text === 'string' ? text.trim() : '';
-    if (!t || t.length > MAX_TEXT || /[()]/.test(t)) return refuse(character, 'bad-text');
-    storedName = `${catalogEntry.name} (${t})`;
-  }
-  if (catalogEntry.category === 'general' && catalogEntry.tier !== 1) return refuse(character, 'tier-not-novice');
-  const lower = storedName.toLowerCase();
-  if ((character.skills ?? []).some((s) => String(s.name).toLowerCase() === lower)) return refuse(character, 'duplicate');
+  // Precedence: generic/text, then tier, then duplicate (tier before the resolver's duplicate check).
+  if (!catalogEntry.generic && catalogEntry.category === 'general' && catalogEntry.tier !== 1) return refuse(character, 'tier-not-novice');
+  const resolved = resolveSkillName(catalogEntry, text, (character.skills ?? []).map((s) => s.name));
+  if (!resolved.ok) return refuse(character, resolved.reason);
+  const storedName = resolved.storedName;
 
   const { entry } = firstDiscipline(character, ctx);
   const artisanList = entry?.artisanSkills ?? [];

@@ -21,8 +21,9 @@ import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
 import { currentModality, deepActiveElement, returnFocusToTrigger } from './kit/modal-controller.js';
 import { payFromPurse } from '../engine/wealth.js';
+import { learnSkillPlan } from '../engine/skill-options.js';
 import { optionSlots } from '../engine/talent-options.js';
-import { talentRankStepCost, lowestPriorCircle, skillRankStepCost } from '../engine/legend-spent.js';
+import { talentRankStepCost, lowestPriorCircle } from '../engine/legend-spent.js';
 import { logCircleTraining, logDisciplineStarted, logTalentLearned, logSkillLearned, logKnackLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
@@ -1664,32 +1665,29 @@ export class EdApp extends LitElement {
   // catalog skill not already known. Data-driven: Legend from skillRank[1][tier],
   // silver default from costs.skillTraining[1] (not hardcoded). Mirrors
   // _learnTalent's guard-then-persist shape.
-  _learnSkill({ name, silver } = {}) {
+  _learnSkill({ name, text, silver } = {}) {
     if (!this._character || !name) return;
-    if ((this._character.skills ?? []).some((s) => s.name === name)) return; // no duplicate
-    const catalog = this._rules?.skillsFile?.skills ?? [];
-    const cat = catalog.find((s) => s.name === name);
-    if (!cat) return; // picker-only (Q3) — unknown names not learnable via UI
-    const tierLabel = cat.tier === 2 ? 'Journeyman' : 'Novice';
-    // Silver fee — editable default from rules/legend.json costs.skillTraining[1] (data, not code)
-    const fee = Number(silver);
-    const trainingFee = Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : 0;
-    let nextWealth = this._character.wealth;
     const beforeCoins = this._character.wealth?.coins ?? {};
-    if (trainingFee > 0) {
-      const spent = payFromPurse(beforeCoins, trainingFee);
-      if (!spent.ok) return; // purse cannot cover
-      nextWealth = { ...(this._character.wealth ?? {}), coins: spent.coins };
-    }
+    const plan = learnSkillPlan({
+      name, text, silver,
+      character: this._character,
+      catalog: this._rules?.skillsFile?.skills ?? [],
+      costs: this._rules?.legendFile?.costs,
+      coins: beforeCoins,
+    });
+    if (!plan.ok) return; // unknown / bad text / duplicate / purse cannot cover
+    const trainingFee = plan.trainingFee;
+    const tierLabel = plan.tier;
+    const nextWealth = trainingFee > 0 ? { ...(this._character.wealth ?? {}), coins: plan.coins } : this._character.wealth;
     const nextCharacter = {
       ...this._character,
       wealth: nextWealth,
-      skills: [...(this._character.skills ?? []), { name, rank: 1, tier: tierLabel }],
+      skills: [...(this._character.skills ?? []), plan.skill],
     };
     if (!this._canAffordRank(nextCharacter)) return;
     const _beforeCoins = beforeCoins;
     const _afterCoins = nextWealth?.coins ?? beforeCoins;
-    const _legendCost = skillRankStepCost({ tier: tierLabel }, this._rules.legendFile?.costs, 1);
+    const _legendCost = plan.legendCost;
     this._character = nextCharacter;
     saveAdvancementEdits(
       { disciplines: nextCharacter.disciplines ?? [], skills: nextCharacter.skills ?? [] },
@@ -1699,7 +1697,7 @@ export class EdApp extends LitElement {
     this._markDirty();
     this._model = this._derive();
     logSkillLearned(this._characterId, {
-      name,
+      name: plan.skill.name,
       tier: tierLabel,
       legendCost: _legendCost,
       silverFee: trainingFee,

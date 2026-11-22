@@ -692,14 +692,14 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     legend.js                # Legend Point totals
     legend-spent.js          # Legend-spent reconciliation audit; an additional Discipline's Rank-1 row is the lowest Circle among the Disciplines before it (lowestPriorCircle); honours the additive `creation.free` ledger (free ranks/spells cost 0, creation Karma is free) — §4.1
     new-character.js         # pure builder for a new Circle-1 draft (buildNewCharacter) + id helpers (slugifyId, idTaken, validateNewName); inputs only, seeded Durability/Karma Ritual, starting kit and 100 silver, opens `creation`
-    creation.js              # creation-mode engine: talent/attribute/skill/spell budgets and `apply*` edits that return new characters (refusals return the same reference), creationStatus, finishPlan/finishCreation; Karma-bonus helpers (karmaBonus, creationKarma) — §4.1
+    creation.js              # creation-mode engine: talent/attribute/skill/spell budgets and `apply*` edits that return new characters (refusals return the same reference), creationStatus, finishPlan/finishCreation; Karma-bonus helpers (karmaBonus, creationKarma) — §4.1; imports `resolveSkillName`/`isLanguage` from skill-options.js (no cycle: that module imports only wealth.js and legend-spent.js)
     advancement.js           # Circle-advancement status (supported Circle, eligibility, next requirement; no costs): gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
     potions.js               # potion/consumable effects
     formula.js               # rule-expression evaluator (§4.2)
     ability-ranks.js         # ability rank resolution
     ability-actions.js       # action-modifier resolver (effective talent/skill action, fastest wins)
     knack-options.js         # knack availability / restrictions
-    skill-options.js         # skill option resolution
+    skill-options.js         # learnable-skill options for the edit-mode add-skill picker (category/generic/freeText rows, language templates skipped); `resolveSkillName` (Knowledge/Artisan name composition, text and case-insensitive duplicate validation, shared with creation.js); pure `learnSkillPlan` (Rank 1 tier, Legend cost, silver fee); exports `MAX_TEXT`, `isLanguage`
     talent-options.js        # Talent Option slots/pools, next-Circle grant, and the start-a-Discipline quote (initiationQuote / addableDisciplines); derived, never stored
     free-talents.js          # Discipline free talents (rules/disciplines.json circles[].freeTalents) as derived model rows: rank = that Discipline's Circle, duplicates kept, a same-Discipline stored talent of that name suppresses the row; never stored, no Legend pricing, not counted by the Circle-advancement gate
     validate-item.js         # item shape validation

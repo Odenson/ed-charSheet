@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.4.0",
+      "date": "2026-11-22",
+      "summary": "Adding a skill in edit mode now uses the creation-style picker, with sections, search and free-text Knowledge and Artisan skills.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Adding a skill in edit mode now uses the creation-style picker with sections, search and free-text Knowledge and Artisan skills."
+        }
+      ]
+    },
+    {
       "version": "2.3.0",
       "date": "2026-11-22",
       "summary": "Air Sailor joins the Disciplines: start a new Air Sailor from the loader, with all eight Circles and every Air Sailor talent fully written out.",
