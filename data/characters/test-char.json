@@ -112,6 +112,27 @@
           "circle": 3
         }
       ]
+    },
+    {
+      "name": "Thief",
+      "circle": 1,
+      "talents": [
+        {
+          "name": "Lock Picking",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Picking Pockets",
+          "rank": 1,
+          "circle": 1
+        },
+        {
+          "name": "Thread Weaving (Thief)",
+          "rank": 1,
+          "circle": 1
+        }
+      ]
     }
   ],
   "skills": [
@@ -284,8 +305,8 @@
   "wealth": {
     "coins": {
       "copper": 5,
-      "silver": 458,
-      "gold": 205,
+      "silver": 8,
+      "gold": 160,
       "earth": 0,
       "water": 0,
       "air": 0,
