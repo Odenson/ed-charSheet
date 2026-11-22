@@ -12,6 +12,7 @@ import { deriveWealth } from './engine/wealth.js';
 import { resolveAbilityAction } from './engine/ability-actions.js';
 import { legendAvailable, legendaryStatus } from './engine/legend.js';
 import { auditLegendSpent, talentRankStepCost, skillRankStepCost, lowestPriorCircle, tierForCircle } from './engine/legend-spent.js';
+import { freeKey, karmaBonus, creationKarma, creationStatus } from './engine/creation.js';
 import { damageState, healthDanger, KNOCKED_DOWN_EFFECT, KNOCKED_DOWN_DEFENSE_EFFECTS } from './engine/health.js';
 import {
   makeCharacteristics,
@@ -53,7 +54,13 @@ import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
 // Relative paths so the app works from both "/" and the "/dev/" subpath.
 async function loadJSON(path) {
   const res = await fetch(path);
-  if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
+  if (!res.ok) {
+    // The HTTP status rides on the error so a caller can tell "missing" (404) from a real
+    // failure (listCharacters treats a 404 index as an empty store, anything else throws).
+    const err = new Error(`Failed to load ${path}: ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 }
 
@@ -232,11 +239,34 @@ export function itemImageUrl(image) {
 // cache can race a save-then-reload; the `?t=` query doesn't reliably bust it,
 // so the API is the primary). Elsewhere read the gitignored
 // `./data/characters/index.json` working copy. There is deliberately **no legacy
-// grouped-store fallback** (plan Decision 6): a missing index is a
-// not-yet-migrated store and surfaces a clear error, never a silent legacy read.
+// grouped-store fallback** (plan Decision 6): no legacy file is ever read.
+//
+// A **404** from the index (the Pages contents API and the raw CDN, or the local working
+// copy) is an empty store — `[]` — so a first run with nothing saved yet opens the picker
+// with only its "Start a new character" section instead of an error. Any OTHER failure
+// (HTTP 5xx/403, a network error) still throws, and a parsed index whose `characters` is
+// not an object is malformed and throws `Error('Character index is malformed')`.
+async function readIndexFile(path) {
+  try {
+    return await loadJSON(path);
+  } catch (err) {
+    if (err?.status === 404) return undefined; // missing index = empty store (a parsed `null` is NOT missing)
+    throw err;
+  }
+}
+
+function checkedIndexRows(index) {
+  if (index === undefined) return [];
+  const characters = index?.characters;
+  if (typeof index !== 'object' || Array.isArray(index) || !characters || typeof characters !== 'object' || Array.isArray(characters)) {
+    throw new Error('Character index is malformed');
+  }
+  return indexToRows(index);
+}
+
 export async function listCharacters() {
   let index;
-  if (!onPages()) return indexToRows(await loadJSON(`./${CHARACTERS_DIR}/index.json`));
+  if (!onPages()) return checkedIndexRows(await readIndexFile(`./${CHARACTERS_DIR}/index.json`));
   try {
     const res = await fetch(`${CONTENTS_API}/index.json?ref=${CHARACTER_BRANCH}`, {
       headers: { Accept: 'application/vnd.github.raw' },
@@ -246,8 +276,8 @@ export async function listCharacters() {
   } catch {
     /* network/CORS hiccup — fall through to the CDN */
   }
-  if (!index) index = await loadJSON(`${RAW_CDN}/index.json?t=${Date.now()}`);
-  return indexToRows(index);
+  if (index === undefined) index = await readIndexFile(`${RAW_CDN}/index.json?t=${Date.now()}`);
+  return checkedIndexRows(index);
 }
 
 // Read one character file: `{ character, base }` (the raw ed-character/1 entry).
@@ -313,11 +343,11 @@ export async function loadCustomItems() {
 // meta fields are raw inputs, never derived values. Overlays are keyed per
 // character id (`ed-character-edits:<id>`), so each character's local draft is
 // isolated and survives switching between characters.
-function editsKey(id) {
+export function editsKey(id) {
   return `ed-character-edits:${id}`;
 }
 
-function loadEdits(id) {
+export function loadEdits(id) {
   try {
     return JSON.parse(localStorage.getItem(editsKey(id)) || '{}') || {};
   } catch {
@@ -368,6 +398,33 @@ export function saveWealthEdits(wealth, id) {
 export function saveSpellEdits(spells, id) {
   const edits = loadEdits(id);
   edits.spells = spells;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
+ * Persist the character's whole `attributes` map to the edits overlay (create-new-adept).
+ * Pure inputs — each attribute's `{ base, points, increases }` (the creation attribute
+ * spend lives in `points`) — stored whole and REPLACED on merge; every Value/Step is
+ * derived, never stored. Existing characters never write this category.
+ */
+export function saveAttributeEdits(attributes, id) {
+  const edits = loadEdits(id);
+  edits.attributes = attributes;
+  localStorage.setItem(editsKey(id), JSON.stringify(edits));
+  return edits;
+}
+
+/**
+ * Persist the character's whole `creation` block to the edits overlay (create-new-adept,
+ * the Tier-1 additive block signed off in plans/create-new-adept/qa-log.md): exactly
+ * `{ open, free: { talents, skills, spells } }`, stored whole and REPLACED on merge (a
+ * ledger key the edit dropped must not come back from the base). Inputs only — no Karma
+ * bonus, budget, step or cost is ever written here.
+ */
+export function saveCreationEdits(creation, id) {
+  const edits = loadEdits(id);
+  edits.creation = creation;
   localStorage.setItem(editsKey(id), JSON.stringify(edits));
   return edits;
 }
@@ -545,7 +602,10 @@ export function saveLegendEdits(earned, id) {
 
 // The overlay categories a save persists to GitHub. Reconciliation and the
 // dirty indicator both reason over exactly these keys.
-const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'karma', 'advancements', 'traits', 'notes', 'history', 'legend'];
+// `spells` was merged by applyEdits but missing here (so a spells edit never showed as
+// unsaved and a confirmed save never cleared it); `attributes` and `creation` are the
+// create-new-adept categories (whole-map / whole-block, replaced — see applyEdits).
+const SAVED_CATEGORIES = ['meta', 'items', 'wealth', 'health', 'karma', 'advancements', 'traits', 'notes', 'history', 'legend', 'spells', 'attributes', 'creation'];
 
 /**
  * True when the overlay for `id` holds edits not yet committed to GitHub.
@@ -583,6 +643,11 @@ export function applyEdits(character, edits) {
   // Spells block (known[] + matrices[]) — pure inputs (PLAN-SPELLS §4), stored
   // whole like items/wealth; all derivation happens in engine/spells.js.
   if (edits.spells) next = { ...next, spells: edits.spells };
+  // Creation categories (create-new-adept): the whole `attributes` map and the whole
+  // `creation` block, each REPLACED — never merged — so an attribute or a ledger key the
+  // edit no longer carries is not resurrected from the base file.
+  if (edits.attributes) next = { ...next, attributes: edits.attributes };
+  if (edits.creation) next = { ...next, creation: edits.creation };
   if (edits.health) {
     // `knockedDown` is session-only state (decision I), never a persisted health
     // input — strip any stale copy an older build wrote to the overlay so the
@@ -655,7 +720,7 @@ export async function loadCharacter(id) {
   return { character: applyEdits(fileCharacter, loadEdits(id)), rules, base };
 }
 
-async function loadRules() {
+export async function loadRules() {
   const [stepsFile, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile] = await Promise.all([
     loadJSON('./rules/steps.json'),
     loadJSON('./rules/talents.json'),
@@ -682,6 +747,10 @@ async function loadRules() {
   // Spell catalog (rules/spells.json, ed-spells/1 — PLAN-SPELLS §3). Optional:
   // non-casters and older bundles simply have no spells slice.
   const spellsFile = await loadJSONOptional('./rules/spells.json', { spells: {}, threadCap: [] });
+  // Attribute table (rules/attributes.json, ed-attributes/1): the creation point-cost
+  // table the derived Max Karma bonus and the creation engine read. Optional — an older
+  // bundle simply has no creation attribute pricing (the bonus then derives as 0).
+  const attributesFile = await loadJSONOptional('./rules/attributes.json', null);
   // Custom items (ed-items/3, PLAN-CUSTOM-ITEMS): read live from character-data
   // (contents API → CDN → bundled rules/custom-items.json). The raw branch read
   // is kept as `customItemsCommittedFile` — the manager modal's delta baseline —
@@ -693,7 +762,7 @@ async function loadRules() {
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile };
+  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile, attributesFile };
 }
 
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
@@ -702,11 +771,106 @@ async function loadRules() {
 export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier', 'advancement.optionalTable']);
 
 /**
+ * The resolved homebrew `set` overrides for a race (ed-homebrew/2, docs/HOMEBREW-RULES.md):
+ * only `enabled` rules count (`enabled !== false`), only registered targets
+ * (HOMEBREW_SET_TARGETS) are honoured, and the last enabled rule wins per target. A
+ * race-keyed value resolves against `raceName`; a race absent from the map (or no race)
+ * leaves that target un-overridden, a scalar always applies, and a falsy value (0) is kept.
+ * Lifted out of deriveModel so the creation context reads the very same overrides
+ * (`karma.maxCap`); deriveModel calls it — one derivation, no second copy.
+ */
+export function homebrewSetsFor(homebrewFile, raceName) {
+  const sets = {};
+  for (const rule of (homebrewFile?.rules ?? []).filter((r) => r.enabled !== false)) {
+    for (const [target, value] of Object.entries(rule.set ?? {})) {
+      if (!HOMEBREW_SET_TARGETS.has(target)) continue;
+      const resolved =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? (raceName != null ? value[raceName] : undefined) // race-keyed
+          : value; // scalar
+      if (resolved !== undefined) sets[target] = resolved;
+    }
+  }
+  return sets;
+}
+
+/**
+ * The skill-catalog lookup (rules/skills.json): exact catalog name first, then the
+ * bracket-stripped base — "Speak Language (Ork)" or the free-text "Knowledge (Barsaive
+ * History)" fall back to their template entry. Returns the entry, or null for an unknown
+ * skill (degrades gracefully; never throws). Moved out of deriveModel unchanged so the
+ * creation engine resolves names through the same lookup — the engine never parses names.
+ */
+export function makeSkillRef(skillsFile) {
+  const skillCatalog = Object.fromEntries((skillsFile?.skills ?? []).map((s) => [s.name, s]));
+  return (name) =>
+    skillCatalog[name] ?? skillCatalog[String(name).replace(/\s*\([^)]*\)\s*$/, '').trim()] ?? null;
+}
+
+/**
+ * Assemble the `ctx` the creation engine (engine/creation.js) reads: the rule files, the
+ * skill catalog and its resolver (the very lookup deriveModel uses, so the engine never parses
+ * a name), the spell catalog, the race Karma Modifier and the house Karma cap. `perceptionStep`
+ * is the DERIVED Perception Step (a number, or null when unresolvable) — passed in by the caller
+ * from the model, never read from, or stored on, the character. A race not in
+ * `rules/races.json` has no modifier (null); the cap is race-keyed, so it is null then too.
+ */
+export function creationContext(rules, character, perceptionStep) {
+  const raceName = character?.meta?.race ?? null;
+  const raceEntry = (rules?.racesFile?.races ?? []).find((r) => r.name === raceName);
+  return {
+    disciplinesFile: rules?.disciplinesFile,
+    attributesFile: rules?.attributesFile,
+    skillCatalog: rules?.skillsFile?.skills,
+    resolveSkill: makeSkillRef(rules?.skillsFile),
+    spellCatalog: rules?.spellsFile?.spells,
+    perceptionStep: perceptionStep ?? null,
+    karmaModifier: raceEntry?.karmaModifier ?? null,
+    karmaMaxCap: homebrewSetsFor(rules?.homebrewFile, raceName)['karma.maxCap'] ?? null,
+  };
+}
+
+/**
+ * Persist the result of a creation edit: write each overlay category the engine reported as
+ * `touched` through its existing writer, and nothing else — `advancements` -> { disciplines,
+ * skills }, `attributes` -> the attributes map, `spells` -> the spells block, `creation` -> the
+ * creation block, `karma` -> `resources.karma`. (The creation steppers never touch meta, wealth,
+ * items, health or Legend.) Inputs only; a draft or a saved character persists the same way.
+ */
+export function persistCreationEdit(character, touched, id) {
+  for (const category of touched ?? []) {
+    if (category === 'advancements') saveAdvancementEdits({ disciplines: character.disciplines, skills: character.skills }, id);
+    else if (category === 'attributes') saveAttributeEdits(character.attributes, id);
+    else if (category === 'spells') saveSpellEdits(character.spells, id);
+    else if (category === 'creation') saveCreationEdits(character.creation, id);
+    else if (category === 'karma') saveKarmaEdits(character.resources?.karma, id);
+  }
+}
+
+// The paraphrased detail the talent info modal shows (rules/talents.json `cat`). `tier` is
+// derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION) — the chip shows what pricing
+// actually uses, never a stored/catalog copy. One definition for the stored talent rows and the
+// creation rows (a Rank-0 talent has no stored row but the same info modal).
+function talentDetail(cat, circle, legendFile) {
+  return {
+    summary: cat.summary || null,
+    versus: cat.versus || null,
+    strain: cat.strain ?? null,
+    tier: tierForCircle(circle, legendFile?.costs),
+    skillUse: cat.skillUse || null,
+    notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
+    documented: !!cat.summary,
+  };
+}
+
+/**
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
 export function deriveModel(character, rules, session = {}) {
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile } = rules;
+  // `attributesFile` (rules/attributes.json) is optional here: older callers omit it, and the
+  // derived creation Max Karma bonus then reads as 0 (never a guess).
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile, attributesFile } = rules;
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -843,17 +1007,7 @@ export function deriveModel(character, rules, session = {}) {
   // thing). A race-keyed value resolves against the character's race; a race
   // absent from the map leaves the target un-overridden. Last-enabled-wins.
   const raceName = raceEntry?.name ?? character.meta?.race ?? null;
-  const homebrewSets = {};
-  for (const rule of homebrewRules) {
-    for (const [target, value] of Object.entries(rule.set ?? {})) {
-      if (!HOMEBREW_SET_TARGETS.has(target)) continue;
-      const resolved =
-        value && typeof value === 'object' && !Array.isArray(value)
-          ? (raceName != null ? value[raceName] : undefined) // race-keyed
-          : value; // scalar
-      if (resolved !== undefined) homebrewSets[target] = resolved;
-    }
-  }
+  const homebrewSets = homebrewSetsFor(homebrewFile, raceName);
 
   // Optional Circle-advancement gate (PG p.453; plans/homebrew-circle-adv): only
   // on a strict boolean true AND a valid legend table; otherwise the standard gate.
@@ -975,17 +1129,7 @@ export function deriveModel(character, rules, session = {}) {
         // the info modal shows. `documented` is false for talents not yet enriched
         // (the modal then shows only the basics we have). Same source as items/skills.
         brief: cat.presentation?.shortEffect ?? null,
-        detail: {
-          summary: cat.summary || null,
-          versus: cat.versus || null,
-          strain: cat.strain ?? null,
-          // Derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION) — the
-          // chip shows what pricing actually uses, never a stored/catalog copy.
-          tier: tierForCircle(t.circle, legendFile?.costs),
-          skillUse: cat.skillUse || null,
-          notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
-          documented: !!cat.summary,
-        },
+        detail: talentDetail(cat, t.circle, legendFile),
       };
     };
     // Learned rows first (raw index alignment with pricing), derived free rows last.
@@ -1194,7 +1338,10 @@ export function deriveModel(character, rules, session = {}) {
   // spent rolling dice), clamped to `[0, max]` — never stored. Rule-off and legacy
   // characters simply have no ledger inputs ⇒ 0. `karmaRitualCost` (rule on) feeds both
   // the Legend sink and the Legend-log spend rows below.
-  const karmaMax = karmaMod != null ? maxKarma(karmaMod, highestCircle, homebrewSets['karma.maxCap'] ?? null) : null;
+  // The unused creation attribute points join Max Karma only after Finish and INSIDE the
+  // cap (karmaBonus is 0 for every character without a closed `creation` block, so existing
+  // characters are unchanged) — min(Modifier × Circle + bonus, karma.maxCap). Derived, never stored.
+  const karmaMax = karmaMod != null ? maxKarma(karmaMod, highestCircle, homebrewSets['karma.maxCap'] ?? null, karmaBonus(character, attributesFile)) : null;
   const karmaAvailable =
     karmaMax != null
       ? Math.max(0, Math.min(karmaMax, (Number(character.resources?.karma?.converted) || 0) - (Number(character.resources?.karma?.spent) || 0)))
@@ -1258,9 +1405,7 @@ export function deriveModel(character, rules, session = {}) {
   // derived (skill step = attribute step + rank). A character skill name that carries a
   // specialisation, e.g. "Speak Language (Ork)", falls back to its base skill entry.
   // Unknown skills degrade gracefully (kept, no derived values).
-  const skillCatalog = Object.fromEntries((skillsFile.skills ?? []).map((s) => [s.name, s]));
-  const skillRef = (name) =>
-    skillCatalog[name] ?? skillCatalog[String(name).replace(/\s*\([^)]*\)\s*$/, '').trim()] ?? null;
+  const skillRef = makeSkillRef(skillsFile);
   let skills = (character.skills ?? []).map((s) => {
     const cat = skillRef(s.name) ?? {};
     const attribute = cat.attribute ?? null;
@@ -1390,14 +1535,23 @@ export function deriveModel(character, rules, session = {}) {
   // tracks the sheet's actual advancements rather than the recorded `totalSpent`
   // input. Unpriced sinks (spells) stay in the reconciliation delta.
   const threadItemCatalog = threadItemsFile?.items ?? {};
-  const spent = auditLegendSpent(character, legendFile?.costs, {
+  // The exact options the audit runs with, built once and exposed as
+  // `model.legendAuditOptions` so every other caller (the ed-app rank guard) audits with
+  // the same knacks, catalogs, homebrew levers and creation Karma — never its own subset.
+  // `creationKarma` (the Circle-1 Max Karma incl. any unused-attribute bonus) is set only
+  // for a character carrying a `creation` block: its Karma is free of Legend (round 2).
+  const legendAuditOptions = {
     knacks,
     threadItemCatalog,
     spellCatalog: spellsFile?.spells,
     spellCostMultiplier: homebrewSets['legend.spellLearnCostMultiplier'] ?? 1,
     karmaRitualCost,
     tierShift,
-  });
+    creationKarma: character.creation
+      ? creationKarma(character, { karmaModifier: karmaMod, karmaMaxCap: homebrewSets['karma.maxCap'] ?? null, attributesFile })
+      : null,
+  };
+  const spent = auditLegendSpent(character, legendFile?.costs, legendAuditOptions);
   // Legend-earned log (PLAN-NOTES-TAB, decisions #1/#6): `totalEarnt` is the PURE
   // SUM of a display list — one synthesized, non-persisted virtual "Starting
   // total" row (amount = any legacy `totalEarnt` still in the branch file;
@@ -1413,9 +1567,15 @@ export function deriveModel(character, rules, session = {}) {
       : []),
     ...earned,
   ];
+  // While a `creation` block exists and there is neither a legacy total nor an earned
+  // entry, Total Earned derives as 0 (rules.md R7 house: a new character starts 0/0/0), so
+  // Available is a real 0 - spent, not the placeholder. Nothing is stored for it; a
+  // character without the block keeps today's placeholder (null).
   const totalEarnt = legendEarned.length
     ? legendEarned.reduce((s, e) => s + (Number(e.amount) || 0), 0)
-    : null;
+    : character.creation
+      ? 0
+      : null;
   const legend =
     totalEarnt != null
       ? {
@@ -1442,14 +1602,19 @@ export function deriveModel(character, rules, session = {}) {
     const costs = legendFile.costs;
     const available = legend?.available ?? null;
     const discInputs = character.disciplines ?? [];
+    // The creation ledger (`creation.free`): the first Discipline's talent ranks and the
+    // skill ranks granted free at creation. Passed to the step helpers as `freeRank` so
+    // every price still equals audit(after) − audit(before). Absent block ⇒ no free ranks.
+    const freeLedger = character.creation?.free ?? {};
     disciplines = disciplines.map((disc, di) => ({
       ...disc,
       talents: disc.talents.map((t, ti) => {
         if (t.free) return { ...t, pricing: null };
         const raw = discInputs[di]?.talents?.[ti] ?? {};
         const lowestCircle = lowestPriorCircle(discInputs, di);
-        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, { tierShift });
-        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, { tierShift }) : null;
+        const stepOpts = { tierShift, freeRank: di === 0 ? freeLedger.talents?.[freeKey(discInputs[di]?.name, raw.name)] : undefined };
+        const increaseCost = talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank + 1, stepOpts);
+        const refund = t.rank > 1 ? talentRankStepCost(raw, di + 1, lowestCircle, costs, t.rank, stepOpts) : null;
         return {
           ...t,
           pricing: {
@@ -1463,8 +1628,9 @@ export function deriveModel(character, rules, session = {}) {
     const skillInputs = character.skills ?? [];
     skills = skills.map((s, si) => {
       const raw = skillInputs[si] ?? {};
-      const increaseCost = skillRankStepCost(raw, costs, s.rank + 1);
-      const refund = s.rank > 1 ? skillRankStepCost(raw, costs, s.rank) : null;
+      const stepOpts = { freeRank: freeLedger.skills?.[raw.name] };
+      const increaseCost = skillRankStepCost(raw, costs, s.rank + 1, stepOpts);
+      const refund = s.rank > 1 ? skillRankStepCost(raw, costs, s.rank, stepOpts) : null;
       return {
         ...s,
         pricing: {
@@ -1829,10 +1995,47 @@ export function deriveModel(character, rules, session = {}) {
     spellsCtx.learnSilverMultiplier = homebrewSets['spells.learnSilverMultiplier'] ?? 1;
   }
 
+  // Creation-mode budgets (engine/creation.js): present only for a character with a
+  // `creation` block — `{ open: false }` after Finish. All derived (the spell budget reads the
+  // derived Perception Step, never a stored number); the talent rows carry the catalog's terse
+  // effect, Action, Attribute and info-modal detail for the Disciplines tab, like every other
+  // talent row — a Rank-0 talent is never stored, so the tab builds its row from these.
+  const creationModel = character.creation
+    ? (() => {
+        const status = creationStatus(character, creationContext(rules, character, attrStepByName.Perception ?? null));
+        if (!status?.open) return status;
+        return {
+          ...status,
+          talents: {
+            ...status.talents,
+            option: {
+              ...status.talents.option,
+              candidates: status.talents.option.candidates.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })),
+            },
+            rows: status.talents.rows.map((r) => {
+              const cat = talentCatalog[r.name] ?? {};
+              return {
+                ...r,
+                brief: cat.presentation?.shortEffect ?? null,
+                action: cat.action || null,
+                attribute: cat.attribute || null,
+                detail: talentDetail(cat, 1, legendFile),
+              };
+            }),
+          },
+        };
+      })()
+    : null;
+
   return {
     meta: character.meta ?? {},
     advancement: { optional: !!optionalAdvTable },
     legend,
+    // The exact `opts` the audit above ran with (knacks included): the ed-app rank guard
+    // audits "after" with these, so its Available agrees with the displayed Legend.
+    legendAuditOptions,
+    // Creation-mode budgets (null without a `creation` block): see creationModel above.
+    creation: creationModel,
     // Derived, never stored: the loadable URL for `meta.portrait` (branch raw
     // CDN on Pages, bundle-relative working copy locally).
     portraitUrl: portraitUrlFor(character.meta?.portrait),

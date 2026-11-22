@@ -44,6 +44,8 @@ export class EdSpells extends LitElement {
     _castModal: { state: true },
     _learn: { state: true },
     _rolls: { state: true },
+    // Creation mode (create-new-adept): the starting-spell picker is open.
+    _pickOpen: { state: true },
   };
 
   static styles = [modalCss, css`
@@ -71,6 +73,13 @@ export class EdSpells extends LitElement {
     .seg button[aria-pressed='true'] { background: var(--bg-chip); color: var(--fg); border: 1px solid var(--border); }
     .kchip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
     .kchip b { color: var(--karma); font-weight: 500; }
+    /* Creation mode: the spell-points chip sits beside the Karma chip; over-spent takes the
+       warning tone. */
+    .topchips { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .kchip.sp b { color: var(--spell); }
+    .kchip.over { color: var(--danger); border-color: var(--danger); }
+    .kchip.over b { color: inherit; }
+    .mmuted { color: var(--muted); }
     .initpill { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 10px; }
     .initpill b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
     .initpill b.initres { color: var(--accent); }
@@ -197,6 +206,7 @@ export class EdSpells extends LitElement {
     .lrow { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: center; width: 100%; padding: 8px 11px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--fg); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; }
     .lrow:last-child { border-bottom: none; }
     .lrow:hover { background: var(--bg-chip); }
+    .lrow:disabled { opacity: 0.45; cursor: not-allowed; }
     .lrow.on { background: var(--spell-bg); }
     .lrow .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lrow .cr { font-size: var(--fs-eyebrow); color: var(--muted); white-space: nowrap; }
@@ -241,6 +251,7 @@ export class EdSpells extends LitElement {
     // Learn flow (PLAN-LEARN-SPELLS.md): null when closed, else the working
     // state of the Learn modal — { name, teacherOn, teacherRank, teacher, result, silver }.
     this._learn = null;
+    this._pickOpen = false;
     this._pendingLearn = null; // 'teacher' | 'patterncraft' | null — which learn roll to fold next
     this._learnRollDiff = null;    // difficulty for the pending Patterncraft success-count
     this._rolls = [];              // device-local Log view (newest first) — see _loadRolls
@@ -248,8 +259,10 @@ export class EdSpells extends LitElement {
     // state only — { plan, choices, empty, pick, number, touched }. Never persisted.
     this._castModal = null;
     this._castObject = null;       // {name, index} chosen at cast, snapshotted for the activation
-    // Three kit controllers in one shadow root; each finds its own dialog by id.
+    // Four kit controllers in one shadow root; each finds its own dialog by id.
     this._infoCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
+    // The creation-mode starting-spell picker (a free pick: Enter activates the focused spell).
+    this._pickCtl = new ModalController(this, { kind: 'picker', onClose: () => { this._pickOpen = false; } });
     this._learnCtl = new ModalController(this, {
       kind: 'input',
       canConfirm: () => this._learnCanConfirm(),
@@ -632,6 +645,75 @@ export class EdSpells extends LitElement {
     this._emit(known, matrices);
   }
 
+  // --- Creation mode (create-new-adept) ------------------------------------------------------
+  // While `model.creation.open` AND the sheet is in edit mode, a magician picks starting spells
+  // for free (spell points = Perception Step, a spell costs its Circle; no roll, no silver).
+  // Everything shown comes off `model.creation.spells` (the engine's spell budget); this view only
+  // dispatches `ed-creation-edit` up. Non-magicians have no spell budget and see the usual "no
+  // spells" state.
+
+  // The spell budget while creation is open in edit mode, else null.
+  get _cs() {
+    const cr = this.model?.creation;
+    return cr?.open && this.editMode ? cr.spells ?? null : null;
+  }
+
+  _creationEdit(detail) {
+    this.dispatchEvent(new CustomEvent('ed-creation-edit', { detail, bubbles: true, composed: true }));
+  }
+
+  _openPick(e) {
+    this._pickOpen = true;
+    this._pickCtl.opened(e?.currentTarget);
+  }
+
+  // Pick a starting spell: close the picker (focus returns to "+ Pick spell"), then dispatch up.
+  _creationPickSpell(name) {
+    this._pickCtl.close();
+    this._creationEdit({ kind: 'spell-add', name });
+  }
+
+  // "Spell points left N / Perception Step M" (a dashed pill while the Perception Step is
+  // unresolved, never a made-up budget; over-spent takes the warning tone).
+  _spellPointsChip(cs) {
+    if (cs.total == null) {
+      return html`<div class="kchip sp" title="Spell points equal your Perception Step, which cannot be worked out yet">Spell points left <span class="tepend">—</span></div>`;
+    }
+    return html`<div class="kchip sp ${cs.left < 0 ? 'over' : ''}" title="Spell points equal your Perception Step. A spell costs its Circle; unspent points are forfeited when you finish creation">Spell points left <b>${cs.left}</b> / Perception Step ${cs.total}</div>`;
+  }
+
+  // The starting-spell picker (kind `picker`): the Discipline's Circle 1-2 spells not yet known,
+  // by Circle, each with its cost; one that cannot be afforded is disabled with the reason.
+  _pickModal() {
+    const cs = this._cs;
+    const cands = cs?.candidates ?? [];
+    const byCircle = {};
+    for (const c of cands) (byCircle[c.circle] ??= []).push(c);
+    const circles = Object.keys(byCircle).sort((a, b) => a - b);
+    const first = cands.find((c) => c.canPick)?.name ?? null;
+    const whyNot = cs?.total == null ? 'Your Perception Step cannot be worked out yet' : 'Not enough spell points left';
+    return modalFrame(this._pickCtl, {
+      title: 'Pick a starting spell',
+      layer: 2100,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <div class="msum mmuted">A free pick: no roll, no silver. A spell costs its Circle in spell points. A spell above your Circle is known but cannot be placed in a matrix yet.</div>
+    ${cs ? this._spellPointsChip(cs) : ''}
+    ${circles.length
+      ? circles.map((circle) => html`
+          <h4 class="circlelbl">Circle ${circle}</h4>
+          <div class="learnlist">
+            ${byCircle[circle].map((c) => html`
+              <button class="lrow" ?disabled=${!c.canPick} ?autofocus=${c.name === first} title=${c.canPick ? `Pick ${c.name} (${c.cost} spell point${c.cost === 1 ? '' : 's'})` : whyNot}
+                @click=${() => this._creationPickSpell(c.name)}>
+                <span></span><span class="nm">${c.name}</span><span class="cr">${c.cost} pt${c.cost === 1 ? '' : 's'}</span>
+              </button>`)}
+          </div>`)
+      : html`<div class="empty">Every spell available at creation is already known.</div>`}`,
+    });
+  }
+
   // --- Learn-flow modal (PLAN-LEARN-SPELLS.md §3/§6) -------------------------
   // Edit-mode modal: pick a learnable spell, review prereqs, optionally roll a
   // teacher's Spellcasting precursor to arm a +TW-rank bonus, roll Patterncraft
@@ -873,19 +955,22 @@ export class EdSpells extends LitElement {
   render() {
     const ctx = this.ctx;
     const karma = this.model?.characteristics?.karma?.available;
+    const cs = this._cs;
+    const karmaChip = karma != null ? html`<div class="kchip">Available Karma <b>${karma}</b></div>` : '';
     return html`
       <div class="top">
         <div class="seg">
           <button aria-pressed=${this._view === 'cast'} @click=${() => (this._view = 'cast')}>Cast</button>
           <button aria-pressed=${this._view === 'grimoire'} @click=${() => (this._view = 'grimoire')}>Grimoire</button>
         </div>
-        ${karma != null ? html`<div class="kchip">Available Karma <b>${karma}</b></div>` : ''}
+        ${cs ? html`<div class="topchips">${this._spellPointsChip(cs)}${karmaChip}</div>` : karmaChip}
       </div>
       ${!ctx
         ? html`<div class="empty">This character has no spells — the Spells tab is for spellcasting Disciplines.</div>`
         : this._view === 'grimoire' ? this._grimoire(ctx) : this._castView(ctx)}
       ${this._modal ? this._detailModal(this._modal) : ''}
       ${this._learn ? this._learnModal() : ''}
+      ${this._pickOpen && cs ? this._pickModal() : ''}
     `;
   }
 
@@ -895,10 +980,13 @@ export class EdSpells extends LitElement {
     if (!discs.length && !this.editMode) {
       return html`<div class="empty">No spells learnt yet. Enter edit mode to learn spells.</div>`;
     }
+    const cs = this._cs;
     return html`
       ${this.editMode
         ? html`<div class="top" style="margin-bottom:2px;">
-            <button class="btn learnbtn" @click=${(e) => this._openLearn(e)}>＋ Learn spell</button>
+            ${cs
+              ? html`<button class="btn learnbtn" title="Pick a starting spell (free: no roll, no silver)" @click=${(e) => this._openPick(e)}>＋ Pick spell</button>`
+              : html`<button class="btn learnbtn" @click=${(e) => this._openLearn(e)}>＋ Learn spell</button>`}
           </div>`
         : ''}
       ${discs.length
@@ -912,13 +1000,19 @@ export class EdSpells extends LitElement {
               </div>
             `)}
           `)
-        : html`<div class="empty">No spells learnt yet. Use ＋ Learn spell above to add one.</div>`}
+        : html`<div class="empty">${cs ? 'No spells picked yet. Use ＋ Pick spell above to add one.' : 'No spells learnt yet. Use ＋ Learn spell above to add one.'}</div>`}
     `;
   }
 
   _row(ctx, s) {
     const placed = !!matrixFor(ctx, s.name);
     const noFreeMatrix = !placed && !ctx.matrices.some((m) => !m.spell);
+    // Creation mode: a spell above the Discipline's Circle is known but cannot sit in a matrix
+    // (the engine's `placeable`); releasing a held one is always allowed. Remove is the creation
+    // remove (returns the spell's points).
+    const cs = this._cs;
+    const crow = cs ? (cs.rows ?? []).find((r) => r.name === s.name) ?? null : null;
+    const unplaceable = !placed && crow != null && !crow.placeable;
     return html`
       <div class="srow">
         <button class="info ibadge" title="Spell details" aria-label="Details for ${s.name}" @click=${(e) => this._openDetail(s, e)}>i</button>
@@ -927,12 +1021,14 @@ export class EdSpells extends LitElement {
         <span class="num">${s.weavingDifficulty?.value ?? '—'}</span>
         <span class="num">${s.learntSuccess ?? '—'}</span>
         <span class="mx">${this._castLabel(s.castingTarget)}</span>
-        <button class="attn ${placed ? 'on' : ''}" ?disabled=${noFreeMatrix}
-          title=${placed ? 'Release from matrix' : noFreeMatrix ? 'No open matrix' : 'Place in a matrix'}
+        <button class="attn ${placed ? 'on' : ''}" ?disabled=${noFreeMatrix || unplaceable}
+          title=${placed ? 'Release from matrix' : unplaceable ? `A Circle ${crow.circle} spell cannot go in a matrix until you reach Circle ${crow.circle}` : noFreeMatrix ? 'No open matrix' : 'Place in a matrix'}
           aria-label=${placed ? `Release ${s.name} from its matrix` : `Place ${s.name} in a matrix`}
           @click=${() => this._toggleMatrix(s.name)}>✦</button>
         ${this.editMode
-          ? html`<button class="rm" title="Remove from grimoire" aria-label="Remove ${s.name}" @click=${() => this._remove(s.name)}>✕</button>`
+          ? cs
+            ? html`<button class="rm" title="Remove this spell (returns its spell points)" aria-label="Remove ${s.name}" @click=${() => this._creationEdit({ kind: 'spell-remove', name: s.name })}>✕</button>`
+            : html`<button class="rm" title="Remove from grimoire" aria-label="Remove ${s.name}" @click=${() => this._remove(s.name)}>✕</button>`
           : html`<span></span>`}
       </div>`;
   }

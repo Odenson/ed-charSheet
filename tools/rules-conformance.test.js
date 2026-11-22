@@ -240,3 +240,129 @@ test('actionModifierProblems rejects operation add, wrong measure and wrong doma
   assert.ok(actionModifierProblems({ ...validAction, target: { domain: 'test', name: 'Frighten' } }).length > 0);
   assert.ok(actionModifierProblems({ ...validAction, target: { domain: 'ability', name: '' } }).length > 0);
 });
+
+// ---- create-new-adept A1: rules/skills.json `category`, `generic`, `artisanKey`, tier fix ----
+// Expected values come ONLY from plans/create-new-adept/rules.md R11 (RULES-FAQ Q041) and the
+// spec's "Rules" table. Category is decided by book list membership, never by name guessing.
+// These are failing-first until rules/skills.json carries the new fields.
+const SKILL_CATEGORIES = ['general', 'knowledge', 'artisan', 'language-speak', 'language-readwrite'];
+const LANGS = ['Drake', 'Dwarf', 'Elf', 'Human', 'Obsidiman', 'Ork', 'T`skrang', 'Theran', 'Throalic', 'Troll', 'Windling'];
+// R11 verbatim: the closed lists.
+const R11 = {
+  'language-speak': ['Speak Language', ...LANGS.map((l) => `Speak Language (${l})`)],
+  'language-readwrite': ['Read/Write Language', ...LANGS.map((l) => `Read/Write Language (${l})`)],
+  knowledge: ['Knowledge', 'Horror Lore'],
+  artisan: [
+    'Acting', 'Arrow Fletching (Artisan)', 'Artisan', 'Body Painting (Artisan)', 'Bone Carving (Artisan)',
+    'Braiding (Artisan)', 'Craft Armor', 'Craft Weapon', 'Craftsman', 'Embroidery', 'Manuscript Illumination',
+    'Map Making', 'Painting', 'Poetry', 'Robe Embroidery', 'Rune Carving', 'Sail Embroidery', 'Sculpting',
+    'Tailor', 'Tanning', 'Tattooist', 'Wood Carving',
+  ],
+};
+const GENERIC_NAMES = ['Knowledge', 'Artisan', 'Speak Language', 'Read/Write Language'];
+const skillsFile = load('skills.json');
+const skillEntries = skillsFile.skills;
+const skillsInCategory = (c) => skillEntries.filter((s) => s.category === c);
+const disciplineEntries = load('disciplines.json').disciplines;
+
+test('skills: schema tag stays ed-skills/1 and the catalog keeps its 154 entries (duplicates stay)', () => {
+  assert.equal(skillsFile.schema, 'ed-skills/1');
+  assert.equal(skillEntries.length, 154);
+  const names = skillEntries.map((s) => s.name);
+  assert.deepEqual(names.filter((n, i) => names.indexOf(n) !== i).sort(), ['Bribery', 'Skinning']);
+});
+
+test('skills: every entry has a valid category', () => {
+  const bad = skillEntries.filter((s) => !SKILL_CATEGORIES.includes(s.category)).map((s) => `${s.name}: ${s.category}`);
+  assert.deepEqual(bad, []);
+});
+
+test('skills: category counts are 106 general / 2 knowledge / 22 artisan / 12 language-speak / 12 language-readwrite (R11)', () => {
+  assert.equal(skillsInCategory('general').length, 106);
+  assert.equal(skillsInCategory('knowledge').length, 2);
+  assert.equal(skillsInCategory('artisan').length, 22);
+  assert.equal(skillsInCategory('language-speak').length, 12);
+  assert.equal(skillsInCategory('language-readwrite').length, 12);
+});
+
+test('skills: the closed R11 lists (knowledge, artisan, both language families) hold exactly their members', () => {
+  for (const [cat, names] of Object.entries(R11)) {
+    assert.deepEqual(skillsInCategory(cat).map((s) => s.name).sort(), [...names].sort(), cat);
+  }
+});
+
+test('skills: every other entry is general (Artist, Entertaining, Animal Tracking, Hunting, Public Speaking, Riding, Skinning x2, Bribery x2)', () => {
+  const listed = new Set(Object.values(R11).flat());
+  for (const s of skillEntries) if (!listed.has(s.name)) assert.equal(s.category, 'general', s.name);
+  for (const n of ['Artist', 'Entertaining', 'Animal Tracking', 'Hunting', 'Public Speaking', 'Riding']) {
+    assert.equal(skillEntries.find((s) => s.name === n)?.category, 'general', n);
+  }
+  assert.deepEqual(skillEntries.filter((s) => s.name === 'Skinning').map((s) => s.category), ['general', 'general']);
+  assert.deepEqual(skillEntries.filter((s) => s.name === 'Bribery').map((s) => s.category), ['general', 'general']);
+});
+
+test('skills: the dual-use entries the owner decided are artisan (Acting, Craft Armor, Craft Weapon, Craftsman, Map Making, Tailor, Tanning, Tattooist)', () => {
+  for (const n of ['Acting', 'Craft Armor', 'Craft Weapon', 'Craftsman', 'Map Making', 'Tailor', 'Tanning', 'Tattooist']) {
+    assert.equal(skillEntries.find((s) => s.name === n)?.category, 'artisan', n);
+  }
+});
+
+test('skills: generic: true on exactly Knowledge, Artisan, Speak Language, Read/Write Language', () => {
+  assert.deepEqual(skillEntries.filter((s) => s.generic === true).map((s) => s.name).sort(), [...GENERIC_NAMES].sort());
+  for (const n of ['Horror Lore', 'Artist', 'Entertaining', 'Craftsman']) {
+    assert.notEqual(skillEntries.find((s) => s.name === n)?.generic, true, `${n} is not generic`);
+  }
+});
+
+test('skills: artisanKey is on exactly the 21 artisan entries except the Artisan template, = catalog name minus a trailing " (Artisan)"', () => {
+  const keyed = skillEntries.filter((s) => s.artisanKey !== undefined);
+  assert.equal(keyed.length, 21);
+  assert.deepEqual(keyed.map((s) => s.name).sort(), R11.artisan.filter((n) => n !== 'Artisan').sort());
+  for (const s of keyed) assert.equal(s.artisanKey, s.name.replace(/ \(Artisan\)$/, ''), s.name);
+  assert.equal(skillEntries.find((s) => s.name === 'Artisan').artisanKey, undefined, 'the template carries no artisanKey');
+  // The four entries that keep the suffix only in the catalog name.
+  for (const [name, key] of [['Arrow Fletching (Artisan)', 'Arrow Fletching'], ['Body Painting (Artisan)', 'Body Painting'], ['Bone Carving (Artisan)', 'Bone Carving'], ['Braiding (Artisan)', 'Braiding']]) {
+    assert.equal(skillEntries.find((s) => s.name === name).artisanKey, key);
+  }
+});
+
+test('skills: each of the eight Discipline artisanSkills strings resolves to exactly one artisanKey (R11)', () => {
+  const expected = {
+    Archer: ['Arrow Fletching', 'Wood Carving'],
+    Nethermancer: ['Bone Carving', 'Robe Embroidery'],
+    Thief: ['Acting', 'Poetry'],
+    Warrior: ['Sculpting', 'Rune Carving'],
+  };
+  for (const [disc, list] of Object.entries(expected)) {
+    const entry = disciplineEntries.find((d) => d.name === disc);
+    assert.deepEqual([...entry.artisanSkills].sort(), [...list].sort(), `${disc} list per R11`);
+  }
+  for (const d of disciplineEntries) {
+    for (const key of d.artisanSkills ?? []) {
+      assert.equal(skillEntries.filter((s) => s.artisanKey === key).length, 1, `${d.name}: "${key}" must match exactly one artisanKey`);
+    }
+  }
+});
+
+test('skills: both copies of the duplicated Bribery and Skinning entries carry identical new-field values', () => {
+  for (const n of ['Bribery', 'Skinning']) {
+    const [a, b] = skillEntries.filter((s) => s.name === n);
+    assert.ok(a && b, `${n} appears twice`);
+    assert.ok(SKILL_CATEGORIES.includes(a.category), `${n} carries a category`);
+    for (const f of ['category', 'generic', 'artisanKey', 'tier']) assert.equal(a[f], b[f], `${n}.${f}`);
+  }
+});
+
+test('skills: tier - Impressive Display and Tactics are 2; counts are 1:116, 2:31, 3:7; general-and-Novice = 68 (R11)', () => {
+  assert.equal(skillEntries.find((s) => s.name === 'Impressive Display').tier, 2);
+  assert.equal(skillEntries.find((s) => s.name === 'Tactics').tier, 2);
+  const tier = (n) => skillEntries.filter((s) => s.tier === n).length;
+  assert.deepEqual([tier(1), tier(2), tier(3)], [116, 31, 7]);
+  assert.equal(skillEntries.filter((s) => s.category === 'general' && s.tier === 1).length, 68);
+});
+
+test('skills: no bulk re-tiering - well-known Novice entries stay tier 1', () => {
+  for (const n of ['Acrobatic Defense', 'Awareness', 'Horror Lore', 'Knowledge', 'Melee Weapon', 'Tracking', 'Wilderness Survival']) {
+    assert.equal(skillEntries.find((s) => s.name === n)?.tier, 1, n);
+  }
+});

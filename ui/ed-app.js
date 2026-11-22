@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, listCharacters, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -9,6 +9,11 @@ import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immedia
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
 import { saveServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT } from '../store-server.js';
+import { listDrafts, mergeRows, saveDraft, discardDraft, renameDraft, promoteDraft, loadDraftCharacter } from '../store-drafts.js';
+import { saveDraftFirstTime } from '../store-first-save.js';
+import { buildNewCharacter, slugifyId, validateNewName } from '../engine/new-character.js';
+import { applyTalentRank, applyAttributePoints, applySkillAdd, applySkillRank, applySkillRemove, applySpellPick, applySpellRemove, checkSpellMatrices, finishPlan, finishCreation } from '../engine/creation.js';
+import { creationRefusalText, finishMessage, finishWarn } from './creation-text.js';
 import { saveCustomItems, saveCustomEdits, loadCustomEdits, reconcileCustomEdits, hasCustomPendingEdits, applyCustomEdits, isItemsReflected, DEFAULT_ITEMS_ENDPOINT } from '../store-custom-items.js';
 import { nextSaveAction } from '../save-action.js';
 import { exportCharacter } from '../store-export.js';
@@ -30,13 +35,15 @@ import './ed-notes.js';
 import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
+import './ed-creation-guide.js';
 import './ed-day-reset.js';
 import './ed-spells.js';
 import './ed-character-picker.js';
+import { nameProblemText } from './ed-new-character.js'; // also registers <ed-new-character> (the rename modal)
 import './ed-conflict.js';
 import './ed-settings.js';
-import { saveRollLog } from '../store-rolllog.js';
-import { loadDiscordConfig, saveDiscordConfig, discordReady } from '../store-discord.js';
+import { saveRollLog, clearRollLog } from '../store-rolllog.js';
+import { loadDiscordConfig, saveDiscordConfig, discordReady, clearDiscordConfig } from '../store-discord.js';
 import { postWebhook } from '../discord-send.js';
 import { buildPayload, buildTestPayload } from '../engine/discord-roll.js';
 
@@ -74,6 +81,18 @@ export class EdApp extends LitElement {
     _confirmSwitch: { state: true },
     _picker: { state: true },
     _noSelection: { state: true },
+    // The picker's rows (index rows merged with the local drafts); reactive so a discard or a
+    // first Save refreshes an open picker in place.
+    _characters: { state: true },
+    // The loaded character is an unsaved draft (no file on the branch yet): it never autosaves,
+    // "Discard local changes" is hidden, the first manual Save creates it.
+    _isDraft: { state: true },
+    // { id, name, clashId } while the first Save found the draft's id taken: the rename modal.
+    _renameDraft: { state: true },
+    // The Finish-creation plan (engine finishPlan) while its confirm is open, else null. Reactive
+    // state: setting it opens the confirm; declared here and initialised in the constructor.
+    _confirmFinish: { state: true },
+    _creationGuide: { state: true }, // { name, magician } while the "Creating your character" pop-up is open
     _conflict: { state: true },
     _settings: { state: true }, // Settings modal open?
     // Session-only armed-potion state (dies on reload). At most ONE armed
@@ -106,9 +125,13 @@ export class EdApp extends LitElement {
   // The selected character's id (its per-character file name). Persisted to
   // localStorage 'ed-character' so the same character loads next session.
   _characterId = null;
-  // The per-character index rows [{ id, name, portrait }] — the character picker
-  // lists from them. Fetched at startup (and refreshed on each load path).
-  _characters = null;
+  // The index rows [{ id, name, portrait }] exactly as listCharacters returned them (a 404 index
+  // is an empty store: []). `_characters` (reactive, set in the constructor) is these merged
+  // with the local drafts by `_refreshRows()` — the picker lists from that.
+  _indexRows = [];
+  // The ids the last first-Save re-check read fresh from the branch (the rename modal's
+  // taken ids include them, so the clashing id is never offered again).
+  _freshTakenIds = [];
   // The last-seen blob sha of the loaded character's file (from the read ETag or
   // the last save's commit sha) — the optimistic-concurrency `base` sent on the
   // next /save. Null locally / on the CDN fallback (no ETag → overwrite path).
@@ -166,6 +189,16 @@ export class EdApp extends LitElement {
     .icon-btn[disabled] { opacity: 0.5; cursor: default; }
     .ico-svg { width: 15px; height: 15px; display: block; }
     .icon-btn.edit { margin-left: auto; }
+    /* Finish creation: sits between the tab names and the round buttons (create-new-adept). */
+    .fin-top {
+      margin-left: auto; margin-right: 8px; font: inherit; font-size: var(--fs-small); font-weight: 500;
+      padding: 4px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+      border: 1px solid var(--accent, #b26a00); background: var(--accent-bg, light-dark(#f6e9dc, #3a2a17)); color: var(--accent, #b26a00);
+    }
+    .fin-top:hover:not(:disabled) { background: var(--accent, #b26a00); color: var(--bg-card, light-dark(#fff, #232833)); }
+    .fin-top:disabled { opacity: 0.5; cursor: not-allowed; }
+    .fin-top:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg, light-dark(#f6e9dc, #3a2a17)); }
+    .fin-top + .icon-btn.edit { margin-left: 0; }
     .icon-btn.edit.active {
       background: var(--accent, #b26a00); border-color: var(--accent, #b26a00); color: #fff;
     }
@@ -227,6 +260,10 @@ export class EdApp extends LitElement {
     this._confirmSwitch = false;
     this._picker = false;
     this._noSelection = false;
+    this._characters = null;
+    this._isDraft = false;
+    this._renameDraft = null;
+    this._confirmFinish = null;
     // Theme: honour a saved preference, else follow the system setting.
     const saved = localStorage.getItem('ed-theme');
     this._dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -493,19 +530,31 @@ export class EdApp extends LitElement {
     this.addEventListener('load-character', (e) => {
       if (e.detail?.id) this._loadCharacter(e.detail.id);
     });
+    // New-character flow (create-new-adept). The picker's nested <ed-new-character> modal asks
+    // for a draft (`create-character`); a draft row's Discard asks to drop one. The rename modal
+    // (first-Save id clash) is rendered by this component and listened to on the element.
+    this.addEventListener('create-character', (e) => this._createCharacter(e.detail));
+    this.addEventListener('discard-draft', (e) => this._discardDraft(e.detail?.id));
+    // Creation mode (create-new-adept): the Disciplines / Overview / Spells views dispatch a
+    // spend of the free creation points (`ed-creation-edit { kind, ... }`) and the Finish button
+    // (`ed-creation-finish`); the pure engine (engine/creation.js) decides, this component only
+    // applies, persists and re-derives.
+    this.addEventListener('ed-creation-edit', (e) => this._creationEdit(e.detail));
+    this.addEventListener('ed-creation-finish', () => this._finishCreation());
     try {
-      const characters = await listCharacters();
-      const ids = characters.map((c) => c.id);
-      if (!ids.length) {
-        this._error = 'No characters found in the character store.';
-        return;
-      }
-      const id = this._initialId(ids, characters);
-      if (id) await this._loadCharacter(id, { characters });
+      // An index that does not exist yet (404) is an empty store, not an error: `[]`. A real
+      // failure (network, 5xx, a malformed index) still throws and shows the error below.
+      this._indexRows = await listCharacters();
+      const rows = mergeRows(this._indexRows, listDrafts());
+      this._characters = rows;
+      const id = this._initialId(rows.map((c) => c.id), rows);
+      if (id) await this._loadCharacter(id, { characters: rows });
       else {
-        // First run with no saved selection: keep the fetched index so the
-        // picker has characters to list (only _loadCharacter sets it otherwise).
-        this._characters = characters;
+        // First run with no saved selection, or an empty store with no drafts: the picker
+        // asks — with nothing saved it opens on just the "Start a new character" section.
+        // The rules are loaded first (the section lists their Disciplines and races); a
+        // failure there is a real error and is shown as one.
+        await this._ensureRules();
         this._picker = true;
       }
     } catch (e) {
@@ -513,9 +562,36 @@ export class EdApp extends LitElement {
     }
   }
 
+  // The rules bundle, loaded once and kept (the picker's "Start a new character" lists its
+  // Disciplines and races before any character is loaded). `_loadCharacter` refreshes
+  // `this._rules` on every load, as before.
+  async _ensureRules() {
+    this._rules ??= await loadRules();
+    return this._rules;
+  }
+
+  // Open the character picker once the rules are known (so its new-character section has its
+  // Disciplines and races). The header icon, "Choose a character" and the dirty-switch confirm
+  // all come through here. A rules failure still opens the picker — without the new section.
+  async _openPicker() {
+    try {
+      await this._ensureRules();
+    } catch (e) {
+      this._showNotice(`Couldn't load the rules, so starting a new character isn't available: ${e?.message ?? e}`);
+    }
+    this._picker = true;
+  }
+
+  // Recompute the picker rows: the index rows plus the local drafts, sorted by id (an id in
+  // both keeps the index row — mergeRows).
+  _refreshRows() {
+    this._characters = mergeRows(this._indexRows ?? [], listDrafts());
+  }
+
   // Which character to load on startup: the saved 'ed-character' selection if
-  // it still exists in the index; the single entry if there's only one (no real
-  // choice); otherwise null — the picker asks the user (first run).
+  // it still exists in the rows (a saved character or a local draft); the single
+  // row if there's only one (no real choice); otherwise null — the picker asks
+  // the user (first run).
   _initialId(ids, characters) {
     const saved = localStorage.getItem('ed-character');
     if (saved && characters.some((c) => c.id === saved)) return saved;
@@ -528,11 +604,19 @@ export class EdApp extends LitElement {
   // current blob sha as `_baseSha` (the concurrency token for the next save).
   // Persists the selection so the same character loads next session. Sets
   // _dirty from the id's own overlay.
+  //
+  // A DRAFT row (an unsaved new character, `row.draft === true`) has no file: it loads from its
+  // local base envelope + overlay (loadDraftCharacter, `base: null`), is always dirty (there is
+  // nothing on the branch to match), never autosaves, and opens in edit mode while its creation
+  // is open. Any character — draft or saved — whose `creation.open` is true opens in edit mode.
   async _loadCharacter(id, { characters } = {}) {
     try {
-      const { character, rules, base } = await loadCharacter(id);
+      const row = (characters ?? this._characters ?? []).find((r) => r.id === id);
+      const draft = row?.draft === true;
+      const { character, rules, base } = draft ? await loadDraftCharacter(id) : await loadCharacter(id);
       this._flushRollReport(); // report the old character's roll before the swap
       this._characterId = id;
+      this._isDraft = draft;
       if (characters) this._characters = characters;
       this._character = character;
       this._rules = rules;
@@ -547,9 +631,14 @@ export class EdApp extends LitElement {
       this._armedTalents = []; // armed `arms` talents (Mystic Aim): session-only, counted down each Initiative
       this._round = 0;
       this._dayReset = null;
-      this._baseSha = base;
-      this._dirty = hasPendingEdits(id) || hasCustomPendingEdits();
+      this._baseSha = base; // null for a draft: its first Save takes the create path
+      // A loaded draft is ALWAYS dirty (no branch file to match); a saved character is dirty
+      // only with pending edits. A draft never arms the autosave timer.
+      this._dirty = draft || hasPendingEdits(id) || hasCustomPendingEdits();
       if (this._dirty) this._scheduleAutosave();
+      // A character still in creation (draft or saved-mid-creation) opens in edit mode, where
+      // the creation controls live; any other character keeps the current edit mode.
+      if (character.creation?.open) this._editMode = true;
       this._picker = false;
       this._noSelection = false;
       this._error = null;
@@ -561,11 +650,101 @@ export class EdApp extends LitElement {
     }
   }
 
-  // Header icon: open the picker. A dirty character first confirms — the switch
-  // proceeds without discarding the draft (overlays are per-id and survive).
+  // Header icon: open the picker. A dirty character (a draft always is) first confirms — the
+  // switch proceeds without discarding the edits (overlays are per-id and survive).
   _pickCharacter() {
     if (this._dirty) this._confirmSwitch = true;
-    else this._picker = true;
+    else this._openPicker();
+  }
+
+  // A new character from the picker's name/race modal (`create-character`). ed-app is the
+  // authority: it re-runs the pure id check against the CURRENT rows (index + drafts) and
+  // refuses on a clash with nothing stored (no suffixing — owner decision), then builds the
+  // Circle-1 draft, keeps it in localStorage (the base envelope; edits ride the ordinary
+  // overlay), loads it and drops the player into edit mode on the Disciplines tab.
+  async _createCharacter({ name, race, discipline } = {}) {
+    try {
+      const rules = await this._ensureRules();
+      const rows = mergeRows(this._indexRows ?? [], listDrafts());
+      const check = validateNewName(name, rows.map((r) => r.id));
+      if (!check.ok) {
+        this._showNotice(nameProblemText(check));
+        return;
+      }
+      const karmaMaxCap = homebrewSetsFor(rules.homebrewFile, race)['karma.maxCap'] ?? null;
+      const character = buildNewCharacter({ name, race, discipline }, rules, { karmaMaxCap });
+      saveDraft(character);
+      this._refreshRows();
+      await this._loadCharacter(character.meta.id);
+      if (this._characterId === character.meta.id) {
+        this._editMode = true;
+        this._tab = 'disciplines';
+        this._creationGuide = { name: character.meta.name, magician: this._model?.creation?.spells != null };
+      }
+    } catch (e) {
+      this._showNotice(`Couldn't start the new character: ${e?.message ?? e}`);
+    }
+  }
+
+  // A draft row's Discard was confirmed in the picker. Removes ONLY the local draft: its base,
+  // its overlay and its device-local roll-log / Discord keys. The branch is never touched and
+  // saved characters' overlays are left alone. If it is the loaded character the sheet empties
+  // ("No character selected") and the saved selection is cleared.
+  _discardDraft(id) {
+    if (!id) return;
+    discardDraft(id);
+    clearRollLog(id);
+    clearDiscordConfig(id);
+    this._refreshRows();
+    if (id !== this._characterId) return;
+    this._clearAutosaveTimers();
+    this._character = null;
+    this._model = null;
+    this._characterId = null;
+    this._baseSha = null;
+    this._isDraft = false;
+    this._dirty = false;
+    this._editMode = false;
+    this._noSelection = true;
+    if (localStorage.getItem('ed-character') === id) localStorage.removeItem('ed-character');
+  }
+
+  // The first Save found the draft's id taken on the branch: the player renamed it. Re-slug,
+  // re-check defensively (index rows, other drafts and the ids the branch just reported), move
+  // the draft's two keys, update the loaded character and the saved selection, then run the
+  // Save again — its id re-check runs again, so a second clash just reopens the modal.
+  _renameDraftTo(name) {
+    const target = this._renameDraft;
+    if (!target || !this._character || !this._characterId) return;
+    const oldId = this._characterId;
+    const taken = new Set([...this._takenIdsForRename(), ...(target.clashId ? [target.clashId] : [])]);
+    const check = validateNewName(name, taken);
+    if (!check.ok) {
+      this._showNotice(nameProblemText(check));
+      return;
+    }
+    const newName = String(name).trim();
+    const newId = slugifyId(newName);
+    if (!renameDraft(oldId, newId, newName)) {
+      this._showNotice("Couldn't rename the draft — that name is already in use.");
+      return;
+    }
+    this._character = { ...this._character, meta: { ...this._character.meta, id: newId, name: newName } };
+    this._characterId = newId;
+    localStorage.setItem('ed-character', newId);
+    this._refreshRows();
+    this._renameDraft = null;
+    this._model = this._derive();
+    this._doSave({ silent: false });
+  }
+
+  // Ids the renamed draft must not take: every row (index + drafts) and the ids the last
+  // first-Save re-check read from the branch, minus the draft's own current id.
+  _takenIdsForRename() {
+    const own = this._characterId;
+    const ids = new Set([...(this._characters ?? []).map((r) => r.id), ...(this._freshTakenIds ?? [])]);
+    ids.delete(own);
+    return [...ids];
   }
 
   _editMeta(patch) {
@@ -811,10 +990,88 @@ export class EdApp extends LitElement {
 
   _editSpells(spells) {
     if (!this._character || !spells) return;
+    // While creation is open a matrix may not hold a spell above the Discipline's Circle (a
+    // Circle-2 spell is known, not placed, at Circle 1): the engine checks, a refusal changes
+    // nothing.
+    if (this._character.creation?.open) {
+      const check = checkSpellMatrices(this._character, spells, this._creationCtx());
+      if (!check.ok) {
+        this._showNotice(creationRefusalText(check.reason));
+        return;
+      }
+    }
     this._character = { ...this._character, spells };
     saveSpellEdits(spells, this._characterId);
     this._markDirty();
     this._model = this._derive();
+  }
+
+  // The context the creation engine reads (engine/creation.js): the rule files plus the DERIVED
+  // Perception Step, read off the model (never stored), which sizes a magician's spell budget.
+  _creationCtx() {
+    const perception = (this._model?.attributes ?? []).find((a) => a.name === 'Perception')?.step;
+    return creationContext(this._rules, this._character, Number.isFinite(perception) ? perception : null);
+  }
+
+  // A creation view asked to spend (or return) free creation points. `kind` picks the pure
+  // engine function; the engine decides everything, including every limit. A refusal changes
+  // nothing and shows its reason as a notice; success replaces the inputs, persists exactly the
+  // overlay categories the engine reports as touched, marks the file dirty and re-derives. No
+  // Legend, no log entry, no wealth write (creation points are free).
+  _creationEdit(detail) {
+    if (!this._character || !this._rules || !detail) return;
+    const { kind, ...payload } = detail;
+    const character = this._character;
+    const ctx = this._creationCtx();
+    let res;
+    switch (kind) {
+      case 'talent': res = applyTalentRank(character, ctx, payload); break;
+      case 'attribute': res = applyAttributePoints(character, ctx, payload); break;
+      case 'skill-add': res = applySkillAdd(character, ctx, payload); break;
+      case 'skill-rank': res = applySkillRank(character, ctx, payload); break;
+      case 'skill-remove': res = applySkillRemove(character, ctx, payload); break;
+      case 'spell-add': res = applySpellPick(character, ctx, payload); break;
+      case 'spell-remove': res = applySpellRemove(character, ctx, payload); break;
+      default: return;
+    }
+    if (!res.ok) {
+      this._showNotice(creationRefusalText(res.reason));
+      return;
+    }
+    this._applyCreationResult(res);
+  }
+
+  // Take an accepted engine result: the new character, its overlay write, dirty mark, re-derive.
+  _applyCreationResult(res) {
+    this._character = res.character;
+    persistCreationEdit(res.character, res.touched, this._characterId);
+    this._markDirty();
+    this._model = this._derive();
+  }
+
+  // "Finish creation" was clicked. The engine plans it (what is forfeited, the Karma bonus); a
+  // blocked plan shows its first blocker, otherwise the confirm opens. Nothing changes yet.
+  _finishCreation() {
+    if (!this._character || !this._rules) return;
+    const plan = finishPlan(this._character, this._creationCtx());
+    if (!plan.canFinish) {
+      this._showNotice(plan.blockers?.[0] ?? creationRefusalText('invalid-budget'));
+      return;
+    }
+    this._confirmFinish = plan;
+  }
+
+  // The Finish confirm said yes (ed-confirm dispatches only `confirm` on this path, so the prompt
+  // state is cleared here). The engine re-plans and may still refuse; a refusal changes nothing.
+  _confirmFinishNow() {
+    this._confirmFinish = null;
+    if (!this._character || !this._rules) return;
+    const res = finishCreation(this._character, this._creationCtx());
+    if (!res.ok) {
+      this._showNotice(creationRefusalText(res.reason));
+      return;
+    }
+    this._applyCreationResult(res);
   }
 
   // A trade (plans/PLAN-TRADE-ITEMS.md): the Equipment view computes the next
@@ -1182,17 +1439,18 @@ export class EdApp extends LitElement {
   // tentative rank and reject an increase that would push Available Legend below
   // 0. Defense-in-depth — the view only offers steps that fit — so a multi-step
   // or programmatic increase can never overdraw the sheet. Decreases always
-  // pass (they refund). Mirrors deriveModel's audit inputs (resolved knacks).
+  // pass (they refund). Audits with EXACTLY the options deriveModel audits with
+  // (`model.legendAuditOptions`: knacks, thread-item and spell catalogs, spell
+  // cost multiplier, Karma Ritual cost, tier shift, creation Karma) — never a
+  // subset of them — so the guard and the displayed Available agree on the Karma
+  // and spell sinks too.
   // Total Earned prices from the same derived total the Legend panel shows —
   // legacy `totalEarnt` plus the earned log (PLAN-NOTES-TAB Phase B) — so the
   // guard and the visible `available` can never disagree about affordability.
   _canAffordRank(character) {
     const totalEarnt = this._legendTotalEarnt(character);
     if (totalEarnt == null) return false;
-    const spent = auditLegendSpent(character, this._rules.legendFile?.costs, {
-      knacks: this._model?.knacks ?? [],
-      tierShift: this._model?.legend?.tierShift ?? 0,
-    });
+    const spent = auditLegendSpent(character, this._rules.legendFile?.costs, this._model?.legendAuditOptions ?? {});
     return legendAvailable(totalEarnt, spent.total) >= 0;
   }
 
@@ -1200,12 +1458,14 @@ export class EdApp extends LitElement {
   // the pure sum of the earned log plus any legacy `totalEarnt` input — the
   // single derivation path of PLAN-NOTES-TAB Phase B, mirrored here so the rank
   // guard prices off the same total the Legend panel derives. Null when neither
-  // exists (nothing earned yet — the placeholder-pill case, never 0).
+  // exists (nothing earned yet — the placeholder-pill case, never 0) — EXCEPT for
+  // a character carrying a `creation` block, which starts 0/0/0 (house rule R7), so
+  // its total derives as 0. Mirrors store.js deriveModel exactly.
   _legendTotalEarnt(character) {
     const legend = character?.resources?.legend ?? {};
     const legacy = typeof legend.totalEarnt === 'number' ? legend.totalEarnt : null;
     const earned = Array.isArray(legend.earned) ? legend.earned : [];
-    if (legacy == null && earned.length === 0) return null;
+    if (legacy == null && earned.length === 0) return character?.creation ? 0 : null;
     return (legacy ?? 0) + earned.reduce((s, e) => s + (Number(e.amount) || 0), 0);
   }
 
@@ -1718,7 +1978,9 @@ export class EdApp extends LitElement {
   // (2× the interval) guarantees a save during continuous activity so a long
   // fight never goes unsaved. No-op when autosave is off.
   _scheduleAutosave() {
-    if (!this._autosaveEnabled) return;
+    // A draft is never saved in the background: its first Save creates a file and an index
+    // row on the branch, so it is always a deliberate, manual Save (with the id re-check).
+    if (!this._autosaveEnabled || this._isDraft) return;
     clearTimeout(this._autosaveTimer);
     this._autosaveTimer = setTimeout(() => this._autosaveFire(), this._autosaveSeconds * 1000);
     if (!this._autosaveMaxTimer) {
@@ -1736,14 +1998,14 @@ export class EdApp extends LitElement {
   // change re-arms the timer.
   _autosaveFire() {
     this._clearAutosaveTimers();
-    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving) return;
+    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving || this._isDraft) return;
     this._doSave({ silent: true });
   }
   // Flush on tab-hide / page-unload — key-gated + silent, with keepalive so the
   // request survives the document going away. Best-effort: nothing is lost either
   // way (the overlay persists locally).
   _flushSave() {
-    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving) return;
+    if (!this._autosaveEnabled || !this._dirty || !this._saveKey || this._saving || this._isDraft) return;
     this._doSave({ silent: true, keepalive: true });
   }
 
@@ -1852,8 +2114,15 @@ export class EdApp extends LitElement {
   // keep-mine re-save passes the branch's current sha as the acknowledged base.
   // `silent` (background) suppresses the success/error toasts; a conflict still
   // surfaces (never silently dropped).
+  //
+  // A DRAFT (an unsaved new character) is never saved silently — autosave and flush-on-hide
+  // skip it — so its first Save is always a deliberate manual one. That Save re-reads the
+  // index FRESH and, if the draft's id is now taken on the branch, posts NOTHING and opens the
+  // rename modal instead (store-first-save.js); otherwise it posts with `base: null` (the
+  // worker's create path), drops the draft base and becomes a normal saved character.
   async _doSave({ silent = false, base = this._baseSha, keepalive = false } = {}) {
     if (!this._character || this._saving) return;
+    if (this._isDraft && silent) return;
     if (!this._saveKey) {
       // Never prompt for the key from a background/flush save — those are
       // key-gated by the caller, so this only fires on a manual Save.
@@ -1869,9 +2138,34 @@ export class EdApp extends LitElement {
       clearTimeout(this._saveOkTimer);
     }
     try {
-      let commit = await saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
-      this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
-      reconcileOverlay(undefined, this._characterId);
+      let commit;
+      if (this._isDraft) {
+        const id = this._characterId;
+        const name = this._character?.meta?.name ?? id;
+        const res = await saveDraftFirstTime({
+          character: forSave(this._character),
+          id,
+          // A FRESH index read (index ids only): the id may have been taken on another device
+          // since the draft was created. The ids are kept for the rename modal.
+          fetchTakenIds: async () => {
+            this._freshTakenIds = (await listCharacters()).map((r) => r.id);
+            return this._freshTakenIds;
+          },
+          post: (c, cid) => saveServer(c, { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: cid, base: null, keepalive }),
+        });
+        if (!res.ok) {
+          // The id is taken on the branch: nothing was posted. Ask for another name; Escape
+          // leaves the draft unsaved.
+          this._renameDraft = { id, name, clashId: res.id };
+          return;
+        }
+        commit = res.commit;
+        this._firstSaveLanded(id, name, commit);
+      } else {
+        commit = await saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive });
+        this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
+        reconcileOverlay(undefined, this._characterId);
+      }
       // The save dot also reflects a pending custom-item delta, so a confirmed
       // Save commits that too — /save-items POST, reconcile, re-read the catalog.
       const pending = loadCustomEdits();
@@ -1891,7 +2185,9 @@ export class EdApp extends LitElement {
       // loaded (or last saved) it. Surface the conflict modal, never a toast:
       // the overlay still holds the local draft, and the modal decides whether
       // the branch version wins.
-      if (e instanceof SaveConflictError) {
+      // (A first Save of a draft posts with `base: null`, which has no stale check, so a
+      // conflict there is not a real case — it falls through to the error toast.)
+      if (e instanceof SaveConflictError && !this._isDraft) {
         // A LOUD (manual) save surfaces the conflict modal now. A SILENT
         // (autosave / flush-on-hide) one must NOT interrupt play — leave the
         // overlay dirty and defer the conflict to the next explicit Save.
@@ -1900,11 +2196,33 @@ export class EdApp extends LitElement {
         // A rejected key: drop it so the next Save re-prompts.
         if (e instanceof SaveError && e.code === 'unauthorized') this._saveKey = null;
         if (!silent) this._saveError = e?.message ? String(e.message) : String(e);
-        this._dirty = hasPendingEdits(this._characterId) || hasCustomPendingEdits();
+        // A draft that did not land stays dirty and stays a draft (a failed index read or post
+        // leaves it exactly as it was).
+        this._dirty = this._isDraft || hasPendingEdits(this._characterId) || hasCustomPendingEdits();
       }
     } finally {
       this._saving = false;
     }
+  }
+
+  // The draft's first Save was confirmed by the worker: the file and the index row now exist on
+  // the branch. Drop the draft base (promoteDraft also reconciles the overlay, like any
+  // confirmed save), make it a normal saved character (its sha is the next save's `base`), and
+  // add its row to the loader locally — then a best-effort fresh index read replaces the rows
+  // (keeping the local row if a cached index has not caught up yet).
+  _firstSaveLanded(id, name, commit) {
+    this._baseSha = commit.sha;
+    promoteDraft(id);
+    if (this._characterId === id) this._isDraft = false;
+    const localRow = { id, name, portrait: null };
+    this._indexRows = [...(this._indexRows ?? []).filter((r) => r.id !== id), localRow];
+    this._refreshRows();
+    listCharacters()
+      .then((fresh) => {
+        this._indexRows = fresh.some((r) => r.id === id) ? fresh : [...fresh, localRow];
+        this._refreshRows();
+      })
+      .catch(() => {});
   }
 
   // Route a conflict-modal choice through the pure nextSaveAction helper:
@@ -1936,6 +2254,8 @@ export class EdApp extends LitElement {
 
   _saveTitle() {
     if (this._saving) return 'Saving to GitHub…';
+    // An unsaved draft exists only in this browser until its first Save creates it on GitHub.
+    if (this._isDraft) return 'Save to GitHub (creates this character — unsaved draft)';
     return this._dirty ? 'Save to GitHub (unsaved changes)' : 'Saved to GitHub';
   }
 
@@ -2031,6 +2351,14 @@ export class EdApp extends LitElement {
             </button>
           `,
         )}
+        ${this._model?.creation?.open
+          ? html`<button
+              class="fin-top"
+              ?disabled=${!this._model.creation.canFinish}
+              title=${this._model.creation.canFinish ? 'Finish creation' : (this._model.creation.blockers ?? []).join('\n')}
+              @click=${() => this._finishCreation()}
+            >Finish creation</button>`
+          : ''}
         <button
           class="icon-btn edit ${this._editMode ? 'active' : ''}"
           role="switch"
@@ -2039,7 +2367,7 @@ export class EdApp extends LitElement {
           title=${this._editMode ? 'Finish editing' : 'Edit character details'}
           aria-label=${this._editMode ? 'Finish editing' : 'Edit character details'}
         ><span aria-hidden="true">✎</span></button>
-        ${this._editMode && this._dirty
+        ${this._editMode && this._dirty && !this._isDraft
           ? html`<button
                 class="icon-btn revert"
                 @click=${() => (this._confirmDiscard = true)}
@@ -2107,7 +2435,7 @@ export class EdApp extends LitElement {
               <span class="big">▤</span>No character selected
               <div style="margin-top: 0.5rem">
                 <button class="icon-btn" style="border-radius: 6px; padding: 6px 14px; width: auto; height: auto"
-                        @click=${() => (this._picker = true)}>Choose a character</button>
+                        @click=${() => this._openPicker()}>Choose a character</button>
               </div>
             </div>`
           : html`<p class="status">Loading character…</p>`}
@@ -2115,11 +2443,23 @@ export class EdApp extends LitElement {
         ? html`<ed-character-picker
             .characters=${this._characters ?? []}
             .current=${this._characterId}
+            .disciplines=${(this._rules?.disciplinesFile?.disciplines ?? []).map((d) => d.name)}
+            .races=${(this._rules?.racesFile?.races ?? []).map((r) => r.name)}
             @close=${() => {
               this._picker = false;
               if (!this._model) this._noSelection = true;
             }}
           ></ed-character-picker>`
+        : ''}
+      ${this._renameDraft
+        ? html`<ed-new-character
+            mode="rename"
+            .name=${this._renameDraft.name}
+            .clashId=${this._renameDraft.clashId}
+            .takenIds=${this._takenIdsForRename()}
+            @rename-draft=${(e) => this._renameDraftTo(e.detail?.name)}
+            @close=${() => { this._renameDraft = null; }}
+          ></ed-new-character>`
         : ''}
       ${this._roll && !this._dayReset
         ? html`<ed-roll-modal
@@ -2173,9 +2513,27 @@ export class EdApp extends LitElement {
             confirmLabel="Continue"
             @confirm=${() => {
               this._confirmSwitch = false;
-              this._picker = true;
+              this._openPicker();
             }}
             @close=${() => (this._confirmSwitch = false)}
+          ></ed-confirm>`
+        : ''}
+      ${this._creationGuide
+        ? html`<ed-creation-guide
+            .name=${this._creationGuide.name}
+            .magician=${this._creationGuide.magician}
+            @close=${() => (this._creationGuide = null)}
+          ></ed-creation-guide>`
+        : ''}
+      ${this._confirmFinish
+        ? html`<ed-confirm
+            tone="accent"
+            heading="Finish creation?"
+            message=${finishMessage(this._confirmFinish)}
+            warn=${finishWarn(this._confirmFinish)}
+            confirmLabel="Finish creation"
+            @confirm=${() => this._confirmFinishNow()}
+            @close=${() => (this._confirmFinish = null)}
           ></ed-confirm>`
         : ''}
       ${this._dayReset

@@ -7,6 +7,25 @@
   },
   "releases": [
     {
+      "version": "2.0.0",
+      "date": "2026-11-22",
+      "summary": "Start a new Circle-1 Archer, Nethermancer, Thief or Warrior from the loader and spend your creation points (attributes, talents including one Talent Option, skills, spells) before finishing creation from the top bar.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Start a new Circle-1 character from the loader: pick Archer, Nethermancer, Thief or Warrior, name them and choose a race, then spend the creation points (talents, attributes, skills and Nethermancer spells) in the existing tabs. The draft stays in your browser until your first Save creates it on GitHub."
+        },
+        {
+          "type": "fixed",
+          "text": "Spell changes (learning, removing or placing a spell in a matrix) now count as unsaved edits, so the Save dot lights up and a successful Save clears them."
+        },
+        {
+          "type": "changed",
+          "text": "Impressive Display and Tactics are now Journeyman-tier skills, so their Legend cost follows the Journeyman table."
+        }
+      ]
+    },
+    {
       "version": "1.42.0",
       "date": "2026-11-21",
       "summary": "Start a new Discipline (or seed Circle 1) from the Disciplines tab, with shared-talent and Legend-pricing fixes.",

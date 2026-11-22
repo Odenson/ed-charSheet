@@ -557,11 +557,16 @@ export function talentKarmaUse(talent) {
  * `Modifier × Circle`; present ⇒ `min(Modifier × Circle, maximum)`. One
  * derivation, no branch: the off path passes no `maximum` and is unchanged.
  *
+ * `bonus` (optional, default 0) is the leftover creation attribute points that become
+ * extra Max Karma at Finish (rules.md R3/R4). It joins the base BEFORE the cap — the
+ * cap applies to the total: `min(Modifier × Circle + bonus, maximum)`. Callers that omit
+ * it are unchanged. It is derived (engine/creation.js karmaBonus), never stored.
+ *
  * @returns {number|null}
  */
-export function maxKarma(karmaModifier, circle, maximum = null) {
+export function maxKarma(karmaModifier, circle, maximum = null, bonus = 0) {
   if (typeof karmaModifier !== 'number' || typeof circle !== 'number') return null;
-  const base = karmaModifier * circle;
+  const base = karmaModifier * circle + (typeof bonus === 'number' && Number.isFinite(bonus) ? bonus : 0);
   return typeof maximum === 'number' && Number.isFinite(maximum) ? Math.min(base, maximum) : base;
 }
 

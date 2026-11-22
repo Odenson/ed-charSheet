@@ -195,11 +195,16 @@ with a scalar or a **race-keyed map**.
   honoured; any other target name is **ignored** (never a silent override of the
   wrong value). Registry (`store.js` `HOMEBREW_SET_TARGETS`):
   - `karma.step` — the Karma die Step (replaces the `KARMA_STEP` constant).
-  - `karma.maxCap` — a **cap** fed to `maxKarma(modifier, circle, maximum)`; the
-    engine applies `min(Modifier × Circle, maxCap)` (absent ⇒ no cap).
+  - `karma.maxCap` — a **cap** fed to `maxKarma(modifier, circle, maximum, bonus)`; the
+    engine applies `min(Modifier × Circle + bonus, maxCap)` (absent ⇒ no cap), where
+    `bonus` is the derived leftover-attribute Karma of a finished creation (0 otherwise;
+    ARCHITECTURE §4.1).
   - `karma.ritualCost` — Legend per Karma point for the paid Karma Ritual
     (read by the ritual feature; not a rating). Its presence switches the ritual
-    from the free refill to the paid buy-back.
+    from the free refill to the paid buy-back. For a character with a `creation`
+    block the Legend-spent Karma sink charges only Karma above the creation maximum,
+    `max(0, converted - creationKarma) × cost`, so starting Karma is free
+    (ARCHITECTURE §4.1).
   - `legend.additionalTierShift` — scalar (≥ 0; typically 1): prices every rank
     of an additional-Discipline talent at its own tier bumped that many steps up
     (Novice→Journeyman→Warden→Master, Master stays Master), replacing the
@@ -209,7 +214,8 @@ with a scalar or a **race-keyed map**.
     store.js `tierShift`).
   - `legend.spellLearnCostMultiplier` — scalar multiplier (default 1) on each
     learned spell's Legend cost, in the Legend-spent audit's spells sink and the
-    Learn modal's shown price (rule `hb-free-spell-learning`; 0 = free).
+    Learn modal's shown price (rule `hb-free-spell-learning`; 0 = free). Spells
+    listed in `creation.free.spells` cost 0 whatever the multiplier.
   - `spells.learnSilverMultiplier` — scalar multiplier (default 1) on the Learn
     modal's suggested silver price.
   - `advancement.optionalTable` — **boolean** (strict `true`): swaps the Circle

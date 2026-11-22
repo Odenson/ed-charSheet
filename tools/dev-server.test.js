@@ -6,7 +6,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, symlinkSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, symlinkSync, rmSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDevServer } from './dev-server.mjs';
@@ -164,6 +164,63 @@ test('a non-POST to /save is a 404, exactly like the worker', async () => {
     const res = await fetch(srv.base + '/save');
     assert.equal(res.status, 404);
     assert.equal((await res.json()).error.code, 'not_found');
+  });
+});
+
+// --- create-new-adept A3: the first Save of a new character (draft) --------------------------
+// A draft's first Save posts { character, id, base: null } (spec: no worker change). The dev server
+// mirrors the worker's create path: write the file, add the create-only index row. A new character
+// has no portrait, so the row is { name, portrait: null } (plan I6 "portrait-less index row", F6).
+// The builder (engine/new-character.js, slice A3) is imported lazily so a missing module only
+// fails these tests, not the whole file.
+async function newCharacter(name, race, discipline) {
+  const { buildNewCharacter } = await import('../engine/new-character.js');
+  const file = (p) => JSON.parse(readFileSync(new URL(`../rules/${p}`, import.meta.url), 'utf8'));
+  const rules = { racesFile: file('races.json'), disciplinesFile: file('disciplines.json'), attributesFile: file('attributes.json') };
+  return buildNewCharacter({ name, race, discipline }, rules, { karmaMaxCap: null });
+}
+
+test('/save accepts a builder draft with base ABSENT: 200, the raw file reads back, the index row is { name, portrait: null }', async () => {
+  const character = await newCharacter('Brand New', 'Troll', 'Warrior');
+  const id = character.meta.id;
+  assert.equal(id, 'brand-new');
+  await withServer(async (srv) => {
+    const res = await srv.request('POST', '/save', { id, character });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.commit.sha, 'local');
+
+    const file = await srv.request('GET', `/data/characters/${id}.json`);
+    assert.equal(file.status, 200);
+    assert.deepEqual(file.body, JSON.parse(JSON.stringify(character)), 'the file holds the RAW draft, creation block included');
+    assert.equal(file.body.schema, 'ed-character/2');
+    assert.equal(file.body.creation.open, true);
+
+    const index = await srv.request('GET', '/data/characters/index.json');
+    assert.deepEqual(index.body.characters[id], { name: 'Brand New', portrait: null });
+  });
+});
+
+test('/save accepts the draft with base: null (what the client sends) and never overwrites another character', async () => {
+  const mage = await newCharacter('Second Mage', 'Elf', 'Nethermancer');
+  await withServer(async (srv) => {
+    await srv.request('POST', '/save', { id: 'chakka', character: CHARACTER('Chakka') });
+    const res = await srv.request('POST', '/save', { id: mage.meta.id, character: mage, base: null });
+    assert.equal(res.status, 200, 'base: null is the create path');
+    const index = await srv.request('GET', '/data/characters/index.json');
+    assert.deepEqual(Object.keys(index.body.characters).sort(), ['chakka', 'second-mage']);
+    assert.deepEqual(index.body.characters['second-mage'], { name: 'Second Mage', portrait: null });
+    assert.deepEqual((await srv.request('GET', '/data/characters/chakka.json')).body, CHARACTER('Chakka'), 'the other file is untouched');
+  });
+});
+
+test('every builder output (4 Disciplines) passes the dev-server (= worker) character and id validation', async () => {
+  await withServer(async (srv) => {
+    for (const d of ['Archer', 'Nethermancer', 'Thief', 'Warrior']) {
+      const character = await newCharacter(`New ${d}`, 'Human', d);
+      const res = await srv.request('POST', '/save', { id: character.meta.id, character, base: null });
+      assert.equal(res.status, 200, d);
+    }
   });
 });
 

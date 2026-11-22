@@ -8,7 +8,8 @@ Estimated from list prices in `tools/token-pricing.json` (as of 2026-09-25); a s
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | /new-feature | 1 | 122 | 56,795 | 4,317,153 | 256,312 | 4,630,382 | $2.18 |
 | /build-feature | 1 | 190 | 81,577 | 6,366,095 | 395,718 | 6,843,580 | $3.53 |
-| **All workflows** | 2 | 312 | 138,372 | 10,683,248 | 652,030 | 11,473,962 | $5.70 |
+| /release-feature | 1 | 14 | 2,945 | 1,372,543 | 7,462 | 1,382,964 | $0.334 |
+| **All workflows** | 3 | 326 | 141,317 | 12,055,791 | 659,492 | 12,856,926 | $6.04 |
 
 ## Run 1: /new-feature — 2026-11-21 06:08Z
 
@@ -51,4 +52,21 @@ Window: 2026-11-21T06:10:04.000Z → 2026-11-21T06:21:21.270Z. Main-session mode
 | feature-designer | 1 | 14 | 8,153 | 179,417 | 41,309 | 228,893 | $0.221 |
 | design-agent | 1 | 32 | 12,004 | 778,477 | 75,269 | 865,782 | $0.772 |
 | **Workflow total** |  | 190 | 81,577 | 6,366,095 | 395,718 | 6,843,580 | $3.53 |
+
+## Run 3: /release-feature — 2026-11-21 10:06Z
+
+Window: 2026-11-21T10:04:06.000Z → 2026-11-21T10:06:26.303Z. Main-session model(s): claude-sonnet-5-5.
+
+### By model (mode)
+
+| Model | Input | Output | Cache read | Cache write | Total tokens | Est. cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| claude-sonnet-5-5 | 14 | 2,945 | 1,372,543 | 7,462 | 1,382,964 | $0.334 |
+
+### By participant
+
+| Participant | Spawns | Input | Output | Cache read | Cache write | Total tokens | Est. cost |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| orchestrator | 1 | 14 | 2,945 | 1,372,543 | 7,462 | 1,382,964 | $0.334 |
+| **Workflow total** |  | 14 | 2,945 | 1,372,543 | 7,462 | 1,382,964 | $0.334 |
 

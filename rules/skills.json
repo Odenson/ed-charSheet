@@ -8,12 +8,14 @@
     "Attribute-less knacks (Step: Rank — Critical Hit, Defensive Posture, Impressive Display, Mount Attack, Resist Pain, Vicious Wound, Weapon Breaker, Witty Repartee) carry no 'attribute' field, mirroring how the talent catalog models attribute-less talents.",
     "Name variants in the catalog map to extract entries: Map Making -> Mapmaking, Entertaining -> Entertainer, Lock Pick -> Lock Picking, Melee Weapon(s) -> Melee Weapons, Missile Weapon(s) -> Missile Weapons, Throwing Weapon(s) -> Throwing Weapons.",
     "Bribery and Skinning each appear twice in the catalog; both entries are preserved.",
-    "Tier is numeric (1 = Novice, 2 = Journeyman, 3 = Warden) as in the existing catalog."
+    "Tier is numeric (1 = Novice, 2 = Journeyman, 3 = Warden) as in the existing catalog.",
+    "Structured fields for the creation allotments: category (general | knowledge | artisan | language-speak | language-readwrite; decided by Player's Guide list membership, RULES-FAQ Q041), generic: true on the four template entries stored as \"<Entry> (<text>)\" (Knowledge, Artisan, Speak Language, Read/Write Language), and artisanKey on every artisan entry except the Artisan template (the catalog name without a trailing \" (Artisan)\", equal to a rules/disciplines.json artisanSkills string). Impressive Display and Tactics are tier 2 (Journeyman) per the Players' Guide."
   ],
   "skills": [
     {
       "name": "Acrobatic Defense",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -35,6 +37,8 @@
     {
       "name": "Acting",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Acting",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -55,6 +59,7 @@
     {
       "name": "Aggressive Maneuver",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -76,6 +81,7 @@
     {
       "name": "Air Sailing",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Willpower",
       "action": "Sustained",
@@ -97,6 +103,7 @@
     {
       "name": "Alchemy",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -117,6 +124,7 @@
     {
       "name": "Animal Bond",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -137,6 +145,7 @@
     {
       "name": "Animal Handling",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Willpower",
       "action": "Standard",
@@ -157,6 +166,7 @@
     {
       "name": "Animal Tracking",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -177,6 +187,7 @@
     {
       "name": "Animal Training",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -197,6 +208,7 @@
     {
       "name": "Anticipate Blow",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Simple",
@@ -243,6 +255,7 @@
     {
       "name": "Arcane Mutterings",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -263,6 +276,8 @@
     {
       "name": "Arrow Fletching (Artisan)",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Arrow Fletching",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -283,6 +298,8 @@
     {
       "name": "Artisan",
       "tier": 1,
+      "category": "artisan",
+      "generic": true,
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -303,6 +320,7 @@
     {
       "name": "Artist",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -323,6 +341,7 @@
     {
       "name": "Assess Intentions",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -343,6 +362,7 @@
     {
       "name": "Avoid Blow",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Free",
@@ -363,6 +383,7 @@
     {
       "name": "Awareness",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Simple",
@@ -383,6 +404,7 @@
     {
       "name": "Battle Bellow",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -404,6 +426,7 @@
     {
       "name": "Battle Shout",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -425,6 +448,7 @@
     {
       "name": "Blade Juggle",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -445,6 +469,8 @@
     {
       "name": "Body Painting (Artisan)",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Body Painting",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -465,6 +491,8 @@
     {
       "name": "Bone Carving (Artisan)",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Bone Carving",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -485,6 +513,8 @@
     {
       "name": "Braiding (Artisan)",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Braiding",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -505,6 +535,7 @@
     {
       "name": "Bribery",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -525,6 +556,7 @@
     {
       "name": "Bribery",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -545,6 +577,7 @@
     {
       "name": "Charge",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Free",
@@ -565,6 +598,7 @@
     {
       "name": "Climbing",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -586,6 +620,7 @@
     {
       "name": "Conceal Object",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -606,6 +641,7 @@
     {
       "name": "Conversation",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -626,6 +662,8 @@
     {
       "name": "Craft Armor",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Craft Armor",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -646,6 +684,8 @@
     {
       "name": "Craft Weapon",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Craft Weapon",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -666,6 +706,8 @@
     {
       "name": "Craftsman",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Craftsman",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -686,6 +728,7 @@
     {
       "name": "Create Orichalcum",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "attribute": "Willpower",
       "action": "Sustained",
@@ -706,6 +749,7 @@
     {
       "name": "Critical Hit",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "action": "Free",
       "versus": "a successful close- or ranged-combat Attack test",
@@ -725,6 +769,7 @@
     {
       "name": "Danger Sense",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Free",
@@ -745,6 +790,7 @@
     {
       "name": "Defensive Posture",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "action": "Free",
       "versus": "situational (adds to a Physical Defense action test)",
@@ -764,6 +810,7 @@
     {
       "name": "Design Enchanting Pattern",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Willpower",
       "action": "Sustained",
@@ -784,6 +831,7 @@
     {
       "name": "Detect True Element",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -804,6 +852,7 @@
     {
       "name": "Diplomacy",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -824,6 +873,7 @@
     {
       "name": "Disarm",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -844,6 +894,7 @@
     {
       "name": "Disarm Trap",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -864,6 +915,7 @@
     {
       "name": "Disguise",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -884,6 +936,7 @@
     {
       "name": "Distract",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -905,6 +958,7 @@
     {
       "name": "Down Strike",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Free",
@@ -925,6 +979,8 @@
     {
       "name": "Embroidery",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Embroidery",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -945,6 +1001,7 @@
     {
       "name": "Emotion Song",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -965,6 +1022,7 @@
     {
       "name": "Engaging Banter",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -985,6 +1043,7 @@
     {
       "name": "Entertaining",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1006,6 +1065,7 @@
     {
       "name": "Evaluate",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1026,6 +1086,7 @@
     {
       "name": "Evidence Analysis",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1046,6 +1107,7 @@
     {
       "name": "Fast Hand",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -1066,6 +1128,7 @@
     {
       "name": "Feint",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -1086,6 +1149,7 @@
     {
       "name": "First Impression",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -1106,6 +1170,7 @@
     {
       "name": "Flirting",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1126,6 +1191,7 @@
     {
       "name": "Forgery",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Sustained",
@@ -1146,6 +1212,7 @@
     {
       "name": "Graceful Exit",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -1166,6 +1233,7 @@
     {
       "name": "Great Leap",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Free",
@@ -1186,6 +1254,7 @@
     {
       "name": "Haggle",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1206,6 +1275,7 @@
     {
       "name": "Harvest True Element",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Willpower",
       "action": "Sustained",
@@ -1226,6 +1296,7 @@
     {
       "name": "Heartening Laugh",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -1247,6 +1318,7 @@
     {
       "name": "Horror Lore",
       "tier": 1,
+      "category": "knowledge",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1267,6 +1339,7 @@
     {
       "name": "Hunting",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1287,6 +1360,7 @@
     {
       "name": "Hypnotize",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1306,7 +1380,8 @@
     },
     {
       "name": "Impressive Display",
-      "tier": 1,
+      "tier": 2,
+      "category": "general",
       "strain": 0,
       "action": "Simple",
       "versus": "the target's Social Defense",
@@ -1327,6 +1402,7 @@
     {
       "name": "Intimidating Bellow",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -1348,6 +1424,8 @@
     {
       "name": "Knowledge",
       "tier": 1,
+      "category": "knowledge",
+      "generic": true,
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1368,6 +1446,7 @@
     {
       "name": "Leadership",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1388,6 +1467,7 @@
     {
       "name": "Lip Reading",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1408,6 +1488,7 @@
     {
       "name": "Lock Pick",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -1428,6 +1509,7 @@
     {
       "name": "Maneuver",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -1449,6 +1531,8 @@
     {
       "name": "Manuscript Illumination",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Manuscript Illumination",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1469,6 +1553,8 @@
     {
       "name": "Map Making",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Map Making",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1489,6 +1575,7 @@
     {
       "name": "Melee Weapon",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -1509,6 +1596,7 @@
     {
       "name": "Mimic Voice",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -1529,6 +1617,7 @@
     {
       "name": "Missile Weapon",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -1549,6 +1638,7 @@
     {
       "name": "Mount Attack",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "action": "Simple",
       "versus": "the target of the mount's attack (replaces the mount's Attack test)",
@@ -1568,6 +1658,7 @@
     {
       "name": "Navigation",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1588,6 +1679,8 @@
     {
       "name": "Painting",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Painting",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1608,6 +1701,7 @@
     {
       "name": "Patient Maneuver",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Free",
@@ -1628,6 +1722,7 @@
     {
       "name": "Physician",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1648,6 +1743,7 @@
     {
       "name": "Picking Pockets",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -1668,6 +1764,7 @@
     {
       "name": "Pilot Boat",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1688,6 +1785,8 @@
     {
       "name": "Poetry",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Poetry",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1708,6 +1807,7 @@
     {
       "name": "Poisoned Influence",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -1728,6 +1828,7 @@
     {
       "name": "Public Speaking",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -1748,6 +1849,7 @@
     {
       "name": "Read River",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -1768,6 +1870,8 @@
     {
       "name": "Read/Write Language",
       "tier": 1,
+      "category": "language-readwrite",
+      "generic": true,
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1788,6 +1892,7 @@
     {
       "name": "Read/Write Language (Drake)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1808,6 +1913,7 @@
     {
       "name": "Read/Write Language (Dwarf)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1828,6 +1934,7 @@
     {
       "name": "Read/Write Language (Elf)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1848,6 +1955,7 @@
     {
       "name": "Read/Write Language (Human)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1868,6 +1976,7 @@
     {
       "name": "Read/Write Language (Obsidiman)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1888,6 +1997,7 @@
     {
       "name": "Read/Write Language (Ork)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1908,6 +2018,7 @@
     {
       "name": "Read/Write Language (T`skrang)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1928,6 +2039,7 @@
     {
       "name": "Read/Write Language (Theran)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1948,6 +2060,7 @@
     {
       "name": "Read/Write Language (Throalic)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1968,6 +2081,7 @@
     {
       "name": "Read/Write Language (Troll)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -1988,6 +2102,7 @@
     {
       "name": "Read/Write Language (Windling)",
       "tier": 1,
+      "category": "language-readwrite",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2008,6 +2123,7 @@
     {
       "name": "Research",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -2028,6 +2144,7 @@
     {
       "name": "Resist Pain",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "action": "NA",
       "versus": "situational (passive reduction of Wound penalties)",
@@ -2047,6 +2164,7 @@
     {
       "name": "Resist Taunt",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Willpower",
       "action": "Free",
@@ -2067,6 +2185,7 @@
     {
       "name": "Riding",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Sustained",
@@ -2087,6 +2206,7 @@
     {
       "name": "Riposte",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Free",
@@ -2107,6 +2227,8 @@
     {
       "name": "Robe Embroidery",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Robe Embroidery",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -2127,6 +2249,8 @@
     {
       "name": "Rune Carving",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Rune Carving",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -2147,6 +2271,8 @@
     {
       "name": "Sail Embroidery",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Sail Embroidery",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -2167,6 +2293,7 @@
     {
       "name": "Sailing",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Sustained",
@@ -2187,6 +2314,8 @@
     {
       "name": "Sculpting",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Sculpting",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -2207,6 +2336,7 @@
     {
       "name": "Second Attack",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2227,6 +2357,7 @@
     {
       "name": "Second Shot",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2247,6 +2378,7 @@
     {
       "name": "Second Weapon",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2267,6 +2399,7 @@
     {
       "name": "Seduction",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -2287,6 +2420,7 @@
     {
       "name": "Setup",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2308,6 +2442,7 @@
     {
       "name": "Shield Bash",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Simple",
@@ -2328,6 +2463,7 @@
     {
       "name": "Shield Drive",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Simple",
@@ -2348,6 +2484,7 @@
     {
       "name": "Skinning",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Sustained",
@@ -2368,6 +2505,7 @@
     {
       "name": "Skinning",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Sustained",
@@ -2388,6 +2526,7 @@
     {
       "name": "Slough Blame",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Standard",
@@ -2408,6 +2547,8 @@
     {
       "name": "Speak Language",
       "tier": 1,
+      "category": "language-speak",
+      "generic": true,
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2428,6 +2569,7 @@
     {
       "name": "Speak Language (Drake)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2448,6 +2590,7 @@
     {
       "name": "Speak Language (Dwarf)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2468,6 +2611,7 @@
     {
       "name": "Speak Language (Elf)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2488,6 +2632,7 @@
     {
       "name": "Speak Language (Human)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2508,6 +2653,7 @@
     {
       "name": "Speak Language (Obsidiman)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2528,6 +2674,7 @@
     {
       "name": "Speak Language (Ork)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2548,6 +2695,7 @@
     {
       "name": "Speak Language (T`skrang)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2568,6 +2716,7 @@
     {
       "name": "Speak Language (Theran)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2588,6 +2737,7 @@
     {
       "name": "Speak Language (Throalic)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2608,6 +2758,7 @@
     {
       "name": "Speak Language (Troll)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2628,6 +2779,7 @@
     {
       "name": "Speak Language (Windling)",
       "tier": 1,
+      "category": "language-speak",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2648,6 +2800,7 @@
     {
       "name": "Stealthy Stride",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2668,6 +2821,7 @@
     {
       "name": "Sure Mount",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Free",
@@ -2688,6 +2842,7 @@
     {
       "name": "Surprise Strike",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Free",
@@ -2708,6 +2863,7 @@
     {
       "name": "Swift Kick",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2728,6 +2884,7 @@
     {
       "name": "Swimming",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Standard",
@@ -2748,6 +2905,7 @@
     {
       "name": "Swing Attack",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -2768,6 +2926,7 @@
     {
       "name": "Swinging Move",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -2787,7 +2946,8 @@
     },
     {
       "name": "Tactics",
-      "tier": 1,
+      "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2808,6 +2968,8 @@
     {
       "name": "Tailor",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Tailor",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -2828,6 +2990,8 @@
     {
       "name": "Tanning",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Tanning",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -2848,6 +3012,8 @@
     {
       "name": "Tattooist",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Tattooist",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Sustained",
@@ -2868,6 +3034,7 @@
     {
       "name": "Taunt",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Simple",
@@ -2889,6 +3056,7 @@
     {
       "name": "Throwing Weapon",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -2909,6 +3077,7 @@
     {
       "name": "Tracking",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Standard",
@@ -2929,6 +3098,7 @@
     {
       "name": "Trick Riding",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -2949,6 +3119,7 @@
     {
       "name": "Unarmed Combat",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -2969,6 +3140,7 @@
     {
       "name": "Vicious Wound",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "action": "Simple",
       "versus": "the target's Mystic Defense",
@@ -2989,6 +3161,7 @@
     {
       "name": "Weapon Breaker",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "action": "Free",
       "versus": "the higher of the weapon's Mystic Defense or its Damage Step + 5",
@@ -3009,6 +3182,7 @@
     {
       "name": "Wheeling Attack",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Standard",
@@ -3029,6 +3203,7 @@
     {
       "name": "Wheeling Defense",
       "tier": 2,
+      "category": "general",
       "strain": 0,
       "attribute": "Dexterity",
       "action": "Simple",
@@ -3050,6 +3225,7 @@
     {
       "name": "Wilderness Survival",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Perception",
       "action": "Sustained",
@@ -3070,6 +3246,7 @@
     {
       "name": "Witty Repartee",
       "tier": 3,
+      "category": "general",
       "strain": 0,
       "action": "Free",
       "versus": "the opponent's Action test result",
@@ -3089,6 +3266,8 @@
     {
       "name": "Wood Carving",
       "tier": 1,
+      "category": "artisan",
+      "artisanKey": "Wood Carving",
       "strain": 0,
       "attribute": "Charisma",
       "action": "Sustained",
@@ -3109,6 +3288,7 @@
     {
       "name": "Wound Balance",
       "tier": 1,
+      "category": "general",
       "strain": 0,
       "attribute": "Strength",
       "action": "Free",

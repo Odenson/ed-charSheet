@@ -161,11 +161,19 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 |---|---|---|
 | Disciplines, Equipment item | 2000 | 30rem, scroll |
 | confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
-| Notes, Edit details, Add Legend, custom item, day reset, save key, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 26rem / 24rem / 26rem |
+| Notes, Edit details, Add Legend, custom item, day reset, save key, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 26rem / 24rem scroll / 26rem |
 | Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |
-| trade | 2150 | 27rem, scroll |
+| trade, new character / rename (`ed-new-character`, kind `input`) | 2150 | 27rem scroll / 24rem |
 | Settings, conflict | 2200 | 26rem |
 | roll | 3000 | 340px |
+
+Creation mode (UI-GUIDELINES §6b) adds three more uses of the kit and no new
+host: the Disciplines `creation-skill` picker (kind `picker`, layer 2000, 30rem
+scroll; its Knowledge and Artisan free-text fields carry `data-enter="local"` and
+handle their own Enter), the Spells starting-spell picker (kind `picker`, layer
+2100, 30rem scroll, its own controller in the Spells shadow root), the one-off "Creating your character" guide (`ed-creation-guide`, kind `info`, layer 2150,
+30rem scroll, "Got it") shown after a new character is created, and the "Finish
+creation?" `ed-confirm` (tone `accent`, with a warning line) rendered by ed-app.
 
 **Footers (D5) and hint (V4).** Input and confirm modals: `[Cancel] [Primary]`,
 right-aligned, with a muted hint "Enter = OK · Esc = Cancel" ("Ctrl+Enter saves ·
@@ -195,11 +203,30 @@ carries no trigger:
 ## 8. Separate-component modals
 
 The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-custom-item`,
-`ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key` and
-`ed-character-picker` also own their controller. Unlike `ed-confirm`, they
-dispatch their domain event (for example `ed-conflict`, `ed-edit-meta`) and then
-`close` for any reason (`onClose` always dispatches `close`). Hosts act on the
-domain event and clear their mount state in `@close`.
+`ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key`,
+`ed-character-picker` and `ed-new-character` also own their controller. Unlike
+`ed-confirm`, they dispatch their domain event (for example `ed-conflict`,
+`ed-edit-meta`, `create-character`) and then `close` for any reason (`onClose`
+always dispatches `close`). Hosts act on the domain event and clear their mount
+state in `@close`.
+
+**Modals nested in a picker (`ed-character-picker`).** The loader renders
+`<ed-new-character>` (input, layer 2150) and an `<ed-confirm>` (the draft Discard,
+layer 2100, which DOM order puts on top) as children in its own shadow root, after
+its frame, so the kit stack routes Escape to the top one only. Their `close` and
+`confirm` events bubble composed, so the picker calls `e.stopPropagation()` on the
+child element for both: an un-stopped `close` would reach ed-app's `@close` on
+`<ed-character-picker>` and shut the whole picker. `create-character` (from
+`ed-new-character`) is deliberately not stopped; ed-app acts on it. This is the rule
+for any modal that renders a child modal whose `close` its own host listens to.
+The picker is kind `picker`, so Enter on a focused row, "+" (start a new character)
+or Discard ✕ button activates it natively (R15 passes it on); each trigger focuses
+itself first so the kit returns focus to it on close (Safari does not focus a
+clicked button), and after a discard the picker re-runs `refocus()` once the shorter
+list renders. The picker body scrolls (`scroll`, 85vh cap) because the new-character
+section makes it taller. `ed-new-character` is kind `input`: Enter confirms the
+primary only when it is enabled (a valid name and a race), and the name field is
+`autofocus`.
 
 `ed-confirm`, `ed-trade-modal` and `ed-roll-modal` are their own elements shown
 by a parent. `ed-confirm` and `ed-trade-modal` own a controller and only dispatch
