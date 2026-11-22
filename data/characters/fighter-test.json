@@ -11,7 +11,7 @@
     "weight": "138 kg",
     "skinTone": "Light Grey",
     "background": "Test Background",
-    "portrait": "data/test-orc.jpeg"
+    "portrait": "data/fighter-test-1795317647612.jpg"
   },
   "attributes": {
     "Dexterity": {
@@ -48,7 +48,7 @@
   "disciplines": [
     {
       "name": "Warrior",
-      "circle": 1,
+      "circle": 2,
       "talents": [
         {
           "name": "Durability",
@@ -89,6 +89,16 @@
           "name": "Wood Skin",
           "rank": 2,
           "circle": 1
+        },
+        {
+          "name": "Wound Balance",
+          "rank": 2,
+          "circle": 2
+        },
+        {
+          "name": "Anticipate Blow",
+          "rank": 1,
+          "circle": 2
         }
       ]
     }
