@@ -59,6 +59,7 @@ export class EdDisciplines extends LitElement {
     // (Knowledge subject, Artisan craft). Declared here, initialised in the constructor.
     _creationSearch: { state: true },
     _creationText: { state: true },
+    _learnText: { state: true },
   };
 
   static styles = [modalCss, css`
@@ -288,6 +289,7 @@ export class EdDisciplines extends LitElement {
     this._modal = null;
     this._creationSearch = '';
     this._creationText = { knowledge: '', artisan: '' };
+    this._learnText = { knowledge: '', artisan: '' };
     this._knackInfo = {}; // picker rows expanded to show their description (name -> bool)
     // Shared modal focus contract (docs/MODALS.md): Escape closes, focus moves
     // into the dialog on open and returns to the trigger on close (ring
@@ -787,6 +789,7 @@ export class EdDisciplines extends LitElement {
     // Seed fee from costs.skillTraining[1] (data), or 10 sp if costs missing (fallback).
     this._skillSilver = opts[0]?.trainingSilver != null ? opts[0].trainingSilver : 10;
     this._skillSearch = '';
+    this._learnText = { knowledge: '', artisan: '' };
     this._openModal({ type: 'learn-skill', options: opts }, e);
   }
 
@@ -1403,10 +1406,10 @@ export class EdDisciplines extends LitElement {
   }
 
   // Pick a skill: close the picker (returns focus to the "+"), then dispatch up.
-  _learnSkillPick(name) {
+  _learnSkillPick(name, text) {
     const silver = Number(this._skillSilver) || 0;
     this._modalCtl.close();
-    this.dispatchEvent(new CustomEvent('ed-learn-skill', { detail: { name, silver }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('ed-learn-skill', { detail: { name, silver, ...(text != null ? { text } : {}) }, bubbles: true, composed: true }));
   }
 
   // Skill picker + editable fee (PLAN-LEARN-SKILLS §7.5). Seeded from
@@ -1421,9 +1424,60 @@ export class EdDisciplines extends LitElement {
     const silverOk = silver <= 0 ? true : payFromPurse(coins, silver).ok;
     const chk = (ok) => html`<span class="cchk ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'}</span>`;
     const q = (this._skillSearch ?? '').trim().toLowerCase();
-    const filtered = q
-      ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.attribute ?? '').toLowerCase().includes(q) || (o.brief ?? '').toLowerCase().includes(q) || o.tier.toLowerCase().includes(q))
-      : opts;
+    const matches = (o) => !q || o.name.toLowerCase().includes(q) || (o.attribute ?? '').toLowerCase().includes(q) || (o.brief ?? '').toLowerCase().includes(q) || o.tier.toLowerCase().includes(q);
+    const affordable = (o) => (o.rank1Cost == null ? true : available == null ? true : available >= o.rank1Cost) && silverOk;
+    const whyNot = (o) => ((o.rank1Cost != null && available != null && available < o.rank1Cost) ? 'Not enough Available Legend' : !silverOk ? 'Not enough silver' : '');
+    const costOf = (o) => (o.rank1Cost == null ? '—' : `${o.rank1Cost} Legend`);
+    const textRow = (o) => {
+      const key = o.freeText;
+      const label = key === 'knowledge' ? 'Knowledge' : 'Artisan';
+      const text = this._learnText?.[key] ?? '';
+      const ok = affordable(o);
+      return html`
+        <div class="ftrow">
+          <span class="lname">${label} (…)<span class="pill">${o.tier}</span><span class="pill">${costOf(o)}</span></span>
+          <span class="ftin">
+            <input class="searchin" data-enter="local" type="text" maxlength="40" autocomplete="off"
+              placeholder=${key === 'knowledge' ? 'e.g. Barsaive History' : 'e.g. Pottery'} aria-label="${label} subject" .value=${text}
+              @input=${(e) => { this._learnText = { ...this._learnText, [key]: e.target.value }; }}
+              @keydown=${(e) => {
+                if (e.key !== 'Enter' || e.isComposing) return;
+                e.preventDefault();
+                if (ok && e.target.value.trim()) this._learnSkillPick(o.name, e.target.value);
+              }} />
+            <button class="lpick" ?disabled=${!ok || !text.trim()} title=${ok ? `Add ${label} (${text.trim() || '…'})` : whyNot(o)}
+              @click=${() => this._learnSkillPick(o.name, text)}>Add</button>
+          </span>
+        </div>`;
+    };
+    const plainRow = (o) => {
+      const canPick = affordable(o);
+      return html`
+        <button class="lopt" ?disabled=${!canPick}
+          title=${canPick ? `${o.name} · ${o.tier} · ${o.attribute ?? ''} · ${costOf(o)}` : whyNot(o)}
+          @click=${() => canPick && this._learnSkillPick(o.name)}>
+          <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}<span class="pill">${o.tier}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
+          <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costOf(o)}</span>
+        </button>`;
+    };
+    const inCategory = (category) => opts.filter((o) => o.category === category);
+    const sections = [
+      ['Knowledge', inCategory('knowledge')],
+      ['Artisan', inCategory('artisan')],
+      ['Speak Language', inCategory('language-speak')],
+      ['Read/Write Language', inCategory('language-readwrite')],
+      ['General', opts.filter((o) => !['knowledge', 'artisan', 'language-speak', 'language-readwrite'].includes(o.category))],
+    ];
+    let shown = 0;
+    const rendered = sections.map(([title, list]) => {
+      const texts = list.filter((o) => o.freeText);
+      const plain = list.filter((o) => !o.freeText && matches(o));
+      if (!texts.length && !plain.length) return '';
+      shown += texts.length + plain.length;
+      return html`
+        <h4 class="section-gap">${title}</h4>
+        <div class="hmopts">${texts.map(textRow)}${plain.map(plainRow)}</div>`;
+    });
     return modalFrame(this._modalCtl, {
       title: html`Learn a new skill · Rank 1`,
       label: 'Learn a new skill',
@@ -1431,7 +1485,7 @@ export class EdDisciplines extends LitElement {
       width: '30rem',
       scroll: true,
       body: html`
-    <div class="mtext" style="color: var(--muted)">Pick a skill from the catalog — it joins at Rank 1, priced by its tier (${opts[0]?.tier ?? 'Novice'} etc.). Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</div>
+    <div class="mtext" style="color: var(--muted)">Pick a skill — it joins at Rank 1, priced by its tier. Knowledge and Artisan skills take a subject you name (stored as Knowledge (subject)). Time and finding a teacher are the GM's call; only Legend and silver are tracked here.</div>
     <input class="searchin" type="search" placeholder="Search skills, attributes, effects…" .value=${this._skillSearch ?? ''} aria-label="Search skills" autofocus
       @input=${(e) => (this._skillSearch = e.target.value)} />
     <div class="cbox" style="margin: 4px 0 8px">
@@ -1444,25 +1498,8 @@ export class EdDisciplines extends LitElement {
         </span>
       </div>
     </div>
-    <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${filtered.length} of ${opts.length} skills${q ? html` matching “${q}”` : ''}</div>
-    <div class="hmopts">
-      ${filtered.length
-        ? filtered.map((o, i) => {
-            const legendOk = o.rank1Cost == null ? true : available == null ? true : available >= o.rank1Cost;
-            const canPick = legendOk && silverOk;
-            const costLabel = o.rank1Cost == null ? '—' : `${o.rank1Cost} Legend`;
-            const tierLabel = o.tier === 'Journeyman' ? 'Journeyman' : 'Novice';
-            return html`
-              <button class="lopt" ?disabled=${!canPick}
-                title=${canPick ? `${o.name} · ${tierLabel} · ${o.attribute ?? ''} · ${costLabel}` : (!legendOk ? 'Not enough Available Legend' : !silverOk ? 'Not enough silver' : '')}
-                @click=${() => canPick && this._learnSkillPick(o.name)}>
-                <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}<span class="pill">${tierLabel}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
-                <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costLabel}</span>
-              </button>
-            `;
-          })
-        : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
-    </div>
+    <div class="mtext" style="color: var(--muted); font-size: var(--fs-small)">${shown} of ${opts.length} skills${q ? html` matching “${q}”` : ''}</div>
+    ${shown ? rendered : html`<div class="mtext" style="color: var(--muted)">${q ? html`No skills match “${q}”.` : 'No skills left to learn.'}</div>`}
     <div class="mnote2" style="margin-top:8px"><span class="ibadge" aria-hidden="true">i</span><span>Learning a skill takes one week of training with a tutor; wait time before raising it again is tracked by the GM, not here. Silver fee from <code>rules/legend.json</code> <code>costs.skillTraining[1]</code> — edit that table to retune.</span></div>`,
     });
   }

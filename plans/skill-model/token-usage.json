@@ -1,0 +1,92 @@
+{
+  "schema": "ed-token-usage/1",
+  "runs": [
+    {
+      "workflow": "new-feature",
+      "since": "2026-11-22T12:33:09.000Z",
+      "until": "2026-11-22T12:50:47.188Z",
+      "finished": "2026-11-22T12:50:47.188Z",
+      "session": "631b0139-b69e-4577-9486-0cb12ed48395",
+      "mainModels": [
+        "claude-sonnet-5-5"
+      ],
+      "note": "",
+      "total": {
+        "tokens": {
+          "input": 94,
+          "output": 30855,
+          "cacheRead": 2791977,
+          "cacheWrite": 166346
+        },
+        "cost": 1.3470559000000002,
+        "messages": 46,
+        "spawns": 0,
+        "unpriced": false
+      },
+      "byAgent": {
+        "orchestrator": {
+          "tokens": {
+            "input": 42,
+            "output": 7241,
+            "cacheRead": 2169888,
+            "cacheWrite": 42705
+          },
+          "cost": 0.6772916,
+          "messages": 21,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-planner": {
+          "tokens": {
+            "input": 22,
+            "output": 13477,
+            "cacheRead": 288280,
+            "cacheWrite": 49942
+          },
+          "cost": 0.317325,
+          "messages": 10,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-plan-reviewer": {
+          "tokens": {
+            "input": 12,
+            "output": 4104,
+            "cacheRead": 100142,
+            "cacheWrite": 28657
+          },
+          "cost": 0.1327349,
+          "messages": 6,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "rule-agent": {
+          "tokens": {
+            "input": 18,
+            "output": 6033,
+            "cacheRead": 233667,
+            "cacheWrite": 45042
+          },
+          "cost": 0.21970439999999997,
+          "messages": 9,
+          "spawns": 1,
+          "unpriced": false
+        }
+      },
+      "byModel": {
+        "claude-sonnet-5-5": {
+          "tokens": {
+            "input": 94,
+            "output": 30855,
+            "cacheRead": 2791977,
+            "cacheWrite": 166346
+          },
+          "cost": 1.3470559000000002,
+          "messages": 46,
+          "spawns": 0,
+          "unpriced": false
+        }
+      }
+    }
+  ]
+}
