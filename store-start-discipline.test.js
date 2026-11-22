@@ -88,6 +88,7 @@ test('model.addableDisciplines: option pool items carry a name and a brief slot'
 test('model.addableDisciplines is [] when no Discipline is left to add', () => {
   memory.clear();
   const char = kolonLike([
+    { name: 'Air Sailor', circle: 2, talents: [] },
     { name: 'Archer', circle: 4, talents: [t1('Missile Weapon', 5)] },
     { name: 'Nethermancer', circle: 2, talents: [] },
     { name: 'Thief', circle: 2, talents: [] },

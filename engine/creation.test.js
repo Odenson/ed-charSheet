@@ -1244,7 +1244,7 @@ describe('PROPERTY: random creation sessions keep the ledger, the budgets and th
     return { c, applied };
   }
 
-  for (const discipline of ['Archer', 'Nethermancer', 'Thief', 'Warrior']) {
+  for (const discipline of ['Air Sailor', 'Archer', 'Nethermancer', 'Thief', 'Warrior']) {
     test(`${discipline}: 400 random edits (valid and invalid) never break an invariant`, () => {
       const { c, applied } = session(discipline, discipline.length * 7919);
       assert.ok(applied > 30, `only ${applied} edits applied; the session did not exercise the engine`);

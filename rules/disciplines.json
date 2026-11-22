@@ -10,6 +10,78 @@
   ],
   "disciplines": [
     {
+      "name": "Air Sailor",
+      "importantAttributes": ["Charisma", "Dexterity", "Willpower"],
+      "karmaRitual": { "summary": "Sits alone in silent meditation under the open sky, picturing an airship setting out on a long journey with its risks and perils; the ritual ends when the imagined journey ends safely, after about half an hour. Restores the Karma pool." },
+      "artisanSkills": ["Rune Carving", "Sail Embroidery"],
+      "halfMagic": { "summary": "Know airship designs, recognize airship types, common flight paths and crew complements; may extend to airship maintenance, repair and construction." },
+      "durability": 5,
+      "talentOptions": {
+        "novice": ["Acrobatic Defense", "Distract", "First Impression", "Great Leap", "Haggle", "Maneuver", "Navigation", "Speak Language", "Taunt", "Throwing Weapon"],
+        "journeyman": ["Air Speaking", "Battle Bellow", "Conceal Object", "Engaging Banter", "Etiquette", "Graceful Exit", "Leadership", "Resist Taunt", "Second Weapon", "Surprise Strike"]
+      },
+      "circles": [
+        {
+          "circle": 1,
+          "freeTalents": ["Air Sailing"],
+          "talents": ["Avoid Blow", "Climbing", "Melee Weapon", "Thread Weaving (Air Sailor)", "Wind Catcher"],
+          "effects": [
+            { "type": "grant-karma-use", "target": {"domain": "test", "name": "Action"}, "scope": "on board an airship", "source": "discipline", "summary": "May spend Karma once per round on any action taken on board an airship." }
+          ]
+        },
+        {
+          "circle": 2,
+          "talents": ["Awareness"],
+          "effects": [
+            { "type": "defense-modifier", "target": {"domain": "defense", "name": "Physical"}, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 3,
+          "talents": ["Empathic Sense"],
+          "effects": [
+            { "type": "grant-karma-use", "target": {"domain": "test", "name": "Initiative"}, "source": "discipline", "summary": "May spend Karma on Initiative tests." }
+          ]
+        },
+        {
+          "circle": 4,
+          "talents": ["Wound Balance"],
+          "effects": [
+            { "type": "defense-modifier", "target": {"domain": "defense", "name": "Social"}, "operation": "add", "value": 1, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+1 Social Defense." }
+          ]
+        },
+        {
+          "circle": 5,
+          "talents": ["Heartening Laugh"],
+          "effects": [
+            { "type": "grant-karma-use", "target": {"domain": "test", "name": "Action"}, "scope": "Interaction tests", "source": "discipline", "summary": "May spend a Karma Point on Interaction tests." },
+            { "type": "note", "source": "discipline", "gmDiscretion": true, "summary": "Collaborate: once per round as a Simple action, take 1 Strain to give an ally +2 to a test toward a common goal (describe how you assist)." }
+          ]
+        },
+        {
+          "circle": 6,
+          "talents": ["Air Dance"],
+          "effects": [
+            { "type": "defense-modifier", "target": {"domain": "defense", "name": "Physical"}, "operation": "add", "value": 2, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+2 Physical Defense." }
+          ]
+        },
+        {
+          "circle": 7,
+          "talents": ["Inspire Others"],
+          "effects": [
+            { "type": "characteristic-modifier", "target": {"domain": "characteristic", "name": "RecoveryTests"}, "operation": "add", "value": 1, "measure": "rating", "source": "discipline", "summary": "Gains an additional Recovery test." }
+          ]
+        },
+        {
+          "circle": 8,
+          "talents": ["Lion Heart"],
+          "effects": [
+            { "type": "defense-modifier", "target": {"domain": "defense", "name": "Physical"}, "operation": "add", "value": 3, "measure": "rating", "stacking": "highest", "source": "discipline", "summary": "+3 Physical Defense." }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Archer",
       "importantAttributes": ["Dexterity", "Perception"],
       "karmaRitual": { "summary": "Oils and strings the bow, meditates for stillness, then fires four arrows into a tight cluster. Restores the Karma pool." },

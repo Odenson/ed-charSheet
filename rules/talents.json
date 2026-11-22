@@ -14,8 +14,19 @@
   "talents": {
     "Acrobatic Defense": {
       "name": "Acrobatic Defense",
+      "presentation": {
+        "shortEffect": "Dodge in close combat"
+      },
       "action": "Simple",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "versus": "highest Physical Defense of close-combat opponents",
+      "summary": "Dodge and weave in close combat (test vs the highest Physical Defense of close-combat opponents).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Per success +2 Physical Defense for the rest of the round; lost if knocked down or movement is restricted; cannot be combined with Anticipate Blow." }
+      ]
     },
     "Acting": {
       "name": "Acting",
@@ -45,13 +56,34 @@
     },
     "Air Sailing": {
       "name": "Air Sailing",
+      "presentation": {
+        "shortEffect": "Help propel an airship"
+      },
       "action": "Sustain",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 0,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "summary": "Sustained effort that helps propel an airship; each success on the Air Sailing (5) test counts as one crew member. The adept needs Air Sailing Rank 1+ to crew. Free talent of the Air Sailor.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Hourly, if 25% of the required crew succeed the ship stays aloft; 50% allows maneuvering and slow climb or dive; 75% allows speeding up and aerobatics." }
+      ]
     },
     "Air Speaking": {
       "name": "Air Speaking",
+      "presentation": {
+        "shortEffect": "Speak across distance"
+      },
       "action": "Simple",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": { "allowed": false },
+      "tier": "Journeyman",
+      "versus": "Mystic Defense of each target",
+      "summary": "Speak to others without vocalizing (test vs each target's Mystic Defense).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Targets within Rank x10 yards hear as normal conversation; the language must be one the adept knows." }
+      ]
     },
     "Alchemy": {
       "name": "Alchemy",
@@ -250,8 +282,19 @@
     },
     "Battle Bellow": {
       "name": "Battle Bellow",
+      "presentation": {
+        "shortEffect": "Rally or frighten"
+      },
       "action": "Simple",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Journeyman" },
+      "tier": "Journeyman",
+      "versus": "highest Social Defense in group, +1 per extra target",
+      "summary": "Bellow to rally friends or frighten enemies (test vs the highest Social Defense in the group, +1 per extra target).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Targets within Rank x10 yards; enemies get -1 to tests per success until end of next round; friends add successes as a bonus to close-combat Attack tests; fear-immune targets are unaffected." }
+      ]
     },
     "Battle Shout": {
       "name": "Battle Shout",
@@ -313,8 +356,19 @@
     },
     "Climbing": {
       "name": "Climbing",
+      "presentation": {
+        "shortEffect": "Scale surfaces"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "versus": "GM-set Difficulty",
+      "summary": "Scale a surface by making a Climbing test against a Difficulty set by the GM.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "On success climb 2 yards per round up or down, +1 yard per extra success; on failure no progress and the adept may fall." }
+      ]
     },
     "Cobra Strike": {
       "name": "Cobra Strike",
@@ -559,8 +613,18 @@
     },
     "Lion Heart": {
       "name": "Lion Heart",
+      "presentation": {
+        "shortEffect": "Stronger will"
+      },
       "action": "Free",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": { "allowed": false },
+      "tier": "Journeyman",
+      "summary": "Bolster resolve against effects that allow a Willpower test to shake them off.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Use the Lion Heart Step instead of the Willpower Step to resist effects that allow a Willpower test to shake them off." }
+      ]
     },
     "Long Shot": {
       "name": "Long Shot",
@@ -697,8 +761,19 @@
     },
     "Navigation": {
       "name": "Navigation",
+      "presentation": {
+        "shortEffect": "Find your position"
+      },
       "action": "Sustain",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "versus": "GM Difficulty table",
+      "summary": "Work out position from the sky and charts; takes about 10 minutes with a view of the sky and charts.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Difficulty 5 clear night, 7 scattered clouds, 9 partly cloudy, 12 overcast, 18 severe storm; poor charts add +1 to +5. 1 success within 10 miles, 2 within 5, 3 within 2, 4+ within 1." }
+      ]
     },
     "Public Speaking": {
       "name": "Public Speaking",
@@ -739,8 +814,18 @@
     },
     "Surprise Strike": {
       "name": "Surprise Strike",
+      "presentation": {
+        "shortEffect": "Strike the unready"
+      },
       "action": "Free",
-      "attribute": "Strength"
+      "attribute": "Strength",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Journeyman",
+      "summary": "Strike a foe who is not ready to defend.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Against Surprised, Blindsided or Knocked Down targets; on a successful Attack test substitute the Surprise Strike Step for the Strength Step in Damage." }
+      ]
     },
     "Swift Kick": {
       "name": "Swift Kick",
@@ -2077,8 +2162,19 @@
     },
     "Distract": {
       "name": "Distract",
+      "presentation": {
+        "shortEffect": "Draw attention"
+      },
       "action": "Simple",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "versus": "target's Social Defense",
+      "summary": "Draw a target's attention away (test vs the target's Social Defense).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Per success the adept gets -1 Physical Defense against that target; the target takes the same -1 against others and is Blindsided against them for the round." }
+      ]
     },
     "Dominate Beast": {
       "name": "Dominate Beast",
@@ -2111,8 +2207,19 @@
     },
     "Empathic Sense": {
       "name": "Empathic Sense",
+      "presentation": {
+        "shortEffect": "Read emotions"
+      },
       "action": "Standard",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 1,
+      "skillUse": { "allowed": false },
+      "tier": "Novice",
+      "versus": "Social Defense",
+      "summary": "Sense the emotions of a target within 10 yards (test vs the target's Social Defense).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "1 success reveals general mood, 2 surface emotions, 3+ exact feelings; adds +2 per success to Interaction tests against the target for Rank minutes; may be attuned to a target (see RULES-FAQ Q042)." }
+      ]
     },
     "Engaging Banter": {
       "name": "Engaging Banter",
@@ -2144,8 +2251,19 @@
     },
     "Etiquette": {
       "name": "Etiquette",
+      "presentation": {
+        "shortEffect": "Behave properly"
+      },
       "action": "Sustain",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Journeyman",
+      "versus": "Difficulty 5 +3 per differing aspect",
+      "summary": "Behave properly in unfamiliar society (Difficulty 5, +3 per differing aspect).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "1 success rudiments, 2 approval, 3+ Attitude improves one degree (max Friendly); lasts Rank days or until the situation ends." }
+      ]
     },
     "Evidence Analysis": {
       "name": "Evidence Analysis",
@@ -2202,13 +2320,34 @@
     },
     "Graceful Exit": {
       "name": "Graceful Exit",
+      "presentation": {
+        "shortEffect": "Slip away from combat"
+      },
       "action": "Standard",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Journeyman",
+      "versus": "highest Social Defense in group",
+      "summary": "Slip away from combat with style (test vs the highest Social Defense in the group).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "May cover up to Rank extra characters at +1 Difficulty each; bedazzled foes take no direct action for rounds equal to successes; returning enrages opponents." }
+      ]
     },
     "Great Leap": {
       "name": "Great Leap",
+      "presentation": {
+        "shortEffect": "Leap far"
+      },
       "action": "Free",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "summary": "Leap a great distance; the test result is the yards jumped.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Split the result between horizontal and vertical distance, neither above Movement Rate; avoids environmental hazards; can be used to board airships." }
+      ]
     },
     "Haggle": {
       "name": "Haggle",
@@ -2236,8 +2375,19 @@
     },
     "Heartening Laugh": {
       "name": "Heartening Laugh",
+      "presentation": {
+        "shortEffect": "Steel allies vs fear"
+      },
       "action": "Simple",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Journeyman",
+      "versus": "highest Social Defense among opponents in earshot",
+      "summary": "Laugh to lift the spirits of allies against fear (test vs the highest Social Defense among opponents in earshot).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Friendly hearers gain +2 per success to Social Defense against fear/intimidation and to Willpower tests to shake it off, for Rank rounds." }
+      ]
     },
     "Hold Thread": {
       "name": "Hold Thread",
@@ -2251,8 +2401,19 @@
     },
     "Inspire Others": {
       "name": "Inspire Others",
+      "presentation": {
+        "shortEffect": "Bolster allies"
+      },
       "action": "Standard",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": { "allowed": false },
+      "tier": "Journeyman",
+      "versus": "highest Social Defense in group, +1 per extra target",
+      "summary": "Inspire friendly targets (test vs the highest Social Defense in the group, +1 per extra target).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Per success, affected targets gain +1 Social Defense and +2 to tests for Rank rounds; friendly targets only." }
+      ]
     },
     "Iron Constitution": {
       "name": "Iron Constitution",
@@ -2275,8 +2436,19 @@
     },
     "Leadership": {
       "name": "Leadership",
+      "presentation": {
+        "shortEffect": "Lead GM characters"
+      },
       "action": "Sustain",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 0,
+      "skillUse": { "allowed": true, "tier": "Journeyman" },
+      "tier": "Journeyman",
+      "versus": "highest Social Defense in group",
+      "summary": "Lead a group of GM characters (test vs the highest Social Defense in the group).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Group up to Rank x20; those Neutral or better follow; 1 success Rank x10 minutes, 2 Rank hours, 3+ Rank days; ends for anyone whose Attitude falls below Neutral." }
+      ]
     },
     "Life Check": {
       "name": "Life Check",
@@ -2294,8 +2466,19 @@
     },
     "Maneuver": {
       "name": "Maneuver",
+      "presentation": {
+        "shortEffect": "Outmaneuver a foe"
+      },
       "action": "Simple",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "versus": "target's Physical Defense",
+      "summary": "Outmaneuver a foe in combat (test vs the target's Physical Defense).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Per success +2 Physical Defense against that target's attacks and +2 to the first close-combat Attack test against that target this round." }
+      ]
     },
     "Manuscript Illumination": {
       "name": "Manuscript Illumination",
@@ -2347,8 +2530,19 @@
     },
     "Resist Taunt": {
       "name": "Resist Taunt",
+      "presentation": {
+        "shortEffect": "Shrug off taunts"
+      },
       "action": "Free",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Journeyman" },
+      "tier": "Journeyman",
+      "versus": "the attack's test result",
+      "summary": "Shrug off verbal pressure (test vs the attack's test result).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Success negates Persuasion, Taunt, Intimidation and similar; uses per round equal to Rank, once per social attack." }
+      ]
     },
     "Riposte": {
       "name": "Riposte",
@@ -2407,8 +2601,19 @@
     },
     "Second Weapon": {
       "name": "Second Weapon",
+      "presentation": {
+        "shortEffect": "Off-hand attack"
+      },
       "action": "Simple",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Journeyman" },
+      "tier": "Journeyman",
+      "versus": "target's Physical Defense",
+      "summary": "Make an extra off-hand attack (test vs the target's Physical Defense).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "An extra off-hand one-handed melee attack in the same round; a hit makes a normal Damage test; cannot be combined with Shield Bash." }
+      ]
     },
     "Shield Bash": {
       "name": "Shield Bash",
@@ -2446,8 +2651,19 @@
     },
     "Speak Language": {
       "name": "Speak Language",
+      "presentation": {
+        "shortEffect": "Learn languages"
+      },
       "action": "Standard",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 1,
+      "skillUse": { "allowed": false },
+      "tier": "Novice",
+      "versus": "Learning Difficulty by race",
+      "summary": "Learn to speak languages (up to Rank) by listening for a minute; a non-magical skill version also exists.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Success levels: 1 simple, 2 normal, 3 technical, 4+ abstract speech; each test lasts Rank hours." }
+      ]
     },
     "Spellcasting": {
       "name": "Spellcasting",
@@ -2585,8 +2801,19 @@
     },
     "Taunt": {
       "name": "Taunt",
+      "presentation": {
+        "shortEffect": "Rattle a foe"
+      },
       "action": "Simple",
-      "attribute": "Charisma"
+      "attribute": "Charisma",
+      "strain": 1,
+      "skillUse": { "allowed": true, "tier": "Novice" },
+      "tier": "Novice",
+      "versus": "target's Social Defense",
+      "summary": "Rattle a foe who understands the adept (test vs the target's Social Defense).",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Per success the target gets -1 to tests and -1 Social Defense for Rank rounds." }
+      ]
     },
     "Tenacious Weave": {
       "name": "Tenacious Weave",
@@ -2605,8 +2832,18 @@
     },
     "Thread Weaving (Air Sailor)": {
       "name": "Thread Weaving (Air Sailor)",
+      "presentation": {
+        "shortEffect": "Weave thread magic"
+      },
       "action": "Standard",
-      "attribute": "Perception"
+      "attribute": "Perception",
+      "strain": 0,
+      "skillUse": { "allowed": false },
+      "tier": "Novice",
+      "summary": "Weave and maintain magical threads (to thread items and patterns); max active threads and thread rank equal to rank. Air Sailors have no Spellcasting.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "Enables weaving threads for thread items/abilities; grants Thread Sight." }
+      ]
     },
     "Thread Weaving (Archer)": {
       "name": "Thread Weaving (Archer)",
@@ -2773,8 +3010,18 @@
     },
     "Wind Catcher": {
       "name": "Wind Catcher",
+      "presentation": {
+        "shortEffect": "Slow a fall"
+      },
       "action": "Standard",
-      "attribute": "Willpower"
+      "attribute": "Willpower",
+      "strain": 1,
+      "skillUse": { "allowed": false },
+      "tier": "Novice",
+      "summary": "Slow a fall with a Wind Catcher (6) test while falling.",
+      "effects": [
+        { "type": "note", "source": "talent", "summary": "1-2 successes land safely; 3+ successes also allow steering within the distance fallen; failure means plummeting. Maximum safe fall is Rank x100 yards." }
+      ]
     },
     "Winning Smile": {
       "name": "Winning Smile",

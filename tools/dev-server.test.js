@@ -214,9 +214,9 @@ test('/save accepts the draft with base: null (what the client sends) and never 
   });
 });
 
-test('every builder output (4 Disciplines) passes the dev-server (= worker) character and id validation', async () => {
+test('every builder output (5 Disciplines) passes the dev-server (= worker) character and id validation', async () => {
   await withServer(async (srv) => {
-    for (const d of ['Archer', 'Nethermancer', 'Thief', 'Warrior']) {
+    for (const d of ['Air Sailor', 'Archer', 'Nethermancer', 'Thief', 'Warrior']) {
       const character = await newCharacter(`New ${d}`, 'Human', d);
       const res = await srv.request('POST', '/save', { id: character.meta.id, character, base: null });
       assert.equal(res.status, 200, d);
