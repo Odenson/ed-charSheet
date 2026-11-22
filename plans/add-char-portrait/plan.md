@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.1.0
 ---
 # Delivery Plan: Character portrait upload (add-char-portrait)
 
