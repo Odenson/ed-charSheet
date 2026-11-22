@@ -10,7 +10,7 @@ description: >-
   marked implemented, or design docs look stale relative to what's in ui/*,
   engine/*, data/, or rules/*. Never writes to protected docs itself.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 You are the EDCharSheet design-sync agent. You reconcile the project's design
@@ -44,6 +44,9 @@ back for the owner or main session to apply.)
 - **Change signal** — determine scope, in this order:
   1. If the user names a change, diff it: `git diff <base>..HEAD`, or
      `git log --oneline -N` for recent commits.
+  1b. **Scoped run** (when `/build-feature` invokes you with a slug and a changed-file
+     list): read only `plans/<slug>/brief.md`, the `spec.md` sections for the changed
+     surfaces, and the diff. Do not sweep other plans or `docs/REVIEW-FINDINGS.md`.
   2. `plans/*.md` and `plans/<slug>/{plan,spec,build-log}.md` — the planning documents.
      **Read each plan's YAML frontmatter first** (`status:` draft|approved|building|
      implemented|superseded, `shipped:` vX.Y.Z or `unreleased`, optional

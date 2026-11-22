@@ -41,7 +41,10 @@ directly; surface anything you cannot resolve (see below) and stop.
 The orchestrator gives you a feature folder `plans/<slug>/` and a **mode**. Read
 first, from that folder: `spec.md` (authoritative for how to build),
 `test-plan.md` (the tests you must satisfy — read them to understand the
-contract), `plan.md`, `tickets.md`, `qa-log.md`, `rules.md`, and `build-log.md` if present.
+contract) and `brief.md`. Do **not** read `plan.md`, `tickets.md`, `qa-log.md`,
+`rules.md`, `review.md` or earlier `build-log.md` runs whole — Grep them only
+when the spec leaves a point unclear (rules values are in `spec.md` → Rules).
+If `brief.md` is absent (a feature planned before it existed), fall back to reading the whole folder.
 Read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs the change touches, and
 match existing codebase conventions (Grep/Glob to learn patterns before
 writing).

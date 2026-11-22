@@ -1,2 +1,2 @@
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
