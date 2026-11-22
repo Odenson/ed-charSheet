@@ -52,12 +52,12 @@
       "talents": [
         {
           "name": "Durability",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
           "name": "Karma Ritual",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
@@ -67,27 +67,27 @@
         },
         {
           "name": "Avoid Blow",
-          "rank": 1,
-          "circle": 1
-        },
-        {
-          "name": "Melee Weapon",
           "rank": 2,
           "circle": 1
         },
         {
+          "name": "Melee Weapon",
+          "rank": 3,
+          "circle": 1
+        },
+        {
           "name": "Thread Weaving (Warrior)",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
           "name": "Tiger Spring",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
           "name": "Wood Skin",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         }
       ]
@@ -202,8 +202,8 @@
   "wealth": {
     "coins": {
       "copper": 0,
-      "silver": 15,
-      "gold": 0,
+      "silver": 100,
+      "gold": 100,
       "earth": 0,
       "water": 0,
       "air": 0,
