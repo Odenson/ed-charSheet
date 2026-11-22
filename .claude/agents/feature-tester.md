@@ -25,7 +25,10 @@ You do **not** write the feature's implementation code. Your artifacts are the
 The orchestrator gives you a feature folder `plans/<slug>/` and a **mode**.
 
 Always read first, from that folder: `spec.md` (authoritative for what to test),
-`plan.md`, `tickets.md`, `qa-log.md`, `rules.md`. Read `CLAUDE.md` and the relevant docs.
+`brief.md` (tickets, tiers, decisions) and `rules.md`. Do **not** read
+`plan.md`, `tickets.md`, `qa-log.md` or `review.md` whole — Grep them only for
+a specific acceptance criterion the spec leaves unclear. If `brief.md` is absent (a feature planned before it existed), fall back to reading the whole folder.
+Read `CLAUDE.md` and the relevant docs.
 Learn the **existing test conventions** with Grep/Glob/Bash and match them
 exactly: this project uses `node:test` with flat `*.test.js` files beside the
 module they cover (e.g. `store-*.test.js` at the repo root, `engine/*.test.js`,

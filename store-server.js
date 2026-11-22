@@ -15,6 +15,9 @@ export const DEFAULT_ENDPOINT = 'https://ed-charsheet-save.edsavechar.workers.de
 // The portrait-image route on the same worker (POST /save-image).
 export const DEFAULT_IMAGE_ENDPOINT = DEFAULT_ENDPOINT.replace(/\/save$/, '/save-image');
 
+// The delete route on the same worker (POST /delete-character).
+export const DEFAULT_DELETE_ENDPOINT = DEFAULT_ENDPOINT.replace(/\/save$/, '/delete-character');
+
 /** A save failure with a stable `code` the UI maps to feedback. */
 export class SaveError extends Error {
   constructor(code, message) {
@@ -56,6 +59,8 @@ function messageForCode(code) {
     case 'invalid_image':
     case 'invalid_name':
       return 'The portrait image was rejected. Pick it again.';
+    case 'invalid_base':
+      return 'The character version could not be verified. Reload and try again.';
     case 'conflict':
       return 'The saved file kept changing under us — try saving again.';
     case 'upstream':
@@ -139,4 +144,36 @@ export async function saveImage(staged, { endpoint = DEFAULT_IMAGE_ENDPOINT, sav
     throw new SaveError(code, out?.error?.message || messageForCode(code));
   }
   return { path: out.path, sha: out.sha, url: out.url };
+}
+
+/**
+ * Delete a character via the worker's `POST /delete-character`. `base` is the file
+ * sha this client last saw (null only off Pages / local dev); `deleteImage` is the
+ * character's own committed portrait path (the worker pins it to the file's
+ * `meta.portrait` and refuses shared images). Resolves
+ * `{ deleted, indexUpdated, imageDeleted, imageSkipped }`; throws `SaveError`
+ * (`no_key`, `unauthorized`, `offline`, worker codes) or `SaveConflictError`
+ * (`stale_base`, nothing was deleted).
+ */
+export async function deleteCharacterServer({ id, base = null, deleteImage } = {}, { endpoint = DEFAULT_DELETE_ENDPOINT, saveKey } = {}) {
+  if (!saveKey) throw new SaveError('no_key', 'Enter your save key to delete from GitHub.');
+
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-save-key': saveKey },
+      body: JSON.stringify({ id, base, deleteImage }),
+    });
+  } catch {
+    throw new SaveError('offline', 'Could not reach the save service. Check your connection and try again.');
+  }
+
+  const out = await res.json().catch(() => null);
+  if (!res.ok || !out || out.ok !== true) {
+    const code = out?.error?.code ?? `http_${res.status}`;
+    if (code === 'stale_base') throw new SaveConflictError(out?.error?.message || 'This character changed on the branch.', out?.error?.sha ?? null);
+    throw new SaveError(code, out?.error?.message || messageForCode(code));
+  }
+  return { deleted: out.deleted, indexUpdated: out.indexUpdated, imageDeleted: out.imageDeleted, imageSkipped: out.imageSkipped };
 }

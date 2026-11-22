@@ -6,6 +6,9 @@
 // from store-drafts.js `listDrafts`, built by ed-app) and dispatches up:
 //   `load-character { id }`      a row was chosen
 //   `discard-draft { id }`       a draft's Discard was confirmed
+//   `delete-character { id, deleteImage }`  (bubbles up from the nested <ed-delete-character>:
+//                                a type-the-name confirm on any row's Delete button)
+//   `delete-dismissed`           the delete modal closed (ed-app clears its inline error)
 //   `create-character { ... }`   (bubbles up from the nested <ed-new-character>)
 // ed-app does the loading, creating and discarding. It opens both on first-run startup (no
 // saved selection) and from the header icon, and it closes via `close` (Escape / backdrop /
@@ -33,6 +36,7 @@ import { ModalController, deepActiveElement } from './kit/modal-controller.js';
 import { modalFrame, modalCss } from './kit/modal.js';
 import './ed-new-character.js';
 import './ed-confirm.js';
+import './ed-delete-character.js';
 
 export class EdCharacterPicker extends LitElement {
   static properties = {
@@ -40,8 +44,12 @@ export class EdCharacterPicker extends LitElement {
     current: { type: String },
     disciplines: { attribute: false }, // Discipline names (rules/disciplines.json) — one "+" each
     races: { attribute: false }, // race names (rules/races.json) for the new-character modal
+    pendingIds: { attribute: false }, // ids with unsaved local edits (data down, for the delete warning)
+    deleteBusy: { type: Boolean }, // a delete is in flight (ed-app)
+    deleteError: { type: String }, // inline error for the delete modal (ed-app)
     _newFor: { state: true }, // the Discipline whose new-character modal is open
     _discardFor: { state: true }, // the draft row whose discard confirm is open
+    _deleteFor: { state: true }, // { id, name, draft, hasPortrait } while the delete modal is open
   };
 
   static styles = [modalCss, css`
@@ -85,6 +93,13 @@ export class EdCharacterPicker extends LitElement {
       font: inherit; font-size: var(--fs-value); line-height: 1;
     }
     .rdiscard:hover { border-color: var(--danger); color: var(--danger); }
+    .rdelete {
+      flex: 0 0 auto; width: 34px; border-radius: 8px; cursor: pointer; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); background: light-dark(#f7f8fa, #1b1f27); color: var(--muted);
+    }
+    .rdelete:hover { border-color: var(--danger); color: var(--danger); }
+    .rdelete svg { width: 15px; height: 15px; }
     .new { margin-top: 0.9rem; padding-top: 0.7rem; border-top: 1px solid var(--border); }
     .sec { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 0.45rem; }
     .newgrid { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -105,6 +120,10 @@ export class EdCharacterPicker extends LitElement {
     this.races = [];
     this._newFor = null;
     this._discardFor = null;
+    this._deleteFor = null;
+    this.pendingIds = [];
+    this.deleteBusy = false;
+    this.deleteError = '';
     this._refocusAfterDiscard = false;
     this._broken = new Set(); // ids whose portrait failed to load
     this._ctl = new ModalController(this, { kind: 'picker', onClose: () => this._close() });
@@ -118,6 +137,11 @@ export class EdCharacterPicker extends LitElement {
   // After a discard the row (and the ✕ the focus would return to) is gone: re-run the kit's
   // initial-focus order once the shorter list has rendered, so focus stays inside the picker.
   updated(changed) {
+    // A delete succeeded: its row is gone, so close the delete modal and refocus the picker.
+    if (changed.has('characters') && this._deleteFor && !(this.characters ?? []).some((r) => r.id === this._deleteFor.id)) {
+      this._deleteFor = null;
+      this._refocusAfterDiscard = true;
+    }
     if (changed.has('characters') && this._refocusAfterDiscard) {
       this._refocusAfterDiscard = false;
       this._ctl.refocus();
@@ -142,6 +166,11 @@ export class EdCharacterPicker extends LitElement {
   _openDiscard(row, e) {
     e?.currentTarget?.focus?.();
     this._discardFor = { id: row.id, name: row?.name ?? row.id };
+  }
+
+  _openDelete(row, e) {
+    e?.currentTarget?.focus?.();
+    this._deleteFor = { id: row.id, name: row?.name ?? row.id, draft: row.draft === true, hasPortrait: !!row.portrait };
   }
 
   // The discard confirm said yes: dispatch up (ed-app removes the draft and its overlay).
@@ -189,6 +218,12 @@ export class EdCharacterPicker extends LitElement {
           ? html`<button type="button" class="rdiscard" title="Discard this draft" aria-label=${`Discard draft ${row?.name ?? row.id}`}
               @click=${(e) => this._openDiscard(row, e)}>✕</button>`
           : ''}
+        <button type="button" class="rdelete" title="Delete this character" aria-label=${`Delete ${row?.name ?? row.id}`}
+          @click=${(e) => this._openDelete(row, e)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M6 6l1 14h10l1-14" /><path d="M10 11v5" /><path d="M14 11v5" />
+          </svg>
+        </button>
       </div>`;
   }
 
@@ -241,6 +276,18 @@ export class EdCharacterPicker extends LitElement {
             .takenIds=${takenIds}
             @close=${(e) => { e.stopPropagation(); this._newFor = null; }}
           ></ed-new-character>`
+        : ''}
+      ${this._deleteFor
+        ? html`<ed-delete-character
+            .characterId=${this._deleteFor.id}
+            .name=${this._deleteFor.name}
+            .draft=${this._deleteFor.draft}
+            .hasPortrait=${this._deleteFor.hasPortrait}
+            .hasPendingEdits=${(this.pendingIds ?? []).includes(this._deleteFor.id)}
+            .busy=${!!this.deleteBusy}
+            .error=${this.deleteError ?? ''}
+            @close=${(e) => { e.stopPropagation(); this._deleteFor = null; this.dispatchEvent(new CustomEvent('delete-dismissed', { bubbles: true, composed: true })); }}
+          ></ed-delete-character>`
         : ''}
       ${this._discardFor
         ? html`<ed-confirm

@@ -85,6 +85,31 @@ status. Any rule not in `rules.md` is an open NEEDS_RULES, not an assumption.>
 See `qa-log.md` for the full interrogation record.
 ```
 
+## Also write brief.md (draft and revise)
+
+Alongside `plan.md`, write `plans/<slug>/brief.md` — the short hand-off every
+later agent reads **instead of** the whole folder (`plan.md`, `qa-log.md` and
+`review.md` are large and re-reading them costs tokens in every agent). Keep it
+under about 5 KB, self-contained, no prose repeated from `plan.md`:
+
+```markdown
+# Brief: <name> (<slug>)
+## What & why
+<3-5 lines.>
+## Tickets & tiers
+<One line each: id, title, tier, sign-off ref (qa-log date) or n/a.>
+## Items
+<One line each: I<n> — title — files — covers tickets — rule ids.>
+## Rules
+<One line each: rules.md id — the ruling/value as the feature uses it — Decision if any.>
+## Owner decisions
+<Decisions from qa-log.md that shape the build, one line each, dated.>
+## Constraints & gotchas
+<Only what an implementer could trip on; cite files.>
+```
+
+In revise mode, regenerate `brief.md` after fixing `plan.md` so it reflects the final plan.
+
 ## Revise mode — update plan.md against review.md
 
 Read every finding in `review.md`. For each one:

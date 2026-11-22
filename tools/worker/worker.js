@@ -39,6 +39,17 @@
 // the PUT: this endpoint is the first gate between the open endpoint and
 // rules/custom-items.json on dev.
 //
+// POST /delete-character  { "id": "<id>", "base": "<file sha>", "deleteImage"?: "<imagesDir>/<file>" }
+//
+// Deletes `data/characters/<id>.json` and drops the id's row from the discovery
+// index. A `base` is REQUIRED; a stale one is `409 stale_base` with nothing
+// written. A missing file is idempotent (`deleted:false`, the stale index row is
+// still removed). `deleteImage` (optional) removes the character's OWN portrait
+// image only: it must equal the file's `meta.portrait` and no other character
+// (index rows + every other character file) may reference it; anything
+// unverifiable skips the image delete (`imageSkipped`). An image failure never
+// fails the call. Recovery is via git history on the data branch.
+//
 // Secrets/vars come from the environment (wrangler.toml [vars] + `wrangler secret
 // put`); nothing sensitive is committed or shipped in the app. Stateless: the
 // worker holds nothing between calls.
@@ -58,14 +69,14 @@ export default {
     const origin = env.ALLOWED_ORIGIN ?? 'https://odenson.github.io';
     const cors = {
       'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS', // /save, /save-items, /save-image
+      'Access-Control-Allow-Methods': 'POST, OPTIONS', // /save, /save-items, /save-image, /delete-character
       'Access-Control-Allow-Headers': 'Content-Type, x-save-key',
     };
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
-    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items' && url.pathname !== '/save-image'))
-      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, POST /save-items or POST /save-image only' } });
+    if (request.method !== 'POST' || (url.pathname !== '/save' && url.pathname !== '/save-items' && url.pathname !== '/save-image' && url.pathname !== '/delete-character'))
+      return json(cors, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, /save-items, /save-image or /delete-character only' } });
 
     // SAVE_KEY is required (fail closed): reject if unconfigured, missing, or
     // wrong. The key is compared in constant time (hash-then-compare, see
@@ -95,6 +106,7 @@ export default {
 
     try {
       if (url.pathname === '/save-image') return await saveImage(env, body, repo, branch, gh, cors);
+      if (url.pathname === '/delete-character') return await deleteCharacter(env, body, repo, branch, gh, cors);
 
       if (url.pathname === '/save-items') {
         // Custom items are the shared catalog (ed-items/3). The delta shape and
@@ -180,7 +192,7 @@ async function readCharacterFile(repo, filePath, branch, gh) {
   if (res.status === 404) return { sha: undefined, exists: false };
   if (!res.ok) throw new GitHubError(res.status);
   const obj = await res.json();
-  return { sha: obj.sha, exists: true };
+  return { sha: obj.sha, exists: true, content: obj.content };
 }
 
 // PUT one character file (its own file, never a whole-store rewrite). Returns
@@ -213,11 +225,27 @@ async function putCharacterFile(repo, branch, gh, filePath, character, sha, cors
 async function syncIndexEntry(repo, branch, gh, charsDir, id, character, imagesDir = 'data') {
   const portrait = character.meta?.portrait ?? null;
   if (!isValidIndexPortrait(portrait, imagesDir)) return;
+  await updateIndex(repo, branch, gh, charsDir, (file) => {
+    const entry = file.characters[id];
+    if (entry) {
+      if ((entry.portrait ?? null) === portrait) return false; // nothing to write
+      entry.portrait = portrait; // only the portrait; name and shape left alone
+    } else {
+      file.characters[id] = { name: character.meta?.name ?? '', portrait };
+    }
+    return true;
+  }, 'Index character (serverless)');
+}
+
+// Shared index read -> mutate -> PUT with a bounded 409 retry. `mutate(file)`
+// edits the parsed index in place (`file.characters` is guaranteed to exist) and
+// returns true when a write is needed. An absent index is presented as a fresh
+// empty one (created only if `mutate` changes it). Returns 'written',
+// 'unchanged' or 'failed' (logged; the index is a best-effort discovery aid).
+// A PUT 409 (sha moved, e.g. a raced create) is re-read and re-applied: without
+// it a raced create silently drops an entry that never self-heals.
+async function updateIndex(repo, branch, gh, charsDir, mutate, message) {
   const indexPath = `${charsDir}/index.json`;
-  // Bounded read→write retry: a concurrent create moves the index sha, so a PUT
-  // 409 is re-read and re-applied (without it, a raced create silently drops an
-  // entry that never self-heals — the file exists on the next save, so the create
-  // path never runs again). A non-409 failure is logged and tolerated.
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     let sha;
     let file;
@@ -234,28 +262,23 @@ async function syncIndexEntry(repo, branch, gh, charsDir, id, character, imagesD
       }
     } catch (err) {
       console.error(JSON.stringify({ message: 'index ensure failed (read)', error: err instanceof Error ? err.message : String(err) }));
-      return;
+      return 'failed';
     }
     file.characters = file.characters ?? {};
-    const entry = file.characters[id];
-    if (entry) {
-      if ((entry.portrait ?? null) === portrait) return; // nothing to write
-      entry.portrait = portrait; // only the portrait; name and shape left alone
-    } else {
-      file.characters[id] = { name: character.meta?.name ?? '', portrait };
-    }
+    if (!mutate(file)) return 'unchanged';
     const content = toBase64(JSON.stringify(file, null, 2) + '\n');
     const res = await fetch(`${GITHUB}/repos/${repo}/contents/${indexPath}`, {
       method: 'PUT',
       headers: { ...gh, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Index character (serverless)', content, sha, branch }),
+      body: JSON.stringify({ message, content, sha, branch }),
     });
-    if (res.ok) return;
-    if (res.status === 409) continue; // sha moved (raced create) — re-read and retry
+    if (res.ok) return 'written';
+    if (res.status === 409) continue; // sha moved — re-read and retry
     console.error(JSON.stringify({ message: 'index ensure failed (write)', status: res.status }));
-    return; // non-409 upstream failure — tolerated (the file is truth)
+    return 'failed'; // non-409 upstream failure — tolerated (the file is truth)
   }
-  console.error(JSON.stringify({ message: 'index ensure gave up (sha kept moving)', id }));
+  console.error(JSON.stringify({ message: 'index ensure gave up (sha kept moving)' }));
+  return 'failed';
 }
 
 // A portrait value the index accepts: null, or a one-level `<imagesDir>/<name>`
@@ -267,6 +290,131 @@ function isValidIndexPortrait(portrait, imagesDir) {
   if (!portrait.startsWith(prefix)) return false;
   const name = portrait.slice(prefix.length);
   return /^[^/]+\.(jpg|jpeg|png|webp)$/i.test(name) && !name.startsWith('.');
+}
+
+// POST /delete-character { id, base, deleteImage? } — see the header. Order:
+// validate (no GitHub call on a bad request) -> read file -> stale check -> decide
+// the image outcome while the file still exists -> DELETE file -> drop index row
+// -> DELETE image (only when every check passed). Nothing is written on a stale
+// base. The branch is never created here (a delete never needs to).
+async function deleteCharacter(env, body, repo, branch, gh, cors) {
+  const id = body?.id;
+  if (!isValidId(id))
+    return json(cors, 400, { ok: false, error: { code: 'invalid_id', message: 'character id must match [a-z0-9][a-z0-9-]{0,63}' } });
+  const base = body?.base;
+  if (typeof base !== 'string' || base === '')
+    return json(cors, 400, { ok: false, error: { code: 'invalid_base', message: 'base must be the file sha string' } });
+  const charsDir = env.GITHUB_CHARS_DIR ?? 'data/characters';
+  const imagesDir = env.GITHUB_IMAGES_DIR ?? 'data';
+  const wantImage = body?.deleteImage !== undefined;
+  const image = body?.deleteImage;
+  if (wantImage && (typeof image !== 'string' || !isValidIndexPortrait(image, imagesDir)))
+    return json(cors, 400, { ok: false, error: { code: 'invalid_image', message: `deleteImage must be ${imagesDir}/<file>.(jpg|jpeg|png|webp)` } });
+
+  const filePath = `${charsDir}/${id}.json`;
+  const dropRow = (f) => (id in f.characters ? (delete f.characters[id], true) : false);
+  const { sha, exists, content } = await readCharacterFile(repo, filePath, branch, gh);
+
+  if (!exists) {
+    // Idempotent: nothing to delete, but a stale index row is still cleaned.
+    const idx = await updateIndex(repo, branch, gh, charsDir, dropRow, 'Remove character from index (serverless)');
+    return json(cors, 200, { ok: true, deleted: false, indexUpdated: idx !== 'failed', ...(wantImage ? { imageSkipped: 'unknown' } : {}) });
+  }
+  if (base !== sha) return staleBase(cors, sha);
+
+  // Decide the image outcome while the file (the truth about its portrait) exists.
+  let imageSkipped;
+  if (wantImage) imageSkipped = await imageVerdict(repo, branch, gh, charsDir, id, image, content);
+
+  const del = await fetch(`${GITHUB}/repos/${repo}/contents/${filePath}`, {
+    method: 'DELETE',
+    headers: { ...gh, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'Delete character (serverless)', sha, branch }),
+  });
+  if (!del.ok) {
+    if (del.status === 409 || del.status === 422) {
+      const current = await readCharacterFile(repo, filePath, branch, gh);
+      return staleBase(cors, current.sha ?? sha);
+    }
+    console.error(JSON.stringify({ message: 'github DELETE failed', status: del.status }));
+    return upstreamResponse(cors, del.status);
+  }
+
+  const idx = await updateIndex(repo, branch, gh, charsDir, dropRow, 'Remove character from index (serverless)');
+  const out = { ok: true, deleted: true, indexUpdated: idx !== 'failed' };
+  if (wantImage) {
+    if (imageSkipped) {
+      out.imageDeleted = false;
+      out.imageSkipped = imageSkipped;
+    } else {
+      const done = await deleteImageFile(repo, branch, gh, image);
+      out.imageDeleted = done;
+      if (!done) out.imageSkipped = 'error';
+    }
+  }
+  return json(cors, 200, out);
+}
+
+// Why the requested image must NOT be deleted, or undefined when it may be:
+// 'none' (target has no portrait), 'mismatch' (not the target's own portrait),
+// 'unverified' (could not prove no other character uses it), 'shared'.
+async function imageVerdict(repo, branch, gh, charsDir, id, image, targetContent) {
+  let portrait;
+  try {
+    portrait = JSON.parse(base64ToString(targetContent))?.meta?.portrait ?? null;
+  } catch {
+    return 'unverified';
+  }
+  if (portrait === null) return 'none';
+  if (portrait !== image) return 'mismatch';
+  try {
+    // Index rows (best-effort) ...
+    const idxRes = await fetch(`${GITHUB}/repos/${repo}/contents/${charsDir}/index.json?ref=${branch}`, { headers: gh });
+    if (idxRes.ok) {
+      const rows = JSON.parse(base64ToString((await idxRes.json()).content))?.characters ?? {};
+      for (const [rid, row] of Object.entries(rows)) if (rid !== id && row?.portrait === image) return 'shared';
+    } else if (idxRes.status !== 404) {
+      return 'unverified';
+    }
+    // ... and every other character file (the file is truth).
+    const list = await fetch(`${GITHUB}/repos/${repo}/contents/${charsDir}?ref=${branch}`, { headers: gh });
+    if (!list.ok) return 'unverified';
+    const entries = await list.json();
+    if (!Array.isArray(entries)) return 'unverified';
+    for (const e of entries) {
+      if (e?.type !== 'file' || typeof e.name !== 'string' || !e.name.endsWith('.json')) continue;
+      if (e.name === 'index.json' || e.name === `${id}.json`) continue;
+      const r = await fetch(`${GITHUB}/repos/${repo}/contents/${charsDir}/${e.name}?ref=${branch}`, { headers: gh });
+      if (!r.ok) return 'unverified';
+      const other = JSON.parse(base64ToString((await r.json()).content));
+      if (other?.meta?.portrait === image) return 'shared';
+    }
+  } catch {
+    return 'unverified';
+  }
+  return undefined;
+}
+
+// DELETE one image file. Already gone (404) counts as deleted; any other failure
+// is logged and reported false (never fails the character delete).
+async function deleteImageFile(repo, branch, gh, path) {
+  try {
+    const read = await fetch(`${GITHUB}/repos/${repo}/contents/${path}?ref=${branch}`, { headers: gh });
+    if (read.status === 404) return true;
+    if (!read.ok) return false;
+    const { sha } = await read.json();
+    const res = await fetch(`${GITHUB}/repos/${repo}/contents/${path}`, {
+      method: 'DELETE',
+      headers: { ...gh, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Delete portrait image (serverless)', sha, branch }),
+    });
+    if (res.ok || res.status === 404) return true;
+    console.error(JSON.stringify({ message: 'github image DELETE failed', status: res.status }));
+    return false;
+  } catch (err) {
+    console.error(JSON.stringify({ message: 'image delete failed', error: err instanceof Error ? err.message : String(err) }));
+    return false;
+  }
 }
 
 // POST /save-image { id, filename, content: <base64> } — commit one downscaled

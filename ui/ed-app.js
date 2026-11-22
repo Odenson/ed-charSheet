@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, deriveModel, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, deriveModel, onPages, readCharacterWithBase, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -8,7 +8,8 @@ import { successCount, tickArmedTalents } from '../engine/combat.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
-import { saveServer, saveImage, SaveError, SaveConflictError, DEFAULT_ENDPOINT, DEFAULT_IMAGE_ENDPOINT } from '../store-server.js';
+import { saveServer, saveImage, deleteCharacterServer, SaveError, SaveConflictError, DEFAULT_ENDPOINT, DEFAULT_IMAGE_ENDPOINT, DEFAULT_DELETE_ENDPOINT } from '../store-server.js';
+import { planDelete, noticeForResult } from '../delete-action.js';
 import { stagePortraitImage, loadStagedPortrait, clearStagedPortrait, moveStagedPortrait, rememberSavedPortrait, invalidateImageListing, runPortraitSave } from '../store-portrait.js';
 import { listDrafts, mergeRows, saveDraft, discardDraft, renameDraft, promoteDraft, loadDraftCharacter } from '../store-drafts.js';
 import { saveDraftFirstTime } from '../store-first-save.js';
@@ -95,6 +96,8 @@ export class EdApp extends LitElement {
     _confirmFinish: { state: true },
     _creationGuide: { state: true }, // { name, magician } while the "Creating your character" pop-up is open
     _conflict: { state: true },
+    _deleteBusy: { state: true }, // a delete-character call is in flight (the picker's modal reads it)
+    _deleteError: { state: true }, // inline error text for the delete modal
     _portraitImages: { state: true },  // branch image list for the portrait modal
     _portraitLoading: { state: true },
     _portraitStaged: { state: true },  // the unsaved staged upload, snapshotted when the modal opens
@@ -155,6 +158,8 @@ export class EdApp extends LitElement {
   // the branch's current file sha (the acknowledged-overwrite base), `silent`
   // whether the rejected save was a background auto-save.
   _conflict = null;
+  // A delete-character request paused for the key prompt ({ id, deleteImage }); replayed on ed-save-key.
+  _pendingDelete = null;
 
   static styles = css`
     :host {
@@ -260,6 +265,8 @@ export class EdApp extends LitElement {
     this._saveOkTimer = null;
     this._notice = null;
     this._keyPrompt = false;
+    this._deleteBusy = false;
+    this._deleteError = null;
     this._confirmDiscard = false;
     this._confirmSwitch = false;
     this._picker = false;
@@ -518,8 +525,11 @@ export class EdApp extends LitElement {
       this._pendingCustomSave = null;
       const silent = this._pendingSaveSilent ?? false;
       this._pendingSaveSilent = null;
+      const pendingDelete = this._pendingDelete;
+      this._pendingDelete = null;
       if (!this._saveKey) return;
-      if (pending) this._saveCustomItems(pending.items, pending.delete);
+      if (pendingDelete) this._deleteCharacter(pendingDelete);
+      else if (pending) this._saveCustomItems(pending.items, pending.delete);
       else this._doSave({ silent });
     });
     // A stale_base conflict modal choice (keep-mine / take-theirs / cancel) —
@@ -541,6 +551,9 @@ export class EdApp extends LitElement {
     // (first-Save id clash) is rendered by this component and listened to on the element.
     this.addEventListener('create-character', (e) => this._createCharacter(e.detail));
     this.addEventListener('discard-draft', (e) => this._discardDraft(e.detail?.id));
+    // Delete-character: the picker's type-the-name modal asks to delete a character (draft or saved).
+    this.addEventListener('delete-character', (e) => this._deleteCharacter(e.detail));
+    this.addEventListener('delete-dismissed', () => { this._deleteError = null; });
     // Creation mode (create-new-adept): the Disciplines / Overview / Spells views dispatch a
     // spend of the free creation points (`ed-creation-edit { kind, ... }`) and the Finish button
     // (`ed-creation-finish`); the pure engine (engine/creation.js) decides, this component only
@@ -703,6 +716,12 @@ export class EdApp extends LitElement {
     clearDiscordConfig(id);
     clearStagedPortrait(id); // a draft's unsaved portrait upload goes with it
     this._refreshRows();
+    this._resetIfOpen(id);
+  }
+
+  // When `id` is the loaded character, empty the sheet to the loader state ("No character
+  // selected") and clear the saved selection. Shared by discard-draft and delete-character.
+  _resetIfOpen(id) {
     if (id !== this._characterId) return;
     this._clearAutosaveTimers();
     this._character = null;
@@ -714,6 +733,66 @@ export class EdApp extends LitElement {
     this._editMode = false;
     this._noSelection = true;
     if (localStorage.getItem('ed-character') === id) localStorage.removeItem('ed-character');
+  }
+
+  // Delete a character (the picker's type-the-name modal confirmed). A draft is local-only
+  // (the discard clean-up, no network). A saved character needs the save key and a base:
+  // the open character's `_baseSha`, otherwise a confirm-time read (which also gives the
+  // authoritative `meta.portrait` for the optional image delete). `stale_base` keeps local
+  // state and toasts; nothing derived is stored, so success just clears per-id local keys.
+  async _deleteCharacter({ id, deleteImage = false } = {}) {
+    if (!id || this._deleteBusy) return;
+    this._deleteError = null;
+    const draft = (this._characters ?? []).find((r) => r.id === id)?.draft === true;
+    if (draft) {
+      this._discardDraft(id);
+      this._showNotice('Draft deleted from this browser.');
+      return;
+    }
+    if (!this._saveKey) {
+      this._pendingDelete = { id, deleteImage };
+      this._keyPrompt = true;
+      return;
+    }
+    const isOpen = id === this._characterId;
+    this._deleteBusy = true;
+    try {
+      let fileBase = null;
+      let portrait = null;
+      if (!isOpen || deleteImage) {
+        const read = await readCharacterWithBase(id);
+        fileBase = read.base;
+        portrait = read.character?.meta?.portrait ?? null;
+      }
+      const plan = planDelete({ draft: false, isOpen, baseSha: this._baseSha, fileBase, onPages: onPages(), portrait, deleteImage: !!deleteImage });
+      if (plan.kind === 'block') {
+        this._deleteError = "Couldn't verify this character's current version on GitHub (the read fell back to the CDN). Reload the page and try again.";
+        return;
+      }
+      const result = await deleteCharacterServer({ id, ...plan.body }, { endpoint: this._endpointFor('delete-character', DEFAULT_DELETE_ENDPOINT), saveKey: this._saveKey });
+      discardDraft(id); // the id's overlay (and any stale draft key)
+      clearRollLog(id);
+      clearDiscordConfig(id);
+      clearStagedPortrait(id);
+      if (this._conflict && id === this._characterId) this._conflict = null;
+      this._indexRows = (this._indexRows ?? []).filter((r) => r.id !== id);
+      this._refreshRows();
+      this._resetIfOpen(id);
+      this._showNotice(noticeForResult(result));
+    } catch (e) {
+      if (e instanceof SaveConflictError) {
+        this._deleteError = 'This character changed on the branch since it was loaded. Reload it first, then delete again.';
+        this._showNotice('This character changed on the branch since it was loaded. Reload it first, then delete again.');
+      } else if (e instanceof SaveError && e.code === 'unauthorized') {
+        this._saveKey = null;
+        this._pendingDelete = { id, deleteImage };
+        this._keyPrompt = true;
+      } else {
+        this._deleteError = e?.message ? String(e.message) : String(e);
+      }
+    } finally {
+      this._deleteBusy = false;
+    }
   }
 
   // The first Save found the draft's id taken on the branch: the player renamed it. Re-slug,
@@ -1901,8 +1980,20 @@ export class EdApp extends LitElement {
   // locally). Absent → the deployed worker (default behaviour — no config needed
   // to save). A bare origin or path resolves against the app's own origin.
   _endpointFor(param, fallback) {
-    const raw = new URLSearchParams(location.search).get(param);
-    return raw ? new URL(raw, location.href).href : fallback;
+    const q = new URLSearchParams(location.search);
+    const raw = q.get(param);
+    if (raw) return new URL(raw, location.href).href;
+    // `?save=<origin>/save` alone (the dev-server banner URL) also points the sibling routes
+    // (`/save-image`, `/delete-character`) at that server, instead of the deployed worker.
+    const save = q.get('save');
+    if (save && param !== 'save' && param !== 'save-items') {
+      const u = new URL(save, location.href);
+      if (/\/save$/.test(u.pathname)) {
+        u.pathname = u.pathname.replace(/\/save$/, `/${param}`);
+        return u.href;
+      }
+    }
+    return fallback;
   }
 
   // Roll-time modifiers from live conditions (engine/roll-mods.js decides; this
@@ -2518,6 +2609,9 @@ export class EdApp extends LitElement {
             .current=${this._characterId}
             .disciplines=${(this._rules?.disciplinesFile?.disciplines ?? []).map((d) => d.name)}
             .races=${(this._rules?.racesFile?.races ?? []).map((r) => r.name)}
+            .pendingIds=${(this._characters ?? []).filter((r) => hasPendingEdits(r.id)).map((r) => r.id)}
+            .deleteBusy=${this._deleteBusy}
+            .deleteError=${this._deleteError}
             @close=${() => {
               this._picker = false;
               if (!this._model) this._noSelection = true;
@@ -2553,7 +2647,7 @@ export class EdApp extends LitElement {
             @close=${() => this._closeRoll()}
           ></ed-roll-modal>`
         : ''}
-      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingCustomSave = null; this._pendingSaveSilent = null; }}></ed-save-key>` : ''}
+      ${this._keyPrompt ? html`<ed-save-key @close=${() => { this._keyPrompt = false; this._pendingDelete = null; this._pendingCustomSave = null; this._pendingSaveSilent = null; }}></ed-save-key>` : ''}
       ${this._conflict
         ? html`<ed-conflict @close=${() => (this._conflict = null)}></ed-conflict>`
         : ''}

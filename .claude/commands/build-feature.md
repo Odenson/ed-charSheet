@@ -41,9 +41,10 @@ stands: no commit or push without the user's explicit permission.
 First record the start time for the token report: `date -u +%Y-%m-%dT%H:%M:%SZ`
 (keep it as `<since>`).
 
-Load the **ed-change-guardrail** skill. Read the whole feature folder
-(`plan.md`, `tickets.md`, `qa-log.md`, `review.md`, and any `spec.md` /
-`test-plan.md` / `build-log.md` from a prior run), plus `CLAUDE.md`,
+Load the **ed-change-guardrail** skill. Read the feature folder
+(`brief.md`, `plan.md`, `tickets.md`, `qa-log.md`, `review.md`, and any `spec.md` /
+`test-plan.md` / `build-log.md` from a prior run — only the latest run section of
+`build-log.md`), plus `CLAUDE.md`,
 `docs/GUARDRAILS.md` and the docs the plan touches. Then verify:
 
 1. **Guardrails.** Every plan item is classified. **Refuse to build any Tier-1
@@ -67,6 +68,16 @@ Start `build-log.md` (or append a new run section) recording the slug, the
 alignment outcome, and the date. Set `status: building` in `plan.md`'s
 frontmatter once alignment passes (add the frontmatter if it is missing).
 
+## Reusing subagents (saves tokens)
+
+A subagent you spawn stays addressable after it reports. **Continue it with
+`SendMessage` (load it via ToolSearch `select:SendMessage` if deferred) instead
+of spawning a fresh one** whenever this workflow says "re-spawn", "revise" or
+"adjudicate": the agent keeps the folder, spec and code it already read, so no
+cold start. Keep each agent's id/name from its spawn result. Fall back to a fresh
+spawn only if it is no longer addressable, and then say in the prompt which mode
+it is in and what to re-read.
+
 ## Handling `NEEDS_RULES` (any phase)
 
 A subagent that ends its report with `NEEDS_RULES: <question>` needs a rules
@@ -79,9 +90,9 @@ means the plan missed a dependency — note it in `build-log.md`.
 
 ## Phase 1 — Tech spec (feature-designer subagent)
 
-Spawn `feature-designer` with the folder path. It writes `spec.md`. If its report
+Spawn `feature-designer` with the folder path (it reads `brief.md` + `plan.md`). It writes `spec.md`. If its report
 has `NEEDS_HUMAN:` lines, **stop**: ask the user each (one at a time), append to
-`qa-log.md`, then re-spawn the designer. Repeat only to clear questions.
+`qa-log.md`, then `SendMessage` the answers to the same designer. Repeat only to clear questions.
 
 ## Phase 2 — Tests first (feature-tester subagent, author mode)
 
@@ -104,16 +115,16 @@ tester's tests. Handle its report:
 
 - **Green + committed** → Phase 4.
 - **`NEEDS_TESTER:`** → Phase 3b (the one tester cycle).
-- **`NEEDS_HUMAN:`** → ask the user, append to `qa-log.md`, re-spawn the dev.
+- **`NEEDS_HUMAN:`** → ask the user, append to `qa-log.md`, `SendMessage` the answer to the same dev.
 
 ## Phase 3b — Tester adjudication (feature-tester, adjudicate mode) — one cycle only
 
-Only if the dev raised `NEEDS_TESTER`. Spawn `feature-tester` in **adjudicate
-mode**, passing the dev's exact issue. It returns exactly one outcome:
+Only if the dev raised `NEEDS_TESTER`. `SendMessage` the **same** `feature-tester`
+(adjudicate mode), passing the dev's exact issue. It returns exactly one outcome:
 
-- **`TESTER_UPDATED:`** — re-snapshot the changed tests; re-spawn the dev (build
-  mode) to finish against them.
-- **`TESTER_REJECTED:`** — re-spawn the dev (build mode) to make the **code**
+- **`TESTER_UPDATED:`** — re-snapshot the changed tests; `SendMessage` the same dev
+  to finish against them.
+- **`TESTER_REJECTED:`** — `SendMessage` the same dev to make the **code**
   satisfy the test as written.
 - **`NEEDS_HUMAN:`** — ask the user, append to `qa-log.md`, re-spawn the tester.
 
@@ -132,16 +143,22 @@ the UI changed; code quality and consistency; edge cases; and that the gate is
 genuinely green.
 
 - **Clean** → Phase 5.
-- **Issues** → write findings into `build-log.md` and spawn `feature-dev` in
-  **revise mode**. The dev fixes **each** (still not touching tests) and amends
+- **Issues** → write findings into `build-log.md` and `SendMessage` the same
+  `feature-dev` to revise (revise mode). The dev fixes **each** (still not touching tests) and amends
   the commit. This is the **only** revision. Re-review, then Phase 5. (If the dev
   bounces a finding back as `NEEDS_TESTER`, run one Phase 3b cycle only if unused;
   otherwise resolve with the user.)
 
 ## Phase 5 — Doc sync (design-agent)
 
-Spawn the read-only `design-agent` to compare the shipped change with the design
-docs (`docs/UI-GUIDELINES.md`, `ARCHITECTURE.md`, other owning docs). Apply its
+**Skip this phase** when the commit touches none of `ui/`, `engine/`, `rules/`,
+`data/` (other than `changelog.json`), `store.js` or an existing doc under `docs/` /
+`ARCHITECTURE.md` — e.g. a tools-only or test-only change; note "doc sync skipped:
+no design surface changed" in `build-log.md`. Otherwise spawn the read-only
+`design-agent` (Sonnet) with the slug **and the changed-file list**
+(`git diff --name-only <base>..HEAD`) so it does a scoped run (brief + spec + diff,
+no sweep of other plans) comparing the shipped change with the design docs
+(`docs/UI-GUIDELINES.md`, `ARCHITECTURE.md`, other owning docs). Apply its
 proposed edits yourself, with these limits:
 
 - Edits to a **Tier-1 or Tier-2** doc/surface only if the sign-off for that

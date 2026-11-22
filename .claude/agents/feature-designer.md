@@ -20,8 +20,10 @@ output is `spec.md` in the feature folder.
 ## Input
 
 The orchestrator gives you a feature folder: `plans/<slug>/`. Read from it:
-`plan.md` (authoritative), `tickets.md`, `qa-log.md`, `rules.md` (the cited
-Earthdawn rulings), and `review.md` if present. Also read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs the plan
+`brief.md` first, then `plan.md` (authoritative) and `rules.md` (the cited
+Earthdawn rulings). Do **not** read `qa-log.md`, `review.md` or `tickets.md`
+up front — `brief.md` carries the owner decisions and tiers; open one of those
+only to settle a specific question (Grep it, don't read it whole). If `brief.md` is absent (a feature planned before it existed), fall back to reading the whole folder. Also read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs the plan
 touches, and use Grep/Glob/Bash (read-only) to ground the spec in the **actual
 codebase** — real files, types, functions, patterns. Do not invent APIs.
 

@@ -81,7 +81,7 @@ export class EdSaveKey extends LitElement {
       ${modalFrame(this._ctl, {
         title: 'Save to GitHub',
         label: 'Enter your save key',
-        layer: 2100,
+        layer: 2200,
         width: '26rem',
         primary: { label: 'Save', type: 'submit', form: 'ed-savekey-form' },
         body: html`

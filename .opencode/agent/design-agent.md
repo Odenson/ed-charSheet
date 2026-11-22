@@ -51,6 +51,9 @@ the tier protocol exactly.
 - **Change signal** — determine scope, in this order:
   1. If the user names a change, diff it: `git diff <base>..HEAD`, or
      `git log --oneline -N` for recent commits.
+  1b. **Scoped run** (when `/build-feature` invokes you with a slug and a changed-file
+     list): read only `plans/<slug>/brief.md`, the `spec.md` sections for the changed
+     surfaces, and the diff. Do not sweep other plans or `docs/REVIEW-FINDINGS.md`.
   2. `plans/*.md` and `plans/<slug>/{plan,spec,build-log}.md` — the planning documents.
      **Read each plan's YAML frontmatter first** (`status:` draft|approved|building|
      implemented|superseded, `shipped:` vX.Y.Z or `unreleased`, optional

@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.2.0",
+      "date": "2026-11-22",
+      "summary": "Delete a character from the loader: type its name to confirm, with an optional checkbox to also delete its portrait image (kept by default, never removed while another character uses it).",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Delete a character from the loader: type its name to confirm, and optionally delete its portrait image too (kept by default, and never removed while another character uses it)."
+        }
+      ]
+    },
+    {
       "version": "2.1.0",
       "date": "2026-11-22",
       "summary": "Change your character's portrait in edit mode: upload a new image, pick one already saved, or remove it.",

@@ -14,7 +14,7 @@ app**.
 
 ## 1. What it is
 
-Two tiny write endpoints — a single Cloudflare Worker (the decided host, §4.1;
+A handful of tiny routes (`/save`, `/save-items`, `/save-image`, `/delete-character`; the last is the only one that removes data) — a single Cloudflare Worker (the decided host, §4.1;
 Deno Deploy and a Vercel function are portability alternatives) — that commit
 the character store (one file per character, `data/characters/<id>.json`, via
 `/save`) **and** the shared custom-item catalog `data/custom-items.json` (via
@@ -137,6 +137,21 @@ renamed character leaves the entry's name lagging, the file's `meta.name`/`meta.
 being authoritative) can mis-label a picker row but can never corrupt a save or
 cause a false conflict.
 
+**Delete a character — `POST /delete-character`** (plans/delete-character). Body
+`{ id, base, deleteImage? }`, same `x-save-key` gate. `id` must pass the id check; `base`
+(the file sha the client last saw) is a required non-empty string; `deleteImage`, when present,
+must be a valid image path under the images dir (else `400 invalid_id | invalid_base |
+invalid_image`, before any GitHub call). The worker reads the file: a stale `base` is
+`409 stale_base` (current sha) with **no writes**; otherwise it DELETEs `data/characters/<id>.json`
+and removes the id's row from `index.json` (bounded 409 retry; a failed index write returns
+`indexUpdated:false`). A missing file is idempotent (`ok:true, deleted:false`, the stale index row is
+still removed). The portrait image is deleted only when requested, equal to the target file's own
+`meta.portrait` (a catalog image is `imageSkipped:'mismatch'`), and **not shared**: the union of index
+rows and every other character file's `meta.portrait` is checked, and any unverifiable check is
+`'unverified'` (no delete). An image failure never fails the call (`imageSkipped:'error'`). Response
+`200 { ok:true, deleted, indexUpdated, imageDeleted?, imageSkipped? }`. Recovery is only via the git
+history of `character-data`. The local dev server mirrors it without stale detection (`base` optional).
+
 **Portrait images — `POST /save-image`** (plans/add-char-portrait). Body
 `{ id, filename, content }` (`content` = base64 of the already-downscaled image, no
 data-URL prefix), same `x-save-key` gate. The worker pins the path to
@@ -172,7 +187,7 @@ for durability/versioning (PLAN-CUSTOM-ITEMS.md §3).
 | 200 | `{ "ok": true, "commit": { "sha": "…", "url": "https://github.com/…/commit/…" } }` — `commit.sha` is the **new blob sha**, the client's next `base` |
 | 400 | `{ "ok": false, "error": { "code": "invalid_json" \| "invalid_character" \| "invalid_id" \| "invalid_base", "message": "…" } }` — `invalid_base`: `base` present but not a string |
 | 401 | `{ "ok": false, "error": { "code": "unauthorized", "message": "bad save key" } }` |
-| 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save, POST /save-items or POST /save-image only" } }` |
+| 404 | `{ "ok": false, "error": { "code": "not_found", "message": "POST /save, /save-items, /save-image or /delete-character only" } }` |
 | 409 | `{ "ok": false, "error": { "code": "stale_base", "message": "…", "sha": "<current blob sha>" } }` — the character changed on the branch since the client's `base`; **no write, no retry**. No-base (legacy) saves retry internally (bounded, 3 attempts); only surfaced if retries exhaust |
 | 502/504 | Upstream GitHub failure; `{ "ok": false, "error": { "code": "upstream", "message": "…" } }` |
 
@@ -572,6 +587,12 @@ server-side, plus honest limits:
   `<id>-<timestamp>.<ext>`, never overwriting an existing file). A junk image cannot
   corrupt a character, but a later save does not undo it; removal is a manual commit
   on the branch.
+- **`/delete-character` blast radius.** A key-holder can delete one character file
+  (and its index row) per call, only with that file's current sha as `base`; a stale
+  base writes nothing. An image is deleted only when it equals that file's own
+  `meta.portrait` (catalog images are blocked), no other character uses it, and the
+  sharing check could be completed. Recovery is only via the git history of
+  `character-data`; there is no soft delete.
 - **Public read is by design.** The data branch is public like the rest of the
   repo; unauthenticated reading is exactly what the app's live fetch needs.
 - **Rate limiting.** Free-tier Workers have basic request limits; a per-IP
@@ -619,6 +640,8 @@ server-side, plus honest limits:
 | Save action entry | A third target alongside web store + file, in edit mode |
 | `POST /save-image` | Worker route for portrait uploads (`data/<id>-<ts>.<ext>`, create-only); called before the character JSON |
 | `store-portrait.js` | Staged image key `ed-character-image:<id>`, branch image listing, `runPortraitSave` (image-then-JSON ordering), `moveStagedPortrait` (rename) |
+| `POST /delete-character` | Worker route that deletes a character file, its index row and optionally its own unshared portrait |
+| `store-server.js` `deleteCharacterServer` | Client for `/delete-character`; `stale_base` is a `SaveConflictError`, nothing is deleted |
 | `store-server.js` `saveImage` | Client for `/save-image`; only `ok:true` is success, `exists` is a hard `SaveError` |
 | Worker + secrets | Deployed outside the repo; owner-only setup |
 

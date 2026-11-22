@@ -6,6 +6,8 @@
 //   POST /save        { character, id } → write data/characters/<id>.json (ed-character/1)
 //   POST /save-items  { items, delete } → merge  data/custom-items.json (ed-items/3)
 //   POST /save-image  { id, filename, content } → write data/<filename> (create-only)
+//   POST /delete-character { id, base?, deleteImage? } → delete data/characters/<id>.json,
+//                          drop its index row, optionally its own unshared portrait
 //   GET  /list-images → { images: [<filename>, …] } image files directly in data/
 //
 // No Cloudflare, no GitHub, no secrets: writes land in the gitignored local
@@ -35,7 +37,7 @@
 // (tools/dev-server.test.js); exports keep the routes testable without a fork.
 
 import { createServer } from 'node:http';
-import { readFile, writeFile, realpath, mkdir, readdir } from 'node:fs/promises';
+import { readFile, writeFile, realpath, mkdir, readdir, rm } from 'node:fs/promises';
 import { statSync } from 'node:fs';
 import { join, resolve, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -244,7 +246,8 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
       if (url.pathname === '/save') return handleSave(req, res);
       if (url.pathname === '/save-items') return handleSaveItems(req, res);
       if (url.pathname === '/save-image') return handleSaveImage(req, res);
-      return writeJson(res, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, POST /save-items or POST /save-image only' } });
+      if (url.pathname === '/delete-character') return handleDeleteCharacter(req, res);
+      return writeJson(res, 404, { ok: false, error: { code: 'not_found', message: 'POST /save, /save-items, /save-image or /delete-character only' } });
     }
     if (method !== 'GET' && method !== 'HEAD') {
       res.writeHead(405, { Allow: 'GET, HEAD, POST, OPTIONS' });
@@ -333,6 +336,91 @@ export function createDevServer({ root = ROOT, lag = 0 } = {}) {
     });
     if (out.status === 409) return fail(409, 'exists', 'a different image already exists at this path');
     return writeJson(res, 200, { ok: true, path: `${IMAGES_DIR}/${filename}`, sha, url: '' });
+  }
+
+  // Mirror of the worker's POST /delete-character (no stale detection: local reads
+  // carry no ETag, so `base` may be omitted/null and is shape-checked only).
+  async function handleDeleteCharacter(req, res) {
+    let body;
+    try {
+      body = await readJson(req);
+    } catch {
+      return writeJson(res, 400, { ok: false, error: { code: 'invalid_json', message: 'body is not JSON' } });
+    }
+    const fail = (status, code, message) => writeJson(res, status, { ok: false, error: { code, message } });
+    const id = body?.id;
+    if (!isValidId(id)) return fail(400, 'invalid_id', 'character id must match [a-z0-9][a-z0-9-]{0,63}');
+    const rawBase = body?.base;
+    if (rawBase !== undefined && rawBase !== null && typeof rawBase !== 'string')
+      return fail(400, 'invalid_base', 'base must be a file sha string or omitted');
+    const wantImage = body?.deleteImage !== undefined;
+    const deleteImage = body?.deleteImage;
+    if (wantImage && (typeof deleteImage !== 'string' || !isValidIndexPortrait(deleteImage)))
+      return fail(400, 'invalid_image', 'deleteImage must be data/<name>.(jpg|png|webp)');
+    const charsDir = join(resolvedRoot, CHARACTERS_DIR);
+    const filePath = join(charsDir, `${id}.json`);
+    const indexPath = join(charsDir, 'index.json');
+    const out = await enqueue(async () => {
+      const raw = await readRaw(filePath);
+      const result = { ok: true, deleted: false, indexUpdated: false };
+      let imageOk = false;
+      if (raw === null) {
+        if (wantImage) result.imageSkipped = 'unknown';
+      } else {
+        if (wantImage) {
+          let target = null;
+          try {
+            target = JSON.parse(raw);
+          } catch {
+            /* unparseable target: cannot verify */
+          }
+          const portrait = target?.meta?.portrait ?? null;
+          if (target === null) result.imageSkipped = 'unverified';
+          else if (portrait === null) result.imageSkipped = 'none';
+          else if (portrait !== deleteImage) result.imageSkipped = 'mismatch';
+          else result.imageSkipped = (await isImageShared(charsDir, id, indexPath, portrait)) ?? null;
+          imageOk = !result.imageSkipped;
+          if (imageOk) delete result.imageSkipped;
+        }
+        await rm(filePath, { force: true });
+        result.deleted = true;
+      }
+      const index = await readJsonFile(indexPath);
+      if (index?.characters && Object.prototype.hasOwnProperty.call(index.characters, id)) {
+        const priorIndex = await readRaw(indexPath);
+        delete index.characters[id];
+        await writePretty(indexPath, index);
+        await recordWrite(indexPath, priorIndex);
+        result.indexUpdated = true;
+      }
+      if (imageOk && result.deleted) {
+        await rm(join(resolvedRoot, deleteImage), { force: true });
+        result.imageDeleted = true;
+      }
+      return result;
+    });
+    return writeJson(res, 200, out);
+  }
+
+  // 'shared' | 'unverified' | null (unshared). Fail-safe: any read/parse failure is 'unverified'.
+  async function isImageShared(charsDir, id, indexPath, portrait) {
+    const index = await readJsonFile(indexPath);
+    for (const [rowId, row] of Object.entries(index?.characters ?? {})) {
+      if (rowId !== id && row?.portrait === portrait) return 'shared';
+    }
+    let names;
+    try {
+      names = await readdir(charsDir);
+    } catch {
+      return 'unverified';
+    }
+    for (const name of names) {
+      if (!name.endsWith('.json') || name === 'index.json' || name === `${id}.json`) continue;
+      const other = await readJsonFile(join(charsDir, name));
+      if (other === null) return 'unverified';
+      if (other?.meta?.portrait === portrait) return 'shared';
+    }
+    return null;
   }
 
   async function handleListImages(res) {

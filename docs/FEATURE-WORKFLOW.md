@@ -81,7 +81,7 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 | 3. Build | `feature-dev` (build) | Implement to spec; all tester tests plus `npm test` green; commit |
 | 3b. Adjudication | `feature-tester` (adjudicate) | Only on `NEEDS_TESTER`; one cycle |
 | 4. Review | Dev Lead (+ `feature-dev` revise, once) | Spec, golden rule, tiers, UI rules, quality, real gate status |
-| 5. Doc sync | `design-agent`, applied by Dev Lead | Doc edits go in the commit; Tier-1/2 doc edits only if signed off, else listed in `build-log.md` |
+| 5. Doc sync | `design-agent` (Sonnet, scoped; skipped if no design surface changed), applied by Dev Lead | Doc edits go in the commit; Tier-1/2 doc edits only if signed off, else listed in `build-log.md` |
 | 6. Ship | Dev Lead | Test-snapshot diff, gate green, finalize commit, push `dev`, owner handoff (checklists) in `build-log.md`. **No PR**; `/release-feature` opens it |
 
 ### Signals
@@ -114,6 +114,21 @@ are verified by the owner on `dev`, from the manual checklist the Dev Lead puts 
   pushes to `dev`; stage by explicit path (never `git add -A`), scoped to the
   feature. No PR at build time; the release PR is `/release-feature`'s.
   `/new-feature` never commits.
+- **Token economy.** Three rules keep cost down (each cold agent re-reading a
+  ~200 KB folder was the largest waste, see the token reports):
+  1. **`brief.md`** — the planner writes a ~5 KB hand-off (tickets and tiers,
+     items, rule values, owner decisions). `feature-designer`, `feature-tester`
+     and `feature-dev` read it plus `spec.md` (and the designer `plan.md`) instead
+     of `qa-log.md`, `review.md`, `tickets.md` and earlier `build-log.md` runs,
+     which they Grep only for a specific point. A feature without `brief.md`
+     falls back to reading the whole folder.
+  2. **Continue, don't re-spawn.** Revise, adjudicate and `NEEDS_*` answers go to
+     the same subagent via `SendMessage`, so it keeps the files it already read.
+     A fresh spawn only if the agent is no longer addressable.
+  3. **`design-agent` is Sonnet and scoped.** Phase 5 is skipped when the commit
+     touches no design surface (`ui/`, `engine/`, `rules/`, `data/` other than the
+     changelog, `store.js`, an existing doc); otherwise it gets the changed-file
+     list and reads only `brief.md`, the relevant `spec.md` sections and the diff.
 - **Changelog.** User-visible features add one line to `data/changelog.json`
   `unreleased.changes`, as a `{type, text}` object (`added|improved|changed|fixed`; `tools/release.mjs` rejects bare strings); `/release-feature` turns them into the release entry.
 - **Guardrails.** Subagents load `ed-change-guardrail` before touching a
@@ -203,6 +218,7 @@ fields and that `shipped` names a real changelog release.
 | `qa-log.md` | any orchestrator (append-only) | throughout |
 | `rules.md` | Interrogator, Dev Lead (from `rule-agent` answers) | `/new-feature` 2; appended on `NEEDS_RULES` |
 | `plan.md` | `feature-planner` | `/new-feature` 3, 5 |
+| `brief.md` | `feature-planner` (regenerated on revise) | `/new-feature` 3, 5 |
 | `review.md` | `feature-plan-reviewer` | `/new-feature` 4 |
 | `spec.md` | `feature-designer` | `/build-feature` 1 |
 | `test-plan.md` | `feature-tester` | `/build-feature` 2, 3b |

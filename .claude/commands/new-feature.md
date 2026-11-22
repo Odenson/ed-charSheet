@@ -31,6 +31,8 @@ Rules and flow reference: [docs/FEATURE-WORKFLOW.md](../../docs/FEATURE-WORKFLOW
    - `qa-log.md` — every question asked and answer given, by any participant.
    - `rules.md` — the cited Earthdawn rules the feature depends on (below).
    - `plan.md` — the delivery plan (written by the planner subagent).
+   - `brief.md` — the short (~5 KB) hand-off summary the planner also writes; the
+     build agents read it instead of the whole folder.
 4. Read `CLAUDE.md`, `docs/GUARDRAILS.md` and the docs relevant to the feature
    (`ARCHITECTURE.md`, `docs/UI-GUIDELINES.md`, `docs/EFFECT-TAXONOMY.md`, …) so
    your questions and the resulting plan stay consistent with them.
@@ -126,13 +128,15 @@ Tell the user Phase 1 is complete and you are handing off to the planner.
 ## Phase 2 — Plan (feature-planner subagent)
 
 Spawn the `feature-planner` subagent with the folder path. It reads `tickets.md`
-and `qa-log.md` and writes `plan.md`.
+and `qa-log.md` and writes `plan.md` and `brief.md`. Keep its id: you continue it
+with `SendMessage` (load via ToolSearch `select:SendMessage` if deferred) rather
+than spawning a fresh planner — it already holds the folder and docs.
 
 - If the planner's report contains `NEEDS_RULES: <question>` lines, run the
   `rule-agent` (slug as context), append each answer to `rules.md`, handle any
-  non-answered `Status:` as in "Rules grounding", then re-spawn the planner.
+  non-answered `Status:` as in "Rules grounding", then `SendMessage` the new rules to the same planner.
 - If it contains `NEEDS_HUMAN: <question>` lines, **stop**: ask the user each
-  question (one at a time), append the answers to `qa-log.md`, then re-spawn the
+  question (one at a time), append the answers to `qa-log.md`, then `SendMessage` them to the same
   planner. Repeat only as needed.
 
 ## Phase 3 — Review (feature-plan-reviewer subagent), single pass
@@ -143,8 +147,8 @@ Phase 2.
 
 ## Phase 4 — Revise (feature-planner subagent), one revision
 
-Re-spawn `feature-planner` in revise mode, telling it to read `review.md` and
-revise `plan.md`. Where it disagrees with a finding it records that under
+`SendMessage` the same `feature-planner` (revise mode), telling it to read `review.md`,
+revise `plan.md` and regenerate `brief.md`. Where it disagrees with a finding it records that under
 `## Review responses`. This is the **single review pass** — do not loop further.
 
 ## Phase 5 — Report back (you, to the user)

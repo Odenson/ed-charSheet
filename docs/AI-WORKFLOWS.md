@@ -26,7 +26,7 @@ generated for both tools; the `feature-*` agents are Claude-only.
 | Agent | Purpose | Claude Code | Can write |
 |---|---|---|---|
 | `rule-agent` | Answers Earthdawn rules questions (single or batch) only from the local, gitignored `rulebook extracts/`; checks `docs/RULES-FAQ.md` first and logs new answers and owner decisions there | Read, Grep, Glob, Edit; sonnet | `docs/RULES-FAQ.md` only |
-| `design-agent` | Compares `plans/*.md`, recent git changes and `docs/REVIEW-FINDINGS.md` with the design docs; reports what shipped and proposes doc edits | Read, Grep, Glob, Bash; opus | nothing (proposes only; owner applies) |
+| `design-agent` | Compares `plans/*.md`, recent git changes and `docs/REVIEW-FINDINGS.md` with the design docs; reports what shipped and proposes doc edits | Read, Grep, Glob, Bash; sonnet | nothing (proposes only; owner applies) |
 
 OpenCode copies express the same limits through `permission:` frontmatter
 (rule-agent `mode: all`, design-agent `mode: primary`).
