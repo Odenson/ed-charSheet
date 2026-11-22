@@ -4,7 +4,14 @@
     "id": "hum-war",
     "name": "Hum-War",
     "race": "Human",
-    "portrait": "data/hum-war-1795342953275.jpg"
+    "portrait": "data/hum-war-1795342953275.jpg",
+    "description": "Test Description",
+    "age": 18,
+    "sex": "Femail",
+    "height": "5'8''",
+    "weight": "70",
+    "skinTone": "Pale white",
+    "background": "Test Background"
   },
   "attributes": {
     "Dexterity": {
