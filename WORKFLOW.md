@@ -21,12 +21,12 @@ the build**:
 |--------|------|----------|
 | `main` | Production app | ✅ → root |
 | `dev` | Testing app | ✅ → `/dev/` |
-| `character-data` | File store for per-character files `data/characters/<id>.json` + discovery index, the portrait images (`data/chakka.jpg`, …), **and the shared custom-item catalog `data/custom-items.json`** | ❌ never deployed |
+| `character-data` | File store for per-character files `data/characters/<id>.json` + discovery index, the portrait images (`data/chakka.jpg`, …; uploads land as `data/<id>-<timestamp>.<ext>` from `POST /save-image`), **and the shared custom-item catalog `data/custom-items.json`** | ❌ never deployed |
 
 The deploy workflow listens to `main` and `dev` only, so nothing committed to
 `character-data` ever triggers a rebuild or a Pages deployment. The branch exists
 for one reason: to hold the live data — one raw `ed-character/1` file per
-character at `data/characters/<id>.json` plus a create-only discovery index
+character at `data/characters/<id>.json` plus a discovery index (name create-only, portrait refreshed on save)
 `data/characters/index.json` (`ed-characters-index/1`), and the custom-item
 catalog `data/custom-items.json` (`ed-items/2`) —
 committed by the serverless save target (docs/GITHUB-SERVERLESS-SAVE.md) on the
@@ -195,7 +195,7 @@ entirely while reconnecting the histories, then push.
   item image onto `character-data` too (a second home, and a 404 whenever it was
   missed).
 - **Saves never rebuild the app.** The serverless save target writes
-  `data/characters/<id>.json` (per-character files + create-only index) on the
+  `data/characters/<id>.json` (per-character files + discovery index; name create-only, portrait refreshed on save) on the
   dedicated `character-data`
   branch — a file store, not a build input (see "The `character-data` branch"
   above and docs/GITHUB-SERVERLESS-SAVE.md). It is never deployed. The one

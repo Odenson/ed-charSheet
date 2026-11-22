@@ -497,7 +497,8 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
   scripted SHA, a scripted `409` then `200`, and a `403`), then assert: wrong
   method/path → `404`; non-JSON → `400`; wrong schema / oversized → `400`;
   `invalid_base` (non-string `base`) → `400`; a save PUTs `data/characters/<id>.
-  json` with the raw entry and **never touches the index** on an existing file;
+  json` with the raw entry and, on an existing file, reads the index but writes
+  it only when the validated `meta.portrait` differs (unchanged -> no index PUT);
   a matching `base` → PUT carries that sha; a stale `base` → `409 stale_base`
   + the current sha, **no PUT, no retry**; a raced read→write `409` for a
   base-caller → `stale_base` with a fresh sha; a missing file (`404`) → create +
@@ -506,8 +507,8 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
   a missing/invalid id (incl. `'../evil'`, `'A/b'`, `'a b'`, `'..'`, `'a.b'`,
   `'É'`, `42`, `''`) → `400 invalid_id`; no-base (legacy) saves retry `409` with
   the new sha (bounded) and surface `conflict` when exhausted; cross-character
-  concurrent saves both succeed without a false conflict; a rename save touches
-  only the character file; upstream `403` → `502`. (The grouped-store upsert and
+  concurrent saves both succeed without a false conflict; a rename save never
+  writes the index (name is create-only); upstream `403` → `502`. (The grouped-store upsert and
   the no-`id` path are gone — the id is required since v1.6.0, the per-file
   layout since the split.)
 - **Worker, manual integration.** One real `POST` against the repo, verify the
@@ -528,6 +529,13 @@ The project's ethos is `node --test`, zero deps (ARCHITECTURE §10) — apply it
   env-pinned `GITHUB_ITEMS_PATH`. The fold job (`tools/fold-custom-items.mjs`)
   has its own suite (create / update / skip-identical / validation-abort /
   409-retry / missing-file no-op).
+- **`/save-image`.** `tools/worker/worker-portrait.test.js` covers the portrait
+  route: valid upload -> ok; an identical retry -> ok with no PUT; different content
+  at the same path -> `409 exists`; bad magic bytes / extension mismatch / over
+  1,500,000 bytes / bad or other-id filename / path traversal -> `400` with no PUT;
+  no key -> `401`. Plus the index portrait sync on `/save`: a changed portrait
+  updates the row, an unchanged one is a no-op, `null` removes it, and invalid
+  strings skip the write.
 
 ---
 
@@ -559,6 +567,11 @@ server-side, plus honest limits:
      missing/wrong key, or an unconfigured one (runbook §2.1). Single-user sheet,
      so the owner keeps one private key. Players enter it in the app per session,
      held in memory only; the GitHub token still never reaches the browser.
+- **`/save-image` blast radius.** A key-holder can add new image files under
+  `data/` (<= 1,500,000 bytes, magic bytes checked, filename pinned to
+  `<id>-<timestamp>.<ext>`, never overwriting an existing file). A junk image cannot
+  corrupt a character, but a later save does not undo it; removal is a manual commit
+  on the branch.
 - **Public read is by design.** The data branch is public like the rest of the
   repo; unauthenticated reading is exactly what the app's live fetch needs.
 - **Rate limiting.** Free-tier Workers have basic request limits; a per-IP
@@ -604,6 +617,9 @@ server-side, plus honest limits:
 | `data/custom-items.json` | Shared player-created catalog on `character-data` (`ed-items/2`), folded into `rules/custom-items.json` on `dev` by CI (PLAN-CUSTOM-ITEMS.md §3) |
 | Settings toggle | "Save to GitHub (server)" — enables the target and holds the required `SAVE_KEY` for the session |
 | Save action entry | A third target alongside web store + file, in edit mode |
+| `POST /save-image` | Worker route for portrait uploads (`data/<id>-<ts>.<ext>`, create-only); called before the character JSON |
+| `store-portrait.js` | Staged image key `ed-character-image:<id>`, branch image listing, `runPortraitSave` (image-then-JSON ordering), `moveStagedPortrait` (rename) |
+| `store-server.js` `saveImage` | Client for `/save-image`; only `ok:true` is success, `exists` is a hard `SaveError` |
 | Worker + secrets | Deployed outside the repo; owner-only setup |
 
 ### 6.3 Rules the addition must honour

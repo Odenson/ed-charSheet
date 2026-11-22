@@ -408,6 +408,11 @@ category; a successful save clears the saved categories (`reconcileOverlay`, §4
 of the feature doc) so the live branch read becomes the source of truth — the
 overlay would otherwise mask a save made from another device.
 
+A staged portrait upload lives in its own key, `ed-character-image:${id}`
+(`{ path, mime, dataUrl }`) — an input that is never part of the character JSON or
+`SAVED_CATEGORIES`. It is cleared after the JSON save succeeds, on **Discard local
+changes**, and on take-theirs.
+
 Because the overlay masks the branch until a save clears it, a draft that was
 never saved (stale cruft, or edits superseded by a save elsewhere) can linger
 over the newer GitHub version. The escape hatch is a **Discard local changes**
@@ -427,7 +432,9 @@ overlay category the engine reports as touched) is unchanged. A corrupt or `v !=
 envelope reads as absent and never blocks a load. Drafts are listed in the loader
 beside the index rows (`mergeRows`: sorted by id; an id that exists on the branch
 wins and hides the draft), survive a reload and a switch to another character, and
-a rename moves both keys. **A draft is never auto-saved to GitHub (the Settings idle
+a rename moves both keys (and the staged portrait image: `moveStagedPortrait`
+re-prefixes the `data/<id>-<ts>` path and points `meta.portrait` at it before the
+re-save). **A draft is never auto-saved to GitHub (the Settings idle
 auto-save skips it), never flushes on hide and never posts silently** (its local overlay
 still records every edit as usual): its first Save is manual only, and a loaded draft is always dirty
 (there is no file to match). That first Save re-reads the index **fresh** and
@@ -544,9 +551,12 @@ A save always carries an `id` (required since v1.6.0); the worker writes
 `data/characters/<id>.json` with an optimistic-concurrency check — the client
 sends `base` (the file's blob sha from the read ETag) and a stale base returns
 `409 stale_base`, surfacing a keep-mine/take-theirs conflict instead of a silent
-lost write (plans/PLAN-SAVE-CONCURRENCY.md). The index row is ensured only on
-create, so saves never read or rewrite it (renames lag — the file's `meta.name`
-is authoritative). The app fetches the index once to list characters, then loads
+lost write (plans/PLAN-SAVE-CONCURRENCY.md). The index row is created on create;
+every later save reads it and rewrites only that row's portrait when it differs
+(name is create-only, so renames lag — the file's `meta.name` is authoritative;
+the index is never a save base). Portrait images go via `POST /save-image`
+(create-only, path `data/<id>-<ts>.<ext>`), called before the character JSON
+(docs/GITHUB-SERVERLESS-SAVE.md §3). The app fetches the index once to list characters, then loads
 one file per character. The grouped `ed-characters/1` store was **retired** with
 the split; the legacy `data/character.json` and the worker's no-`id` path were
 **removed at the v1.6.0 promotion**.
@@ -656,6 +666,8 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
       dirty.js             # pure isDirty(snapshot, draft) for the free-text discard guard
       scope-css.js         # pure scopeCss(cssText, selector): scopes kit CSS under .kit-portal
       button-css.js        # buttonCss
+    portrait-image.js      # portrait image prep: validate JPEG/PNG/WebP <= 10 MB, fit 1024->768->512 shrink ladder, JPEG q0.85 (PNG if transparent), <= 1,000,000-byte cap, filename `<id>-<ms>.<ext>`; canvas injectable; never imported by engine/*
+    portrait-modal-state.js # portrait-modal selection state, isDirty, toDetail (pure)
     item-equip-state.js    # input-time equip rules (one armour worn)
     combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)
     combat-log-rows.js     # Combat-log row to table-cell mapping (pure)
