@@ -11,6 +11,6 @@
     "deploy": "node deploy.mjs"
   },
   "devDependencies": {
-    "wrangler": "^4"
+    "wrangler": "^4.166.0"
   }
 }
