@@ -20,6 +20,10 @@
     "fighter-test": {
       "name": "Fighter-Test",
       "portrait": "data/fighter-test-1795317647612.jpg"
+    },
+    "hum-war": {
+      "name": "Hum-War",
+      "portrait": null
     }
   }
 }
