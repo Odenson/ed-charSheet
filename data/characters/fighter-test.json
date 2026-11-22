@@ -158,7 +158,14 @@
       "spent": 0
     },
     "legend": {
-      "earned": []
+      "earned": [
+        {
+          "id": "mwrakoo8-lo8wm",
+          "amount": 40000,
+          "description": "test",
+          "date": "2026-11-22"
+        }
+      ]
     },
     "health": {
       "damage": 0,
