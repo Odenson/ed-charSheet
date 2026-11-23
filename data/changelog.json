@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.6.0",
+      "date": "2026-11-23",
+      "summary": "Saving to GitHub now shows a small dismissible spinner while a manual save is in progress.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Saving to GitHub now shows a small spinner while a manual save is in progress. You can close it and the save carries on."
+        }
+      ]
+    },
+    {
       "version": "2.5.0",
       "date": "2026-11-23",
       "summary": "Create your own Knowledge, Artisan and General skills with a Custom tag, filter both skill pickers by category, see what each skill does with an info icon, and pick from seven new Knowledge examples; the Add Legend date now defaults to today.",

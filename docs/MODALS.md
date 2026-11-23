@@ -164,6 +164,7 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 | Notes, Edit details, Add Legend, custom item, day reset, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 24rem scroll / 26rem |
 | Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |
 | trade, new character / rename (`ed-new-character`, kind `input`), delete character (`ed-delete-character`, kind `input`, danger primary) | 2150 | 27rem scroll / 24rem / 26rem |
+| manual-save spinner (`ed-saving`, kind `info`, mounted by ed-app while a manual `_doSave` is in flight; dismissible, the save continues) | 2150 | 20rem |
 | save key (`ed-save-key`, portal; must sit above the picker's delete modal) | 2200 | 26rem |
 | create custom skill (`ed-custom-skill`, kind `input`; dispatches `ed-create-custom-skill`, then closes; opened from the Disciplines skill pickers) | 2200 | 30rem scroll |
 | Settings, conflict | 2200 | 26rem |
@@ -200,13 +201,16 @@ carries no trigger:
 - Spells cast → roll (`close({ restoreFocus: false })`);
 - Take damage → Knockdown roll (`close({ restoreFocus: !roll })`);
 - Apply closes (the roll is removed; no restore);
-- an Equipment full sell (the tile is removed).
+- an Equipment full sell (the tile is removed);
+- the `ed-saving` spinner opens with no trigger (`opened(null)`), so its removal (save finished, or
+  hand-off to the conflict / rename modal) never moves focus.
 
 ## 8. Separate-component modals
 
 The migrated child modals `ed-add-legend`, `ed-edit-meta`, `ed-edit-portrait`, `ed-custom-item`, `ed-custom-skill`,
 `ed-day-reset`, `ed-conflict`, `ed-settings`, `ed-save-key`,
-`ed-character-picker`, `ed-new-character` and `ed-delete-character` also own their controller. Unlike
+`ed-character-picker`, `ed-new-character`, `ed-delete-character` and `ed-saving` (a dismissible
+spinner shown while a manual save runs; closing it hides it only, the save carries on) also own their controller. Unlike
 `ed-confirm`, they dispatch their domain event (for example `ed-conflict`,
 `ed-edit-meta`, `create-character`) and then `close` for any reason (`onClose`
 always dispatches `close`). Hosts act on the domain event and clear their mount
