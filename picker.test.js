@@ -5,7 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { pickItemKeys, PICKER_CAP, PICKER_LABELS } from './ui/picker.js';
+import { pickItemKeys, groupItemKeys, ITEM_CHIPS, PICKER_CAP, PICKER_LABELS } from './ui/picker.js';
+import { ITEM_KIND_ORDER, itemChipMatches } from './ui/item-filter.js';
 
 const gear = { kind: 'gear' };
 
@@ -44,6 +45,51 @@ test('query filters by name, kind label and effect summaries', () => {
 test('results are capped at PICKER_CAP', () => {
   const catalog = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`Item ${i}`, gear]));
   assert.equal(pickItemKeys({ catalog, query: '' }).length, PICKER_CAP);
+});
+
+const mixed = {
+  Sword: { kind: 'weapon' }, Dagger: { kind: 'weapon' }, Mail: { kind: 'armor' },
+  Rope: gear, Mine: { kind: 'weapon' }, Aras: { kind: 'thread-item', tier: 'Journeyman', threadRanks: [] },
+};
+
+test('groupItemKeys sections by kind in order, custom first, uncapped', () => {
+  const g = groupItemKeys({ catalog: mixed, customNames: ['Mine'] });
+  assert.deepEqual(g.map((s) => s.id), ['custom', 'weapon', 'armor', 'gear', 'thread-item']);
+  assert.deepEqual(g[0].keys, ['Mine']);
+  assert.deepEqual(g[1].keys, ['Sword', 'Dagger'], 'a custom item is not repeated in its kind section');
+  const big = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`Item ${i}`, gear]));
+  assert.equal(groupItemKeys({ catalog: big })[0].keys.length, 60, 'no 50-item cap');
+});
+
+test('groupItemKeys: every thread item in the real catalog is reachable', () => {
+  const { items } = JSON.parse(readFileSync(new URL('./rules/thread-items.json', import.meta.url), 'utf8'));
+  const canon = JSON.parse(readFileSync(new URL('./rules/items.json', import.meta.url), 'utf8')).items;
+  const g = groupItemKeys({ catalog: { ...canon, ...items } });
+  assert.equal(g.find((s) => s.id === 'thread-item').keys.length, Object.keys(items).length);
+});
+
+test('groupItemKeys chip filters by kind or custom; query narrows within', () => {
+  const kinds = (o) => groupItemKeys({ catalog: mixed, customNames: ['Mine'], ...o }).map((s) => s.id);
+  assert.deepEqual(kinds({ chip: 'weapon' }), ['weapon'], 'kind chip: custom weapon sits in its kind section');
+  assert.deepEqual(groupItemKeys({ catalog: mixed, customNames: ['Mine'], chip: 'weapon' })[0].keys, ['Sword', 'Dagger', 'Mine']);
+  assert.deepEqual(kinds({ chip: 'custom' }), ['custom']);
+  assert.deepEqual(kinds({ chip: 'thread-item' }), ['thread-item']);
+  assert.deepEqual(kinds({ query: 'dag' }), ['weapon']);
+  assert.deepEqual(kinds({ chip: 'armor', query: 'sword' }), []);
+});
+
+test('ITEM_CHIPS: All, Custom, then one chip per kind with labels', () => {
+  assert.deepEqual(ITEM_CHIPS.slice(0, 2), [{ id: 'all', label: 'All' }, { id: 'custom', label: 'Custom' }]);
+  assert.equal(ITEM_CHIPS.length, 2 + ITEM_KIND_ORDER.length);
+  assert.ok(ITEM_CHIPS.every((c) => c.label));
+});
+
+test('itemChipMatches', () => {
+  assert.ok(itemChipMatches('all', { kind: 'gear' }));
+  assert.ok(itemChipMatches('custom', { kind: 'gear', custom: true }));
+  assert.ok(!itemChipMatches('custom', { kind: 'gear' }));
+  assert.ok(itemChipMatches('gear', { kind: 'gear' }));
+  assert.ok(!itemChipMatches('weapon', { kind: 'gear' }));
 });
 
 test('PICKER_LABELS covers every kind the add-picker shows', () => {

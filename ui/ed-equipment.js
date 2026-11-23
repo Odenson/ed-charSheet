@@ -15,7 +15,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
 import { infoIconCss } from './info-icon.js';
-import { pickItemKeys, PICKER_LABELS } from './picker.js';
+import { groupItemKeys, ITEM_CHIPS, PICKER_LABELS } from './picker.js';
 import { equipArmour, applyArmourSwap, bumpQuantity, nextTradeItems } from './item-equip-state.js';
 import { boostHasNoEffect } from '../engine/potions.js';
 import { recoveriesRemaining } from '../engine/health.js';
@@ -124,7 +124,9 @@ export class EdEquipment extends LitElement {
     _modal: { state: true },          // owned item name whose detail is open
     _addOpen: { state: true },        // searchable picker visible
     _query: { state: true },          // picker search text
-    _hi: { state: true },             // highlighted picker result index
+    _hi: { state: true },             // highlighted picker result index (flat, across sections)
+    _pickChip: { state: true },       // picker type-chip id ('all' | 'custom' | a kind)
+    _pickInfo: { state: true },       // Set of item names whose ⓘ description is expanded
     _trade: { state: true },          // { name, mode } — the buy/sell dialog in flight
     _coinMenu: { state: true },       // "add coin" menu open
     _shownCoins: { state: true },     // coin keys pinned visible at 0 (edit mode)
@@ -149,55 +151,35 @@ export class EdEquipment extends LitElement {
     // The item modal runs on the UI kit (read-only `info`: Escape, Enter, ✕ and
     // backdrop all close it and return focus to the tile).
     this._modalCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
-    // The add-item picker keeps "Escape anywhere in the tab closes it": a host
-    // level listener (the kit swallows Escape first while a modal is open, so
-    // this only sees it when the picker is the only thing open). The search input
-    // handles its own Escape in _pickKeydown.
-    this.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape' || !this._addOpen || e.defaultPrevented) return;
-      if (e.composedPath()[0] === this.renderRoot.querySelector('.combo input')) return;
-      this._closePicker();
+    // The add-item picker is a kit modal too (kind `picker`: ✕ only, Escape and
+    // backdrop close it, focus returns to "＋ Add item"). Closing resets it so the
+    // next open starts clean.
+    this._pickChip = 'all';
+    this._pickInfo = new Set();
+    this._pickCtl = new ModalController(this, {
+      kind: 'picker',
+      onClose: () => { this._addOpen = false; this._query = ''; this._hi = 0; this._pickChip = 'all'; this._pickInfo = new Set(); },
     });
-    this._onPointerDown = (e) => {
-      // A pointerdown outside the picker closes it (composedPath spans the shadow
-      // root, so shadow-internal clicks are seen too); clicking the search input
-      // or a result row keeps it open for typing / multi-add.
-      if (!this._addOpen) return;
-      const combo = this.renderRoot.querySelector('.combo');
-      if (!combo || !e.composedPath().includes(combo)) this._closePicker();
-    };
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    document.addEventListener('pointerdown', this._onPointerDown);
-  }
-
-  disconnectedCallback() {
-    document.removeEventListener('pointerdown', this._onPointerDown);
-    super.disconnectedCallback();
-  }
-
-  // Closing the add-picker (Done / Escape / click outside) resets it so the next
-  // open starts clean, and blurs so an Escape close leaves no :focus-visible ring.
   // Open the item modal; the tile is the trigger focus returns to on close.
   _openItem(name, e) {
     this._modal = name;
     this._modalCtl.opened(e?.currentTarget);
   }
 
-  _closePicker() {
-    this._addOpen = false;
+  _openPicker(e) {
+    this._addOpen = true;
     this._query = '';
     this._hi = 0;
-    this.renderRoot.activeElement?.blur();
+    this._pickChip = 'all';
+    this._pickInfo = new Set();
+    this._pickCtl.opened(e?.currentTarget);
   }
 
-  updated(changed) {
-    // Focus the search field the moment the picker opens, so typing filters at once.
-    if (changed.has('_addOpen') && this._addOpen) {
-      this.renderRoot.querySelector('.combo input')?.focus();
-    }
+  // A pick hands off to the trade dialog (which takes focus itself), so no restore.
+  _closePicker() {
+    if (this._addOpen) this._pickCtl.close({ restoreFocus: false });
   }
 
   static styles = [modalCss, css`
@@ -226,16 +208,28 @@ export class EdEquipment extends LitElement {
     .addbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; position: relative; }
     .addbtn { font: inherit; font-size: var(--fs-body); font-weight: 500; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 8px 14px; border-radius: 9px; white-space: nowrap; }
     .addbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .combo { position: relative; flex: 1; min-width: 0; }
-    .combo input { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-chip); border: 1px solid var(--accent); border-radius: 9px; padding: 8px 11px; outline: none; }
-    .drop { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 20; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); max-height: 300px; overflow-y: auto; padding: 6px; }
-    .res { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
-    .res:hover, .res.hi { background: var(--bg-chip); border-color: var(--border); }
-    .res .rk { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 84px; flex: 0 0 84px; }
-    .res.mg .rk { color: var(--arcane); }
-    .res .rn { font-size: var(--fs-body); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .res.owned { opacity: 0.45; }
-    .res .star { color: var(--arcane); width: 12px; }
+    /* Add-item picker modal (kit kind 'picker'): search, type chips, grouped list. */
+    .searchin { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin: 6px 0; box-sizing: border-box; }
+    .searchin:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+    .pchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+    .chipbtn { font: inherit; font-size: var(--fs-fine); color: var(--muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+    .chipbtn:hover { border-color: var(--accent); }
+    .chipbtn[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+    .chipbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .pcount { font-size: var(--fs-small); color: var(--muted); margin: 4px 0; }
+    .psec { font-size: var(--fs-eyebrow); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 4px; padding-bottom: 3px; border-bottom: 1px solid var(--border); }
+    .psec.mg { color: var(--arcane); }
+    .prow { display: flex; align-items: center; gap: 4px; }
+    .popt { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font: inherit; font-size: var(--fs-body); text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--fg); cursor: pointer; }
+    .popt:hover, .popt.hi { background: var(--bg-card); border-color: var(--border); }
+    .popt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
+    .popt .pn { font-weight: 500; display: inline-flex; align-items: center; flex-wrap: wrap; }
+    .popt .star { color: var(--arcane); margin-right: 5px; }
+    .popt .psub { font-size: var(--fs-small); color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prow.owned .popt { opacity: 0.55; }
+    .ppill { font-size: var(--fs-fine); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
+    .ppill.custom { color: var(--accent); border-color: var(--accent); }
+    .pinfo { font-size: var(--fs-small); color: var(--muted); margin: 0 10px 6px 10px; }
     .nores { padding: 20px; text-align: center; color: var(--muted); font-size: var(--fs-body); }
 
     /* Two-column board — each column is an independent stack (CSS multi-column),
@@ -578,19 +572,81 @@ export class EdEquipment extends LitElement {
       ...(this.model?.threadItemCatalog ?? {}),
     };
   }
-  _matches() {
-    return pickItemKeys({
+  // The picker's sections ([{ id, label, keys }]) for the current search + chip.
+  _groups() {
+    return groupItemKeys({
       catalog: this._catalogs(),
       customNames: Object.keys(this.model?.customCatalog ?? {}),
       query: this._query,
+      chip: this._pickChip,
     });
   }
+  // The same keys flattened in display order — the arrow-key / Enter navigation list.
+  _matches() {
+    return this._groups().flatMap((g) => g.keys);
+  }
+  // Search-field keys: arrows move the highlight, Enter picks it (Escape is the
+  // kit's). The field carries data-enter="local", so the kit passes Enter through.
   _pickKeydown(e) {
+    if (e.isComposing) return;
     const list = this._matches();
-    if (e.key === 'ArrowDown') { this._hi = Math.min(this._hi + 1, list.length - 1); e.preventDefault(); }
-    else if (e.key === 'ArrowUp') { this._hi = Math.max(this._hi - 1, 0); e.preventDefault(); }
-    else if (e.key === 'Enter' && list[this._hi]) { this._add(list[this._hi]); }
-    else if (e.key === 'Escape') { this._closePicker(); }
+    if (e.key === 'ArrowDown') { this._hi = Math.min(this._hi + 1, list.length - 1); e.preventDefault(); this._scrollHi(); }
+    else if (e.key === 'ArrowUp') { this._hi = Math.max(this._hi - 1, 0); e.preventDefault(); this._scrollHi(); }
+    else if (e.key === 'Enter' && list[this._hi]) { e.preventDefault(); this._add(list[this._hi]); }
+  }
+  _scrollHi() {
+    this.updateComplete.then(() => this.renderRoot.querySelector('.popt.hi')?.scrollIntoView?.({ block: 'nearest' }));
+  }
+  _togglePickInfo(name) {
+    const next = new Set(this._pickInfo);
+    next.has(name) ? next.delete(name) : next.add(name);
+    this._pickInfo = next;
+  }
+
+  // Add-item picker (kit modal, kind 'picker'): search + type chips + a list grouped
+  // by kind. Mirrors the Disciplines "Learn a new skill" picker (plans: add-item picker).
+  _pickerModal() {
+    const catalog = this._catalogs();
+    const custom = new Set(Object.keys(this.model?.customCatalog ?? {}));
+    const owned = new Set(this._inputs().map((x) => x.name));
+    const groups = this._groups();
+    const total = Object.keys(catalog).length;
+    const shown = groups.reduce((n, g) => n + g.keys.length, 0);
+    const q = this._query.trim();
+    let idx = -1;
+    const row = (n) => {
+      idx += 1;
+      const it = catalog[n];
+      const mg = MAGIC_KINDS.has(it.kind);
+      const sub = it.kind === 'thread-item'
+        ? [it.tier, `${(it.threadRanks ?? []).length} thread ranks`].filter(Boolean).join(' · ')
+        : (it.effects?.[0]?.summary ?? it.ref?.category ?? '');
+      const desc = it.ref?.description;
+      const open = this._pickInfo.has(n);
+      const i = idx;
+      return html`<div class="prow ${owned.has(n) ? 'owned' : ''}">
+          <button type="button" class="popt ${i === this._hi ? 'hi' : ''}" @click=${() => this._add(n)}>
+            <span class="pn">${mg ? html`<span class="star" aria-hidden="true">✦</span>` : ''}${n}${custom.has(n) ? html`<span class="ppill custom">Custom</span>` : ''}${owned.has(n) ? html`<span class="ppill">Owned</span>` : ''}</span>
+            ${sub ? html`<span class="psub">${sub}</span>` : ''}
+          </button>
+          ${desc ? html`<button type="button" class="ibadge" aria-label="About ${n}" aria-expanded=${open ? 'true' : 'false'} @click=${() => this._togglePickInfo(n)}>i</button>` : ''}
+        </div>${open && desc ? html`<div class="pinfo">${desc}</div>` : ''}`;
+    };
+    return modalFrame(this._pickCtl, {
+      title: 'Add item',
+      layer: 2000,
+      width: '30rem',
+      scroll: true,
+      body: html`
+    <input class="searchin" type="search" data-enter="local" autofocus autocomplete="off" placeholder="Search items, types, effects…" aria-label="Find item"
+      .value=${this._query} @input=${(e) => { this._query = e.target.value; this._hi = 0; }} @keydown=${(e) => this._pickKeydown(e)} />
+    <div class="pchips" role="group" aria-label="Filter items by type">
+      ${ITEM_CHIPS.map((c) => html`<button type="button" class="chipbtn" aria-pressed=${this._pickChip === c.id ? 'true' : 'false'} @click=${() => { this._pickChip = c.id; this._hi = 0; }}>${c.label}</button>`)}
+    </div>
+    <div class="pcount">${shown} of ${total} items${q ? html` matching “${q}”` : ''}</div>
+    ${groups.map((g) => html`<div class="psec ${g.keys.some((n) => MAGIC_KINDS.has(catalog[n].kind)) && g.id !== 'custom' ? 'mg' : ''}">${g.label}</div>${g.keys.map(row)}`)}
+    ${shown ? '' : html`<div class="nores">No item matches${q ? html` “${q}”` : ' this filter'}.</div>`}`,
+    });
   }
 
   // One set of armour worn: equipping a second one asks first. The message names
@@ -1021,35 +1077,13 @@ export class EdEquipment extends LitElement {
     const m = this.model;
     if (!m) return html``;
     const items = m.items ?? [];
-    const catalog = this._catalogs();
     const modalItem = this._modal ? items.find((it) => it.name === this._modal) : null;
 
     return html`
       ${this.editMode
         ? html`
             <div class="addbar">
-              ${this._addOpen
-                ? html`
-                    <div class="combo">
-                      <input type="text" placeholder="Search items by name, type, or effect…" .value=${this._query}
-                        aria-label="Find item" @input=${(e) => { this._query = e.target.value; this._hi = 0; }} @keydown=${this._pickKeydown} />
-                      <div class="drop">
-                        ${this._matches().length
-                          ? this._matches().map((n, i) => {
-                              const it = catalog[n]; const mg = MAGIC_KINDS.has(it.kind); const owned = this._inputs().some((x) => x.name === n);
-                              return html`<div class="res ${mg ? 'mg' : ''} ${i === this._hi ? 'hi' : ''} ${owned ? 'owned' : ''}"
-                                @mousedown=${(e) => e.preventDefault()} @click=${() => this._add(n)}>
-                                <span class="rk">${KLABEL[it.kind] || it.kind}</span>
-                                <span class="star">${mg ? '✦' : ''}</span>
-                                <span class="rn">${n}</span>
-                              </div>`;
-                            })
-                          : html`<div class="nores">No item matches “${this._query}”.</div>`}
-                      </div>
-                    </div>
-                    <button class="addbtn" @click=${() => this._closePicker()}>Done</button>
-                  `
-                : html`<button class="addbtn" @click=${() => { this._addOpen = true; this._query = ''; this._hi = 0; }}>＋ Add item</button>`}
+              <button class="addbtn" @click=${(e) => this._openPicker(e)}>＋ Add item</button>
               <button class="addbtn" @click=${() => (this._customItemsOpen = true)}>＋ Custom items</button>
             </div>
           `
@@ -1063,6 +1097,8 @@ export class EdEquipment extends LitElement {
       </div>
 
       ${modalItem ? this._detailModal(modalItem) : ''}
+
+      ${this._addOpen ? this._pickerModal() : ''}
 
       ${this._swapModal()}
 

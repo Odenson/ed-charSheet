@@ -159,7 +159,7 @@ required when the title is a template), `titleExtra`, `body`, `layer`, `width`,
 
 | Host | Layer | Width |
 |---|---|---|
-| Disciplines, Equipment item | 2000 | 30rem, scroll |
+| Disciplines, Equipment item, Equipment add-item picker (kind `picker`; its own controller) | 2000 | 30rem, scroll |
 | confirm, Take damage, Spells info / learn / cast | 2100 | 26rem / 26rem / 30rem / 48rem scroll / 30rem |
 | Notes, Edit details, Add Legend, custom item, day reset, picker, Combat step audit | 2100 | 30rem / 32rem scroll / 26rem / 40rem scroll / 26rem / 24rem scroll / 26rem |
 | Overview modals, changelog, homebrew | 2000 | 32rem scroll (Karma Ritual 26rem; lightbox `auto`, no scroll) |

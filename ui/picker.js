@@ -1,5 +1,6 @@
 // ui/picker.js — pure, DOM-free picker selection shared by the Equipment tab
-// (ui/ed-equipment.js) and its regression test (picker.test.js). Presentation
+// (ui/ed-equipment.js) and its regression test (picker.test.js). groupItemKeys
+// drives the modal picker; pickItemKeys is the older capped list. Presentation
 // logic only: it orders and caps *catalog* keys for the add-picker — it never
 // mutates state or computes a game value, so the Tier-1 architecture rule
 // (engine pure and DOM-free; UI never derives values) is untouched.
@@ -9,6 +10,8 @@
 // (store.js) and the picker caps results at PICKER_CAP — so without
 // prioritisation a freshly saved custom item would sit past the cap and never
 // appear in the browse list. Custom items sort FIRST instead.
+import { ITEM_KIND_ORDER, itemChipMatches } from './item-filter.js';
+
 export const PICKER_CAP = 50;
 
 export const PICKER_LABELS = {
@@ -26,22 +29,54 @@ const kindLabel = (kind) => PICKER_LABELS[kind] ?? '';
 //   query        — the picker's raw input; '' / whitespace means "browse all"
 export function pickItemKeys({ catalog, customNames = [], query = '' }) {
   const custom = new Set(customNames);
-  const q = query.trim().toLowerCase();
-  return Object.keys(catalog)
-    .filter((n) => {
-      if (!q) return true;
-      const it = catalog[n];
-      // Effect entries are objects carrying a `summary`; reduce every catalog
-      // shape (plain `effects`, thread `base`/`threadRanks`) to strings first,
-      // so the search always compares text.
-      const summaries = [
-        ...(it.effects ?? []).map((e) => e.summary ?? ''),
-        ...(it.base?.effects ?? []).map((e) => e.summary ?? ''),
-        ...(it.threadRanks ?? []).flatMap((r) => r.effects ?? []).map((e) => e.summary ?? ''),
-      ];
-      return n.toLowerCase().includes(q) || kindLabel(it.kind).toLowerCase().includes(q) ||
-        summaries.some((s) => s.toLowerCase().includes(q));
-    })
+  return matchKeys(catalog, query)
     .sort((a, b) => Number(custom.has(b)) - Number(custom.has(a)))
     .slice(0, PICKER_CAP);
+}
+
+// Filter catalog keys by `query` against name / kind label / effect summaries.
+function matchKeys(catalog, query) {
+  const q = query.trim().toLowerCase();
+  return Object.keys(catalog).filter((n) => {
+    if (!q) return true;
+    const it = catalog[n];
+    // Effect entries are objects carrying a `summary`; reduce every catalog
+    // shape (plain `effects`, thread `base`/`threadRanks`) to strings first,
+    // so the search always compares text.
+    const summaries = [
+      ...(it.effects ?? []).map((e) => e.summary ?? ''),
+      ...(it.base?.effects ?? []).map((e) => e.summary ?? ''),
+      ...(it.threadRanks ?? []).flatMap((r) => r.effects ?? []).map((e) => e.summary ?? ''),
+    ];
+    return n.toLowerCase().includes(q) || kindLabel(it.kind).toLowerCase().includes(q) ||
+      summaries.some((s) => s.toLowerCase().includes(q));
+  });
+}
+
+// The chip row of the modal picker: All, Custom, then one chip per kind.
+export const ITEM_CHIPS = [
+  { id: 'all', label: 'All' },
+  { id: 'custom', label: 'Custom' },
+  ...ITEM_KIND_ORDER.map((k) => ({ id: k, label: PICKER_LABELS[k] })),
+];
+
+// The modal picker's list: catalog keys filtered by `query` and the type `chip`,
+// grouped into sections — player-made items first (under All / Custom), then one
+// section per kind in ITEM_KIND_ORDER. Uncapped: grouping + chips do the narrowing.
+//   → [{ id, label, keys }]  (empty sections omitted)
+export function groupItemKeys({ catalog, customNames = [], query = '', chip = 'all' }) {
+  const custom = new Set(customNames);
+  const keys = matchKeys(catalog, query).filter((n) =>
+    itemChipMatches(chip, { kind: catalog[n].kind, custom: custom.has(n) }));
+  const groups = [];
+  const showCustomGroup = chip === 'all' || chip === 'custom';
+  const customKeys = showCustomGroup ? keys.filter((n) => custom.has(n)) : [];
+  if (customKeys.length) groups.push({ id: 'custom', label: 'Custom', keys: customKeys });
+  const rest = keys.filter((n) => !customKeys.includes(n));
+  const kinds = [...ITEM_KIND_ORDER, ...new Set(rest.map((n) => catalog[n].kind).filter((k) => !ITEM_KIND_ORDER.includes(k)))];
+  for (const k of kinds) {
+    const ks = rest.filter((n) => catalog[n].kind === k);
+    if (ks.length) groups.push({ id: k, label: PICKER_LABELS[k] ?? k, keys: ks });
+  }
+  return groups;
 }

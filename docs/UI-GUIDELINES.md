@@ -285,6 +285,16 @@ shield or any non-armour never blocks. Storing the worn armour needs no prompt.
 The rule is enforced at input time (`ui/item-equip-state.js`); the engine stays
 agnostic and folds whatever ends up equipped.
 
+**Add-item picker.** "＋ Add item" (edit mode) opens a kit modal (kind `picker`, layer
+2000, 30rem scroll, ✕ only) like the skill learn picker: an autofocused search
+(name, type, effect text), type chips (`ui/picker.js` `ITEM_CHIPS`: All · Custom ·
+one per kind; matching in `ui/item-filter.js`), a "N of M items" count and the list
+grouped into sections — player-made items first, then Weapon · Armour · Shield ·
+Ammunition · Gear · Magic item · Blood charm · Healing aid · Thread item. The list is
+uncapped (chips and search narrow it). Rows show the name, Custom / Owned pills, a
+one-line effect and an ⓘ that expands the description; picking a row opens the
+buy dialog and closes the picker. ↑/↓ + Enter in the search field also pick.
+
 ## Other conventions
 - **Roll affordance:** every rollable stat (attributes, initiative, knockdown,
   karma, talents, skills, and knacks that print a Rank+attribute Step) carries a small dice button (the shared SVG pip-face die, `ui/dice-icon.js`, drawn in `currentColor` so accent/karma/danger/disabled colours still apply) that opens the roll modal. The modal's breakdown lists every applied modifier: result mods add to the total, Step mods are tagged "Step" and already folded into the rolled Step (min Step 1). Live conditions ride every roll except the Karma die (Knocked Down −3 to the result, Harried −2 Step). Active scoped situational penalties (Darkness, Impaired Movement, Range Long; on a damage roll only Range Long) appear as pre-ticked per-roll checkboxes; unticking one drops it from the total and the Roll Log entry. Combat attack/damage pools already include them, so no checkboxes appear there. When Discord die reports are on (§8a), the finished roll is also posted to the character's Discord webhook. Knacks with no Step (Step N/A, Special Maneuver, crafting) get no dice button; the app never invents a Step for them. **Strain on roll:** a talent or knack rolled from the Disciplines tab charges its printed Strain to Health as plain damage (no armour, no Wound check); a knack's Strain replaces its parent's. An ordinary roll charges once, when the modal opens and auto-rolls, so Escape afterwards does not refund it, and toggling Karma or an optional Step mod does not charge again. Mystic Aim (aim) and set-dice (True Shot) modals charge when the roll is committed, as before. When Strain is above 0 the modal hint reads "N Strain on roll."; a talent or knack roll that charged it also shows a "Strain N" chip in its Roll Log entry and Discord report (aim and set-dice rolls get no Strain line).
