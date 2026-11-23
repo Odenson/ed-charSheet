@@ -1,0 +1,16 @@
+{
+  "schema": "ed-skills/1",
+  "source": "custom",
+  "notes": "Owner-created skills, folded from data/custom-skills.json by CI.",
+  "skills": [
+    {
+      "name": "Hand Signing",
+      "category": "general",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "summary": "The ability to communicate using your hands.  This works as a simple test if targeting another namegiver who has the same skill, target number 5, and the signing can communicate complex mean. Whoever we needs a success equal to 20 minus the targets perception score on Tagets that do not have this skill.  So a target that does not know hand signing with a perception of 10 would require a 10 or greater to understand the intent of the hand signing, and you can only communicate simple ideas.",
+      "custom": true
+    }
+  ]
+}
