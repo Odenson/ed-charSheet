@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.7.0
 ---
 # Delivery Plan: Improve attributes (improve-attributes)
 
