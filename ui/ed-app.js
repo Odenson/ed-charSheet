@@ -1197,7 +1197,7 @@ export class EdApp extends LitElement {
     if (!baseline || this._character.creation?.open || !this._editMode) return;
     const { name, action } = detail;
     const attrs = this._character.attributes;
-    const ctx = { costTable: this._rules.legendFile?.costs?.attributeIncrease, available: this._model?.legend?.available };
+    const ctx = { costTable: this._rules.legendFile?.costs?.attributeIncrease, available: this._model?.legend?.available, health: this._character?.resources?.health };
     const res = action === 'undo'
       ? undoAttributeIncrease(attrs, baseline, name)
       : action === 'increase'
@@ -1227,6 +1227,7 @@ export class EdApp extends LitElement {
       costTable: this._rules?.legendFile?.costs?.attributeIncrease,
       editMode: !!this._editMode,
       creationOpen: !!this._character?.creation?.open,
+      health: this._character?.resources?.health,
     });
   }
 

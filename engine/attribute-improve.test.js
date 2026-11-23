@@ -184,3 +184,20 @@ describe('pendingAttribute', () => {
     assert.equal(pendingAttribute(pend, saved), 'Willpower');
   });
 });
+
+describe('improve-attributes: rested and healthy (PG pp. 447-448)', () => {
+  test('any Damage or Wounds above 0 refuses with reason damaged', () => {
+    const a = attrs();
+    for (const health of [{ damage: 2, wounds: 0 }, { damage: 0, wounds: 1 }, { damage: 3, wounds: 2 }]) {
+      const r = applyAttributeIncrease(a, clone(a), 'Dexterity', ctx({ health }));
+      assert.equal(r.ok, false);
+      assert.equal(r.reason, 'damaged');
+      assert.equal(r.attributes, a);
+    }
+  });
+  test('zero or missing health is fine', () => {
+    const a = attrs();
+    assert.equal(attributeImprovePlan(a, clone(a), 'Dexterity', ctx({ health: { damage: 0, wounds: 0 } })).ok, true);
+    assert.equal(attributeImprovePlan(a, clone(a), 'Dexterity', ctx({ health: undefined })).ok, true);
+  });
+});

@@ -24,7 +24,8 @@ export function pendingAttribute(attributes, saved) {
 
 /**
  * Describe (and gate) the next improvement of `name`.
- * ctx: { costTable, available, stepOf? }.
+ * ctx: { costTable, available, stepOf?, health? } — `health` = the stored `{ damage, wounds }` inputs; any Damage or
+ * Wounds above 0 refuses (PG pp. 447-448: the character must be rested and healthy).
  */
 export function attributeImprovePlan(attributes, saved, name, ctx = {}) {
   const fail = (reason) => ({ ok: false, reason });
@@ -35,6 +36,7 @@ export function attributeImprovePlan(attributes, saved, name, ctx = {}) {
   const inc = a.increases ?? 0;
   const cost = nextIncreaseCost(inc, ctx.costTable);
   if (cost === null) return fail('cap');
+  if ((Number(ctx.health?.damage) || 0) > 0 || (Number(ctx.health?.wounds) || 0) > 0) return { ...fail('damaged'), cost };
   if (!(ctx.available >= cost)) return { ...fail('insufficient-legend'), cost };
   const stepOf = ctx.stepOf ?? valueToStep;
   const value = attributeValue(a);

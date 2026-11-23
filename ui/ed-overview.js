@@ -458,7 +458,7 @@ export class EdOverview extends LitElement {
         <dt>Training</dt><dd>${n(plan.trainingDays)} days at ${n(plan.silverFee)} silver (${n(plan.silverFee * plan.trainingDays)} total)</dd>
         <dt>Wait</dt><dd>${n(plan.weeksWait)} weeks</dd>
       </dl>
-      <p class="mpara hint">Must be rested and healthy (no Damage or Wounds). Training, silver and weeks are for your table to track; only Legend is spent here. One attribute improvement per save.</p>`;
+      <p class="mpara hint">Requires a rested, healthy character (no Damage or Wounds; enforced). Training, silver and weeks are for your table to track; only Legend is spent here. One attribute improvement per save.</p>`;
   }
 
   // One attribute tile. When an always-on effect (a magic item, a racial or thread

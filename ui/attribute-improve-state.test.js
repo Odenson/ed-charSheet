@@ -29,6 +29,7 @@ const view = (o = {}) => {
     costTable: TABLE,
     editMode: 'editMode' in o ? o.editMode : true,
     creationOpen: !!o.creationOpen,
+    health: o.health,
   });
 };
 const rowOf = (v, name) => {
@@ -88,5 +89,22 @@ describe('attributeImproveView rows', () => {
     view({ attributes: a, savedAttributes: s });
     assert.deepEqual(a, before);
     assert.deepEqual(s, before);
+  });
+});
+
+describe('attributeImproveView: rested and healthy', () => {
+  test('Damage or Wounds above 0 disables every + with a reason title', () => {
+    for (const health of [{ damage: 2, wounds: 0 }, { damage: 0, wounds: 1 }]) {
+      const v = view({ health });
+      for (const name of ['Dexterity', 'Strength']) {
+        const r = rowOf(v, name);
+        assert.equal(r.show, true);
+        assert.equal(r.canImprove, false);
+        assert.match(r.title, /rested and healthy/i);
+      }
+    }
+  });
+  test('no Damage or Wounds leaves + enabled', () => {
+    assert.equal(rowOf(view({ health: { damage: 0, wounds: 0 } }), 'Dexterity').canImprove, true);
   });
 });
