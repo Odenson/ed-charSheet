@@ -20,6 +20,15 @@
       "attribute": "Charisma",
       "summary": "The ability to stare down a target and freeze them, stopping them from moving.  Target the nagegivers social defence and if you succeed the target can not move from the stop or fight as long as you remain staring and not moving yourself.",
       "custom": true
+    },
+    {
+      "name": "Full Custom Skill",
+      "category": "knowledge",
+      "tier": 1,
+      "strain": 0,
+      "attribute": "Perception",
+      "summary": "Recalls topic knowledge",
+      "custom": true
     }
   ]
 }
