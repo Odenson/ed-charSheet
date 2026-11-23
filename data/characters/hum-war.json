@@ -42,7 +42,7 @@
     "Charisma": {
       "base": 10,
       "points": 1,
-      "increases": 1
+      "increases": 2
     }
   },
   "disciplines": [
@@ -173,7 +173,7 @@
       ]
     },
     "health": {
-      "damage": 2,
+      "damage": 0,
       "wounds": 0,
       "recoveriesUsed": 0
     }
