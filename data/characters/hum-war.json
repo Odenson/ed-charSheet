@@ -158,7 +158,14 @@
       "spent": 0
     },
     "legend": {
-      "earned": []
+      "earned": [
+        {
+          "id": "mwsvwd3a-v1pt6",
+          "amount": 5000,
+          "description": "Testing Legend",
+          "date": "2026-11-23"
+        }
+      ]
     },
     "health": {
       "damage": 0,
