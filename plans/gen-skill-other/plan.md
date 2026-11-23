@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.5.0
 ---
 # Delivery Plan: Custom skills and picker filters (gen-skill-other)
 
