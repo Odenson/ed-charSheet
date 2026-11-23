@@ -7,6 +7,21 @@
   },
   "releases": [
     {
+      "version": "2.8.0",
+      "date": "2026-11-23",
+      "summary": "The Equipment add-item picker is now a searchable modal with type chips and a list grouped by kind, so every thread item is reachable.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Add item is now a modal like the skill picker: search, type chips (All, Custom, Weapon, Armour, Shield, Ammunition, Gear, Magic item, Blood charm, Healing aid, Thread item) and a list grouped by kind, with Custom and Owned pills and an info toggle on each row."
+        },
+        {
+          "type": "fixed",
+          "text": "Thread items were missing from the Add item browse list because it stopped at 50 results; the list is no longer capped."
+        }
+      ]
+    },
+    {
       "version": "2.7.0",
       "date": "2026-11-23",
       "summary": "Improve attributes after creation: spend Legend from a + on each Overview attribute (800/1,300/2,100 for +1/+2/+3), one per save with undo, blocked while the character has Damage or Wounds.",

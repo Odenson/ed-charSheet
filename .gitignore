@@ -39,6 +39,7 @@ data/characters.json
 data/characters/
 data/chakka.jpg
 data/kolon.jpeg
+data/as-fem-1795429864758.jpg
 
 # Custom-item working copy — gitignored for the same reason as data/characters/
 # (read live from the character-data branch; local copy only for dev / file://).
