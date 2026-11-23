@@ -168,6 +168,11 @@
       "name": "Knowledge (Quick Add Skill)",
       "rank": 1,
       "tier": "Novice"
+    },
+    {
+      "name": "Full Custom Skill",
+      "rank": 1,
+      "tier": "Novice"
     }
   ],
   "knacks": [],
@@ -222,7 +227,7 @@
   "wealth": {
     "coins": {
       "copper": 0,
-      "silver": 80,
+      "silver": 70,
       "gold": 100,
       "earth": 0,
       "water": 0,
