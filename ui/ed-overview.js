@@ -104,6 +104,8 @@ export class EdOverview extends LitElement {
     .acell .astepbtn { width: 14px; height: 14px; margin: -2px 0; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); color: light-dark(#111418, #f0f3f7); font: inherit; font-size: var(--fs-small); line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
     .acell .astepbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .acell .astepbtn:disabled { opacity: 0.35; cursor: default; }
+    /* A disabled button swallows hover in some browsers, so the reason rides on the wrapper and the button lets the pointer through. */
+    .acell .aimp .astepbtn:disabled { pointer-events: none; }
     .acell .aimp { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; flex: none; }
     .acell .apend { font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); cursor: help; }
     .imp-rows { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 0.6rem; font-size: var(--fs-body); }
@@ -430,7 +432,7 @@ export class EdOverview extends LitElement {
       return html`<span class="aimp"><span class="apend" title=${r.title}>+1</span>
         <button type="button" class="astepbtn" title=${`Undo the ${a.name} improvement`} aria-label=${`Undo improving ${a.name}`} @click=${() => send('undo')}>↺</button></span>`;
     }
-    return html`<span class="aimp"><button type="button" class="astepbtn" ?disabled=${!r.canImprove} title=${r.title} aria-label=${`Improve ${a.name}`}
+    return html`<span class="aimp" title=${r.title}><button type="button" class="astepbtn" ?disabled=${!r.canImprove} aria-label=${r.canImprove ? `Improve ${a.name}` : `Improve ${a.name} unavailable: ${r.title}`}
       @click=${(e) => this._openImprove(a.name, e.currentTarget)}>+</button></span>`;
   }
   _openImprove(name, trigger) {
