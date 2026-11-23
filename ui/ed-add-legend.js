@@ -16,6 +16,7 @@
 import { LitElement, html, css } from 'lit';
 import { ModalController, deepActiveElement } from './kit/modal-controller.js';
 import { modalFrame, modalCss } from './kit/modal.js';
+import { todayLocal } from './today.js';
 
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -43,6 +44,7 @@ export class EdAddLegend extends LitElement {
 
   constructor() {
     super();
+    this._today = todayLocal(); // the optional Date field defaults to today (still clearable)
     this._ctl = new ModalController(this, {
       kind: 'input',
       onConfirm: () => this._save(),
@@ -96,7 +98,7 @@ export class EdAddLegend extends LitElement {
           </div>
           <div class="fld">
             <label for="al-date">Date (optional)</label>
-            <input id="al-date" name="date" type="date" />
+            <input id="al-date" name="date" type="date" value=${this._today} />
           </div>
           <p class="hint">Adds to the running Total Legend Earned.</p>
         </form>`,
