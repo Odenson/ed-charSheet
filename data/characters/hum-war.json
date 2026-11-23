@@ -48,11 +48,11 @@
   "disciplines": [
     {
       "name": "Warrior",
-      "circle": 1,
+      "circle": 2,
       "talents": [
         {
           "name": "Durability",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
@@ -77,18 +77,28 @@
         },
         {
           "name": "Tiger Spring",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
           "name": "Wood Skin",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
         },
         {
           "name": "Danger Sense",
-          "rank": 1,
+          "rank": 2,
           "circle": 1
+        },
+        {
+          "name": "Wound Balance",
+          "rank": 1,
+          "circle": 2
+        },
+        {
+          "name": "Anticipate Blow",
+          "rank": 1,
+          "circle": 2
         }
       ]
     }
