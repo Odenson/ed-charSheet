@@ -42,7 +42,7 @@
     "Charisma": {
       "base": 10,
       "points": 1,
-      "increases": 0
+      "increases": 1
     }
   },
   "disciplines": [
