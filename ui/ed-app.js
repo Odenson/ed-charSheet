@@ -1,6 +1,6 @@
 // ui/ed-app.js — root: loads the model, renders the tab shell, routes tabs.
 import { LitElement, html, css } from 'lit';
-import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, loadCustomSkills, mergeSkillCatalog, deriveModel, onPages, readCharacterWithBase, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
+import { discordThumbnailUrl, discordAvatarUrl, loadCharacter, loadRules, listCharacters, loadBranchImages, homebrewSetsFor, creationContext, persistCreationEdit, loadCustomItems, loadCustomSkills, mergeSkillCatalog, deriveModel, onPages, readCharacterWithBase, saveMetaEdits, saveItemEdits, saveWealthEdits, saveTradeEdits, saveHealthEdits, saveKarmaEdits, saveAdvancementEdits, saveNotesEdits, saveTraitsEdits, applyGahadTrigger, saveHistoryEdits, saveLegendEdits, saveSpellEdits, saveAttributeEdits, reconcileOverlay, hasPendingEdits, forSave } from '../store.js';
 import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining } from '../engine/health.js';
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
@@ -15,6 +15,8 @@ import { listDrafts, mergeRows, saveDraft, discardDraft, renameDraft, promoteDra
 import { saveDraftFirstTime } from '../store-first-save.js';
 import { buildNewCharacter, slugifyId, validateNewName } from '../engine/new-character.js';
 import { applyTalentRank, applyAttributePoints, applySkillAdd, applySkillRank, applySkillRemove, applySpellPick, applySpellRemove, checkSpellMatrices, finishPlan, finishCreation } from '../engine/creation.js';
+import { applyAttributeIncrease, undoAttributeIncrease } from '../engine/attribute-improve.js';
+import { attributeImproveView, improveRefusalText } from './attribute-improve-state.js';
 import { creationRefusalText, finishMessage, finishWarn } from './creation-text.js';
 import { saveCustomSkills, saveCustomSkillEdits, loadCustomSkillEdits, reconcileCustomSkillEdits, hasCustomSkillPendingEdits, applyCustomSkillEdits, isSkillsReflected, DEFAULT_SKILLS_ENDPOINT } from '../store-custom-skills.js';
 import { validateSkill } from '../engine/validate-skill.js';
@@ -575,6 +577,8 @@ export class EdApp extends LitElement {
     // (`ed-creation-finish`); the pure engine (engine/creation.js) decides, this component only
     // applies, persists and re-derives.
     this.addEventListener('ed-creation-edit', (e) => this._creationEdit(e.detail));
+    // Post-creation attribute improvement (`ed-edit-attribute { name, action: 'increase'|'undo' }`).
+    this.addEventListener('ed-edit-attribute', (e) => this._editAttribute(e.detail));
     this.addEventListener('ed-creation-finish', () => this._finishCreation());
     try {
       // An index that does not exist yet (404) is an empty store, not an error: `[]`. A real
@@ -648,7 +652,7 @@ export class EdApp extends LitElement {
     try {
       const row = (characters ?? this._characters ?? []).find((r) => r.id === id);
       const draft = row?.draft === true;
-      const { character, rules, base } = draft ? await loadDraftCharacter(id) : await loadCharacter(id);
+      const { character, rules, base, savedAttributes } = draft ? await loadDraftCharacter(id) : await loadCharacter(id);
       this._flushRollReport(); // report the old character's roll before the swap
       this._characterId = id;
       this._isDraft = draft;
@@ -667,6 +671,7 @@ export class EdApp extends LitElement {
       this._round = 0;
       this._dayReset = null;
       this._baseSha = base; // null for a draft: its first Save takes the create path
+      this._savedAttributes = draft ? null : savedAttributes ?? null; // improve-attributes baseline
       // A loaded draft is ALWAYS dirty (no branch file to match); a saved character is dirty
       // only with pending edits. A draft never arms the autosave timer.
       this._dirty = draft || hasPendingEdits(id) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
@@ -1181,6 +1186,49 @@ export class EdApp extends LitElement {
       return;
     }
     this._applyCreationResult(res);
+  }
+
+  // The Overview `+` / undo (improve-attributes). The pure engine decides (Legend, cap, one per
+  // save); a refusal changes nothing and shows its reason. Success replaces `attributes`, writes
+  // the attributes overlay (or clears it when back at the saved baseline), re-derives. No log entry.
+  _editAttribute(detail) {
+    if (!this._character || !this._rules || !detail) return;
+    const baseline = this._savedAttributes;
+    if (!baseline || this._character.creation?.open || !this._editMode) return;
+    const { name, action } = detail;
+    const attrs = this._character.attributes;
+    const ctx = { costTable: this._rules.legendFile?.costs?.attributeIncrease, available: this._model?.legend?.available, health: this._character?.resources?.health };
+    const res = action === 'undo'
+      ? undoAttributeIncrease(attrs, baseline, name)
+      : action === 'increase'
+        ? applyAttributeIncrease(attrs, baseline, name, ctx)
+        : null;
+    if (!res) return;
+    if (!res.ok) {
+      this._showNotice(improveRefusalText(res.reason));
+      return;
+    }
+    this._character = { ...this._character, attributes: res.attributes };
+    const clean = JSON.stringify(res.attributes) === JSON.stringify(baseline);
+    if (clean) reconcileOverlay(['attributes'], this._characterId);
+    else saveAttributeEdits(res.attributes, this._characterId);
+    this._dirty = hasPendingEdits(this._characterId) || (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
+    if (!clean) this._markDirty();
+    else if (this._dirty) this._scheduleAutosave();
+    this._model = this._derive();
+  }
+
+  // The Overview's improve view-state (pure): which attribute tiles show a `+`, enabled or not.
+  _improveView() {
+    return attributeImproveView({
+      attributes: this._character?.attributes ?? {},
+      savedAttributes: this._savedAttributes ?? null,
+      available: this._model?.legend?.available,
+      costTable: this._rules?.legendFile?.costs?.attributeIncrease,
+      editMode: !!this._editMode,
+      creationOpen: !!this._character?.creation?.open,
+      health: this._character?.resources?.health,
+    });
   }
 
   // Take an accepted engine result: the new character, its overlay write, dirty mark, re-derive.
@@ -2413,6 +2461,7 @@ export class EdApp extends LitElement {
         commit = await withPortrait(() => saveServer(forSave(this._character), { endpoint: this._endpointFor('save', DEFAULT_ENDPOINT), saveKey: this._saveKey, id: this._characterId, base, keepalive }));
         this._baseSha = commit.sha; // the optimistic-concurrency token for the next save
         reconcileOverlay(undefined, this._characterId);
+        this._savedAttributes = structuredClone(this._character.attributes); // new improve baseline
       }
       // The save dot also reflects a pending custom-item delta, so a confirmed
       // Save commits that too — /save-items POST, reconcile, re-read the catalog.
@@ -2467,6 +2516,7 @@ export class EdApp extends LitElement {
   // (keeping the local row if a cached index has not caught up yet).
   _firstSaveLanded(id, name, commit) {
     this._baseSha = commit.sha;
+    if (this._characterId === id) this._savedAttributes = structuredClone(this._character.attributes);
     promoteDraft(id);
     if (this._characterId === id) this._isDraft = false;
     const localRow = { id, name, portrait: null };
@@ -2531,11 +2581,12 @@ export class EdApp extends LitElement {
   // and survives.
   async _reloadSaved() {
     try {
-      const { character, rules, base } = await loadCharacter(this._characterId);
+      const { character, rules, base, savedAttributes } = await loadCharacter(this._characterId);
       this._character = character;
       this._rules = rules;
       this._model = this._derive();
       this._baseSha = base;
+      this._savedAttributes = savedAttributes ?? null;
       this._dirty = (hasCustomPendingEdits() || hasCustomSkillPendingEdits());
       this._saveError = null;
     } catch (e) {
@@ -2558,7 +2609,7 @@ export class EdApp extends LitElement {
     const m = this._model;
     switch (this._tab) {
       case 'overview':
-        return html`<ed-overview .model=${m} .editMode=${this._editMode} .arming=${this._arming()}
+        return html`<ed-overview .model=${m} .editMode=${this._editMode} .arming=${this._arming()} .improve=${this._improveView()}
           .characterId=${this._characterId} .portraitImages=${this._portraitImages ?? []} .portraitLoading=${!!this._portraitLoading} .portraitStaged=${this._portraitStaged ?? null}></ed-overview>`;
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;

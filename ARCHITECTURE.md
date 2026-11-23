@@ -202,7 +202,10 @@ reader behaves exactly as before. It is read by `engine/legend-spent.js`,
   -2..+8). The **Max Karma bonus** is derived, never stored: `max(0, 25 - sum cost(points))`, and
   only when `creation.open === false`; Max Karma is then `min(Karma Modifier x Circle + bonus, race
   karma.maxCap)` (`maxKarma(modifier, circle, cap, bonus)`). `attributes[n].points` are locked after
-  Finish (later gains use `increases` and Legend).
+  Finish (later gains use `increases` and Legend: post-creation improvement costs 800/1,300/2,100 Legend per +1,
+  cap +3 on `increases` only (creation `points` excluded), one per save — `engine/attribute-improve.js`;
+  `store.loadCharacter()` also returns `savedAttributes`, a non-persisted deep copy of the file's attributes
+  before the edits overlay (null for drafts), the baseline for that one-per-save rule).
 - **Overlay.** The edits overlay gains the whole-map category `attributes` and the whole-block
   category `creation` (both replaced, never merged on load), and the previously missing `spells`
   category joins `SAVED_CATEGORIES` so a spells edit shows as unsaved and a save clears it.
@@ -658,6 +661,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-conflict.js    # save-conflict modal (§7.5, UI-GUIDELINES §8)
     ed-character-picker.js # character chooser modal (first-run picker, §7.5); rows incl. local drafts (unsaved-draft badge, Discard), and the "Start a new character" section (one "+" per Discipline)
     ed-new-character.js # new-character modal (name + race, kind `input`, layer 2150); also the rename modal when a draft's first Save finds its id taken (dispatches create-character / rename-draft)
+    attribute-improve-state.js # pure view-state for the Overview attribute `+` / pending undo (improve-attributes)
     creation-text.js  # pure wording of creation mode: refusal-reason sentences, the "Finish creation?" confirm message and forfeit warning (no game logic; numbers come from the engine's finishPlan)
     ed-changelog.js   # changelog badge/modal
     kit/                   # the UI kit: the modal keyboard + focus contract (docs/MODALS.md)
@@ -693,6 +697,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     legend.js                # Legend Point totals
     legend-spent.js          # Legend-spent reconciliation audit; an additional Discipline's Rank-1 row is the lowest Circle among the Disciplines before it (lowestPriorCircle); honours the additive `creation.free` ledger (free ranks/spells cost 0, creation Karma is free) — §4.1
     new-character.js         # pure builder for a new Circle-1 draft (buildNewCharacter) + id helpers (slugifyId, idTaken, validateNewName); inputs only, seeded Durability/Karma Ritual, starting kit and 100 silver, opens `creation`
+    attribute-improve.js     # post-creation attribute improvement: Legend cost per +1 (800/1300/2100), cap +3 on `increases`, one per save vs the saved baseline (`store.loadCharacter().savedAttributes`), undo; refusals return the same reference (improve-attributes)
     creation.js              # creation-mode engine: talent/attribute/skill/spell budgets and `apply*` edits that return new characters (refusals return the same reference), creationStatus, finishPlan/finishCreation; Karma-bonus helpers (karmaBonus, creationKarma) — §4.1; imports `resolveSkillName`/`isLanguage` from skill-options.js (no cycle: that module imports only wealth.js and legend-spent.js)
     advancement.js           # Circle-advancement status (supported Circle, eligibility, next requirement; no costs): gate (standard p.452, or the homebrew p.453 table from legend.json costs.optionalAdvancement when hb-optional-circle-advancement is on)
     potions.js               # potion/consumable effects

@@ -787,7 +787,10 @@ export function applyEdits(character, edits) {
 export async function loadCharacter(id) {
   const { character: fileCharacter, base } = await readCharacterFile(id);
   const rules = await loadRules();
-  return { character: applyEdits(fileCharacter, loadEdits(id)), rules, base };
+  // `savedAttributes` = the file's attributes BEFORE the overlay: the baseline the improve-attributes
+  // one-per-save rule compares against (plans/improve-attributes).
+  const savedAttributes = fileCharacter?.attributes ? JSON.parse(JSON.stringify(fileCharacter.attributes)) : null;
+  return { character: applyEdits(fileCharacter, loadEdits(id)), rules, base, savedAttributes };
 }
 
 export async function loadRules() {

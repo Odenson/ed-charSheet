@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.7.0",
+      "date": "2026-11-23",
+      "summary": "Improve attributes after creation: spend Legend from a + on each Overview attribute (800/1,300/2,100 for +1/+2/+3), one per save with undo, blocked while the character has Damage or Wounds.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Improve attributes after creation: spend Legend from a + on each Overview attribute (800 / 1,300 / 2,100 for +1 / +2 / +3), one improvement per save, with undo until saved."
+        }
+      ]
+    },
+    {
       "version": "2.6.0",
       "date": "2026-11-23",
       "summary": "Saving to GitHub now shows a small dismissible spinner while a manual save is in progress.",
