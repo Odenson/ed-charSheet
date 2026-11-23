@@ -1,0 +1,56 @@
+{
+  "schema": "ed-token-usage/1",
+  "runs": [
+    {
+      "workflow": "release-feature",
+      "since": "2026-11-23T06:39:18.000Z",
+      "until": "2026-11-23T06:59:19.784Z",
+      "finished": "2026-11-23T06:59:19.784Z",
+      "session": "631b0139-b69e-4577-9486-0cb12ed48395",
+      "mainModels": [
+        "claude-sonnet-5-5"
+      ],
+      "note": "",
+      "total": {
+        "tokens": {
+          "input": 32,
+          "output": 6910,
+          "cacheRead": 5227847,
+          "cacheWrite": 10126
+        },
+        "cost": 1.1552374000000003,
+        "messages": 16,
+        "spawns": 0,
+        "unpriced": false
+      },
+      "byAgent": {
+        "orchestrator": {
+          "tokens": {
+            "input": 32,
+            "output": 6910,
+            "cacheRead": 5227847,
+            "cacheWrite": 10126
+          },
+          "cost": 1.1552374000000003,
+          "messages": 16,
+          "spawns": 1,
+          "unpriced": false
+        }
+      },
+      "byModel": {
+        "claude-sonnet-5-5": {
+          "tokens": {
+            "input": 32,
+            "output": 6910,
+            "cacheRead": 5227847,
+            "cacheWrite": 10126
+          },
+          "cost": 1.1552374000000003,
+          "messages": 16,
+          "spawns": 0,
+          "unpriced": false
+        }
+      }
+    }
+  ]
+}
