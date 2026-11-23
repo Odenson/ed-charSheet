@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.5.0",
+      "date": "2026-11-23",
+      "summary": "Create your own Knowledge, Artisan and General skills with a Custom tag, filter both skill pickers by category, see what each skill does with an info icon, and pick from seven new Knowledge examples; the Add Legend date now defaults to today.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Create your own Knowledge, Artisan and General skills, shown with a Custom tag, and filter both skill pickers by category."
+        }
+      ]
+    },
+    {
       "version": "2.4.0",
       "date": "2026-11-22",
       "summary": "Adding a skill in edit mode now uses the creation-style picker, with sections, search and free-text Knowledge and Artisan skills.",

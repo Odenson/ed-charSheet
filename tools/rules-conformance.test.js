@@ -251,7 +251,7 @@ const LANGS = ['Drake', 'Dwarf', 'Elf', 'Human', 'Obsidiman', 'Ork', 'T`skrang',
 const R11 = {
   'language-speak': ['Speak Language', ...LANGS.map((l) => `Speak Language (${l})`)],
   'language-readwrite': ['Read/Write Language', ...LANGS.map((l) => `Read/Write Language (${l})`)],
-  knowledge: ['Knowledge', 'Horror Lore'],
+  knowledge: ['Knowledge', 'Horror Lore', 'Barsaive History', 'Creature Lore', 'Discipline Lore', 'Legends and Heroes', 'Racial Lore', 'Scourge History', 'Trade Routes'],
   artisan: [
     'Acting', 'Arrow Fletching (Artisan)', 'Artisan', 'Body Painting (Artisan)', 'Bone Carving (Artisan)',
     'Braiding (Artisan)', 'Craft Armor', 'Craft Weapon', 'Craftsman', 'Embroidery', 'Manuscript Illumination',
@@ -265,9 +265,9 @@ const skillEntries = skillsFile.skills;
 const skillsInCategory = (c) => skillEntries.filter((s) => s.category === c);
 const disciplineEntries = load('disciplines.json').disciplines;
 
-test('skills: schema tag stays ed-skills/1 and the catalog keeps its 154 entries (duplicates stay)', () => {
+test('skills: schema tag stays ed-skills/1 and the catalog keeps its 161 entries (154 + 7 Knowledge examples; duplicates stay)', () => {
   assert.equal(skillsFile.schema, 'ed-skills/1');
-  assert.equal(skillEntries.length, 154);
+  assert.equal(skillEntries.length, 161);
   const names = skillEntries.map((s) => s.name);
   assert.deepEqual(names.filter((n, i) => names.indexOf(n) !== i).sort(), ['Bribery', 'Skinning']);
 });
@@ -277,9 +277,9 @@ test('skills: every entry has a valid category', () => {
   assert.deepEqual(bad, []);
 });
 
-test('skills: category counts are 106 general / 2 knowledge / 22 artisan / 12 language-speak / 12 language-readwrite (R11)', () => {
+test('skills: category counts are 106 general / 9 knowledge / 22 artisan / 12 language-speak / 12 language-readwrite (R11 + 7 Knowledge examples, Q046)', () => {
   assert.equal(skillsInCategory('general').length, 106);
-  assert.equal(skillsInCategory('knowledge').length, 2);
+  assert.equal(skillsInCategory('knowledge').length, 9);
   assert.equal(skillsInCategory('artisan').length, 22);
   assert.equal(skillsInCategory('language-speak').length, 12);
   assert.equal(skillsInCategory('language-readwrite').length, 12);
@@ -353,11 +353,11 @@ test('skills: both copies of the duplicated Bribery and Skinning entries carry i
   }
 });
 
-test('skills: tier - Impressive Display and Tactics are 2; counts are 1:116, 2:31, 3:7; general-and-Novice = 68 (R11)', () => {
+test('skills: tier - Impressive Display and Tactics are 2; counts are 1:123, 2:31, 3:7 (116 + 7 Novice Knowledge examples); general-and-Novice = 68 (R11)', () => {
   assert.equal(skillEntries.find((s) => s.name === 'Impressive Display').tier, 2);
   assert.equal(skillEntries.find((s) => s.name === 'Tactics').tier, 2);
   const tier = (n) => skillEntries.filter((s) => s.tier === n).length;
-  assert.deepEqual([tier(1), tier(2), tier(3)], [116, 31, 7]);
+  assert.deepEqual([tier(1), tier(2), tier(3)], [123, 31, 7]);
   assert.equal(skillEntries.filter((s) => s.category === 'general' && s.tier === 1).length, 68);
 });
 

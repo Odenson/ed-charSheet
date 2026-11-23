@@ -46,6 +46,7 @@ import { learnableSkills } from './engine/skill-options.js';
 import { buildSpellsContext, activeSpellEffects } from './engine/spells.js';
 import { learnableKnacks } from './engine/knack-options.js';
 import { applyCustomEdits, loadCustomEdits } from './store-custom-items.js';
+import { applyCustomSkillEdits, loadCustomSkillEdits } from './store-custom-skills.js';
 import { loadStagedPortrait, savedPortraitDataUrl, listBranchImages } from './store-portrait.js';
 
 // UNIVERSAL_TALENTS (Durability, Karma Ritual) — talents every adept receives
@@ -326,6 +327,8 @@ export function readCharacterWithBase(id) {
 }
 
 const CUSTOM_ITEMS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-items.json?ref=${CHARACTER_BRANCH}`;
+const CUSTOM_SKILLS_API_URL = `https://api.github.com/repos/${CHARACTER_OWNER}/${CHARACTER_REPO}/contents/data/custom-skills.json?ref=${CHARACTER_BRANCH}`;
+const CUSTOM_SKILLS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/custom-skills.json`;
 const CUSTOM_ITEMS_RAW_URL = `https://raw.githubusercontent.com/${CHARACTER_OWNER}/${CHARACTER_REPO}/${CHARACTER_BRANCH}/data/custom-items.json`;
 
 /**
@@ -357,6 +360,49 @@ export async function loadCustomItems() {
     /* fall through to the bundled catalog */
   }
   return bundled();
+}
+
+/**
+ * The custom-skill catalog (ed-skills/1, plans/gen-skill-other): same read order as
+ * loadCustomItems — contents API (git-consistent), CDN, then the bundled
+ * `rules/custom-skills.json`; elsewhere the gitignored `./data/custom-skills.json` working
+ * copy. Never throws: a missing/unreadable file (404) is an empty catalog.
+ */
+export async function loadCustomSkills() {
+  const empty = { schema: 'ed-skills/1', source: 'custom', notes: '', skills: [] };
+  const bundled = () => loadJSONOptional('./rules/custom-skills.json', empty);
+  if (!onPages()) return (await loadJSONOptional('./data/custom-skills.json', null)) ?? bundled();
+  try {
+    const res = await fetch(CUSTOM_SKILLS_API_URL, {
+      headers: { Accept: 'application/vnd.github.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) return await res.json();
+    if (res.status === 404) return bundled(); // authoritative: no file on the branch yet — skip the CDN retry
+  } catch {
+    /* fall through to the CDN */
+  }
+  try {
+    const res = await fetch(`${CUSTOM_SKILLS_RAW_URL}?t=${Date.now()}`);
+    if (res.ok) return await res.json();
+  } catch {
+    /* fall through to the bundled catalog */
+  }
+  return bundled();
+}
+
+/**
+ * Merge the core skill catalog with the custom-skill file (pure). No custom entries returns
+ * the core file itself; otherwise custom entries follow the core ones, dropping any whose
+ * name equals a core name (case-insensitive — core wins). Entries are passed through as given.
+ */
+export function mergeSkillCatalog(skillsFile, customSkillsFile) {
+  const custom = Array.isArray(customSkillsFile?.skills) ? customSkillsFile.skills : [];
+  if (!custom.length) return skillsFile;
+  const core = new Set((skillsFile?.skills ?? []).map((s) => String(s.name).toLowerCase()));
+  const kept = custom.filter((s) => s?.name && !core.has(String(s.name).toLowerCase()));
+  if (!kept.length) return skillsFile;
+  return { ...skillsFile, skills: [...(skillsFile?.skills ?? []), ...kept] };
 }
 
 // --- Persistence (Phase 2) -------------------------------------------------
@@ -783,16 +829,20 @@ export async function loadRules() {
   // confirmed save.
   const customItemsCommittedFile = await loadCustomItems();
   const customItemsFile = applyCustomEdits(customItemsCommittedFile, loadCustomEdits());
+  // Custom skills (ed-skills/1, plans/gen-skill-other): same pattern as custom items —
+  // committed read kept as the baseline, pending `ed-custom-skills` overlay applied on top.
+  const customSkillsCommittedFile = await loadCustomSkills();
+  const customSkillsFile = applyCustomSkillEdits(customSkillsCommittedFile, loadCustomSkillEdits());
   // steps.json is now { schema: "ed-steps/1", steps: [...] }; the array fallback
   // keeps an unwrapped file working.
   const steps = stepsFile.steps ?? stepsFile;
-  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile, attributesFile };
+  return { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, customSkillsFile, customSkillsCommittedFile, homebrewFile, combatFile, spellsFile, attributesFile };
 }
 
 // Registry of homebrew `set` targets the engine honours (ed-homebrew/2). A rule
 // may only override these; any other target name is ignored. Kept here (not in a
 // rule file) so the code that consumes each target and the registry stay together.
-export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier', 'advancement.optionalTable']);
+export const HOMEBREW_SET_TARGETS = new Set(['karma.step', 'karma.maxCap', 'karma.ritualCost', 'legend.additionalTierShift', 'legend.spellLearnCostMultiplier', 'spells.learnSilverMultiplier', 'advancement.optionalTable', 'skills.allowCustom']);
 
 /**
  * The resolved homebrew `set` overrides for a race (ed-homebrew/2, docs/HOMEBREW-RULES.md):
@@ -842,11 +892,12 @@ export function makeSkillRef(skillsFile) {
 export function creationContext(rules, character, perceptionStep) {
   const raceName = character?.meta?.race ?? null;
   const raceEntry = (rules?.racesFile?.races ?? []).find((r) => r.name === raceName);
+  const mergedSkills = mergeSkillCatalog(rules?.skillsFile, rules?.customSkillsFile);
   return {
     disciplinesFile: rules?.disciplinesFile,
     attributesFile: rules?.attributesFile,
-    skillCatalog: rules?.skillsFile?.skills,
-    resolveSkill: makeSkillRef(rules?.skillsFile),
+    skillCatalog: mergedSkills?.skills,
+    resolveSkill: makeSkillRef(mergedSkills),
     spellCatalog: rules?.spellsFile?.spells,
     perceptionStep: perceptionStep ?? null,
     karmaModifier: raceEntry?.karmaModifier ?? null,
@@ -894,7 +945,9 @@ function talentDetail(cat, circle, legendFile) {
 export function deriveModel(character, rules, session = {}) {
   // `attributesFile` (rules/attributes.json) is optional here: older callers omit it, and the
   // derived creation Max Karma bonus then reads as 0 (never a guess).
-  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, skillsFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile, attributesFile } = rules;
+  const { steps, talentsFile, disciplinesFile, racesFile, characteristicsFile, itemsFile, legendFile, knacksFile, threadItemsFile, customItemsFile, customItemsCommittedFile, homebrewFile, combatFile, spellsFile, attributesFile } = rules;
+  // Core catalog + owner-created custom skills (core wins on a name collision).
+  const skillsFile = mergeSkillCatalog(rules.skillsFile, rules.customSkillsFile);
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
@@ -1444,6 +1497,7 @@ export function deriveModel(character, rules, session = {}) {
       step,
       dice: step != null ? diceForStep(step) : '',
       known: skillRef(s.name) != null,
+      ...(cat.custom === true ? { custom: true } : {}),
       // Terse effect for the table column — the curated presentation.shortEffect wins,
       // falling back to the full summary (the modal always shows the full summary).
       brief: cat.presentation?.shortEffect ?? cat.summary ?? null,
@@ -2054,6 +2108,14 @@ export function deriveModel(character, rules, session = {}) {
   return {
     meta: character.meta ?? {},
     advancement: { optional: !!optionalAdvTable },
+    // Custom skills (plans/gen-skill-other): the homebrew gate for the Create actions only —
+    // strict `=== true`; already-created custom skills resolve and display regardless.
+    // `coreNames` / `customNames` feed the create form's live duplicate check (data down).
+    customSkills: {
+      enabled: homebrewSets['skills.allowCustom'] === true,
+      coreNames: (rules.skillsFile?.skills ?? []).map((s) => s.name),
+      customNames: (rules.customSkillsFile?.skills ?? []).map((s) => s.name),
+    },
     legend,
     // The exact `opts` the audit above ran with (knacks included): the ed-app rank guard
     // audits "after" with these, so its Available agrees with the displayed Legend.
@@ -2091,6 +2153,8 @@ export function deriveModel(character, rules, session = {}) {
     wealth: deriveWealth(character.wealth ?? {}),
     skills,
     skillOptions,
+    // Catalog descriptions by skill name for the picker rows' ⓘ (core + custom, pure pass-through).
+    skillInfo: Object.fromEntries((skillsFile?.skills ?? []).filter((s) => s?.summary).map((s) => [s.name, { summary: s.summary, ...(s.versus ? { versus: s.versus } : {}) }])),
     addableDisciplines: addableDisciplinesModel,
     knacks,
     knackOptions,

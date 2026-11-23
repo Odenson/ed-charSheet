@@ -408,6 +408,7 @@ export function skillBudget(character, ctx) {
       attribute: e.attribute ?? null,
       brief: e.presentation?.shortEffect ?? e.summary ?? null,
       canPick: pool != null,
+      ...(e.custom === true ? { custom: true } : {}),
     });
   }
   return { extra, fixed: alloc.fixed, valid: extra.spent <= extraTotal && problems.length === 0, problems, rows, candidates };

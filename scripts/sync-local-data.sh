@@ -3,6 +3,7 @@
 #   data/characters/index.json   (discovery index, ed-characters-index/1)
 #   data/characters/<id>.json    (per-character files, raw ed-character/1)
 #   data/custom-items.json       (ed-items/2 catalog)
+#   data/custom-skills.json      (ed-skills/1 catalog)
 #   data/*.{jpg,jpeg,png}        (portraits)
 #
 # These copies are what store.js reads and tools/dev-server.mjs writes while the
@@ -75,6 +76,8 @@ sync_binary() {
 
 sync_json data/characters/index.json data/characters/index.json '{"schema":"ed-characters-index/1","characters":{}}'
 sync_json data/custom-items.json data/custom-items.json '{"schema":"ed-items/2","effectTaxonomy":"docs/EFFECT-TAXONOMY.md (v3)","source":"custom","notes":"Player-created items, folded into rules/custom-items.json on dev by CI.","items":{}}'
+
+sync_json data/custom-skills.json data/custom-skills.json '{"schema":"ed-skills/1","source":"custom","notes":"Owner-created skills, folded from data/custom-skills.json by CI.","skills":[]}'
 
 # Sync every character file found under data/characters/ on the branch.
 while IFS= read -r remote_path; do

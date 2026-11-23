@@ -229,6 +229,13 @@ with a scalar or a **race-keyed map**.
     stored Circle's count clause (no climb); the from-Circle clause matches the
     talent's stored `circle` exactly (a missing `circle` never matches). Read by `store.js` -> `engine/advancement.js` `circleStatus`
     (plans/homebrew-circle-adv).
+  - `skills.allowCustom` — **boolean** (strict `true`): shows the per-section
+    "Create custom skill" actions in both skill pickers (rule `hb-custom-skills`; the
+    book is silent on player-created General skills, so this is an owner house rule).
+    It gates the UI only: the worker does not read it, already-created custom skills
+    keep resolving and displaying when it is off, and custom skill names are globally
+    unique. Read by `store.js` `deriveModel` -> `model.customSkills.enabled`
+    (plans/gen-skill-other).
 - **Semantics.** `set` **replaces** the target's standard value; a rule may pair
   `set` with `effects`/`formula` on *different* targets. **Last-enabled-wins** if
   two enabled rules `set` the same target. A `set` value is a **constant** in v2

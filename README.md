@@ -73,10 +73,23 @@ won't work, because ES modules and `fetch()` of the JSON data are blocked on the
 ```bash
 npm start
 ```
-to ensure save uses local data remember to pass the url params:
+**Open the app with all four save overrides**, otherwise that save goes to the deployed
+worker instead of your local data (`PORT=9000 npm start` → swap the port):
+
 ```
-http://localhost:8000/dev/?save=http://localhost:8000/save&save-items=http://localhost:8000/save-items
+http://localhost:8000/dev/?save=http://localhost:8000/save&save-items=http://localhost:8000/save-items&save-skills=http://localhost:8000/save-skills&save-image=http://localhost:8000/save-image
 ```
+
+| Param | Local route | What it saves |
+|---|---|---|
+| `save` | `POST /save` | the character (`data/characters/<id>.json`) |
+| `save-items` | `POST /save-items` | custom items (`data/custom-items.json`) |
+| `save-skills` | `POST /save-skills` | custom skills (`data/custom-skills.json`) |
+| `save-image` | `POST /save-image` | portrait uploads (`data/`) |
+
+`?save=…/save` alone also redirects `save-image` and `delete-character`, but **not**
+`save-items` or `save-skills`: those need their own param. Restart `npm start` after pulling
+changes, since an old server process has no `/save-skills` route.
 
 > **Windows — one-time setup on a fresh machine.** The npm scripts are bash
 > (`scripts/start-local.sh`), so plain `npm start` can end up in the broken WSL
@@ -104,7 +117,8 @@ re-sync). The server:
   `POST /save` (write `data/characters/<id>.json`, raw `ed-character/1` + a
   `index.json` entry, portrait refreshed on later saves),
   `POST /save-image` (portrait upload to `data/`) and `GET /list-images`, and
-  `POST /save-items` (merge `data/custom-items.json`, `ed-items/2`) — with the
+  `POST /save-items` (merge `data/custom-items.json`, `ed-items/3`) and
+  `POST /save-skills` (merge `data/custom-skills.json`, `ed-skills/1`) — with the
   same validation and error codes, so the app's `SaveError` handling runs
   unchanged (the save-key prompt still appears — type anything);
 - writes land in the gitignored local working copies that `store.js` already
@@ -113,9 +127,9 @@ re-sync). The server:
 - accepts `--lag <ms>` for a one-shot stale-read simulation
   (`tools/dev-server.test.js`, PLAN-CUSTOM-ITEMS.md §6.6).
 
-Because the app and the save endpoints are same-origin, no `?save=`/`?save-items=`
-override is needed — the query-param override exists for cross-origin test rigs
-(see below) and just works against this server too.
+The app's save endpoints default to the deployed worker, so the `?save=`/`?save-items=`/`?save-skills=`
+overrides above are needed to keep writes local. They also work for cross-origin test rigs
+(see below).
 
 **Or any static server** (viewing only — no save loop):
 
