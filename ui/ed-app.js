@@ -42,6 +42,8 @@ import './ed-edit-meta.js';
 import './ed-save-key.js';
 import './ed-confirm.js';
 import './ed-creation-guide.js';
+import './ed-saving.js';
+import { showSavingOverlay } from './saving-overlay-state.js';
 import './ed-day-reset.js';
 import './ed-spells.js';
 import './ed-character-picker.js';
@@ -77,6 +79,8 @@ export class EdApp extends LitElement {
     _editMode: { state: true },
     _dirty: { state: true },
     _saving: { state: true },
+    _savingManual: { state: true }, // a manual (non-silent) _doSave is in flight -> spinner overlay
+    _savingDismissed: { state: true }, // user closed the overlay; save continues
     _saveError: { state: true },
     _saveOk: { state: true },
     _discordError: { state: true }, // transient Discord send-failure toast (fixed message only)
@@ -264,6 +268,8 @@ export class EdApp extends LitElement {
     // after a character is selected, so it starts false and is set on load.
     this._dirty = false;
     this._saving = false;
+    this._savingManual = false;
+    this._savingDismissed = false;
     this._saveError = null;
     this._saveOk = null;
     this._saveOkTimer = null;
@@ -2355,6 +2361,8 @@ export class EdApp extends LitElement {
     this._clearAutosaveTimers(); // a save is happening now — cancel any pending one
     this._saving = true;
     if (!silent) {
+      this._savingManual = true;
+      this._savingDismissed = false;
       this._saveError = null;
       this._saveOk = null;
       clearTimeout(this._saveOkTimer);
@@ -2448,6 +2456,7 @@ export class EdApp extends LitElement {
       }
     } finally {
       this._saving = false;
+      this._savingManual = false;
     }
   }
 
@@ -2776,6 +2785,9 @@ export class EdApp extends LitElement {
             .magician=${this._creationGuide.magician}
             @close=${() => (this._creationGuide = null)}
           ></ed-creation-guide>`
+        : ''}
+      ${showSavingOverlay({ saving: this._savingManual, dismissed: this._savingDismissed, handoff: !!(this._conflict || this._renameDraft) })
+        ? html`<ed-saving @close=${() => (this._savingDismissed = true)}></ed-saving>`
         : ''}
       ${this._confirmFinish
         ? html`<ed-confirm
