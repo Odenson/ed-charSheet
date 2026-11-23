@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.6.0
 ---
 # Delivery Plan: Save spinner (save-spinner)
 
