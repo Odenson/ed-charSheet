@@ -2,8 +2,17 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "summary": "",
-    "changes": []
+    "summary": "The Equipment add-item picker is now a searchable modal with type chips and a list grouped by kind, so every thread item is reachable.",
+    "changes": [
+      {
+        "type": "improved",
+        "text": "Add item is now a modal like the skill picker: search, type chips (All, Custom, Weapon, Armour, Shield, Ammunition, Gear, Magic item, Blood charm, Healing aid, Thread item) and a list grouped by kind, with Custom and Owned pills and an info toggle on each row."
+      },
+      {
+        "type": "fixed",
+        "text": "Thread items were missing from the Add item browse list because it stopped at 50 results; the list is no longer capped."
+      }
+    ]
   },
   "releases": [
     {
