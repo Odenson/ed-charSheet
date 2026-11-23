@@ -33,6 +33,9 @@ export class EdOverview extends LitElement {
     _editPortrait: { state: true },
     // Armed-potion session state from ed-app: { pending, potions } (data down).
     arming: { attribute: false },
+    // Improve-attribute view-state from ed-app (data down): { rows: { [name]: {show, canImprove, pending, title, plan} } }.
+    improve: { attribute: false },
+    _improveFor: { state: true }, // attribute name whose confirm modal is open
     _modal: { state: true },
     _lightbox: { state: true },
     _edit: { state: true },
@@ -101,6 +104,12 @@ export class EdOverview extends LitElement {
     .acell .astepbtn { width: 14px; height: 14px; margin: -2px 0; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); color: light-dark(#111418, #f0f3f7); font: inherit; font-size: var(--fs-small); line-height: 1; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
     .acell .astepbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .acell .astepbtn:disabled { opacity: 0.35; cursor: default; }
+    .acell .aimp { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; flex: none; }
+    .acell .apend { font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1; padding: 1px 4px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); cursor: help; }
+    .imp-rows { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 0.6rem; font-size: var(--fs-body); }
+    .imp-rows dt { color: var(--muted); }
+    .imp-rows dd { margin: 0; }
+    .imp-rows dd b { font-weight: 500; }
     .acell .astepbtn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-bg); border-color: var(--accent); }
     /* The "Points left N" chip rides inline in the Attributes heading (same -2px trick: its outer
        height stays under the heading's line, so the block does not grow). Over-spent: warning tone. */
@@ -410,6 +419,48 @@ export class EdOverview extends LitElement {
     return html`<span class="ptchip ${at.left < 0 ? 'over' : ''}" title="Attribute points left to spend. Points still unspent when you finish creation become Max Karma.">Points left <b>${at.left}</b></span>`;
   }
 
+  // After creation, edit mode: a compact `+` opens the improve confirm (Legend spend); the one
+  // pending improvement shows a small badge and an undo. Everything comes from `improve` (the pure
+  // view-state); a click only dispatches `ed-edit-attribute` up.
+  _attrImprove(a) {
+    const r = this.improve?.rows?.[a.name];
+    if (this._cr || !r?.show) return '';
+    const send = (action) => this.dispatchEvent(new CustomEvent('ed-edit-attribute', { detail: { name: a.name, action }, bubbles: true, composed: true }));
+    if (r.pending) {
+      return html`<span class="aimp"><span class="apend" title=${r.title}>+1</span>
+        <button type="button" class="astepbtn" title=${`Undo the ${a.name} improvement`} aria-label=${`Undo improving ${a.name}`} @click=${() => send('undo')}>↺</button></span>`;
+    }
+    return html`<span class="aimp"><button type="button" class="astepbtn" ?disabled=${!r.canImprove} title=${r.title} aria-label=${`Improve ${a.name}`}
+      @click=${(e) => this._openImprove(a.name, e.currentTarget)}>+</button></span>`;
+  }
+  _openImprove(name, trigger) {
+    this._improveFor = name;
+    this._improveCtl.opened(trigger);
+  }
+  _confirmImprove() {
+    const name = this._improveFor;
+    if (name) this.dispatchEvent(new CustomEvent('ed-edit-attribute', { detail: { name, action: 'increase' }, bubbles: true, composed: true }));
+    this._improveCtl.close({ reason: 'confirm' });
+  }
+  _improveBody() {
+    const name = this._improveFor;
+    const plan = this.improve?.rows?.[name]?.plan;
+    const n = (v) => (Number.isFinite(v) ? html`<b>${v.toLocaleString('en-US')}</b>` : this._pend());
+    const avail = this.model?.legend?.available;
+    const after = plan && Number.isFinite(avail) && Number.isFinite(plan.cost) ? avail - plan.cost : null;
+    if (!plan) return html`<p class="mpara">This improvement is no longer available.</p>`;
+    return html`
+      <dl class="imp-rows">
+        <dt>Value</dt><dd>${n(plan.current?.value)} → ${n(plan.next?.value)}</dd>
+        <dt>Step (natural)</dt><dd>${n(plan.current?.step)} → ${n(plan.next?.step)}</dd>
+        <dt>Cost</dt><dd>${n(plan.cost)} Legend</dd>
+        <dt>Legend after</dt><dd>${n(after)}</dd>
+        <dt>Training</dt><dd>${n(plan.trainingDays)} days at ${n(plan.silverFee)} silver (${n(plan.silverFee * plan.trainingDays)} total)</dd>
+        <dt>Wait</dt><dd>${n(plan.weeksWait)} weeks</dd>
+      </dl>
+      <p class="mpara hint">Must be rested and healthy (no Damage or Wounds). Training, silver and weeks are for your table to track; only Legend is spent here. One attribute improvement per save.</p>`;
+  }
+
   // One attribute tile. When an always-on effect (a magic item, a racial or thread
   // bonus) changes the attribute, the number is tinted and a signed badge names the
   // net change; hovering explains it from the engine's `modifiers` (base + each
@@ -427,7 +478,7 @@ export class EdOverview extends LitElement {
     const row = this._cr ? (this._cr.attributes?.rows ?? []).find((r) => r.name === a.name) ?? null : null;
     return html`
       <div class="acell">
-        <div class="an"><span>${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</span>${changed ? html`<span class="adelt" title=${title}>${badge}</span>` : ''}${row ? this._attrStepper(a, row) : ''}</div>
+        <div class="an"><span>${ABBR[a.name] ?? a.name.slice(0, 3).toUpperCase()}</span>${changed ? html`<span class="adelt" title=${title}>${badge}</span>` : ''}${row ? this._attrStepper(a, row) : this._attrImprove(a)}</div>
         <div class="r">
           <span class="av">${a.value}</span>
           <span class="asd">${a.step} · ${a.dice}</span>
@@ -684,6 +735,12 @@ export class EdOverview extends LitElement {
     super();
     this._infoCtl = new ModalController(this, { kind: 'info', onClose: () => { this._modal = null; } });
     this._lightboxCtl = new ModalController(this, { kind: 'info', onClose: () => { this._lightbox = false; } });
+    this._improveCtl = new ModalController(this, {
+      kind: 'confirm',
+      onConfirm: () => this._confirmImprove(),
+      canConfirm: () => !!this.improve?.rows?.[this._improveFor]?.canImprove,
+      onClose: () => { this._improveFor = null; },
+    });
     this._karmaCtl = new ModalController(this, {
       kind: 'input',
       onConfirm: () => this._buyKarma(this._karmaN()),
@@ -1104,6 +1161,15 @@ export class EdOverview extends LitElement {
         : ''}
       ${this._addLegend
         ? html`<ed-add-legend .earned=${(m.resources?.legend?.earned ?? []).filter((x) => !x.virtual)} @close=${() => (this._addLegend = false)}></ed-add-legend>`
+        : ''}
+      ${this._improveFor
+        ? modalFrame(this._improveCtl, {
+            title: `Improve ${this._improveFor}`,
+            layer: 2000,
+            width: '26rem',
+            primary: { label: 'Improve', disabled: !this.improve?.rows?.[this._improveFor]?.canImprove },
+            body: this._improveBody(),
+          })
         : ''}
       ${this._karmaRitual
         ? modalFrame(this._karmaCtl, {

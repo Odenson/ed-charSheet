@@ -151,5 +151,5 @@ export async function loadDraftCharacter(id) {
   const env = readEnvelope(id);
   if (!env) throw new Error(`No draft for "${id}"`);
   const rules = await loadRules();
-  return { character: applyEdits(env.character, loadEdits(id)), rules, base: null };
+  return { character: applyEdits(env.character, loadEdits(id)), rules, base: null, savedAttributes: null };
 }
