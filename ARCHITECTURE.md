@@ -202,7 +202,10 @@ reader behaves exactly as before. It is read by `engine/legend-spent.js`,
   -2..+8). The **Max Karma bonus** is derived, never stored: `max(0, 25 - sum cost(points))`, and
   only when `creation.open === false`; Max Karma is then `min(Karma Modifier x Circle + bonus, race
   karma.maxCap)` (`maxKarma(modifier, circle, cap, bonus)`). `attributes[n].points` are locked after
-  Finish (later gains use `increases` and Legend).
+  Finish (later gains use `increases` and Legend: post-creation improvement costs 800/1,300/2,100 Legend per +1,
+  cap +3 on `increases` only (creation `points` excluded), one per save — `engine/attribute-improve.js`;
+  `store.loadCharacter()` also returns `savedAttributes`, a non-persisted deep copy of the file's attributes
+  before the edits overlay (null for drafts), the baseline for that one-per-save rule).
 - **Overlay.** The edits overlay gains the whole-map category `attributes` and the whole-block
   category `creation` (both replaced, never merged on load), and the previously missing `spells`
   category joins `SAVED_CATEGORIES` so a spells edit shows as unsaved and a save clears it.
