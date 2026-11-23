@@ -53,6 +53,15 @@ export function learnSkillPlan({ name, text, silver, character, catalog, costs, 
 const TIER_NUM_TO_LABEL = { 1: 'Novice', 2: 'Journeyman' };
 const TIER_LABEL_TO_NUM = { Novice: 1, Journeyman: 2 };
 
+/** One-line row brief from a full summary: first sentence, hard-capped (the ⓘ shows the full text). */
+function clipBrief(summary) {
+  if (summary == null) return null;
+  const text = String(summary).replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  const first = text.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? text;
+  return first.length <= 90 ? first : `${first.slice(0, 89).trimEnd()}…`;
+}
+
 /**
  * The skills a character may learn at Rank 1. Any catalog skill not already
  * known is learnable — no slots, no gating (PLAN-LEARN-SKILLS Q1). Each
@@ -85,7 +94,7 @@ export function learnableSkills(skillCatalog, knownNames = new Set(), costs = nu
       tierNumeric,
       attribute: s.attribute ?? null,
       action: s.action ?? null,
-      brief: s.presentation?.shortEffect ?? s.summary ?? null,
+      brief: s.presentation?.shortEffect ?? clipBrief(s.summary),
       rank1Cost,
       trainingSilver,
       ...(s.custom === true ? { custom: true } : {}),

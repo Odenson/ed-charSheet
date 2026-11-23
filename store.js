@@ -378,6 +378,7 @@ export async function loadCustomSkills() {
       cache: 'no-store',
     });
     if (res.ok) return await res.json();
+    if (res.status === 404) return bundled(); // authoritative: no file on the branch yet — skip the CDN retry
   } catch {
     /* fall through to the CDN */
   }
