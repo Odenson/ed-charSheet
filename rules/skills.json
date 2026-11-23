@@ -3,6 +3,7 @@
   "source": "Earthdawn 4E — skills. Mechanics + original-wording summaries (no verbatim rulebook prose). Enriched from the Players' Guide skill/talent text, the Companion guide, and the app's talent catalog.",
   "effectTaxonomy": "docs/EFFECT-TAXONOMY.md (v6)",
   "notes": [
+    "Seven Knowledge example subjects were added as full catalog entries (Barsaive History, Creature Lore, Discipline Lore, Legends and Heroes, Racial Lore, Scourge History, Trade Routes) from the Players' Guide 'Example Knowledge Skills' list (RULES-FAQ Q046). Attribute, tier and strain follow the generic Knowledge skill; the descriptions are app-authored, not book text. Owner decision 2026-11-23.",
     "154 skills catalogued (23 general skills, 105 talent-named skills, 22 language variants, 4 artisan variants). Mechanics (attribute/action/strain) and summaries authored for all; effects follow the effect taxonomy as note entries.",
     "Skill version of a talent never causes Strain (strain is 0 for every skill).",
     "Attribute-less knacks (Step: Rank — Critical Hit, Defensive Posture, Impressive Display, Mount Attack, Resist Pain, Vicious Wound, Weapon Breaker, Witty Repartee) carry no 'attribute' field, mirroring how the talent catalog models attribute-less talents.",
@@ -1441,6 +1442,153 @@
       ],
       "presentation": {
         "shortEffect": "Recalls topic knowledge"
+      }
+    },
+    {
+      "name": "Barsaive History",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the history of Barsaive: its peoples, kingdoms and notable events. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows Barsaive history"
+      }
+    },
+    {
+      "name": "Creature Lore",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the creatures of Barsaive: their habits, abilities and weaknesses. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows creature lore"
+      }
+    },
+    {
+      "name": "Discipline Lore",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the Disciplines and of the lives and deeds of their adepts. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows Discipline lore"
+      }
+    },
+    {
+      "name": "Legends and Heroes",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the legendary figures and heroes of Barsaive and their deeds. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows legends and heroes"
+      }
+    },
+    {
+      "name": "Racial Lore",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the name-giver races: their cultures, customs and history. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows racial lore"
+      }
+    },
+    {
+      "name": "Scourge History",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the history of the Scourge, when the Horrors ravaged Barsaive, and of the age of the kaers. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows Scourge history"
+      }
+    },
+    {
+      "name": "Trade Routes",
+      "tier": 1,
+      "category": "knowledge",
+      "strain": 0,
+      "attribute": "Perception",
+      "action": "Standard",
+      "versus": "a Difficulty Number set by the gamemaster",
+      "summary": "Knowledge of the routes merchants use across Barsaive and what is traded along them. A Knowledge test against a gamemaster-set Difficulty Number.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "skill",
+          "summary": "The relevant information is recalled or the question answered."
+        }
+      ],
+      "presentation": {
+        "shortEffect": "Knows trade routes"
       }
     },
     {

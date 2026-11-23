@@ -12,7 +12,7 @@
 // textarea), focus returns to the opening button; theme-aware via light-dark().
 
 import { LitElement, html, css } from 'lit';
-import { initialForm, setField, formErrors, toSkill } from './custom-skill-state.js';
+import { initialForm, setField, formErrors, createDetail } from './custom-skill-state.js';
 import { MAX_TEXT } from '../engine/skill-options.js';
 import { MAX_DESCRIPTION } from '../engine/validate-skill.js';
 import { ModalController, deepActiveElement } from './kit/modal-controller.js';
@@ -27,6 +27,9 @@ export class EdCustomSkill extends LitElement {
     templateAttribute: { attribute: false }, // the generic template entry's attribute (data)
     coreNames: { attribute: false },
     customNames: { attribute: false },
+    initialName: {},                          // seeded from a quick row's typed subject
+    initialSummary: {},                       // seeded from the generic skill's blurb (data)
+    canLearn: { attribute: false },           // null = no learn option; true/false = offered, enabled/disabled
     _form: { state: true },
     _touched: { state: true },
   };
@@ -38,6 +41,9 @@ export class EdCustomSkill extends LitElement {
     this.templateAttribute = null;
     this.coreNames = [];
     this.customNames = [];
+    this.initialName = '';
+    this.initialSummary = '';
+    this.canLearn = null;
     this._form = null;
     this._touched = false;
     this._ctl = new ModalController(this, {
@@ -55,7 +61,15 @@ export class EdCustomSkill extends LitElement {
   }
 
   willUpdate() {
-    if (!this._form) this._form = initialForm(this.kind, { attributes: this.attributes, templateAttribute: this.templateAttribute });
+    if (!this._form) {
+      this._form = initialForm(this.kind, {
+        attributes: this.attributes,
+        templateAttribute: this.templateAttribute,
+        name: this.initialName,
+        summary: this.initialSummary,
+        learn: this.canLearn === true,
+      });
+    }
   }
 
   _opts() {
@@ -73,8 +87,7 @@ export class EdCustomSkill extends LitElement {
 
   _create() {
     if (this._errors().length) return;
-    const skill = toSkill(this._form);
-    this.dispatchEvent(new CustomEvent('ed-create-custom-skill', { detail: { name: skill.name, skill }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('ed-create-custom-skill', { detail: createDetail(this._form), bubbles: true, composed: true }));
     this._ctl.close({ reason: 'confirm' });
   }
 
@@ -93,7 +106,7 @@ export class EdCustomSkill extends LitElement {
         hasTextarea: true,
         body: html`
           <div class="form">
-            <p class="sub">Custom skills are shared by every character, tagged Custom, and need your GM's approval at the table.</p>
+            <p class="sub">Saved to the shared custom-skills list: every character can use it, tagged Custom. Needs your GM's approval at the table.</p>
             <div class="fld">
               <label for="cs-name">Name</label>
               <input id="cs-name" type="text" maxlength=${MAX_TEXT} autocomplete="off" autofocus .value=${f.name}
@@ -120,6 +133,12 @@ export class EdCustomSkill extends LitElement {
               <textarea id="cs-desc" rows="4" maxlength=${MAX_DESCRIPTION} .value=${f.summary}
                 @input=${(e) => this._set('summary', e.target.value)}></textarea>
             </div>
+            ${this.canLearn === null ? '' : html`
+              <label class="learn" title=${this.canLearn ? '' : 'Not enough Legend, silver or ranks to learn it now'}>
+                <input type="checkbox" .checked=${f.learn} ?disabled=${!this.canLearn}
+                  @change=${(e) => this._set('learn', e.target.checked)} />
+                Also learn it now at Rank 1
+              </label>`}
             ${this._touched && errors.length
               ? html`<ul class="errors" role="alert">${errors.map((e) => html`<li>${e}</li>`)}</ul>`
               : ''}
@@ -147,6 +166,8 @@ export class EdCustomSkill extends LitElement {
     .fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--accent); }
     .fld textarea { resize: vertical; }
     .fixed { font-size: var(--fs-body); color: var(--fg); padding: 6px 0; }
+    .learn { display: flex; align-items: center; gap: 8px; font-size: var(--fs-body); color: var(--fg); }
+    .learn input { accent-color: var(--accent); }
     .errors { margin: 0; padding-left: 18px; color: var(--danger); font-size: var(--fs-small); }
   `];
 }

@@ -27,3 +27,10 @@
 - **Sources:** RULES-FAQ Q045; PG :7000-7002, :7184-7201
 - **Decision:** Owner house rule, 2026-11-22: a custom General skill gets an owner-chosen attribute and a selectable tier (Novice or Journeyman). Knowledge/Artisan stay Novice with an editable default attribute. Creating custom skills is gated by a homebrew rule, enabled for now.
 - **Used by:** T3, T5
+
+## R5 — Knowledge example subjects as catalog entries
+- **Status:** NOT-COVERED (descriptions); ANSWERED (attribute, tier, strain)
+- **Ruling:** The book prints 17 example Knowledge subjects but no per-subject text. All are instances of generic Knowledge: Rank + Perception, Standard, Strain 0, Novice.
+- **Sources:** RULES-FAQ Q046; PG text-RB-players-guide.txt:7184-7201, :7211-7230
+- **Decision:** Owner, 2026-11-23: add seven (Barsaive History, Creature Lore, Discipline Lore, Legends and Heroes, Racial Lore, Scourge History, Trade Routes) as full catalog entries with app-authored descriptions (not book text). Supersedes the R11 closed knowledge list of two.
+- **Used by:** catalog (post-build change)

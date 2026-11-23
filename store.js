@@ -2152,6 +2152,8 @@ export function deriveModel(character, rules, session = {}) {
     wealth: deriveWealth(character.wealth ?? {}),
     skills,
     skillOptions,
+    // Catalog descriptions by skill name for the picker rows' ⓘ (core + custom, pure pass-through).
+    skillInfo: Object.fromEntries((skillsFile?.skills ?? []).filter((s) => s?.summary).map((s) => [s.name, { summary: s.summary, ...(s.versus ? { versus: s.versus } : {}) }])),
     addableDisciplines: addableDisciplinesModel,
     knacks,
     knackOptions,

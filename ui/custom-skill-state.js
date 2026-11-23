@@ -4,12 +4,29 @@
 // (`templateAttribute`, never hard-coded here) and are always Novice; General has no
 // attribute prefill and an owner-chosen Novice/Journeyman tier.
 
-import { validateSkill } from '../engine/validate-skill.js';
+import { validateSkill, MAX_DESCRIPTION } from '../engine/validate-skill.js';
 
-/** @returns {{kind:string,name:string,attribute:string,summary:string,tier:number}} */
-export function initialForm(kind, { templateAttribute } = {}) {
+/**
+ * `name` / `summary` seed the form when it is opened from a quick row ("Customize…": the typed
+ * subject and the generic skill's blurb, both editable); `learn` is the "also learn it now" flag.
+ * @returns {{kind:string,name:string,attribute:string,summary:string,tier:number,learn:boolean}}
+ */
+export function initialForm(kind, { templateAttribute, name, summary, learn } = {}) {
   const attribute = kind === 'general' ? '' : (templateAttribute ?? '');
-  return { kind, name: '', attribute, summary: '', tier: 1 };
+  return {
+    kind,
+    name: String(name ?? '').trim(),
+    attribute,
+    summary: String(summary ?? '').slice(0, MAX_DESCRIPTION),
+    tier: 1,
+    learn: learn === true,
+  };
+}
+
+/** The event detail the form dispatches: the entry, and whether to learn it straight away. */
+export function createDetail(form) {
+  const skill = toSkill(form);
+  return { name: skill.name, skill, learn: form.learn === true };
 }
 
 export function setField(form, field, value) {

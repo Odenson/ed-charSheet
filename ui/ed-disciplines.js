@@ -17,7 +17,6 @@ import { payFromPurse, coinsSilver } from '../engine/wealth.js';
 import { scopeKnackOptions } from '../engine/knack-options.js';
 import { describeRequirement } from '../engine/advancement.js';
 import { SKILL_CHIPS, chipMatches } from './skill-filter.js';
-
 // The kit kind of each Disciplines modal (one controller serves all ten):
 // info modals (talent/skill/knack/granted) are read-only; the pickers act on a
 // focused option; Train is a confirm.
@@ -56,6 +55,7 @@ export class EdDisciplines extends LitElement {
     _startEdited: { state: true },
     _skillSilver: { state: true },
     _skillSearch: { state: true },
+    _infoOpen: { state: true },       // picker rows whose ⓘ description is expanded (Set of names)
     _skillFilter: { state: true },    // learn-picker category chip id (default 'all')
     _creationFilter: { state: true }, // creation-picker category chip id (default 'all')
     _customForm: { state: true },     // open create-custom-skill form: { kind, templateAttribute }
@@ -209,6 +209,10 @@ export class EdDisciplines extends LitElement {
     .sechead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .newskill { font: inherit; font-size: var(--fs-fine); color: var(--accent); background: none; border: 1px dashed var(--accent); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
     .newskill:hover { background: var(--accent-bg); }
+    .quickhint { margin: 2px 4px 8px; line-height: 1.9; }
+    .lrow { display: flex; align-items: center; gap: 4px; }
+    .lrow .lopt { flex: 1; min-width: 0; }
+    .linfo { font-size: var(--fs-small); color: var(--muted); line-height: 1.5; padding: 0 10px 4px; }
     .newskill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 
     /* Talent grouping by learned Circle (Option 2 — left circle spine). Each
@@ -588,6 +592,7 @@ export class EdDisciplines extends LitElement {
   _openCreationSkill(e) {
     this._creationSearch = '';
     this._creationFilter = 'all';
+    this._infoOpen = new Set();
     this._creationText = { knowledge: '', artisan: '' };
     this._openModal({ type: 'creation-skill' }, e);
   }
@@ -615,7 +620,7 @@ export class EdDisciplines extends LitElement {
     const text = this._creationText?.[key] ?? '';
     return html`
       <div class="ftrow">
-        <span class="lname">${label} (…)${this._poolBadge(c.pool, extra)}</span>
+        <span class="lname">${label} (…)${this._infoBtn(c.name)}${this._poolBadge(c.pool, extra)}</span>
         <span class="ftin">
           <input class="searchin" data-enter="local" type="text" maxlength="40" autocomplete="off"
             placeholder=${key === 'knowledge' ? 'e.g. Barsaive History' : 'e.g. Pottery'} aria-label="${label} subject" .value=${text}
@@ -629,16 +634,18 @@ export class EdDisciplines extends LitElement {
             @click=${() => this._creationSkillPick(c.name, text)}>Add</button>
         </span>
       </div>
+      ${this._infoBody(c.name)}
+      ${this._quickRowHint('creation', key, c, text, c.canPick === true)}
     `;
   }
 
   _creationSkillCandidate(c, extra) {
     return html`
-      <button class="lopt" ?disabled=${!c.canPick} title=${c.canPick ? `${c.name}${c.attribute ? ` · ${c.attribute}` : ''}` : 'No skill ranks left'}
+      <div class="lrow"><button class="lopt" ?disabled=${!c.canPick} title=${c.canPick ? `${c.name}${c.attribute ? ` · ${c.attribute}` : ''}` : 'No skill ranks left'}
         @click=${() => this._creationSkillPick(c.name)}>
         <span class="lname">${c.name}${c.disciplineList ? html`<span class="pill">Discipline</span>` : ''}${c.custom === true ? html`<span class="pill custom">Custom</span>` : ''}${this._poolBadge(c.pool, extra)}${c.attribute ? html`<span class="pill attr">${c.attribute}</span>` : ''}</span>
         ${c.brief ? html`<span class="lbrief">${c.brief}</span>` : ''}
-      </button>
+      </button>${this._infoBtn(c.name)}</div>${this._infoBody(c.name)}
     `;
   }
 
@@ -652,9 +659,41 @@ export class EdDisciplines extends LitElement {
 
   // Per-section "Create custom skill" button (only when the homebrew rule is on). The form's
   // Knowledge / Artisan attribute prefill is the generic template entry's attribute, from data.
-  _createSkillBtn(kind, items) {
+  // Only General has a header button; Knowledge / Artisan use "Customize…" on their quick row.
+  // `ctx` is 'learn' | 'creation'; `canLearn` drives the form's "Also learn it now" option.
+  _createSkillBtn(kind, items, ctx, canLearn) {
     const tpl = kind === 'general' ? null : (items ?? []).find((o) => o.freeText === kind)?.attribute ?? null;
-    return html`<button type="button" class="newskill" title="Create your own ${kind} skill" @click=${() => { this._customForm = { kind, templateAttribute: tpl }; }}>＋ Create custom skill</button>`;
+    return html`<button type="button" class="newskill" title="Create your own ${kind} skill" @click=${() => { this._customForm = { ctx, kind, templateAttribute: tpl, canLearn }; }}>＋ Create custom skill</button>`;
+  }
+
+  // ⓘ on a picker row: toggles the skill's catalog description inline (no nested modal).
+  // Data down: `model.skillInfo[name]` = { summary, versus } from the merged catalog.
+  _toggleInfo(name) {
+    const next = new Set(this._infoOpen ?? []);
+    if (!next.delete(name)) next.add(name);
+    this._infoOpen = next;
+  }
+
+  _infoBtn(name) {
+    const open = this._infoOpen?.has(name) === true;
+    return html`<button type="button" class="ibadge" aria-label="About ${name}" aria-expanded=${open ? 'true' : 'false'} title="What does this skill do?"
+      @click=${(e) => { e.stopPropagation(); this._toggleInfo(name); }}>i</button>`;
+  }
+
+  _infoBody(name) {
+    if (!this._infoOpen?.has(name)) return '';
+    const info = this.model?.skillInfo?.[name];
+    return html`<div class="linfo">${info?.summary ?? 'Skill description not yet recorded.'}${info?.versus ? html` Tested against ${info.versus}.` : ''}</div>`;
+  }
+
+  // The quick row's scope note + "Customize…" (opens the form seeded from the row: the typed
+  // subject, the generic skill's attribute and blurb — all from data, all editable). Shown only
+  // when the homebrew rule `skills.allowCustom` is on.
+  _quickRowHint(ctx, key, o, text, canLearn) {
+    if (this.model?.customSkills?.enabled !== true) return '';
+    return html`<div class="csub quickhint">Quick add is for this character only. To reuse a skill across characters, use
+      <button type="button" class="newskill" title="Create a shared custom ${key} skill from this subject"
+        @click=${() => { this._customForm = { ctx, kind: key, templateAttribute: o.attribute ?? null, name: String(text ?? '').trim(), summary: String(o.brief ?? '').slice(0, 500), canLearn }; }}>Customize…</button></div>`;
   }
 
   // The create form: a nested modal above the picker (its own kit controller, so Escape closes
@@ -664,8 +703,15 @@ export class EdDisciplines extends LitElement {
     if (!f) return '';
     const cs = this.model?.customSkills ?? {};
     return html`<ed-custom-skill .kind=${f.kind} .templateAttribute=${f.templateAttribute}
+      .initialName=${f.name ?? ''} .initialSummary=${f.summary ?? ''} .canLearn=${f.canLearn ?? null}
       .attributes=${(this.model?.attributes ?? []).map((a) => a.name)}
       .coreNames=${cs.coreNames ?? []} .customNames=${cs.customNames ?? []}
+      @ed-create-custom-skill=${(e) => {
+        // The event keeps bubbling to ed-app (which creates the catalog entry synchronously);
+        // learning runs after it, in a microtask, once the entry exists.
+        const d = e.detail;
+        if (d?.learn) queueMicrotask(() => (f.ctx === 'learn' ? this._learnSkillPick(d.name) : this._creationSkillPick(d.name)));
+      }}
       @close=${(e) => { e.stopPropagation(); this._customForm = null; }}></ed-custom-skill>`;
   }
 
@@ -693,10 +739,10 @@ export class EdDisciplines extends LitElement {
     const rendered = sections.map(([title, list, kind]) => {
       const texts = list.filter((c) => c.freeText && chipMatches(chip, c));
       const plain = list.filter((c) => !c.freeText && matches(c) && chipMatches(chip, c));
-      const showCreate = canCreate && kind && (chip === 'all' || chip === 'custom' || chip === kind);
+      const showCreate = canCreate && kind === 'general' && (chip === 'all' || chip === 'custom' || chip === kind);
       if (!texts.length && !plain.length && !showCreate) return '';
       return html`
-        <h4 class="section-gap sechead"><span>${title}</span>${showCreate ? this._createSkillBtn(kind, list) : ''}</h4>
+        <h4 class="section-gap sechead"><span>${title}</span>${showCreate ? this._createSkillBtn(kind, list, 'creation', cands.some((c) => c.canPick)) : ''}</h4>
         <div class="hmopts">
           ${texts.map((c) => this._creationTextRow(c, extra))}
           ${plain.map((c) => this._creationSkillCandidate(c, extra))}
@@ -840,6 +886,7 @@ export class EdDisciplines extends LitElement {
     this._skillSilver = opts[0]?.trainingSilver != null ? opts[0].trainingSilver : 10;
     this._skillSearch = '';
     this._skillFilter = 'all';
+    this._infoOpen = new Set();
     this._learnText = { knowledge: '', artisan: '' };
     this._openModal({ type: 'learn-skill', options: opts }, e);
   }
@@ -1482,6 +1529,10 @@ export class EdDisciplines extends LitElement {
     const affordable = (o) => (o.rank1Cost == null ? true : available == null ? true : available >= o.rank1Cost) && silverOk;
     const whyNot = (o) => ((o.rank1Cost != null && available != null && available < o.rank1Cost) ? 'Not enough Available Legend' : !silverOk ? 'Not enough silver' : '');
     const costOf = (o) => (o.rank1Cost == null ? '—' : `${o.rank1Cost} Legend`);
+    // "Also learn it now" in the create form is offered at the Novice price (the General form's
+    // Journeyman tier is checked again, and refused if unaffordable, by the learn guard).
+    const noviceCost = opts.find((o) => o.tier === 'Novice')?.rank1Cost ?? null;
+    const learnOk = silverOk && (noviceCost == null || available == null || available >= noviceCost);
     const textRow = (o) => {
       const key = o.freeText;
       const label = key === 'knowledge' ? 'Knowledge' : 'Artisan';
@@ -1489,7 +1540,7 @@ export class EdDisciplines extends LitElement {
       const ok = affordable(o);
       return html`
         <div class="ftrow">
-          <span class="lname">${label} (…)<span class="pill">${o.tier}</span><span class="pill">${costOf(o)}</span></span>
+          <span class="lname">${label} (…)${this._infoBtn(o.name)}<span class="pill">${o.tier}</span><span class="pill">${costOf(o)}</span></span>
           <span class="ftin">
             <input class="searchin" data-enter="local" type="text" maxlength="40" autocomplete="off"
               placeholder=${key === 'knowledge' ? 'e.g. Barsaive History' : 'e.g. Pottery'} aria-label="${label} subject" .value=${text}
@@ -1502,17 +1553,19 @@ export class EdDisciplines extends LitElement {
             <button class="lpick" ?disabled=${!ok || !text.trim()} title=${ok ? `Add ${label} (${text.trim() || '…'})` : whyNot(o)}
               @click=${() => this._learnSkillPick(o.name, text)}>Add</button>
           </span>
-        </div>`;
+        </div>
+        ${this._infoBody(o.name)}
+        ${this._quickRowHint('learn', key, o, text, ok)}`;
     };
     const plainRow = (o) => {
       const canPick = affordable(o);
       return html`
-        <button class="lopt" ?disabled=${!canPick}
+        <div class="lrow"><button class="lopt" ?disabled=${!canPick}
           title=${canPick ? `${o.name} · ${o.tier} · ${o.attribute ?? ''} · ${costOf(o)}` : whyNot(o)}
           @click=${() => canPick && this._learnSkillPick(o.name)}>
           <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:0">${o.name}${o.custom === true ? html`<span class="pill custom">Custom</span>` : ''}<span class="pill">${o.tier}</span>${o.attribute ? html`<span class="pill attr">${o.attribute}</span>` : ''}</span>
           <span class="lbrief">${o.brief ?? ''} · Rank 1 · ${costOf(o)}</span>
-        </button>`;
+        </button>${this._infoBtn(o.name)}</div>${this._infoBody(o.name)}`;
     };
     const inCategory = (category) => opts.filter((o) => o.category === category);
     const chip = this._skillFilter ?? 'all';
@@ -1528,11 +1581,11 @@ export class EdDisciplines extends LitElement {
     const rendered = sections.map(([title, list, kind]) => {
       const texts = list.filter((o) => o.freeText && chipMatches(chip, o));
       const plain = list.filter((o) => !o.freeText && matches(o) && chipMatches(chip, o));
-      const showCreate = canCreate && kind && (chip === 'all' || chip === 'custom' || chip === kind);
+      const showCreate = canCreate && kind === 'general' && (chip === 'all' || chip === 'custom' || chip === kind);
       if (!texts.length && !plain.length && !showCreate) return '';
       shown += texts.length + plain.length;
       return html`
-        <h4 class="section-gap sechead"><span>${title}</span>${showCreate ? this._createSkillBtn(kind, list) : ''}</h4>
+        <h4 class="section-gap sechead"><span>${title}</span>${showCreate ? this._createSkillBtn(kind, list, 'learn', learnOk) : ''}</h4>
         <div class="hmopts">${texts.map(textRow)}${plain.map(plainRow)}</div>`;
     });
     return modalFrame(this._modalCtl, {

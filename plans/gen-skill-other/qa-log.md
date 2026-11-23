@@ -46,3 +46,7 @@ Learn-skill modal needs a quick filter by Knowledge / Artisan / Speak Language /
 **Q:** Anything else?
 **A:** Creating custom skills must be toggled by a homebrew rule; set it on for now.
 **Classification (interrogator):** Implement as a boolean `set` target in the homebrew registry (precedent `advancement.optionalTable`), new rule shipped `enabled: true`. Adding a registry target is code + doc, not a change to the ed-homebrew/3 file shape, so Tier 3. (A new top-level lever like `knackParents` would change the schema shape: Tier 1, avoided.)
+
+## 2026-11-23 — owner request (post-build)
+**Q:** (Owner, after seeing the Knowledge example chips) Add the examples as full catalog entries with their own descriptions and the appropriate attribute, so they can be picked as normal skills. Only seven, the best Earthdawn-flavoured ones.
+**A:** Added as core entries in `rules/skills.json` (category knowledge, Perception, Novice, Strain 0): Barsaive History, Creature Lore, Discipline Lore, Legends and Heroes, Racial Lore, Scourge History, Trade Routes. Horror Lore and Alchemy and Potions skipped (already catalog skills). Book has no per-subject text (RULES-FAQ Q046), so descriptions are app-authored. Chips removed. Conformance tests updated (161 entries, 9 knowledge, 123 Novice, R11 knowledge list).
