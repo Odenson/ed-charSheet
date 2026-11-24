@@ -1,0 +1,191 @@
+{
+  "schema": "ed-token-usage/1",
+  "runs": [
+    {
+      "workflow": "new-feature",
+      "since": "2026-11-24T09:47:19.000Z",
+      "until": "2026-11-24T10:45:52.028Z",
+      "finished": "2026-11-24T10:45:52.028Z",
+      "session": "b91e2148-043a-4898-8d15-4e0293b19391",
+      "mainModels": [
+        "claude-sonnet-5-5"
+      ],
+      "note": "",
+      "total": {
+        "tokens": {
+          "input": 186,
+          "output": 96174,
+          "cacheRead": 11026685,
+          "cacheWrite": 431254
+        },
+        "cost": 4.518520999999998,
+        "messages": 89,
+        "spawns": 0,
+        "unpriced": false
+      },
+      "byAgent": {
+        "orchestrator": {
+          "tokens": {
+            "input": 100,
+            "output": 38395,
+            "cacheRead": 9598480,
+            "cacheWrite": 181958
+          },
+          "cost": 3.031678,
+          "messages": 50,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-planner": {
+          "tokens": {
+            "input": 38,
+            "output": 35026,
+            "cacheRead": 717497,
+            "cacheWrite": 146848
+          },
+          "cost": 0.8609554,
+          "messages": 17,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "rule-agent": {
+          "tokens": {
+            "input": 36,
+            "output": 14044,
+            "cacheRead": 581751,
+            "cacheWrite": 59944
+          },
+          "cost": 0.4067222,
+          "messages": 16,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-plan-reviewer": {
+          "tokens": {
+            "input": 12,
+            "output": 8709,
+            "cacheRead": 128957,
+            "cacheWrite": 42504
+          },
+          "cost": 0.2191654,
+          "messages": 6,
+          "spawns": 1,
+          "unpriced": false
+        }
+      },
+      "byModel": {
+        "claude-sonnet-5-5": {
+          "tokens": {
+            "input": 186,
+            "output": 96174,
+            "cacheRead": 11026685,
+            "cacheWrite": 431254
+          },
+          "cost": 4.518520999999998,
+          "messages": 89,
+          "spawns": 0,
+          "unpriced": false
+        }
+      }
+    },
+    {
+      "workflow": "build-feature",
+      "since": "2026-11-24T10:50:11.000Z",
+      "until": "2026-11-24T11:02:45.051Z",
+      "finished": "2026-11-24T11:02:45.051Z",
+      "session": "b91e2148-043a-4898-8d15-4e0293b19391",
+      "mainModels": [
+        "claude-sonnet-5-5"
+      ],
+      "note": "",
+      "total": {
+        "tokens": {
+          "input": 212,
+          "output": 97979,
+          "cacheRead": 8168943,
+          "cacheWrite": 399264
+        },
+        "cost": 3.7360071000000024,
+        "messages": 105,
+        "spawns": 0,
+        "unpriced": false
+      },
+      "byAgent": {
+        "orchestrator": {
+          "tokens": {
+            "input": 44,
+            "output": 11078,
+            "cacheRead": 2525983,
+            "cacheWrite": 82563
+          },
+          "cost": 0.9463166000000002,
+          "messages": 22,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-dev": {
+          "tokens": {
+            "input": 86,
+            "output": 32809,
+            "cacheRead": 3770442,
+            "cacheWrite": 127928
+          },
+          "cost": 1.4021704,
+          "messages": 42,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-designer": {
+          "tokens": {
+            "input": 22,
+            "output": 17907,
+            "cacheRead": 407834,
+            "cacheWrite": 66669
+          },
+          "cost": 0.42735330000000005,
+          "messages": 11,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "design-agent": {
+          "tokens": {
+            "input": 10,
+            "output": 3401,
+            "cacheRead": 113699,
+            "cacheWrite": 42747
+          },
+          "cost": 0.16363729999999999,
+          "messages": 5,
+          "spawns": 1,
+          "unpriced": false
+        },
+        "feature-tester": {
+          "tokens": {
+            "input": 50,
+            "output": 32784,
+            "cacheRead": 1350985,
+            "cacheWrite": 79357
+          },
+          "cost": 0.7965295,
+          "messages": 25,
+          "spawns": 1,
+          "unpriced": false
+        }
+      },
+      "byModel": {
+        "claude-sonnet-5-5": {
+          "tokens": {
+            "input": 212,
+            "output": 97979,
+            "cacheRead": 8168943,
+            "cacheWrite": 399264
+          },
+          "cost": 3.7360071000000024,
+          "messages": 105,
+          "spawns": 0,
+          "unpriced": false
+        }
+      }
+    }
+  ]
+}
