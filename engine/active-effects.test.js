@@ -439,3 +439,57 @@ test('otherCastToRecord: a pending Effect roll leaves effectLabel null; setOther
   assert.equal(list[0].effectLabel, null, 'input not mutated');
   assert.deepEqual(setOtherCastEffect(list, 'opp:404', 'Effect 3'), list);
 });
+
+// ---- armOpponent (Frighten uplift: computed per-success total + Step) -------
+// plans/frighten-uplift I2/I3; R2 (-2 to all tests per success), R3 (end-test vs Frighten Step).
+
+const frightenArms = (o = {}) => ({
+  opponent: true, rounds: 4, name: 'Frighten', text: 'NOTE.',
+  perSuccess: { delta: -2, allTests: true }, step: 9, ...o,
+});
+
+test('armOpponent perSuccess: text carries "-2 x 3 = -6 to all tests", note and Frighten Step (R2,R3)', () => {
+  const r = armOpponent({ arms: frightenArms(), successes: 3, targetName: 'Bob', seq: 2 });
+  assert.ok(r.text.includes('-2 x 3 = -6 to all tests'), r.text);
+  assert.ok(r.text.includes('NOTE.'), r.text);
+  assert.ok(r.text.includes('Frighten Step 9'), r.text);
+  assert.equal(r.name, 'Frighten');
+  assert.equal(r.effectLabel, '3 successes');
+  assert.equal(r.roundsLeft, 4);
+  assert.equal(r.roundsTotal, 4);
+});
+
+test('armOpponent perSuccess: head precedes note, Step sentence last', () => {
+  const t = armOpponent({ arms: frightenArms(), successes: 2, targetName: '', seq: 1 }).text;
+  assert.ok(t.indexOf('-2 x 2 = -4') < t.indexOf('NOTE.'));
+  assert.ok(t.indexOf('NOTE.') < t.indexOf('Frighten Step 9'));
+});
+
+test('armOpponent perSuccess: allTests false omits "to all tests"', () => {
+  const r = armOpponent({ arms: frightenArms({ perSuccess: { delta: -2, allTests: false } }), successes: 3, targetName: '', seq: 1 });
+  assert.ok(r.text.includes('-2 x 3 = -6'));
+  assert.ok(!r.text.includes('to all tests'));
+});
+
+test('armOpponent: step null/absent omits the Step sentence', () => {
+  assert.ok(!armOpponent({ arms: frightenArms({ step: null }), successes: 1, targetName: '', seq: 1 }).text.includes('Step'));
+  const { step, ...noStep } = frightenArms();
+  assert.ok(!armOpponent({ arms: noStep, successes: 1, targetName: '', seq: 1 }).text.includes('Step'));
+});
+
+test('armOpponent: no perSuccess leaves the output identical to the static Taunt text', () => {
+  const r = armOpponent({ arms: { opponent: true, rounds: 3, text: 'T' }, successes: 2, targetName: 'Bob', seq: 7 });
+  assert.equal(r.text, 'T');
+  assert.equal(r.name, 'Taunt');
+  const withNull = armOpponent({ arms: { opponent: true, rounds: 3, text: 'T', perSuccess: null, step: null }, successes: 2, targetName: 'Bob', seq: 7 });
+  assert.equal(withNull.text, 'T');
+});
+
+test('armOpponent perSuccess: a positive delta prints as-is', () => {
+  const r = armOpponent({ arms: frightenArms({ perSuccess: { delta: 2, allTests: true } }), successes: 2, targetName: '', seq: 1 });
+  assert.ok(r.text.includes('2 x 2 = 4 to all tests'), r.text);
+});
+
+test('armOpponent perSuccess: a miss still returns null', () => {
+  assert.equal(armOpponent({ arms: frightenArms(), successes: 0, targetName: '', seq: 1 }), null);
+});

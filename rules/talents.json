@@ -588,6 +588,7 @@
       "tier": "Novice",
       "versus": "target's Mystic Defense",
       "summary": "Instill fear with a silent stare (vs Mystic Defense); each success imposes -2 to all the target's tests while frightened.",
+      "arms": { "roll": { "vs": "Mystic" }, "rounds": "rank", "opponent": true },
       "effects": [
         {
           "type": "test-modifier",
@@ -604,6 +605,11 @@
           "duration": "special",
           "source": "talent",
           "summary": "-2 to all the target's tests while frightened (per success)."
+        },
+        {
+          "type": "note",
+          "source": "talent",
+          "summary": "Target may make a Willpower test each round vs the Frighten Step to end the fear. Fear-immune targets are unaffected."
         }
       ]
     },
@@ -2811,7 +2817,7 @@
       "tier": "Novice",
       "versus": "target's Social Defense",
       "summary": "Rattle a foe who understands the adept (test vs the target's Social Defense).",
-      "arms": { "roll": { "vs": "Social" }, "rounds": "rank" },
+      "arms": { "roll": { "vs": "Social" }, "rounds": "rank", "opponent": true },
       "effects": [
         { "type": "note", "source": "talent", "summary": "Per success the target gets -1 to tests and -1 Social Defense for Rank rounds." }
       ]

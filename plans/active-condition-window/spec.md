@@ -1,5 +1,7 @@
 # Tech Spec: Active effects window (active-condition-window)
 
+> Superseded in part by plans/frighten-uplift: opponent arms are now flagged by an explicit `arms.opponent: true` in rules data, no longer inferred from `roll.vs === "Social"` (see the store descriptor below). Taunt data is now `{roll:{vs:"Social"}, rounds:"rank", opponent:true}`.
+
 ## Overview
 One pure engine module (`engine/active-effects.js`) defines the entry/record contract, a builder that folds every session source into one ordered list, a grouper, and the reducers (add / tick / end / clear). `store.js` calls the builder and exposes the result as the NEW key `model.effectWindow`; `ui/ed-app.js` owns the session lists and is a thin dispatcher onto the reducers. A new Lit element `ui/ed-active-effects.js` renders the grouped list (Spells-card look) from `.effects` only and dispatches `ed-end-effect`; it is mounted in `ed-combat` (columns) and `ed-spells` (stack). Taunt ships as `arms {roll:{vs:"Social"}, rounds:"rank"}` on the Taunt talent. Nothing is persisted; `model.activeEffects` (Overview strip) is untouched.
 

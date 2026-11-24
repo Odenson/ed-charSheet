@@ -1230,3 +1230,17 @@ Keywords: active effects, ticking, Battle Bellow, Heartening Laugh, Inspire Othe
 Sources:
 - text-talents-players.txt:1-4 (Acrobatic Defense), 91-94 (Battle Bellow), 221-224 (Distract), 336-339 (Frighten), 346-349 (Graceful Exit), 361-364 (Heartening Laugh), 381-384 (Inspire Others), 431-434 (Maneuver), 666-669 (Tiger Spring)
 - text-RB-players-guide.txt:4088-4095 (p. 120, Using Talents: no stacking, overwrite), 13983-13987 (round end)
+
+### Q050 — Frighten talent in full: step, action, test, penalty, duration, end-test, immunity, Death's Head and Evil Eye interactions
+Keywords: Frighten, frightened, scared, -2 penalty all tests, per success, Mystic Defense, Willpower test end, fear immune, silent stare, Death's Head, Evil Eye, additional Success, Increase Effect, re-use, stacking · Resolved: 2026-11-24 · Context: frighten-uplift
+
+Frighten: Step Rank+WIL, Standard, Strain 0, Skill Use No; Novice-tier talent in the app data. The adept stares silently into the target's eyes and tests Frighten against the target's Mystic Defense. On success the target is frightened and suffers a -2 penalty to ALL tests per success the adept generated. It stays scared a number of rounds equal to the adept's Frighten RANK. Each round the target may make a Willpower test against the adept's Frighten STEP; success throws off the fear and the talent ends. Targets immune to fear cannot be affected. The text states nothing else: no line-of-sight/range/understanding wording beyond "staring silently into the character's eyes", no explicit list of what "all tests" includes, no re-use rule specific to Frighten (the general no-stacking/greater-effect/overwrite rule in Q049 (10) applies). Willpower test difficulty is the adept's Frighten Step (a number, not a roll); when in the round it is made ("each round") is not specified.
+Death's Head (Nethermancer, PG p. 323): Frighten may be used as a Simple action for the spell duration (Rank+5 rounds); extra-thread Increase Effect gives +2 bonus to Frighten (Frighten test, i.e. to the step; the text says only "+2 bonus to Frighten"). Evil Eye (PG p. 330, Nethermancer, Casting TMD, Self, Rank rounds; Q017 mislabelled this line as a nearby spell): Frighten gains one additional Success on all successful uses; extra-thread Increase Effect = +1 additional Success to Frighten tests. An additional success therefore adds a further -2 to the penalty. Death's Head itself does not change the penalty, only action type and (via threads) the bonus.
+App check: rules/talents.json "Frighten" (lines 577-609) matches: Standard, WIL, Strain 0, skillUse false, Novice, versus Mystic Defense, -2 per success to all tests. Differences/gaps: the duration is "special" (book: Frighten rank rounds); the Willpower-vs-Frighten-Step end-test and fear-immunity are not encoded as effects (summary only); the user's premise "Increase Effect" applies to Death's Head as +2 bonus (not +1 success); +1 success belongs to Evil Eye.
+
+Sources:
+- text-talents-players.txt:336-339
+- text-RB-players-guide.txt:5251-5260 (Frighten)
+- text-RB-players-guide.txt:12137-12153 (p. 323, Death's Head)
+- text-RB-players-guide.txt:12395-12405 (p. 330, Evil Eye)
+- rules/talents.json:577-609

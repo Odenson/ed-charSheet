@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.11.0",
+      "date": "2026-11-24",
+      "summary": "Frighten now adds a target effect in Active effects (-2 per success to all tests for Rank rounds, with a Willpower end-test reminder).",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Frighten now adds a target effect in Active effects: -2 per success to all tests for Rank rounds, with a reminder that the target can make a Willpower test against your Frighten Step to end it."
+        }
+      ]
+    },
+    {
       "version": "2.10.0",
       "date": "2026-11-24",
       "summary": "Optional portrait animations in Settings: Slow drift and Embers, both off by default and paused by your system's reduce-motion setting.",
