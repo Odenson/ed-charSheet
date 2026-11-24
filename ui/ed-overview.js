@@ -12,6 +12,7 @@ import { recoveriesRemaining } from '../engine/health.js';
 import { armedRecoveryBonus } from '../engine/potions.js';
 import './ed-edit-meta.js';
 import './ed-edit-portrait.js';
+import './ed-portrait-embers.js';
 import './ed-add-legend.js';
 import './ed-damage-modal.js';
 import { humanize, cap } from './format.js';
@@ -30,6 +31,9 @@ export class EdOverview extends LitElement {
     portraitImages: { attribute: false },
     portraitLoading: { attribute: false },
     portraitStaged: { attribute: false },
+    // Portrait animation prefs from ed-app (data down; device-wide, default off).
+    animDrift: { type: Boolean },
+    animEmbers: { type: Boolean },
     _editPortrait: { state: true },
     // Armed-potion session state from ed-app: { pending, potions } (data down).
     arming: { attribute: false },
@@ -82,6 +86,15 @@ export class EdOverview extends LitElement {
     .portrait .ph { color: var(--muted); font-size: var(--fs-hero); }
     /* Mobile-only avatar in the header (desktop uses the large .portrait). */
     .avatar { display: none; flex: none; width: 52px; height: 52px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; }
+    /* Image avatar: the wrapper owns size/border/clip (so drift + embers clip together);
+       the placeholder (.avatar.ph) stays a bare element shown at the mobile breakpoint. */
+    .avatar-wrap { display: none; position: relative; flex: none; width: 52px; height: 52px; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: var(--bg-card); }
+    .avatar-wrap .avatar { display: block; width: 100%; height: 100%; border: 0; border-radius: 0; }
+    .portrait { position: relative; }
+    /* Slow drift: gentle scale + pan inside the overflow-hidden frame (no layout shift). */
+    @keyframes pdrift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.08) translate(-1.5%, -1.5%); } }
+    .drift { animation: pdrift 7s ease-in-out infinite alternate; will-change: transform; }
+    @media (prefers-reduced-motion: reduce) { .drift { animation: none; } }
     .lightbox-img { display: block; max-width: 100%; max-height: 75vh; border-radius: 12px; object-fit: contain; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
     .right { display: flex; flex-direction: column; gap: 8px; }
     .blk { background: var(--bg-card); border-radius: 8px; padding: 8px 10px; }
@@ -245,7 +258,7 @@ export class EdOverview extends LitElement {
       .grid { grid-template-columns: 1fr; }
       .toprow { grid-template-columns: 1fr; }
       .portrait { display: none; }
-      .avatar { display: block; }
+      .avatar-wrap { display: block; }
       .avatar.ph { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: var(--fs-title); }
       /* Touch-sized creation steppers (one column scrolls, so the extra height is harmless). */
       .acell .astepbtn { width: 20px; height: 20px; margin: -4px 0; }
@@ -280,9 +293,9 @@ export class EdOverview extends LitElement {
       else { this._lightbox = true; this._lightboxCtl.opened(e.currentTarget); }
     };
     return portrait
-      ? html`<img class="avatar${on ? ' editable' : ''}" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`}
+      ? html`<span class="avatar-wrap"><img class="avatar${on ? ' editable' : ''}${this.animDrift ? ' drift' : ''}" src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`}
           role=${on ? 'button' : nothing} tabindex=${on ? '0' : nothing} aria-label=${on ? 'Change portrait' : nothing}
-          title=${on ? 'Change portrait' : 'View portrait'} @error=${this._portraitError} @click=${click} @keydown=${(e) => this._portraitKeydown(e)} />`
+          title=${on ? 'Change portrait' : 'View portrait'} @error=${this._portraitError} @click=${click} @keydown=${(e) => this._portraitKeydown(e)} />${this.animEmbers ? html`<ed-portrait-embers></ed-portrait-embers>` : nothing}</span>`
       : html`<div class="avatar ph editable" role="button" tabindex="0" aria-label="Change portrait" title="Change portrait"
           @click=${click} @keydown=${(e) => this._portraitKeydown(e)}>▢</div>`;
   }
@@ -1076,7 +1089,8 @@ export class EdOverview extends LitElement {
             aria-label=${this.editMode ? 'Change portrait' : nothing} title=${this.editMode ? 'Change portrait' : nothing}
             @click=${() => this._openPortraitEdit()} @keydown=${(e) => this._portraitKeydown(e)}>
             ${portrait
-              ? html`<img src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />`
+              ? html`<img class=${this.animDrift ? 'drift' : nothing} src=${portrait} alt=${`Portrait of ${meta.name ?? 'the character'}`} @error=${this._portraitError} />
+                ${this.animEmbers ? html`<ed-portrait-embers></ed-portrait-embers>` : nothing}`
               : html`<span class="ph">▢</span>`}
           </div>
         </div>

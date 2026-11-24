@@ -652,7 +652,9 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, hosts the shared <ed-active-effects> window (self-cast and cast-on-Other spells; the Target effects card is removed); weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
     ed-equipment.js   # Equipment tab (items grouped by function)
     ed-notes.js       # Notes tab (running character log)
-    ed-settings.js    # settings modal (autosave; per-character Discord die reports)
+    ed-settings.js    # settings modal (autosave; portrait animation switches; per-character Discord die reports)
+    ed-portrait-embers.js # <ed-portrait-embers> decorative canvas of rising embers over the portrait (no state, no pointer events)
+    portrait-anim.js  # pure helpers for portrait animation: device pref parsing + ember particle step (tested in portrait-anim.test.js)
     ed-homebrew.js    # homebrew rules loader/manager
     ed-roll-modal.js  # step dice-roll modal (Karma die; Bonus Dice as their own exploding group; Step/result mod breakdown; pre-ticked per-roll situational toggles)
     ed-trade-modal.js # buy/sell / wealth transaction modal
