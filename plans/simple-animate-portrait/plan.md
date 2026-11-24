@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.10.0
 ---
 # Delivery Plan: Simple animated portrait (simple-animate-portrait)
 
