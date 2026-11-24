@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Combat tab — Active conditions placement mocks</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --fs-eyebrow:.62rem;--fs-fine:.68rem;--fs-small:.74rem;--fs-body:.82rem;--fs-value:.95rem;--fs-title:1.1rem;--fs-hero:1.6rem;
+}
+body{margin:0;background:light-dark(#f4f5f7,#12151b);min-height:100vh}
+.app{display:block;max-width:60rem;margin:0 auto;padding:1rem 1rem 1.5rem;color:light-dark(#111418,#f0f3f7);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.tabbar{display:flex;align-items:center;gap:2px;border-bottom:1px solid light-dark(#e2e5ea,#2c313b);margin-bottom:.9rem;flex-wrap:wrap}
+.tab{display:flex;align-items:center;gap:6px;padding:7px 13px;font-size:var(--fs-body);font-family:inherit;color:light-dark(#5a6472,#93a0b3);background:none;border:none;border-bottom:2px solid transparent;cursor:default}
+.tab[aria-selected=true]{color:light-dark(#111418,#f0f3f7);border-bottom-color:light-dark(#7a3e12,#d9944e)}
+
+#ed{
+  --bg-card:light-dark(#f1f2f5,#1b1f27);--bg-chip:light-dark(#f7f8fa,#1b1f27);--card:light-dark(#ffffff,#232833);
+  --border:light-dark(#e2e5ea,#2c313b);--muted:light-dark(#5a6472,#93a0b3);--fg:light-dark(#111418,#f0f3f7);
+  --accent:light-dark(#7a3e12,#d9944e);--accent-bg:light-dark(#f6e9dc,#3a2a17);
+  --karma:light-dark(#3d6b4a,#82c39a);--karma-bg:light-dark(#e7f0ea,#223029);
+  --danger:light-dark(#c0392b,#e06557);--danger-bg:light-dark(#fbe9e7,#3a1f1c);
+  --blood:light-dark(#a1352b,#e0736a);--blood-bg:light-dark(#f8e7e4,#3a201d);
+  position:relative;font-size:var(--fs-body);
+}
+#ed *{box-sizing:border-box}
+#ed button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0;background:none;border:none}
+#ed button:disabled{opacity:.4;cursor:default}
+.col{display:flex;flex-direction:column;gap:14px}
+.blk{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 6px}
+.k{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.v{font-weight:500;font-variant-numeric:tabular-nums}
+.hint{font-size:var(--fs-fine);color:var(--muted)}
+
+/* floating header line */
+.float{display:flex;gap:22px;flex-wrap:wrap;align-items:center;padding:0 2px}
+.float .item{display:inline-flex;align-items:baseline;gap:7px;font-size:var(--fs-small);font-variant-numeric:tabular-nums}
+.float .item.ctl{align-items:center}
+.float .item b{font-weight:500;font-size:var(--fs-body)}
+.kchip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-fine);color:var(--muted);background:var(--bg-chip);border:1px solid var(--border);border-radius:999px;padding:3px 10px;margin-left:auto}
+.kchip b{color:var(--karma);font-weight:500}
+.cond{color:var(--danger)}.cond.up{color:var(--karma)}
+.delt{margin-left:3px;font-size:var(--fs-eyebrow);font-weight:500;line-height:1;padding:1px 4px;border-radius:999px;background:var(--danger-bg);color:var(--danger);vertical-align:1px;white-space:nowrap}
+.delt.up{background:var(--karma-bg);color:var(--karma)}
+.initres{color:var(--accent);font-weight:500;font-variant-numeric:tabular-nums}
+
+.roll{width:22px;height:22px;border-radius:50%;border:1px solid var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent)!important;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-small);flex:none;line-height:1}
+.roll.dmg{border-color:var(--danger)!important;background:var(--danger-bg)!important;color:var(--danger)!important}
+.roll.reset{border-color:var(--karma)!important;background:var(--karma-bg)!important;color:var(--karma)!important}
+.info{width:18px;height:18px;border-radius:50%;border:1px solid var(--border)!important;color:var(--muted)!important;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-fine);flex:none;line-height:1}
+.info:hover{border-color:var(--accent)!important;color:var(--accent)!important}
+
+/* attack block */
+.top2{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;align-items:stretch}
+.attacktop{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:stretch}
+.attackrows{min-width:0;display:flex;flex-direction:column}
+.artbox{position:relative;aspect-ratio:1;height:100%;min-height:96px;border:1px dashed var(--border);border-radius:8px;background:var(--bg-card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--muted)}
+.artbox svg{width:30px;height:30px;opacity:.6}
+.artbox .cap{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.05em}
+select{font:inherit;font-size:var(--fs-body);width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg-chip);color:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.statline{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--fs-body);border-top:1px solid var(--border)}
+.statline .k{width:54px}
+.statline .val{flex:1;font-weight:500;font-variant-numeric:tabular-nums;min-width:0}
+.vs{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-fine);color:var(--muted)}
+.vs input{width:46px;font:inherit;font-size:var(--fs-body);font-weight:500;text-align:right;color:var(--fg);background:var(--bg-chip);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+.vs input:focus{outline:none;border-color:var(--accent)}
+.strain-k{margin-left:14px;font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.strain{font-weight:500;font-variant-numeric:tabular-nums;color:var(--danger);flex:none;min-width:14px;text-align:right}
+.dmgbonus{font-size:var(--fs-eyebrow);font-weight:500;color:var(--karma);background:var(--bg-chip);border:1px solid var(--karma);border-radius:999px;padding:0 6px;margin-left:4px}
+
+/* damage taken */
+.dtcol{display:flex;flex-direction:column}
+.dtcol .cur{display:flex;align-items:center;gap:6px}
+.dtcol .lab{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+.dtcol .curdmg{font-size:var(--fs-value);font-weight:500;font-variant-numeric:tabular-nums}
+.dtcol .thr{font-size:var(--fs-fine);color:var(--muted);margin-top:6px;line-height:1.5}
+.dtcol .thr.rec{margin-top:3px}.dtcol .thr.rec b{color:var(--fg);font-weight:500}
+.dtbtns{display:flex;gap:6px;margin-top:auto;padding-top:9px;align-items:center}
+.status{font-size:var(--fs-eyebrow);font-weight:500;padding:1px 9px;border-radius:999px;background:var(--bg-chip);color:var(--muted);border:1px solid var(--border);white-space:nowrap}
+.status.warn{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.boostpill{font-size:var(--fs-eyebrow);font-weight:500;color:var(--karma);border:1px solid var(--karma);border-radius:999px;padding:0 6px}
+.standrow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:var(--fs-fine);color:var(--danger);padding:4px 8px;margin-bottom:6px;background:var(--danger-bg);border-radius:6px}
+.stand{font-size:var(--fs-eyebrow);font-weight:500;padding:2px 9px;border-radius:999px;border:1px solid var(--accent)!important;color:var(--accent)!important}
+.stand:hover{background:var(--accent-bg)!important}
+
+/* modifiers */
+.mods{padding:0 2px}
+.seg{display:inline-flex;background:var(--bg-card);border-radius:999px;padding:3px;gap:2px;margin-bottom:8px}
+.seg button{padding:4px 14px;border-radius:999px;font-size:var(--fs-small);color:var(--muted);border:1px solid transparent!important}
+.seg button[aria-pressed=true]{background:var(--bg-chip)!important;color:var(--fg);border-color:var(--border)!important}
+.seg i{font-style:normal;color:var(--accent);margin-left:5px;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-small);padding:3px 9px;border-radius:999px;border:1px solid var(--border)!important;background:var(--bg-chip)!important}
+.chip:hover{border-color:var(--accent)!important}
+.chip[aria-pressed=true]{border-color:var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent);font-weight:500}
+.chip.charm[aria-pressed=true]{border-color:var(--blood)!important;background:var(--blood-bg)!important;color:var(--blood)}
+.badge{font-size:var(--fs-eyebrow);padding:0 4px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;font-weight:400}
+.chip[aria-pressed=true] .badge{border-color:currentColor}
+.badge.pos{color:var(--karma)}.badge.neg{color:var(--danger)}.badge.strain{color:var(--danger)}
+
+/* potions */
+.potpick{display:flex;gap:8px;align-items:center;margin-top:4px}
+.potpick select{font-size:var(--fs-small);border-radius:7px;padding:5px 7px;background:var(--card);flex:1;min-width:0}
+.drink{font-size:var(--fs-fine);font-weight:500;border:1px solid var(--accent)!important;background:var(--accent)!important;color:#fff!important;padding:5px 12px;border-radius:999px;flex:0 0 auto}
+.emptyhint{font-size:var(--fs-fine);color:var(--muted);padding:2px 0}
+.potpend{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;background:var(--accent-bg);border:1px dashed var(--accent);margin-top:6px}
+.potpend .ptxt{flex:1;font-size:var(--fs-fine)}.potpend .ptxt b{color:var(--accent);font-weight:500}
+.pclear{color:var(--muted)!important;font-size:var(--fs-body);line-height:1}
+
+/* log table */
+.clear{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;padding:1px 8px;border-radius:999px;border:1px solid var(--border)!important;color:var(--muted)!important}
+.clear:hover:not(:disabled){color:var(--danger)!important;border-color:var(--danger)!important}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-small)}
+th{font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)}
+td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);line-height:1.35}
+td b{color:var(--fg);font-weight:500}
+tr:last-child td{border-bottom:none}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+.glyph{color:var(--accent);font-size:var(--fs-fine);text-align:center}
+.hit{color:var(--karma);font-weight:500}.miss{color:var(--danger);font-weight:500}
+.logempty{text-align:center;padding:14px;font-size:var(--fs-small);color:var(--muted)}
+
+/* modals */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:2100;padding:1rem}
+.modal{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:12px;width:26rem;max-width:100%;padding:1rem 1.25rem 1.25rem}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:var(--fs-value);font-weight:500;margin-bottom:.75rem}
+.mclose{color:var(--muted)!important;font-size:var(--fs-title);line-height:1}
+.mpara{font-size:var(--fs-small);line-height:1.5;margin:0}
+.mpara.hint{font-size:var(--fs-fine);color:var(--muted);margin-top:8px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--fs-body);margin-top:10px}
+.hrow input{font:inherit;font-size:var(--fs-body);color:var(--fg);background:var(--bg-chip);border:1px solid var(--border);border-radius:6px;padding:6px 8px;width:6rem;text-align:right}
+.hfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.hbtn{font-size:var(--fs-body);font-weight:500;padding:6px 14px;border-radius:6px;border:1px solid var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent)!important}
+.hbtn.plain{border-color:var(--border)!important;background:var(--bg-chip)!important;color:var(--fg)!important;font-weight:400}
+.warnt{font-size:var(--fs-small);color:var(--danger);margin-top:8px}
+.arow{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:var(--fs-body)}
+.arow .av{font-weight:500;font-variant-numeric:tabular-nums}.arow .av.neg{color:var(--danger)}
+.arow.total{border-top:1px solid var(--border);margin-top:3px;padding-top:6px}
+
+@media (max-width:720px){.top2{grid-template-columns:1fr}.attacktop{grid-template-columns:1fr}.artbox{display:none}}
+
+/* ---------- mock chrome (outside the app) ---------- */
+.mockbar{max-width:60rem;margin:0 auto;padding:.75rem 1rem 0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:light-dark(#111418,#f0f3f7)}
+.mockbar .pick{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mockbar .pick button{font:inherit;font-size:.82rem;padding:5px 14px;border-radius:999px;border:1px solid light-dark(#e2e5ea,#2c313b);background:light-dark(#fff,#232833);color:inherit;cursor:pointer}
+.mockbar .pick button[aria-pressed=true]{border-color:light-dark(#7a3e12,#d9944e);background:light-dark(#f6e9dc,#3a2a17);color:light-dark(#7a3e12,#d9944e);font-weight:500}
+.mockbar label{margin-left:auto;font-size:.74rem;color:light-dark(#5a6472,#93a0b3);display:inline-flex;gap:5px;align-items:center}
+.mocknote{margin-top:8px;font-size:.74rem;line-height:1.5;color:light-dark(#5a6472,#93a0b3);background:light-dark(#fff,#232833);border:1px dashed light-dark(#e2e5ea,#2c313b);border-radius:8px;padding:8px 10px}
+.mocknote b{color:light-dark(#111418,#f0f3f7);font-weight:500}
+.mocknote .new{color:light-dark(#7a3e12,#d9944e);font-weight:500}
+
+/* ---------- NEW: active-conditions section (built only from existing tokens) ---------- */
+.new-flag{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:10px}
+.cnt{font-style:normal;color:var(--accent);font-weight:500;margin-left:4px}
+.scope{font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.04em;padding:0 6px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;flex:none}
+.scope.you{color:var(--karma);border-color:var(--karma)}
+.scope.tgt{color:var(--danger);border-color:var(--danger)}
+.crow{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border);min-width:0;font-size:var(--fs-small)}
+.crow:first-child{border-top:none}
+.crow .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.crow .nm b{font-weight:500;font-size:var(--fs-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .nm .src{font-size:var(--fs-fine);color:var(--muted)}
+.crow .effs{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.crow .badge{font-size:var(--fs-fine);padding:0 6px}
+.dur{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-fine);color:var(--muted);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.pips{display:inline-flex;gap:2px}
+.pips i{width:6px;height:6px;border-radius:50%;border:1px solid var(--accent);display:block}
+.pips i.on{background:var(--accent)}
+.endx{color:var(--muted)!important;font-size:var(--fs-body);line-height:1;padding:2px 4px!important;flex:none}
+.endx:hover{color:var(--danger)!important}
+.sub{font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:8px 0 2px}
+.sub:first-child{margin-top:0}
+.cempty{background:var(--bg-card);border:1px dashed var(--border);border-radius:8px;padding:8px 10px;text-align:center;font-size:var(--fs-small);color:var(--muted);line-height:1.45}
+.thisatk{display:flex;flex-wrap:wrap;gap:5px}
+.thisatk .chip{cursor:default}
+
+/* A: band under the header line */
+.cband{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px}
+.cband > div{min-width:0}
+.cband > div + div{border-left:1px solid var(--border);padding-left:14px}
+.cband .sub{margin-top:0}
+.cband .crow .nm .src{display:none}
+
+/* B: 4th segment + header pill */
+.segpill{font:inherit;font-size:var(--fs-fine);color:var(--muted);background:var(--bg-chip)!important;border:1px solid var(--border)!important;border-radius:999px;padding:3px 10px;display:inline-flex;gap:6px;align-items:center}
+.segpill b{color:var(--accent);font-weight:500}
+.segpill:hover{border-color:var(--accent)!important}
+
+/* C: ledger card above the log */
+.ledger td.sc{width:62px}
+.ledger td.du{white-space:nowrap}
+.ledger tr.grp td{background:var(--bg-card);color:var(--muted);font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px}
+.ledger td.nmc{color:var(--fg)}
+.ledger td.nmc b{font-weight:500}
+.ledger td.nmc .src{display:block;font-size:var(--fs-fine);color:var(--muted)}
+.ledger .badge{font-size:var(--fs-fine);padding:0 6px;margin-right:4px}
+.ledger td.x{width:26px;text-align:right}
+
+@media (max-width:720px){
+  .cband{grid-template-columns:1fr}
+  .cband > div + div{border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:8px}
+  .crow{flex-wrap:wrap}
+  .crow .effs{justify-content:flex-start}
+  .ledger td.sc{width:auto}
+}
+</style>
+</head>
+<body>
+<div class="mockbar">
+  <div class="pick" id="pick">
+    <button data-l="A" aria-pressed="true">A · Band above attack</button>
+    <button data-l="B" aria-pressed="false">B · 4th modifiers tab</button>
+    <button data-l="C" aria-pressed="false">C · Ledger above log</button>
+    <button data-l="D" aria-pressed="false">D · Band above log</button>
+    <label><input type="checkbox" id="emptyToggle"> show empty state</label>
+  </div>
+  <div class="mocknote" id="note"></div>
+</div>
+<div class="app">
+  <div class="tabbar" role="tablist">
+    <button class="tab">Overview</button><button class="tab">Disciplines</button><button class="tab" aria-selected="true">Combat</button><button class="tab">Spells</button><button class="tab">Equipment</button><button class="tab">Notes</button>
+  </div>
+  <div id="ed"></div>
+</div>
+<script>
+(function(){
+var MISSING='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>';
+/* SAMPLE DATA ONLY — names/numbers are placeholders to judge layout, not rules. */
+var C0=[
+ {id:'aggr',grp:'atk',who:'you',name:'Aggressive Attack',src:'Combat option',eff:[['atk +3','pos'],['dmg +3','pos'],['PD −3','neg'],['1 Strain','neg']]},
+ {id:'aim',grp:'atk',who:'you',name:'Aim',src:'Combat option · armed',eff:[['atk +2','pos']],rounds:2,max:3},
+ {id:'taunt',grp:'long',who:'tgt',name:'Taunt',src:'Orc Raider · Taunt talent, Rank 3',eff:[['opp −1 tests','neg']],rounds:3,max:3},
+ {id:'shield',grp:'long',who:'you',name:'Thorn Shield',src:'Spell · cast on you',eff:[['Phys Armour +2','pos']],rounds:4,max:5},
+ {id:'entangle',grp:'long',who:'tgt',name:'Entangle',src:'Spell · cast on Orc Raider',eff:[['PD −2','neg'],['move −½','neg']],rounds:2,max:4}
+];
+var S={l:'A',empty:false,c:JSON.parse(JSON.stringify(C0)),tab:'opt'};
+var NOTES={
+ A:'<b>A · Band above the attack row.</b> Full-width card straight under the Defence / Armour / Initiative line, split in three columns: <i>This attack</i> · <i>Lasting on you</i> · <i>Lasting on target</i>. <span class="new">Pros:</span> seen before every roll; target effects get their own column. <span class="new">Cons:</span> pushes the Attack card down; takes a full row even when nothing is active (empty state shown with the checkbox).',
+ B:'<b>B · Fourth tab in Combat modifiers.</b> Adds an “Active” segment (with a live count) next to Combat options / Situational / Blood charms, plus a small header-line pill that jumps to it. <span class="new">Pros:</span> zero extra vertical space, reuses the segmented control exactly. <span class="new">Cons:</span> hidden until you click the tab; long lists must fit the left column; “this attack” options appear in two places.',
+ D:'<b>D · Band above the log.</b> The same three-column card as A (This attack · Lasting on you · Lasting on target), but placed between the modifiers/potions row and the Combat log. <span class="new">Pros:</span> attack area stays exactly as today; keeps A\'s by-target grouping; sits right under the modifiers you toggle. <span class="new">Cons:</span> below the roll buttons, so less glanceable than A; may be off-screen on short viewports.',
+ C:'<b>C · Ledger card between modifiers and log.</b> A full-width table in the same style as the Combat log: Effect · On · Modifier · Remaining · end. Grouped by This attack / Lasting. <span class="new">Pros:</span> densest and most scannable for many rows, room for sources and duration; attack area untouched. <span class="new">Cons:</span> sits below the fold on small screens, away from the roll buttons.'
+};
+function pips(c){if(c.rounds==null)return '';var h='';for(var i=0;i<c.max;i++)h+='<i class="'+(i<c.rounds?'on':'')+'"></i>';return '<span class="pips" title="'+c.rounds+' of '+c.max+' rounds left">'+h+'</span>'}
+function dur(c){return c.rounds==null?'<span class="dur">this attack</span>':'<span class="dur">'+pips(c)+c.rounds+' rd'+(c.rounds>1?'s':'')+'</span>'}
+function badges(c){return c.eff.map(function(e){return '<span class="badge '+e[1]+'">'+e[0]+'</span>'}).join('')}
+function scope(c){return '<span class="scope '+c.who+'">'+(c.who==='you'?'You':'Target')+'</span>'}
+function endBtn(c){return '<button class="endx" data-a="end" data-v="'+c.id+'" title="End this condition" aria-label="End '+c.name+'">✕</button>'}
+function row(c,showScope){return '<div class="crow">'+(showScope?scope(c):'')+'<span class="nm"><b>'+c.name+'</b><span class="src">'+c.src+'</span></span><span class="effs">'+badges(c)+'</span>'+(c.grp==='long'?dur(c):'')+endBtn(c)+'</div>'}
+function list(){return S.empty?[]:S.c}
+function by(g,w){return list().filter(function(c){return c.grp===g&&(!w||c.who===w)})}
+var EMPTY='<div class="cempty">No active conditions. Lasting effects, spell conditions and toggled options appear here.</div>';
+
+/* --- the three placements of the new section --- */
+function bandA(){var n=list().length;
+ var atk=by('atk'),you=by('long','you'),tg=by('long','tgt');
+ return '<div class="blk new-flag"><div class="h"><span>Active conditions<i class="cnt">'+n+'</i></span><span class="hint" style="text-transform:none;letter-spacing:0">ticks down each round</span></div>'+
+ (n?'<div class="cband"><div><div class="sub">This attack</div>'+(atk.length?atk.map(function(c){return row(c,false)}).join(''):'<div class="hint">None toggled</div>')+'</div>'+
+ '<div><div class="sub">Lasting · on you</div>'+(you.length?you.map(function(c){return row(c,false)}).join(''):'<div class="hint">None</div>')+'</div>'+
+ '<div><div class="sub">Lasting · on target</div>'+(tg.length?tg.map(function(c){return row(c,false)}).join(''):'<div class="hint">None</div>')+'</div></div>':EMPTY)+'</div>'}
+function tabB(){var n=list().length,atk=by('atk'),lg=by('long');
+ return n?(atk.length?'<div class="sub">This attack</div>'+atk.map(function(c){return row(c,true)}).join(''):'')+(lg.length?'<div class="sub">Lasting</div>'+lg.map(function(c){return row(c,true)}).join(''):''):EMPTY}
+function ledgerC(){var n=list().length,atk=by('atk'),lg=by('long');
+ var tr=function(c){return '<tr><td class="sc">'+scope(c)+'</td><td class="nmc"><b>'+c.name+'</b><span class="src">'+c.src+'</span></td><td>'+badges(c)+'</td><td class="du">'+dur(c)+'</td><td class="x">'+endBtn(c)+'</td></tr>'};
+ return '<div class="blk new-flag"><div class="h"><span>Active conditions<i class="cnt">'+n+'</i></span></div>'+
+ (n?'<table class="ledger"><thead><tr><th style="width:62px">On</th><th>Effect</th><th>Modifier</th><th>Remaining</th><th></th></tr></thead><tbody>'+
+ (atk.length?'<tr class="grp"><td colspan="5">This attack</td></tr>'+atk.map(tr).join(''):'')+
+ (lg.length?'<tr class="grp"><td colspan="5">Lasting across rounds</td></tr>'+lg.map(tr).join(''):'')+'</tbody></table>':EMPTY)+'</div>'}
+
+/* --- the existing combat tab (unchanged from the live layout) --- */
+function pdPill(){var on=!S.empty&&S.c.some(function(c){return c.id==='aggr'}),v=on?6:9;return on?'<span class="v cond">'+v+'</span><span class="delt">−3</span>':'<span class="v">9</span>'}
+function modsBlock(){
+ var n=list().length;
+ var tabs=[['opt','Combat options',on('aggr')+on('aim')],['sit','Situational',0],['ch','Blood charms',0]];
+ if(S.l==='B')tabs.push(['act','Active',n]);
+ function on(id){return !S.empty&&S.c.some(function(c){return c.id===id})?1:0}
+ var segs=tabs.map(function(t){return '<button aria-pressed="'+(S.tab===t[0])+'" data-a="tab" data-v="'+t[0]+'">'+t[1]+(t[2]?'<i>'+t[2]+'</i>':'')+'</button>'}).join('');
+ var panel;
+ if(S.tab==='act'&&S.l==='B')panel=tabB();
+ else{var chips={opt:[['Aggressive attack','atk +3','pos','aggr'],['Aim','atk +2','pos','aim'],['Defensive stance','atk −3','neg'],['Called shot','atk −3','neg'],['True Shot','atk +2','pos']],sit:[['Harried','atk −2','neg'],['Surprised','PD −3','neg'],['Cover','PD +2','pos']],ch:[['Thorn Cut','dmg +2','pos'],['Bloodsong','atk +1','pos']]}[S.tab==='act'?'opt':S.tab];
+  panel='<div class="chips">'+chips.map(function(c){var p=c[3]&&on(c[3]);return '<span class="chip" aria-pressed="'+!!p+'">'+c[0]+'<span class="badge '+c[2]+'">'+c[1]+'</span></span>'}).join('')+'</div>'}
+ return '<div class="mods'+(S.l==='B'?'':'')+'"><div class="h"><span>Combat modifiers</span></div><div class="seg'+(S.l==='B'?' new-flag':'')+'">'+segs+'</div>'+panel+'</div>'}
+function render(){
+ var n=list().length;
+ var hdrPill=S.l==='B'?'<button class="segpill new-flag" data-a="gotoact" title="Show active conditions">Active conditions <b>'+n+'</b></button>':'';
+ var h='<div class="col">'
+ +'<div class="float"><span class="item"><span class="k">Defence</span>PD '+pdPill()+' · MD <b>8</b> · SD <b>7</b></span><span class="item"><span class="k">Armour</span>Phys <b>5</b> · Myst <b>3</b></span><span class="item ctl"><span class="k">Initiative</span><b>9</b><button class="roll" aria-label="Roll initiative">⚄</button></span>'+hdrPill+'<span class="kchip">Available Karma <b>6</b></span></div>'
+ +(S.l==='A'?bandA():'')
+ +'<div class="top2"><div class="blk"><div class="h"><span>Your attack</span></div><div class="attacktop"><div class="artbox">'+MISSING+'<span class="cap">no image</span></div><div class="attackrows">'
+ +'<div class="row2"><select aria-label="Weapon"><option>Broadsword · dmg 9</option></select><select aria-label="Talent"><option>Melee Weapons · Talent · 14</option></select></div>'
+ +'<div class="statline"><button class="info">ⓘ</button><span class="k">Attack</span><span class="val">14</span><span class="vs">vs <input type="number" placeholder="#"></span><button class="roll" aria-label="Roll attack">⚄</button></div>'
+ +'<div class="statline"><button class="info">ⓘ</button><span class="k">Damage</span><span class="val">17</span><span class="vs">succ <input type="number" placeholder="0"></span><button class="roll" aria-label="Roll damage">⚄</button><span class="strain-k">Strain</span><span class="strain">1</span></div>'
+ +'</div></div></div>'
+ +'<div class="blk dtcol"><div class="h"><span>Damage taken</span><span class="status">Healthy</span></div><div class="cur"><span class="lab">Current</span><span class="curdmg">0</span><span class="lab" style="margin-left:6px">Wounds</span><span class="curdmg">0</span></div><div class="thr">32 unconscious<br>40 death</div><div class="thr rec">Recoveries <b>0 / 3</b> used</div><div class="dtbtns"><button class="roll dmg" aria-label="Take damage">✗</button><button class="roll" aria-label="Recovery test">⚄</button><button class="roll reset" style="margin-left:auto" aria-label="Reset the day">☼</button></div></div></div>'
+ +'<div class="top2" style="align-items:start">'+modsBlock()
+ +'<div class="blk"><div class="h"><span>Potions</span></div><div class="potpick"><select aria-label="Potion"><option>Healing Potion ×2</option></select><button class="drink">Drink</button></div></div></div>'
+ +(S.l==='C'?ledgerC():'')+(S.l==='D'?bandA():'')
+ +'<div><div class="h" style="padding:0 2px"><span>Combat log</span><button class="clear" disabled>clear</button></div><table><thead><tr><th style="width:28px"></th><th>Roll</th><th class="r">Total</th><th>Outcome</th><th>Modifiers</th></tr></thead><tbody><tr><td class="glyph">⚄</td><td><b>Attack</b></td><td class="r"><b>16</b></td><td><span class="hit">Hit +1</span></td><td>Aggressive Attack, Aim · 1 Strain</td></tr><tr><td class="glyph">⚄</td><td><b>Initiative</b></td><td class="r"><b>11</b></td><td>—</td><td></td></tr></tbody></table></div>'
+ +'</div>';
+ document.getElementById('ed').innerHTML=h;
+ document.getElementById('note').innerHTML=NOTES[S.l];
+ Array.prototype.forEach.call(document.querySelectorAll('#pick [data-l]'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-l')===S.l)});
+}
+document.getElementById('pick').addEventListener('click',function(e){var b=e.target.closest('[data-l]');if(b){S.l=b.getAttribute('data-l');if(S.l!=='B'&&S.tab==='act')S.tab='opt';render()}});
+document.getElementById('emptyToggle').addEventListener('change',function(e){S.empty=e.target.checked;render()});
+document.getElementById('ed').addEventListener('click',function(e){var el=e.target.closest('[data-a]');if(!el)return;var a=el.getAttribute('data-a'),v=el.getAttribute('data-v');
+ if(a==='tab')S.tab=v;else if(a==='gotoact')S.tab='act';else if(a==='end')S.c=S.c.filter(function(c){return c.id!==v});render()});
+if(location.hash.match(/^#[ABCD]$/))S.l=location.hash.charAt(1);
+render();
+})();
+</script>
+</body>
+</html>

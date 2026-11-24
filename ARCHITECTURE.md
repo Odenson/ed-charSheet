@@ -283,7 +283,7 @@ Four pure modules. Each is independently testable and lazy-loaded.
 The engine's modifier model is the taxonomy `effects` array (§4.2): it gathers
 active effects and folds them onto base values by `operation`/`measure`. Only
 **always-on, non-`gmDiscretion`** effects auto-apply; situational and triggered
-ones are surfaced for the player/GM, never silently baked into a static rating. Exceptions are explicit player activations, never silent: an active global Situational chip (`session.situations`; plans/situational-chips-global) folds its `defense-modifier`s into derived Defence, and an activated blood charm (`session.activeCharms`) folds its situational test mods.
+ones are surfaced for the player/GM, never silently baked into a static rating. Exceptions are explicit player activations, never silent: an active global Situational chip (`session.situations`; plans/situational-chips-global) folds its `defense-modifier`s into derived Defence, and an activated blood charm (`session.activeCharms`) folds its situational test mods. The Active effects window is derived the same way: `engine/active-effects.js` folds the session lists (`activeSpells`, `opponentEffects`, `toggledOptions`, `armedTalents`, `activeCharms`, situations, conditions) into `model.effectWindow`, with `model.targetName` and `model.toggledOptions` as pass-throughs; opponent effects, toggled options and the opponent name are session-only and never persisted.
 Non-numeric effects resolve by their own rule rather than summing: `action-modifier`
 (taxonomy v5) `set`s a talent's or skill's action, fastest wins
 (`engine/ability-actions.js`); the effective `action` plus `actionBase` /
@@ -312,7 +312,12 @@ dependent talent) is recomputed from inputs.
 Session-only live conditions are extra `deriveModel(character, rules, session)`
 inputs, never stored in the character: `session.knockedDown` (the Knocked Down
 condition) and `session.situations` (the active Situational chips from
-`rules/combat.json`, held by `ui/ed-app.js`). A chip's Defence mods fold into the
+`rules/combat.json`, held by `ui/ed-app.js`). Likewise session-only:
+`session.opponentEffects` (Taunt and cast-on-Other records, ticked only in
+ed-app `_advanceRound`), `session.toggledOptions` (mirrored from ed-combat,
+cleared on Initiative / Day reset / character switch) and `session.targetName`;
+events `ed-end-effect`, `ed-target-name`, `ed-options-toggled`, `ed-other-cast`,
+`ed-other-cast-effect`. A chip's Defence mods fold into the
 derived Physical/Mystic Defence and list as Active Effects; its test mods ride
 roll time (`engine/roll-mods.js`: unscoped on every roll, scoped as per-roll
 toggles outside Combat pools).
@@ -641,8 +646,10 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-app.js         # root: loads the model, renders the tab shell, routes tabs
     ed-overview.js    # Overview tab (fit-to-viewport)
     ed-disciplines.js # Disciplines tab (incl. talents)
-    ed-combat.js      # Combat tab (per-encounter scratchpad, roll log; Damage pool shows active-spell Bonus Dice, e.g. "Step N + D4")
-    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, self-cast active effects / target effects; weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
+    ed-combat.js      # Combat tab (per-encounter scratchpad, roll log; Damage pool shows active-spell Bonus Dice, e.g. "Step N + D4"; mounts the Active effects window + opponent-name field, dispatching ed-options-toggled / ed-target-name)
+    ed-active-effects.js   # shared Active effects window (Combat columns / Spells stack): renders model.effectWindow (.effects, .layout), dispatches ed-end-effect; computes nothing
+    active-effects-state.js # pure view helpers for it: viewGroups, roundsPillText, endButtonLabel
+    ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, hosts the shared <ed-active-effects> window (self-cast and cast-on-Other spells; the Target effects card is removed); weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
     ed-equipment.js   # Equipment tab (items grouped by function)
     ed-notes.js       # Notes tab (running character log)
     ed-settings.js    # settings modal (autosave; per-character Discord die reports)
@@ -674,7 +681,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     portrait-image.js      # portrait image prep: validate JPEG/PNG/WebP <= 10 MB, fit 1024->768->512 shrink ladder, JPEG q0.85 (PNG if transparent), <= 1,000,000-byte cap, filename `<id>-<ms>.<ext>`; canvas injectable; never imported by engine/*
     portrait-modal-state.js # portrait-modal selection state, isDirty, toDetail (pure)
     item-equip-state.js    # input-time equip rules (one armour worn)
-    combat-mods-state.js   # Combat-tab modifier segment counts/normalisation (pure)
+    combat-mods-state.js   # Combat-tab modifier segment counts/normalisation + optionsAfterPush removal-only reconcile (pure)
     combat-log-rows.js     # Combat-log row to table-cell mapping (pure)
     custom-item-state.js   # custom-item builder state
     custom-item-builder.js # custom-item form helpers (pure: clean/validate, effect summaries, Damage Step → generated effect)
@@ -689,6 +696,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     discord-roll.js          # Discord die report: pure formatter (roll report → plain-text or embed webhook payload via buildPayload; optional caller-supplied embed thumbnail:{url} and top-level avatar_url (both formats + test message); markdown/mention escaping, 2000-char / embed 256·1024·6000 caps, username sanitising, allowed_mentions:{parse:[]})
     wealth.js                # starting wealth / resource calcs
     combat.js                # combat stat-lines (attack/damage/strain)
+    active-effects.js        # Active effects window: entry contract, buildActiveEffectsList (folds session spells/opponent/armed/options/charms/situations/conditions into model.effectWindow), groupEffects, pure reducers (add/tick/end/clear, armOpponent, otherCastToRecord)
     roll-mods.js             # roll-time modifier assembly from live conditions (Knocked Down, unscoped/scoped situations) + optional-mod Step re-resolve
     health.js                # health ratings (Unconscious/Death/wound/recovery), damageState, healthDanger (Overview Health card danger levels + gauge geometry; amber margin is an owner UI choice, not a rule), resolveHit (Wound/Knockdown from one hit)
     encumbrance.js           # carry/lift capacity + encumbrance

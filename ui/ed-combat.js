@@ -22,6 +22,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
 import { infoIconCss } from './info-icon.js';
+import './ed-active-effects.js';
 import { weaponOccurrence } from '../engine/spells.js';
 import { attackPool, damagePool, auditPool, collectCombatEffects, foldCombatRatings, attackTalentNamesFor, attackSuccessLevels, UNARMED_WEAPON, successDamageSteps, activeSpellBundlesFor, situationalSpellBundlesFor, activeItemBundlesFor } from '../engine/combat.js';
 import { recoveriesRemaining } from '../engine/health.js';
@@ -29,7 +30,7 @@ import { armedRecoveryBonus, boostHasNoEffect } from '../engine/potions.js';
 import { loadRollLog, clearRollLog, saveRollLog } from '../store-rolllog.js';
 import { itemImageUrl } from '../store.js';
 import { unequipSpentCharms } from './item-equip-state.js';
-import { MOD_TABS, modTabCounts, normalizeModTab, localSituationNames } from './combat-mods-state.js';
+import { MOD_TABS, modTabCounts, normalizeModTab, localSituationNames, optionsAfterPush } from './combat-mods-state.js';
 import { logRowCells } from './combat-log-rows.js';
 import './ed-confirm.js';
 import './ed-damage-modal.js';
@@ -180,6 +181,7 @@ export class EdCombat extends LitElement {
 
     .vs { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-fine); color: var(--muted); }
     .vs input { width: 46px; font: inherit; font-size: var(--fs-body); font-weight: 500; text-align: right; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+    .vs input.tname { width: 84px; text-align: left; }
     .vs input:focus { outline: none; border-color: var(--accent); }
     .strain-k { margin-left: 14px; font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); flex: none; }
     .strain { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--danger); flex: none; min-width: 14px; text-align: right; }
@@ -385,6 +387,34 @@ export class EdCombat extends LitElement {
       if (Array.isArray(global) && JSON.stringify(global) !== JSON.stringify(this._charmsOn ?? [])) {
         this._charmsOn = [...global];
       }
+      // Active effects window: removal-only sync DOWN of toggled options (the
+      // window's X untoggles a chip). Only once the model has acknowledged our
+      // last push, so a restore/reset in flight is never mistaken for an X.
+      const mo = this.model?.toggledOptions;
+      if (Array.isArray(mo)) {
+        const mk = JSON.stringify(mo);
+        if (mk === (this._lastPush ?? '[]')) this._pushAcked = true;
+        else if (this._pushAcked) {
+          const opts = this._opts ?? [];
+          const arms = this._armsNames();
+          const kept = optionsAfterPush(opts.filter((n) => !arms.has(n)), mo);
+          const next = opts.filter((n) => arms.has(n) || kept.includes(n));
+          if (next.length !== opts.length) this._opts = next;
+          this._lastPush = JSON.stringify(next.filter((n) => !arms.has(n)));
+        }
+      }
+    }
+    // Active effects window: lift toggled options up (session mirror, never stored).
+    if (changed.has('_opts')) {
+      // Arms options (Mystic Aim) are shown from their armed record, not as a toggle.
+      const arms = this._armsNames();
+      const names = (this._opts ?? []).filter((n) => !arms.has(n));
+      const key = JSON.stringify(names);
+      if (key !== (this._lastPush ?? '[]')) {
+        this._lastPush = key;
+        this._pushAcked = false;
+        this.dispatchEvent(new CustomEvent('ed-options-toggled', { detail: { names }, bubbles: true, composed: true }));
+      }
     }
   }
 
@@ -413,6 +443,10 @@ export class EdCombat extends LitElement {
     this._charmsOn = [...s.charmsOn];
     this._target = s.target;
     this._modTab = normalizeModTab(s.modTab);
+  }
+
+  _armsNames() {
+    return new Set(this._allOptions().filter((o) => o.arms).map((o) => o.name));
   }
 
   _resetSession() {
@@ -686,7 +720,7 @@ export class EdCombat extends LitElement {
   // missile attack but not a melee one. A null `appliesTo` is unscoped (always).
   _armedForPick() {
     const scopes = this._attackScopes();
-    return (this.model?.armedTalents ?? []).filter((a) => !a.appliesTo || a.appliesTo.some((s) => scopes.includes(s)));
+    return (this.model?.armedTalents ?? []).filter((a) => !a.opponent).filter((a) => !a.appliesTo || a.appliesTo.some((s) => scopes.includes(s)));
   }
   _attackPool() {
     const t = this._selTalent();
@@ -792,6 +826,9 @@ export class EdCombat extends LitElement {
   _rollAim(opt) {
     const roll = opt?.arms?.roll;
     if (roll?.step == null) return; // no derived step (rank 0) — wouldn't be offered
+    // An opponent arm (Taunt) rolls vs the Combat "vs" number already entered on
+    // the attack row — don't ask for it again in the modal.
+    const presetTarget = opt.arms.opponent ? this._targetNum() : null;
     this.dispatchEvent(
       new CustomEvent('ed-roll', {
         detail: {
@@ -799,9 +836,9 @@ export class EdCombat extends LitElement {
           step: roll.step,
           // The aim test is Karma-eligible (MA8) — offer the talent's Karma die.
           karma: roll.karma ?? null,
-          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, effects: opt.arms.effects ?? [] },
+          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, target: presetTarget },
           // ed-app arms this on a hit (name + rounds + scope + the folded payload).
-          arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [] },
+          arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, text: opt.arms.text ?? null },
         },
         bubbles: true,
         composed: true,
@@ -1024,7 +1061,7 @@ export class EdCombat extends LitElement {
         // are derived from the armed talent's own on-success payload (Mystic Aim:
         // +N steps Attack; Anticipate Blow: +N steps Attack AND +N Physical Defence),
         // so the badge generalises rather than hardcoding a +2.
-        const armed = o.arms ? (this.model?.armedTalents ?? []).find((a) => a.name === o.name) : null;
+        const armed = o.arms ? (this.model?.armedTalents ?? []).find((a) => a.name === o.name && !a.opponent) : null;
         const aimArmed = !!armed && armed.successes > 0;
         const perSucc = (e) => (e?.perSuccess ? (e?.value ?? 0) * (armed?.successes ?? 0) : e?.value ?? 0);
         // The armed test bonus and its target name(s) — Attack for Mystic Aim /
@@ -1291,7 +1328,7 @@ export class EdCombat extends LitElement {
     const sits = this._situations();
     const charms = this._charmItems();
     const charmNames = this._activeCharmNames();
-    const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0).map((a) => a.name));
+    const armedNames = new Set((this.model?.armedTalents ?? []).filter((a) => a.successes > 0 && !a.opponent).map((a) => a.name));
     // A toggled spell chip whose spell has since ended is no longer in `sits`; don't count it.
     const knownSits = new Set(sits.map((s) => s.name));
     const counts = modTabCounts({ options, armedNames, toggledOpts: this._opts, sits, toggledSits: this._activeSits().filter((n) => knownSits.has(n)), charmNames });
@@ -1484,6 +1521,7 @@ export class EdCombat extends LitElement {
                   <span class="k">Attack</span>
                   <span class="v">${this._stepVal(ap.step)}</span>
                   <span class="vs">vs <input type="number" placeholder="#" .value=${this._target ?? ''} aria-label="Target number to beat (empty = GM adjudicates)" @input=${(e) => (this._target = e.target.value)} /></span>
+                  <span class="vs"><input class="tname" type="text" placeholder="target" .value=${this.model?.targetName ?? ''} aria-label="Opponent name" @change=${(e) => this.dispatchEvent(new CustomEvent('ed-target-name', { detail: { name: e.target.value }, bubbles: true, composed: true }))} /></span>
                   <button class="roll" ?disabled=${ap.step == null} title="Roll attack" aria-label="Roll attack" @click=${this._rollAttack}>${diceIcon}</button>
                 </div>
                 <div class="statline">
@@ -1507,6 +1545,7 @@ export class EdCombat extends LitElement {
           ${this._modsBlock()}
           ${this._potionsSection()}
         </div>
+        <ed-active-effects .effects=${this.model?.effectWindow ?? []} .layout=${'columns'}></ed-active-effects>
         ${this._logTable()}
       </div>
 

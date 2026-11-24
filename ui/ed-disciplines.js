@@ -405,8 +405,8 @@ export class EdDisciplines extends LitElement {
         label: `${t.name} — vs ${roll.vs ?? 'Mystic'} Defence`,
         step: roll.step ?? t.step,
         karma: karmaCtx,
-        aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0 },
-        arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [] },
+        aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, opponent: t.arms.opponent ?? false },
+        arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [], opponent: t.arms.opponent ?? false, text: t.arms.text ?? null },
       };
     }
     return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [], strain: t.rollStrain ?? 0 };

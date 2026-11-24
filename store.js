@@ -38,6 +38,7 @@ import {
   foldAttribute,
 } from './engine/characteristics.js';
 import { carriedWeight, weightPounds } from './engine/weight.js';
+import { buildActiveEffectsList } from './engine/active-effects.js';
 import { encumbranceStage, encumbranceEffects, ENCUMBRANCE } from './engine/encumbrance.js';
 import { foldAbilityGrants } from './engine/ability-ranks.js';
 import { circleStatus, normalizeOptionalTable } from './engine/advancement.js';
@@ -945,6 +946,12 @@ function talentDetail(cat, circle, legendFile) {
  * Derive the view-model the UI renders from raw inputs (pure — no fetch, no DOM):
  * { meta, attributes[], resources, disciplines[], skills[], knacks[] }
  */
+/** arms.rounds: a number stays; "rank" -> the talent's rank (min 1); missing -> 1. */
+function resolveArmRounds(rounds, rank) {
+  if (rounds === 'rank') return Math.max(1, Number(rank) || 1);
+  return rounds ?? 1;
+}
+
 export function deriveModel(character, rules, session = {}) {
   // `attributesFile` (rules/attributes.json) is optional here: older callers omit it, and the
   // derived creation Max Karma bonus then reads as 0 (never a guess).
@@ -1189,7 +1196,15 @@ export function deriveModel(character, rules, session = {}) {
                 step: step ?? null,
                 karma,
               },
-              rounds: cat.arms.rounds ?? 1,
+              // "rank" (Taunt) resolves here to the talent's rank, so a string
+              // never reaches the session; a missing value is 1 round.
+              rounds: resolveArmRounds(cat.arms.rounds, t.rank),
+              // Opponent arms (Taunt: rolled vs Social Defense) record a display-only
+              // effect on the TARGET — never folded into any roll pool.
+              opponent: cat.arms.roll?.vs === 'Social',
+              text: cat.arms.roll?.vs === 'Social'
+                ? ((cat.effects ?? []).find((e) => e?.type === 'note')?.summary ?? null)
+                : null,
               appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
               effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
             }
@@ -2037,6 +2052,22 @@ export function deriveModel(character, rules, session = {}) {
 
   // Spells slice (PLAN-SPELLS §5) + the session active-spell list (6b) attached
   // for the Active-effects card. buildSpellsContext stays session-free (pure).
+  const effectWindow = buildActiveEffectsList({
+    spells: session?.activeSpells ?? [],
+    opponent: session?.opponentEffects ?? [],
+    armed: session?.armedTalents ?? [],
+    options: (session?.toggledOptions ?? []).map((name) => ({
+      name,
+      summary: (combatFile?.options ?? []).find((o) => o.name === name)?.summary ?? '',
+    })),
+    charms: (session?.activeCharms ?? []).map((name) => ({ name, summary: items.find((it) => it.name === name)?.presentation?.shortEffect ?? '' })),
+    situations: activeSituations.map((name) => ({
+      name,
+      summary: (combatFile?.situations ?? []).find((s) => s.name === name)?.summary ?? '',
+    })),
+    knockedDown: session?.knockedDown === true,
+    encumbranceHarried: burdened,
+  });
   const spellsCtx = buildSpellsContext(character, spellsFile, { disciplines, attrStepByName });
   if (spellsCtx) {
     spellsCtx.active = session?.activeSpells ?? [];
@@ -2050,7 +2081,10 @@ export function deriveModel(character, rules, session = {}) {
     // double-count a Combat Spellcasting pick. `_rollCast` adds this to the
     // dispatched step and shows an armed chip (mirrors the learn-TW pattern).
     let castingArmed = null;
+    spellsCtx.effectWindow = effectWindow;
+    spellsCtx.targetName = session?.targetName ?? '';
     for (const a of session?.armedTalents ?? []) {
+      if (a.opponent) continue; // opponent effects (Taunt) are display-only
       if (!(a.successes > 0)) continue; // only a HIT arms anything
       const e = (a.effects ?? []).find(
         (x) => x.type === 'test-modifier' && x.target?.name === 'Spellcasting' && x.measure === 'step' && x.condition === 'on-success',
@@ -2213,6 +2247,11 @@ export function deriveModel(character, rules, session = {}) {
     // Combat dropdown, Disciplines tab). Each entry:
     // { name, successes, roundsLeft, roundsTotal, appliesTo, effects }.
     armedTalents: session?.armedTalents ?? [],
+    // Active effects window (session-only inputs folded into one derived list; see
+    // engine/active-effects.js). targetName/toggledOptions are pass-throughs.
+    effectWindow,
+    targetName: session?.targetName ?? '',
+    toggledOptions: session?.toggledOptions ?? [],
     // The enabled homebrew rules (rules/homebrew.json — docs/HOMEBREW-RULES.md),
     // passed through as pure data for the footer pill + modal: { id, name,
     // overrides, summary, formula }. Nothing derived; the rule payloads are

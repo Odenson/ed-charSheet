@@ -11,8 +11,9 @@ import { LitElement, html, css } from 'lit';
 import { diceIcon, diceIconCss } from './dice-icon.js';
 import { infoIconCss } from './info-icon.js';
 import { knownByDisciplineCircle, castTypeList, matrixFor, castPlan, effectStepBonus,
-  learnableSpells, learnPlan, otherCastOutcome, appliedOptions, joinSpell,
+  learnableSpells, learnPlan, appliedOptions, joinSpell,
   spellObjectRequirement, castWeaponChoices, weaponMysticDefense, nextCastNumber } from '../engine/spells.js';
+import './ed-active-effects.js';
 import { ModalController } from './kit/modal-controller.js';
 import { modalFrame, modalCss } from './kit/modal.js';
 import { allocForSilver, spendAllocation } from '../engine/wealth.js';
@@ -163,22 +164,7 @@ export class EdSpells extends LitElement {
     .modeseg button.soon { opacity: 0.5; cursor: not-allowed; }
     .modeseg .soontag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--muted); border-radius: 999px; padding: 0 4px; margin-left: 4px; }
     .fold { font-size: var(--fs-fine); color: var(--spell); margin-top: 8px; display: flex; gap: 6px; align-items: baseline; }
-    /* Active effects (Option A) — long-running self-cast effects with rounds left.
-       Static now; phase 6b fills the list and the countdown. */
-    .aehead { margin-top: 14px; }
-    .aecard { background: var(--bg-card); border-radius: 8px; padding: 4px 11px; }
-    .aeempty { font-size: var(--fs-fine); color: var(--muted); padding: 8px 2px; }
-    .aerow { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--border); }
-    .aerow:last-child { border-bottom: none; }
-    .aemark { color: var(--spell); font-size: var(--fs-small); flex: none; }
-    .aemid { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
-    .aename { font-size: var(--fs-small); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .aename .aefx { font-weight: 400; color: var(--muted); }
-    .aebar { height: 4px; border-radius: 999px; background: var(--border); overflow: hidden; }
-    .aebar > i { display: block; height: 100%; border-radius: 999px; }
-    .aerounds { flex: none; font-size: var(--fs-eyebrow); font-weight: 500; font-variant-numeric: tabular-nums; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
-    .aerounds.ok { color: var(--karma); background: var(--karma-bg); }
-    .aerounds.low { color: var(--amber); background: var(--amber-bg); }
+    .tgtname { font: inherit; font-size: var(--fs-small); width: 120px; color: var(--fg); background: var(--bg-chip); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
     .pickrow { margin-top: 8px; background: var(--spell-bg); border: 1px solid var(--spell); border-radius: 8px; padding: 8px 10px; }
     .pickrow .plbl { font-size: var(--fs-fine); color: var(--spell); font-weight: 500; margin-bottom: 6px; }
     .pickopts { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -188,8 +174,6 @@ export class EdSpells extends LitElement {
     .pickchip { font-size: var(--fs-eyebrow); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 8px; }
     .succrow { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: var(--fs-fine); }
     .succn { font-size: var(--fs-eyebrow); font-weight: 500; color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 9px; font-variant-numeric: tabular-nums; }
-    .aeopts { display: flex; flex-wrap: wrap; gap: 4px; }
-    .terow { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; padding: 2px 2px; font-size: var(--fs-fine); }
     .temuted { color: var(--muted); }
     .tepend { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 8px; }
     .succn.miss { color: var(--danger); background: light-dark(#f6e4e0, #3a2320); }
@@ -454,6 +438,12 @@ export class EdSpells extends LitElement {
       if (this._castOnOther) {
         this._otherCast = { seq: this._castSeq, name: this._castName, target: this._castTarget, total, levels,
           extraPicks: [...picks], effectTotal: null };
+        // The Active effects window (ed-app) records a hit with a parsable duration.
+        this.dispatchEvent(new CustomEvent('ed-other-cast', {
+          detail: { seq: this._castSeq, spell: this._castName, target: this._castTarget, targetName: this.ctx?.targetName ?? '',
+            levels, total, castingRank: this.ctx?.castingRank ?? null, extraPicks: [...picks] },
+          bubbles: true, composed: true,
+        }));
       }
       // A successful self-cast of a sustained spell activates it (6b): ed-app
       // adds it to the session active-effect set (fold + round countdown).
@@ -485,6 +475,9 @@ export class EdSpells extends LitElement {
     } else if (step === 'effect') {
       if (this._castOnOther && this._otherCast?.seq === this._castSeq) {
         this._otherCast = { ...this._otherCast, effectTotal: res.total };
+        this.dispatchEvent(new CustomEvent('ed-other-cast-effect', {
+          detail: { seq: this._castSeq, effectTotal: res.total }, bubbles: true, composed: true,
+        }));
       }
       // Effect landing un-greys Weave + Cast for the next cast (owner rule).
       this._prog = { ...this._blankProg(), effect: res };
@@ -494,73 +487,6 @@ export class EdSpells extends LitElement {
   // Assign the just-woven extra thread to one of the spell's Extra Thread options.
   _pickExtra(label) {
     this._prog = { ...this._prog, extraPicks: [...this._prog.extraPicks, label], pendingPick: false };
-  }
-
-  // Active effects (Option A): long-running self-cast effects with rounds left.
-  // Reads model.spells.active — an array phase 6b will populate and count down
-  // per Initiative roll: [{ name, effectLabel, roundsLeft, roundsTotal }]. Until
-  // then the list is empty and the card shows its resting state.
-  _activeEffects() {
-    const active = this.ctx?.active ?? [];
-    return html`
-      <h4 class="circlelbl aehead">Active effects${active.length ? ` · ${active.length}` : ''}</h4>
-      <div class="aecard">
-        ${active.length
-          ? active.map((e) => this._activeRow(e))
-          : html`<div class="aeempty">No active effects. A spell with a duration cast on this character will appear here with its rounds remaining.</div>`}
-      </div>`;
-  }
-
-  // Target effects: the latest cast on another target, laid out purely from the
-  // engine's otherCastOutcome (derived each render from the raw record).
-  _targetEffects() {
-    const rec = this._otherCast;
-    const sp = rec && this.ctx ? joinSpell(this.ctx, rec.name) : null;
-    const out = rec ? otherCastOutcome(sp, rec, { rank: this.ctx?.castingRank }) : null;
-    let body;
-    if (!out) {
-      body = html`<div class="aeempty">No cast on another target yet.</div>`;
-    } else if (!out.hit) {
-      body = html`<div class="terow"><span>${out.spell}</span><span class="succn miss">${out.headline}</span></div>`;
-    } else if (!sp) {
-      body = html`<div class="aeempty">${out.text}</div>`;
-    } else {
-      const e = out.effect;
-      const showLine2 = e || out.picks.length || out.success || out.dice?.length;
-      body = html`
-        <div class="terow"><span>${out.spell}</span><span class="succn">${out.badge}</span><span class="temuted">${out.headline}</span></div>
-        ${showLine2 ? html`<div class="terow">
-          ${e ? (e.text == null ? html`<span class="tepend">Effect \u2014</span>` : html`<span class="pickchip">${e.text}</span>`) : ''}
-          ${(out.dice ?? []).map((d) => html`<span class="pickchip">+${d.value}${d.label ? ` ${d.label}` : ''}</span>`)}
-          ${out.picks.map((p) => html`<span class="pickchip">${p.label}${p.count > 1 ? ` \u00d7${p.count}` : ''}</span>`)}
-          ${out.success ? html`<span class="pickchip">${out.success.label}${out.success.mult > 1 ? ` \u00d7${out.success.mult}` : ''}</span>` : ''}
-        </div>` : ''}
-        ${(out.notes ?? []).map((n) => html`<div class="terow temuted">${n}</div>`)}
-        ${out.duration ? html`<div class="terow temuted">Duration ${out.duration.text}</div>` : ''}`;
-    }
-    return html`
-      <h4 class="circlelbl aehead">Target effects</h4>
-      <div class="aecard">${body}</div>`;
-  }
-
-  _activeRow(e) {
-    const counted = e.roundsLeft != null;
-    const total = e.roundsTotal || e.roundsLeft || 1;
-    const pct = counted ? Math.max(0, Math.min(100, Math.round((e.roundsLeft / total) * 100))) : 100;
-    const low = counted && e.roundsLeft <= 3;
-    return html`
-      <div class="aerow">
-        <span class="aemark">✦</span>
-        <div class="aemid">
-          <span class="aename">${e.name}${e.chosen?.name ? ` — ${e.chosen.name}` : ''}${e.effectLabel ? html` <span class="aefx">· ${e.effectLabel}</span>` : ''}</span>
-          <div class="aebar"><i style="width:${pct}%; background:${low ? 'var(--amber)' : 'var(--karma)'}"></i></div>
-          ${(e.options?.picks?.length || e.options?.success) ? html`<div class="aeopts">
-            ${(e.options.picks ?? []).map((p) => html`<span class="pickchip">${p.label}${p.count > 1 ? ` \u00d7${p.count}` : ''}</span>`)}
-            ${e.options.success ? html`<span class="pickchip">${e.options.success.label}${e.options.success.mult > 1 ? ` \u00d7${e.options.success.mult}` : ''}</span>` : ''}
-          </div>` : ''}
-        </div>
-        <span class="aerounds ${low ? 'low' : 'ok'}">${counted ? `${e.roundsLeft} rds` : 'active'}</span>
-      </div>`;
   }
 
   // Cast-success visual: the number of success levels, and the Success Levels
@@ -1412,6 +1338,10 @@ export class EdSpells extends LitElement {
           <button class=${this._subject === 'self' ? 'on' : ''} @click=${() => (this._subject = 'self')}>This character</button>
           <button class=${this._subject === 'other' ? 'on' : ''} @click=${() => (this._subject = 'other')}>Other</button>
         </span>
+        ${this._subject === 'other'
+          ? html`<input class="tgtname" type="text" placeholder="target name" aria-label="Opponent name" .value=${this.ctx?.targetName ?? ''}
+              @change=${(e) => this.dispatchEvent(new CustomEvent('ed-target-name', { detail: { name: e.target.value }, bubbles: true, composed: true }))}>`
+          : ''}
         ${objectSelf
           ? html`<span class="temuted">Target number set when you cast</span>`
           : html`<span>vs</span>
@@ -1495,7 +1425,7 @@ export class EdSpells extends LitElement {
         ${plan.extraThreads?.length ? html`<span class="k">Extra</span><span class="full">${plan.extraThreads.map((x) => x.label).join('; ')}</span>` : ''}
       </div>
 
-      ${this._subject === 'other' ? this._targetEffects() : this._activeEffects()}
+      <ed-active-effects .effects=${this.ctx?.effectWindow ?? []} .layout=${'stack'}></ed-active-effects>
     `;
   }
 }

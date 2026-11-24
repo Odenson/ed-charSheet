@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Active effects window — Option D, aligned with Spells</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --fs-eyebrow:.62rem;--fs-fine:.68rem;--fs-small:.74rem;--fs-body:.82rem;--fs-value:.95rem;--fs-title:1.1rem;--fs-hero:1.6rem;
+}
+body{margin:0;background:light-dark(#f4f5f7,#12151b);min-height:100vh}
+.app{display:block;max-width:60rem;margin:0 auto;padding:1rem 1rem 1.5rem;color:light-dark(#111418,#f0f3f7);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.tabbar{display:flex;align-items:center;gap:2px;border-bottom:1px solid light-dark(#e2e5ea,#2c313b);margin-bottom:.9rem;flex-wrap:wrap}
+.tab{display:flex;align-items:center;gap:6px;padding:7px 13px;font-size:var(--fs-body);font-family:inherit;color:light-dark(#5a6472,#93a0b3);background:none;border:none;border-bottom:2px solid transparent;cursor:default}
+.tab[aria-selected=true]{color:light-dark(#111418,#f0f3f7);border-bottom-color:light-dark(#7a3e12,#d9944e)}
+
+#ed{
+  --bg-card:light-dark(#f1f2f5,#1b1f27);--bg-chip:light-dark(#f7f8fa,#1b1f27);--card:light-dark(#ffffff,#232833);
+  --border:light-dark(#e2e5ea,#2c313b);--muted:light-dark(#5a6472,#93a0b3);--fg:light-dark(#111418,#f0f3f7);
+  --accent:light-dark(#7a3e12,#d9944e);--accent-bg:light-dark(#f6e9dc,#3a2a17);
+  --karma:light-dark(#3d6b4a,#82c39a);--karma-bg:light-dark(#e7f0ea,#223029);
+  --danger:light-dark(#c0392b,#e06557);--danger-bg:light-dark(#fbe9e7,#3a1f1c);
+  --blood:light-dark(#a1352b,#e0736a);--blood-bg:light-dark(#f8e7e4,#3a201d);
+  position:relative;font-size:var(--fs-body);
+}
+#ed *{box-sizing:border-box}
+#ed button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0;background:none;border:none}
+#ed button:disabled{opacity:.4;cursor:default}
+.col{display:flex;flex-direction:column;gap:14px}
+.blk{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 6px}
+.k{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.v{font-weight:500;font-variant-numeric:tabular-nums}
+.hint{font-size:var(--fs-fine);color:var(--muted)}
+
+/* floating header line */
+.float{display:flex;gap:22px;flex-wrap:wrap;align-items:center;padding:0 2px}
+.float .item{display:inline-flex;align-items:baseline;gap:7px;font-size:var(--fs-small);font-variant-numeric:tabular-nums}
+.float .item.ctl{align-items:center}
+.float .item b{font-weight:500;font-size:var(--fs-body)}
+.kchip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-fine);color:var(--muted);background:var(--bg-chip);border:1px solid var(--border);border-radius:999px;padding:3px 10px;margin-left:auto}
+.kchip b{color:var(--karma);font-weight:500}
+.cond{color:var(--danger)}.cond.up{color:var(--karma)}
+.delt{margin-left:3px;font-size:var(--fs-eyebrow);font-weight:500;line-height:1;padding:1px 4px;border-radius:999px;background:var(--danger-bg);color:var(--danger);vertical-align:1px;white-space:nowrap}
+.delt.up{background:var(--karma-bg);color:var(--karma)}
+.initres{color:var(--accent);font-weight:500;font-variant-numeric:tabular-nums}
+
+.roll{width:22px;height:22px;border-radius:50%;border:1px solid var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent)!important;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-small);flex:none;line-height:1}
+.roll.dmg{border-color:var(--danger)!important;background:var(--danger-bg)!important;color:var(--danger)!important}
+.roll.reset{border-color:var(--karma)!important;background:var(--karma-bg)!important;color:var(--karma)!important}
+.info{width:18px;height:18px;border-radius:50%;border:1px solid var(--border)!important;color:var(--muted)!important;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-fine);flex:none;line-height:1}
+.info:hover{border-color:var(--accent)!important;color:var(--accent)!important}
+
+/* attack block */
+.top2{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;align-items:stretch}
+.attacktop{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:stretch}
+.attackrows{min-width:0;display:flex;flex-direction:column}
+.artbox{position:relative;aspect-ratio:1;height:100%;min-height:96px;border:1px dashed var(--border);border-radius:8px;background:var(--bg-card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--muted)}
+.artbox svg{width:30px;height:30px;opacity:.6}
+.artbox .cap{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.05em}
+select{font:inherit;font-size:var(--fs-body);width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg-chip);color:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.statline{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--fs-body);border-top:1px solid var(--border)}
+.statline .k{width:54px}
+.statline .val{flex:1;font-weight:500;font-variant-numeric:tabular-nums;min-width:0}
+.vs{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-fine);color:var(--muted)}
+.vs input{width:46px;font:inherit;font-size:var(--fs-body);font-weight:500;text-align:right;color:var(--fg);background:var(--bg-chip);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+.vs input:focus{outline:none;border-color:var(--accent)}
+.strain-k{margin-left:14px;font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.strain{font-weight:500;font-variant-numeric:tabular-nums;color:var(--danger);flex:none;min-width:14px;text-align:right}
+.dmgbonus{font-size:var(--fs-eyebrow);font-weight:500;color:var(--karma);background:var(--bg-chip);border:1px solid var(--karma);border-radius:999px;padding:0 6px;margin-left:4px}
+
+/* damage taken */
+.dtcol{display:flex;flex-direction:column}
+.dtcol .cur{display:flex;align-items:center;gap:6px}
+.dtcol .lab{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+.dtcol .curdmg{font-size:var(--fs-value);font-weight:500;font-variant-numeric:tabular-nums}
+.dtcol .thr{font-size:var(--fs-fine);color:var(--muted);margin-top:6px;line-height:1.5}
+.dtcol .thr.rec{margin-top:3px}.dtcol .thr.rec b{color:var(--fg);font-weight:500}
+.dtbtns{display:flex;gap:6px;margin-top:auto;padding-top:9px;align-items:center}
+.status{font-size:var(--fs-eyebrow);font-weight:500;padding:1px 9px;border-radius:999px;background:var(--bg-chip);color:var(--muted);border:1px solid var(--border);white-space:nowrap}
+.status.warn{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.boostpill{font-size:var(--fs-eyebrow);font-weight:500;color:var(--karma);border:1px solid var(--karma);border-radius:999px;padding:0 6px}
+.standrow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:var(--fs-fine);color:var(--danger);padding:4px 8px;margin-bottom:6px;background:var(--danger-bg);border-radius:6px}
+.stand{font-size:var(--fs-eyebrow);font-weight:500;padding:2px 9px;border-radius:999px;border:1px solid var(--accent)!important;color:var(--accent)!important}
+.stand:hover{background:var(--accent-bg)!important}
+
+/* modifiers */
+.mods{padding:0 2px}
+.seg{display:inline-flex;background:var(--bg-card);border-radius:999px;padding:3px;gap:2px;margin-bottom:8px}
+.seg button{padding:4px 14px;border-radius:999px;font-size:var(--fs-small);color:var(--muted);border:1px solid transparent!important}
+.seg button[aria-pressed=true]{background:var(--bg-chip)!important;color:var(--fg);border-color:var(--border)!important}
+.seg i{font-style:normal;color:var(--accent);margin-left:5px;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-small);padding:3px 9px;border-radius:999px;border:1px solid var(--border)!important;background:var(--bg-chip)!important}
+.chip:hover{border-color:var(--accent)!important}
+.chip[aria-pressed=true]{border-color:var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent);font-weight:500}
+.chip.charm[aria-pressed=true]{border-color:var(--blood)!important;background:var(--blood-bg)!important;color:var(--blood)}
+.badge{font-size:var(--fs-eyebrow);padding:0 4px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;font-weight:400}
+.chip[aria-pressed=true] .badge{border-color:currentColor}
+.badge.pos{color:var(--karma)}.badge.neg{color:var(--danger)}.badge.strain{color:var(--danger)}
+
+/* potions */
+.potpick{display:flex;gap:8px;align-items:center;margin-top:4px}
+.potpick select{font-size:var(--fs-small);border-radius:7px;padding:5px 7px;background:var(--card);flex:1;min-width:0}
+.drink{font-size:var(--fs-fine);font-weight:500;border:1px solid var(--accent)!important;background:var(--accent)!important;color:#fff!important;padding:5px 12px;border-radius:999px;flex:0 0 auto}
+.emptyhint{font-size:var(--fs-fine);color:var(--muted);padding:2px 0}
+.potpend{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;background:var(--accent-bg);border:1px dashed var(--accent);margin-top:6px}
+.potpend .ptxt{flex:1;font-size:var(--fs-fine)}.potpend .ptxt b{color:var(--accent);font-weight:500}
+.pclear{color:var(--muted)!important;font-size:var(--fs-body);line-height:1}
+
+/* log table */
+.clear{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;padding:1px 8px;border-radius:999px;border:1px solid var(--border)!important;color:var(--muted)!important}
+.clear:hover:not(:disabled){color:var(--danger)!important;border-color:var(--danger)!important}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-small)}
+th{font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)}
+td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--muted);line-height:1.35}
+td b{color:var(--fg);font-weight:500}
+tr:last-child td{border-bottom:none}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+.glyph{color:var(--accent);font-size:var(--fs-fine);text-align:center}
+.hit{color:var(--karma);font-weight:500}.miss{color:var(--danger);font-weight:500}
+.logempty{text-align:center;padding:14px;font-size:var(--fs-small);color:var(--muted)}
+
+/* modals */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:2100;padding:1rem}
+.modal{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:12px;width:26rem;max-width:100%;padding:1rem 1.25rem 1.25rem}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:var(--fs-value);font-weight:500;margin-bottom:.75rem}
+.mclose{color:var(--muted)!important;font-size:var(--fs-title);line-height:1}
+.mpara{font-size:var(--fs-small);line-height:1.5;margin:0}
+.mpara.hint{font-size:var(--fs-fine);color:var(--muted);margin-top:8px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--fs-body);margin-top:10px}
+.hrow input{font:inherit;font-size:var(--fs-body);color:var(--fg);background:var(--bg-chip);border:1px solid var(--border);border-radius:6px;padding:6px 8px;width:6rem;text-align:right}
+.hfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.hbtn{font-size:var(--fs-body);font-weight:500;padding:6px 14px;border-radius:6px;border:1px solid var(--accent)!important;background:var(--accent-bg)!important;color:var(--accent)!important}
+.hbtn.plain{border-color:var(--border)!important;background:var(--bg-chip)!important;color:var(--fg)!important;font-weight:400}
+.warnt{font-size:var(--fs-small);color:var(--danger);margin-top:8px}
+.arow{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:var(--fs-body)}
+.arow .av{font-weight:500;font-variant-numeric:tabular-nums}.arow .av.neg{color:var(--danger)}
+.arow.total{border-top:1px solid var(--border);margin-top:3px;padding-top:6px}
+
+@media (max-width:720px){.top2{grid-template-columns:1fr}.attacktop{grid-template-columns:1fr}.artbox{display:none}}
+
+/* ---------- mock chrome (outside the app) ---------- */
+.mockbar{max-width:60rem;margin:0 auto;padding:.75rem 1rem 0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:light-dark(#111418,#f0f3f7)}
+.mockbar .pick{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mockbar button{font:inherit;font-size:.78rem;padding:4px 12px;border-radius:999px;border:1px solid light-dark(#e2e5ea,#2c313b);background:light-dark(#fff,#232833);color:inherit;cursor:pointer}
+.mockbar button[aria-pressed=true]{border-color:light-dark(#7a3e12,#d9944e);background:light-dark(#f6e9dc,#3a2a17);color:light-dark(#7a3e12,#d9944e);font-weight:500}
+.mockbar .sp1{margin-left:auto}
+.mocknote{margin-top:8px;font-size:.74rem;line-height:1.5;color:light-dark(#5a6472,#93a0b3);background:light-dark(#fff,#232833);border:1px dashed light-dark(#e2e5ea,#2c313b);border-radius:8px;padding:8px 10px}
+.mocknote b{color:light-dark(#111418,#f0f3f7);font-weight:500}
+.mocknote .new{color:light-dark(#7a3e12,#d9944e);font-weight:500}
+.mocknote ul{margin:4px 0 0;padding-left:1.1rem}
+
+/* extra tokens the Spells tab already defines (Combat :host lacks them today) */
+#ed{--spell:light-dark(#5b3fa6,#a99cf0);--spell-bg:light-dark(#efeafc,#2b2547);--amber:light-dark(#8a5a12,#e0a94e);--amber-bg:light-dark(#f6ecd9,#3a2f17)}
+.new-flag{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:10px}
+
+/* ---------- THE SHARED ELEMENT: Active effects (spells' .aecard / .aerow, verbatim look) ---------- */
+.circlelbl{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 3px}
+.aehead{margin-top:0}
+.aehead i{font-style:normal}
+.aecard{background:var(--bg-card);border-radius:8px;padding:4px 11px}
+.aeempty{font-size:var(--fs-fine);color:var(--muted);padding:8px 2px}
+.aegroups{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0 18px}
+.aegroups > div{min-width:0}
+.aegl{font-size:var(--fs-eyebrow);font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:7px 0 0}
+.aegl .n{color:var(--accent);margin-left:4px}
+.aerow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.aerow:last-child{border-bottom:none}
+.aemark{color:var(--spell);font-size:var(--fs-small);flex:none;width:12px;text-align:center}
+.aemark.talent{color:var(--accent)}.aemark.option{color:var(--muted)}
+.aemid{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.aename{font-size:var(--fs-small);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aename .aefx{font-weight:400;color:var(--muted)}
+.aebar{height:4px;border-radius:999px;background:var(--border);overflow:hidden}
+.aebar > i{display:block;height:100%;border-radius:999px}
+.aeopts{display:flex;flex-wrap:wrap;gap:4px}
+.pickchip{font-size:var(--fs-eyebrow);color:var(--spell);background:var(--spell-bg);border-radius:999px;padding:1px 8px}
+.pickchip.neg{color:var(--danger);background:var(--danger-bg)}
+.pickchip.pos{color:var(--karma);background:var(--karma-bg)}
+.aerounds{flex:none;font-size:var(--fs-eyebrow);font-weight:500;font-variant-numeric:tabular-nums;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.aerounds.ok{color:var(--karma);background:var(--karma-bg)}
+.aerounds.low{color:var(--amber);background:var(--amber-bg)}
+.aerounds.once{color:var(--muted);background:var(--bg-chip);border:1px solid var(--border)}
+.aeend{color:var(--muted)!important;font-size:var(--fs-body);line-height:1;padding:2px 4px!important;flex:none}
+.aeend:hover{color:var(--danger)!important}
+
+/* ---------- Spells tab (copied from ui/ed-spells.js) ---------- */
+.sp .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.sp .seg{display:inline-flex;background:var(--bg-card);border-radius:999px;padding:3px;gap:2px;margin:0}
+.sp .seg button{padding:6px 16px;font-size:var(--fs-body);border-radius:999px;color:var(--muted);border:1px solid transparent!important}
+.sp .seg button[aria-pressed=true]{background:var(--bg-chip)!important;color:var(--fg);border-color:var(--border)!important}
+.sp .layout{display:grid;grid-template-columns:.82fr 1fr;gap:14px;align-items:start}
+.slist{background:var(--bg-card);border-radius:8px;overflow:hidden}
+.sitem{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;width:100%;padding:8px 11px;border-bottom:1px solid var(--border);font-size:var(--fs-small);text-align:left}
+.sitem:last-child{border-bottom:none}
+.sitem.on{background:var(--spell-bg)}
+.sitem .dot{width:8px;height:8px;border-radius:50%;background:var(--spell);opacity:0}
+.sitem.marked .dot{opacity:1}
+.sitem .cr{font-size:var(--fs-eyebrow);color:var(--muted)}
+.casthead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.casthead .nm{font-size:var(--fs-title);font-weight:500}
+.crpill{font-size:var(--fs-small);color:var(--spell);background:var(--spell-bg);border-radius:999px;padding:1px 9px}
+.modeline{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.modeseg{display:inline-flex;background:var(--bg-card);border-radius:999px;padding:3px;gap:2px}
+.modeseg button{padding:5px 12px;border-radius:999px;font-size:var(--fs-small);color:var(--muted)}
+.modeseg button.on{background:var(--bg-chip)!important;color:var(--fg);border:1px solid var(--border)!important}
+.initpill{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-fine);color:var(--muted);background:var(--bg-chip);border:1px solid var(--border);border-radius:999px;padding:3px 6px 3px 10px}
+.initpill b{color:var(--fg);font-weight:500}
+.subrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-small);color:var(--muted);margin-bottom:8px}
+.subseg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.subseg button{background:var(--bg-chip)!important;color:var(--muted);font-size:var(--fs-fine);padding:3px 10px!important;border-radius:0}
+.subseg button.on{background:var(--spell-bg)!important;color:var(--spell);font-weight:500}
+.pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 2px}
+.step{background:var(--bg-card);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:7px}
+.step .lab{font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;justify-content:space-between}
+.step .lab .req{color:var(--spell)}
+.rollbtn{align-self:flex-start;font-size:var(--fs-small);font-weight:500;padding:6px 14px!important;border-radius:8px;border:1px solid var(--karma)!important;background:var(--karma-bg)!important;color:var(--karma)!important;display:inline-flex;gap:6px;align-items:center}
+.stepnote{font-size:var(--fs-fine);color:var(--muted)}
+.spgrid{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:5px 12px;font-size:var(--fs-small);margin-top:12px}
+.spgrid .k{color:var(--muted);font-size:var(--fs-eyebrow);text-transform:uppercase;letter-spacing:.03em;align-self:center}
+.spgrid .full{grid-column:2/-1}
+.castbtn{margin-top:10px;font-size:var(--fs-small);font-weight:500;padding:6px 14px!important;border-radius:999px;border:1px solid var(--spell)!important;background:var(--spell-bg)!important;color:var(--spell)!important}
+/* Spells tab: single column, full detail (no truncation) */
+.sp .aegroups{grid-template-columns:1fr}
+.sp .aename{white-space:normal;overflow:visible;text-overflow:clip}
+.sp .aegl{padding-top:9px}
+
+@media (max-width:720px){.sp .layout{grid-template-columns:1fr}.pipe{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="mockbar">
+  <div class="pick" id="pick">
+    <button data-v="combat" aria-pressed="true">Combat tab</button>
+    <button data-v="spells" aria-pressed="false">Spells tab</button>
+    <button class="sp1" data-act="tick">⏭ Next round (−1 rd)</button>
+    <button data-act="reset">↺ Reset</button>
+    <button data-act="empty" id="emptyBtn" aria-pressed="false">Empty state</button>
+  </div>
+  <div class="mocknote" id="note"></div>
+</div>
+<div class="app">
+  <div class="tabbar" role="tablist" id="tabbar"></div>
+  <div id="ed"></div>
+</div>
+<script>
+(function(){
+var MISSING='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>';
+/* SAMPLE DATA ONLY — placeholder names/numbers to judge layout, not rules. */
+var SEED=[
+ {id:'aggr',kind:'option',grp:'atk',name:'Aggressive Attack',fx:'combat option',chips:[['atk +3','pos'],['dmg +3','pos'],['PD −3','neg'],['1 Strain','neg']]},
+ {id:'aim',kind:'talent',grp:'you',name:'Aim',fx:'armed',chips:[['atk +2','pos']],rounds:1,total:1},
+ {id:'taunt',kind:'talent',grp:'tgt',name:'Taunt',fx:'Orc Raider · −1 to tests (rounds = Taunt rank)',rounds:3,total:3},
+ {id:'shield',kind:'spell',grp:'you',name:'Thorn Shield',fx:'+2 Physical Armour',rounds:4,total:5}
+];
+var S={v:'combat',empty:false,fx:JSON.parse(JSON.stringify(SEED)),tab:'opt',subject:'self'};
+var MARK={spell:'✦',talent:'◆',option:'•'};
+var GRP=[['atk','This attack'],['you','Lasting · on you'],['tgt','Lasting · on target']];
+var NOTES={
+ combat:'<b>Combat tab — Option D position.</b> The new <span class="new">Active effects</span> element sits between the Modifiers/Potions row and the Combat log. It is the <i>same card</i> the Spells tab uses (✦ mark, name · effect, round bar, rounds pill) with three groups. Click the Aggressive attack / Aim chips, or switch to the Spells tab and cast — everything lands in this one list.<ul><li><b>✦</b> spell · <b>◆</b> talent (e.g. Taunt, Aim) · <b>•</b> combat option. Mark colour = source kind.</li><li>Round bars/pills reuse spells’ rule: amber when ≤ 3 rounds left. One-attack options show a muted “this attack” pill and no bar.</li><li><b>Next round</b> button simulates the Initiative-roll countdown.</li></ul>',
+ spells:'<b>Spells tab — same element.</b> It stays at the bottom of the cast workspace exactly where it lives today, but now lists <i>everything</i> (talent effects and combat options appear here too) in the same three groups, stacked in a single column so names and effect text are never truncated. The old “Target effects” card is folded into the <i>on target</i> group. Press “Cast” to add a spell and flip to Combat to see it there.'
+};
+function el(v){return JSON.parse(JSON.stringify(v))}
+function list(){return S.empty?[]:S.fx}
+function chip(c){return '<span class="pickchip '+(c[1]||'')+'">'+c[0]+'</span>'}
+function arow(e){
+ var counted=e.rounds!=null,pct=counted?Math.round(e.rounds/e.total*100):100,low=counted&&e.rounds<=3;
+ return '<div class="aerow"><span class="aemark '+e.kind+'" title="'+e.kind+'">'+MARK[e.kind]+'</span><div class="aemid"><span class="aename">'+e.name+(e.fx?' <span class="aefx">· '+e.fx+'</span>':'')+'</span>'
+ +(counted?'<div class="aebar"><i style="width:'+pct+'%;background:'+(low?'var(--amber)':'var(--karma)')+'"></i></div>':'')
+ +(e.chips?'<div class="aeopts">'+e.chips.map(chip).join('')+'</div>':'')+'</div>'
+ +'<span class="aerounds '+(counted?(low?'low':'ok'):'once')+'">'+(counted?e.rounds+' rds':'this attack')+'</span>'
+ +'<button class="aeend" data-a="end" data-v="'+e.id+'" title="End this effect" aria-label="End '+e.name+'">✕</button></div>'}
+function activeEffects(){
+ var l=list(),n=l.length;
+ return '<h4 class="circlelbl aehead">Active effects'+(n?' · '+n:'')+'</h4><div class="aecard new-flag">'+
+ (n?'<div class="aegroups">'+GRP.map(function(g){var r=l.filter(function(e){return e.grp===g[0]});
+   return '<div><div class="aegl">'+g[1]+(r.length?'<span class="n">'+r.length+'</span>':'')+'</div>'+(r.length?r.map(arow).join(''):'<div class="aeempty">None</div>')+'</div>'}).join('')+'</div>'
+  :'<div class="aeempty">No active effects. Lasting effects, spells with a duration, and toggled combat options appear here with their rounds remaining.</div>')+'</div>'}
+function has(id){return list().some(function(e){return e.id===id})}
+function pdPill(){return has('aggr')?'<span class="v cond">6</span><span class="delt">−3</span>':'<span class="v">9</span>'}
+function modsBlock(){
+ var on1=has('aggr')+has('aim');
+ var tabs=[['opt','Combat options',on1],['sit','Situational',0],['ch','Blood charms',0]];
+ var segs=tabs.map(function(t){return '<button aria-pressed="'+(S.tab===t[0])+'" data-a="tab" data-v="'+t[0]+'">'+t[1]+(t[2]?'<i>'+t[2]+'</i>':'')+'</button>'}).join('');
+ var CH={opt:[['Aggressive attack','atk +3','pos','aggr'],['Aim','atk +2','pos','aim'],['Defensive stance','atk −3','neg'],['Called shot','atk −3','neg']],sit:[['Harried','atk −2','neg'],['Surprised','PD −3','neg'],['Cover','PD +2','pos']],ch:[['Thorn Cut','dmg +2','pos'],['Bloodsong','atk +1','pos']]}[S.tab];
+ return '<div class="mods"><div class="h"><span>Combat modifiers</span></div><div class="seg">'+segs+'</div><div class="chips">'+CH.map(function(c){var p=c[3]&&has(c[3]);return '<button class="chip" aria-pressed="'+!!p+'"'+(c[3]?' data-a="mod" data-v="'+c[3]+'"':'')+'>'+c[0]+'<span class="badge '+c[2]+'">'+c[1]+'</span></button>'}).join('')+'</div></div>'}
+function combat(){
+ return '<div class="col"><div class="float"><span class="item"><span class="k">Defence</span>PD '+pdPill()+' · MD <b>8</b> · SD <b>7</b></span><span class="item"><span class="k">Armour</span>Phys <b>'+(has('shield')?7:5)+'</b>'+(has('shield')?'<span class="delt up">+2</span>':'')+' · Myst <b>3</b></span><span class="item ctl"><span class="k">Initiative</span><b>9</b><button class="roll" aria-label="Roll initiative">⚄</button></span><span class="kchip">Available Karma <b>6</b></span></div>'
+ +'<div class="top2"><div class="blk"><div class="h"><span>Your attack</span></div><div class="attacktop"><div class="artbox">'+MISSING+'<span class="cap">no image</span></div><div class="attackrows"><div class="row2"><select><option>Broadsword · dmg 9</option></select><select><option>Melee Weapons · Talent · 14</option></select></div>'
+ +'<div class="statline"><button class="info">ⓘ</button><span class="k">Attack</span><span class="val">'+(14+(has('aggr')?3:0)+(has('aim')?2:0))+'</span><span class="vs">vs <input type="number" placeholder="#"></span><button class="roll">⚄</button></div>'
+ +'<div class="statline"><button class="info">ⓘ</button><span class="k">Damage</span><span class="val">'+(17+(has('aggr')?3:0))+'</span><button class="roll">⚄</button><span class="strain-k">Strain</span><span class="strain">'+(has('aggr')?1:0)+'</span></div></div></div></div>'
+ +'<div class="blk dtcol"><div class="h"><span>Damage taken</span><span class="status">Healthy</span></div><div class="cur"><span class="lab">Current</span><span class="curdmg">0</span><span class="lab" style="margin-left:6px">Wounds</span><span class="curdmg">0</span></div><div class="thr">32 unconscious<br>40 death</div><div class="thr rec">Recoveries <b>0 / 3</b> used</div><div class="dtbtns"><button class="roll dmg">✗</button><button class="roll">⚄</button><button class="roll reset" style="margin-left:auto">☼</button></div></div></div>'
+ +'<div class="top2" style="align-items:start">'+modsBlock()+'<div class="blk"><div class="h"><span>Potions</span></div><div class="potpick"><select><option>Healing Potion ×2</option></select><button class="drink">Drink</button></div></div></div>'
+ +'<div>'+activeEffects()+'</div>'
+ +'<div><div class="h" style="padding:0 2px"><span>Combat log</span><button class="clear" disabled>clear</button></div><table><thead><tr><th style="width:28px"></th><th>Roll</th><th class="r">Total</th><th>Outcome</th><th>Modifiers</th></tr></thead><tbody><tr><td class="glyph">⚄</td><td><b>Attack</b></td><td class="r"><b>16</b></td><td><span class="hit">Hit +1</span></td><td>Aggressive Attack, Aim · 1 Strain</td></tr></tbody></table></div></div>'}
+function spells(){
+ var sl=[['Thorn Shield',1,1],['Astral Sight',1,0],['Spirit Dart',2,0],['Spirit Armor',2,0]];
+ return '<div class="sp"><div class="top"><div class="seg"><button aria-pressed="true">Cast</button><button aria-pressed="false">Grimoire</button></div><div class="kchip">Available Karma <b>6</b></div></div>'
+ +'<div class="layout"><div><div class="circlelbl" style="margin-top:0">Spells</div><div class="slist">'+sl.map(function(s,i){return '<div class="sitem'+(i===0?' on':'')+(s[2]?' marked':'')+'"><span class="dot"></span><span>'+s[0]+'</span><span class="cr">Circle '+s[1]+'</span></div>'}).join('')+'</div></div>'
+ +'<div><div class="casthead"><span class="nm">Thorn Shield</span><span class="crpill">Circle 1</span></div>'
+ +'<div class="modeline"><div class="modeseg"><button class="on">Step-by-step</button><button disabled style="opacity:.5">Guided</button></div><div class="initpill">Initiative <b>9</b><button class="roll" aria-label="Roll initiative">⚄</button></div></div>'
+ +'<div class="subrow"><span>Cast on</span><span class="subseg"><button class="'+(S.subject==='self'?'on':'')+'" data-a="subj" data-v="self">This character</button><button class="'+(S.subject==='other'?'on':'')+'" data-a="subj" data-v="other">Other</button></span><span>vs</span><input class="tgt" type="number" placeholder="TMD" style="width:52px;font:inherit;text-align:center;border:1px solid var(--border);border-radius:6px;background:var(--bg-chip);color:inherit;padding:3px 4px"></div>'
+ +'<div class="pipe"><div class="step"><span class="lab">Weave <span class="req">2/2</span></span><button class="rollbtn">⚄ Roll</button><span class="stepnote">Step 8 vs 7</span></div><div class="step"><span class="lab">Cast</span><button class="rollbtn">⚄ Roll</button><span class="stepnote">Step 9 vs TMD</span></div><div class="step"><span class="lab">Effect</span><span class="stepnote">+2 Physical Armour</span></div></div>'
+ +'<div class="spgrid"><span class="k">Threads</span><span>2</span><span class="k">Duration</span><span>5 rounds</span><span class="k">Range</span><span>Touch</span><span class="k">Area</span><span>—</span></div>'
+ +'<button class="castbtn" data-a="cast">✦ Mock cast → add to Active effects</button>'
+ +activeEffects()+'</div></div></div>'}
+function tabbar(){
+ var T=['Overview','Disciplines','Combat','Spells','Equipment','Notes'];
+ return T.map(function(t){var sel=(t==='Combat'&&S.v==='combat')||(t==='Spells'&&S.v==='spells');return '<button class="tab" aria-selected="'+sel+'"'+(t==='Combat'||t==='Spells'?' data-v="'+t.toLowerCase()+'"':'')+'>'+t+'</button>'}).join('')}
+function render(){
+ document.getElementById('tabbar').innerHTML=tabbar();
+ document.getElementById('ed').innerHTML=S.v==='combat'?combat():spells();
+ document.getElementById('note').innerHTML=NOTES[S.v];
+ Array.prototype.forEach.call(document.querySelectorAll('#pick [data-v]'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-v')===S.v)});
+ document.getElementById('emptyBtn').setAttribute('aria-pressed',S.empty);
+}
+function tick(){S.fx=S.fx.filter(function(e){if(e.rounds==null)return true;e.rounds--;return e.rounds>0})}
+function toggle(id){var i=S.fx.findIndex(function(e){return e.id===id});if(i>=0){S.fx.splice(i,1);return}var d=SEED.filter(function(e){return e.id===id})[0];S.fx.push(el(d))}
+document.addEventListener('click',function(e){
+ var v=e.target.closest('[data-v]:not([data-a])');if(v&&v.closest('#pick,#tabbar')){S.v=v.getAttribute('data-v');render();return}
+ var act=e.target.closest('[data-act]');if(act){var a=act.getAttribute('data-act');if(a==='tick')tick();if(a==='reset'){S.fx=el(SEED);S.empty=false}if(a==='empty')S.empty=!S.empty;render();return}
+ var d=e.target.closest('[data-a]');if(!d)return;var k=d.getAttribute('data-a'),val=d.getAttribute('data-v');
+ if(k==='tab')S.tab=val;else if(k==='mod'){S.empty=false;toggle(val)}else if(k==='end')S.fx=S.fx.filter(function(x){return x.id!==val});
+ else if(k==='subj')S.subject=val;
+ else if(k==='cast'){S.empty=false;S.fx=S.fx.filter(function(x){return x.id!=='shield'&&x.id!=='cast2'});
+   if(S.subject==='self')S.fx.push({id:'shield',kind:'spell',grp:'you',name:'Thorn Shield',fx:'+2 Physical Armour',rounds:5,total:5});
+   else S.fx.push({id:'cast2',kind:'spell',grp:'tgt',name:'Thorn Shield',fx:'Orc Raider · +2 Physical Armour',rounds:5,total:5})}
+ render()});
+if(location.hash==='#spells')S.v='spells';
+render();
+})();
+</script>
+</body>
+</html>

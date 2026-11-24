@@ -167,6 +167,12 @@ export class EdRollModal extends LitElement {
         this._aimRolled = false;
         this._aimTarget = '';
         this._result = null;
+        // A target number already entered on the caller (Combat's "vs" field) is
+        // used as the defence: roll straight away instead of asking again.
+        if (this.aim?.target != null) {
+          this._aimTarget = String(this.aim.target);
+          this._commitAim();
+        }
       } else {
         this._roll();
         // Ordinary talent/knack roll: the auto-roll is the only roll, so its Strain
@@ -518,7 +524,7 @@ export class EdRollModal extends LitElement {
             <input type="number" inputmode="numeric" .value=${this._aimTarget ?? ''} @input=${(e) => (this._aimTarget = e.target.value)} aria-label="Target's ${this._aimVsLabel()}" />
           </label>
         </div>
-        <p class="hint rollhint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}</p>`,
+        <p class="hint rollhint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}${this.aim?.opponent ? 'Each success applies the effect to the target.' : html`Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}`}</p>`,
       primary: { label: 'Roll', tone: 'accent', disabled: !ready },
     });
   }

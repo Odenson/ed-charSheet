@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.9.0",
+      "date": "2026-11-24",
+      "summary": "New Active effects window on the Combat and Spells tabs tracks active spells, Aim, Taunt, toggled combat options and charms with round countdowns, an end button and optional opponent names.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "New Active effects window on the Combat and Spells tabs: tracks active spells (including ones cast on others), Aim, Taunt, toggled combat options and charms, with round countdowns and an end button; optional opponent name labels effects on a target."
+        }
+      ]
+    },
+    {
       "version": "2.8.0",
       "date": "2026-11-23",
       "summary": "The Equipment add-item picker is now a searchable modal with type chips and a list grouped by kind, so every thread item is reachable.",
