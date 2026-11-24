@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.9.0
 ---
 # Delivery Plan: Active effects window (active-condition-window)
 
