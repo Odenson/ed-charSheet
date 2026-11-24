@@ -826,6 +826,9 @@ export class EdCombat extends LitElement {
   _rollAim(opt) {
     const roll = opt?.arms?.roll;
     if (roll?.step == null) return; // no derived step (rank 0) — wouldn't be offered
+    // An opponent arm (Taunt) rolls vs the Combat "vs" number already entered on
+    // the attack row — don't ask for it again in the modal.
+    const presetTarget = opt.arms.opponent ? this._targetNum() : null;
     this.dispatchEvent(
       new CustomEvent('ed-roll', {
         detail: {
@@ -833,7 +836,7 @@ export class EdCombat extends LitElement {
           step: roll.step,
           // The aim test is Karma-eligible (MA8) — offer the talent's Karma die.
           karma: roll.karma ?? null,
-          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false },
+          aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, target: presetTarget },
           // ed-app arms this on a hit (name + rounds + scope + the folded payload).
           arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, text: opt.arms.text ?? null },
         },

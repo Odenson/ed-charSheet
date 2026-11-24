@@ -167,6 +167,12 @@ export class EdRollModal extends LitElement {
         this._aimRolled = false;
         this._aimTarget = '';
         this._result = null;
+        // A target number already entered on the caller (Combat's "vs" field) is
+        // used as the defence: roll straight away instead of asking again.
+        if (this.aim?.target != null) {
+          this._aimTarget = String(this.aim.target);
+          this._commitAim();
+        }
       } else {
         this._roll();
         // Ordinary talent/knack roll: the auto-roll is the only roll, so its Strain
