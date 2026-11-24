@@ -29,3 +29,11 @@ export function localSituationNames(names, situationRules) {
   const rules = new Set((situationRules || []).map(s => s.name));
   return (names || []).filter(n => !rules.has(n));
 }
+
+// Removal-only reconcile of the Combat tab's local toggled options against the
+// shared model list (`model.toggledOptions`): a name the Active effects window
+// ended is dropped locally; names are never added from the model (no loop).
+export function optionsAfterPush(opts, modelNames) {
+  const keep = new Set(modelNames || []);
+  return (opts || []).filter(n => keep.has(n));
+}

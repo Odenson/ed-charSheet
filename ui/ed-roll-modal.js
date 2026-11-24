@@ -518,7 +518,7 @@ export class EdRollModal extends LitElement {
             <input type="number" inputmode="numeric" .value=${this._aimTarget ?? ''} @input=${(e) => (this._aimTarget = e.target.value)} aria-label="Target's ${this._aimVsLabel()}" />
           </label>
         </div>
-        <p class="hint rollhint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}</p>`,
+        <p class="hint rollhint">${this.aim?.strain ? html`${this.aim.strain} Strain on roll.` : ''}${this.aim?.opponent ? 'Each success applies the effect to the target.' : html`Each success arms a per-success bonus for a later roll${this._aimSummary(1) ? ` (${this._aimSummary(1)}).` : '.'}`}</p>`,
       primary: { label: 'Roll', tone: 'accent', disabled: !ready },
     });
   }

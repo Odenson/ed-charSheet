@@ -576,7 +576,10 @@ export function collectCombatEffects({ selectedOptions = [], selectedSituations 
   // arm record, scaled by the stored success count — independent of any chip, so
   // an arm made from any roll surface reaches the pool. The armed entry supplies
   // its own `effects` and `successes` (the forced count).
-  for (const at of armedTalents ?? []) addBundle(at, at?.name ?? 'Armed talent', at?.successes ?? 0);
+  for (const at of armedTalents ?? []) {
+    if (at?.opponent) continue; // opponent effects (Taunt) are display-only, never folded
+    addBundle(at, at?.name ?? 'Armed talent', at?.successes ?? 0);
+  }
   // Active self-cast spells (session): a sustained attack-modifier (Arrow of
   // Night) folds while active, labelled by the spell name. The bundles are
   // pre-screened by the view (origin spell, {attack, Attack|Damage}, scope

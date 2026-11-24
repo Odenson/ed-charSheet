@@ -359,6 +359,10 @@ Dice alongside the step dice.
     `test-modifier` in the talent's `effects[]`, and the engine folds it only while
     the arm is live. This documents how existing vocabulary composes; it adds no
     field or term, so it is **not** a taxonomy-version change (cf. §6 auto-apply).
+    `arms.rounds` is normally a number, but may be the string `"rank"` (Taunt):
+    the store resolves it to the talent's rank as a number before it reaches the
+    session. A `roll.vs` of `"Social"` marks an *opponent* arm (display-only effect
+    on the target, never folded into a roll). New value only; no version bump.
     Authoring detail lives in `plans/PLAN-TALENT-COMBAT-OPTIONS.md` §13.
 - A structured **trigger** for future automation, reusing the sheet's model:
 

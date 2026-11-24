@@ -283,7 +283,7 @@ Four pure modules. Each is independently testable and lazy-loaded.
 The engine's modifier model is the taxonomy `effects` array (§4.2): it gathers
 active effects and folds them onto base values by `operation`/`measure`. Only
 **always-on, non-`gmDiscretion`** effects auto-apply; situational and triggered
-ones are surfaced for the player/GM, never silently baked into a static rating. Exceptions are explicit player activations, never silent: an active global Situational chip (`session.situations`; plans/situational-chips-global) folds its `defense-modifier`s into derived Defence, and an activated blood charm (`session.activeCharms`) folds its situational test mods.
+ones are surfaced for the player/GM, never silently baked into a static rating. Exceptions are explicit player activations, never silent: an active global Situational chip (`session.situations`; plans/situational-chips-global) folds its `defense-modifier`s into derived Defence, and an activated blood charm (`session.activeCharms`) folds its situational test mods. The Active effects window is derived the same way: `engine/active-effects.js` folds the session lists (`activeSpells`, `opponentEffects`, `toggledOptions`, `armedTalents`, `activeCharms`, situations, conditions) into `model.effectWindow`, with `model.targetName` and `model.toggledOptions` as pass-throughs; opponent effects, toggled options and the opponent name are session-only and never persisted.
 Non-numeric effects resolve by their own rule rather than summing: `action-modifier`
 (taxonomy v5) `set`s a talent's or skill's action, fastest wins
 (`engine/ability-actions.js`); the effective `action` plus `actionBase` /

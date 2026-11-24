@@ -5,6 +5,8 @@ import { applyHealth, endOfDayResetPlan, knockdownOutcome, recoveriesRemaining }
 import { rollTimeMods, resolveOptionalMods } from '../engine/roll-mods.js';
 import { buildActiveSpell, tickActiveSpells, wastedCastLogEntry } from '../engine/spells.js';
 import { successCount, tickArmedTalents } from '../engine/combat.js';
+import { addOpponentEffect, tickOpponentEffects, endEffect, clearAll, armOpponent, otherCastToRecord, setOtherCastEffect } from '../engine/active-effects.js';
+import { otherCastOutcome } from '../engine/spells.js';
 import { armPotion, armedRecoveryBonus, boostHasNoEffect, consumePotion, immediateWoundHeal } from '../engine/potions.js';
 import { auditLegendSpent } from '../engine/legend-spent.js';
 import { legendAvailable } from '../engine/legend.js';
@@ -388,7 +390,17 @@ export class EdApp extends LitElement {
       // with ≥1 success arms the payload for `rounds` rounds (ticked at Initiative);
       // a miss / 0 successes clears any existing arm for that talent.
       const arms = this._roll.arms;
-      if (arms?.name) {
+      if (arms?.name && arms.opponent) {
+        // Opponent arm (Taunt): a hit records a display-only effect on the TARGET
+        // (never in _armedTalents); a miss adds nothing and clears nothing.
+        const rec = armOpponent({
+          arms, successes: successCount(total, difficulty), targetName: this._targetName ?? '', seq: (this._effectSeq = (this._effectSeq ?? 0) + 1),
+        });
+        if (rec) {
+          this._opponentEffects = addOpponentEffect(this._opponentEffects ?? [], rec);
+          this._model = this._derive();
+        }
+      } else if (arms?.name) {
         const successes = successCount(total, difficulty);
         const rest = (this._armedTalents ?? []).filter((a) => a.name !== arms.name);
         this._armedTalents =
@@ -493,6 +505,25 @@ export class EdApp extends LitElement {
     // A Situational chip was clicked (Combat tab) or cleared (Overview x). Free
     // toggle, session-only (plans/situational-chips-global).
     this.addEventListener('ed-toggle-situation', (e) => this._toggleSituation(e.detail?.name));
+    // Active effects window (plans/active-condition-window): session-only lists,
+    // thin dispatch onto the pure reducers in engine/active-effects.js.
+    this.addEventListener('ed-end-effect', (e) => this._endEffect(e.detail));
+    this.addEventListener('ed-target-name', (e) => {
+      this._targetName = String(e.detail?.name ?? '').trim();
+      this._model = this._derive();
+    });
+    this.addEventListener('ed-options-toggled', (e) => {
+      this._toggledOptions = [...(e.detail?.names ?? [])];
+      this._model = this._derive();
+    });
+    this.addEventListener('ed-other-cast', (e) => this._otherCast(e.detail));
+    this.addEventListener('ed-other-cast-effect', (e) => {
+      const id = this._castRecIds?.get(e.detail?.seq);
+      const total = e.detail?.effectTotal;
+      if (!id || total == null) return;
+      this._opponentEffects = setOtherCastEffect(this._opponentEffects ?? [], id, `Effect ${total}`);
+      this._model = this._derive();
+    });
     // A trade (plans/PLAN-TRADE-ITEMS.md): one dispatch carrying BOTH the next
     // item list and the resulting purse, persisted atomically + one re-derive.
     this.addEventListener('ed-trade', (e) => this._editTrade(e.detail));
@@ -668,6 +699,9 @@ export class EdApp extends LitElement {
       this._activeSpells = []; // active self-cast spells (session-only, 6b)
       this._activeCharms = []; // activated blood-charms (session-only, not persisted — equipped gives always implant, activation gives situational test mods globally)
       this._armedTalents = []; // armed `arms` talents (Mystic Aim): session-only, counted down each Initiative
+      Object.assign(this, clearAll()); // opponent effects + toggled options (Active effects window)
+      this._targetName = '';
+      this._castRecIds = new Map();
       this._round = 0;
       this._dayReset = null;
       this._baseSha = base; // null for a draft: its first Save takes the create path
@@ -1042,6 +1076,14 @@ export class EdApp extends LitElement {
       this._armedTalents = tickArmedTalents(this._armedTalents);
       needsDerive = true;
     }
+    if (this._opponentEffects?.length) {
+      this._opponentEffects = tickOpponentEffects(this._opponentEffects);
+      needsDerive = true;
+    }
+    if (this._toggledOptions?.length) {
+      this._toggledOptions = []; // combat options last a single round
+      needsDerive = true;
+    }
     if (this._activeCharms?.length) {
       const spent = [...this._activeCharms];
       this._activeCharms = [];
@@ -1055,6 +1097,40 @@ export class EdApp extends LitElement {
       needsDerive = true;
     }
     if (needsDerive) this._model = this._derive();
+  }
+
+  // Active effects window: X on a row. Pure reducer decides; we only assign.
+  _endEffect(detail) {
+    const { state, action } = endEffect({
+      activeSpells: this._activeSpells ?? [],
+      opponentEffects: this._opponentEffects ?? [],
+      armedTalents: this._armedTalents ?? [],
+      toggledOptions: this._toggledOptions ?? [],
+      activeCharms: this._activeCharms ?? [],
+    }, detail ?? {});
+    this._activeSpells = state.activeSpells;
+    this._opponentEffects = state.opponentEffects;
+    this._armedTalents = state.armedTalents;
+    this._toggledOptions = state.toggledOptions;
+    this._activeCharms = state.activeCharms;
+    if (action?.type === 'toggle-situation') this._toggleSituation(action.name);
+    else this._model = this._derive();
+  }
+
+  // A cast on another target (ed-spells): a hit with a parsable duration adds a
+  // counted entry under "on target". `seq` is the ed-spells cast sequence, mapped
+  // to this record id so the later Effect roll can fill in the label.
+  _otherCast(d) {
+    const spell = this._rules?.spellsFile?.spells?.[d?.spell];
+    if (!spell) return;
+    const cast = { name: d.spell, target: d.target, total: d.total, levels: d.levels, extraPicks: d.extraPicks ?? [], effectTotal: null };
+    const outcome = otherCastOutcome(spell, cast, { rank: d.castingRank });
+    const id = (this._effectSeq = (this._effectSeq ?? 0) + 1);
+    const rec = otherCastToRecord({ outcome, spell, seq: id, targetName: d.targetName ?? '' });
+    if (!rec) return;
+    (this._castRecIds ??= new Map()).set(d.seq, rec.id);
+    this._opponentEffects = addOpponentEffect(this._opponentEffects ?? [], rec);
+    this._model = this._derive();
   }
 
   // A self-cast sustained spell landed: build its active record (sustained
@@ -1314,6 +1390,9 @@ export class EdApp extends LitElement {
       activeSpells: this._activeSpells ?? [],
       activeCharms: this._activeCharms ?? [],
       armedTalents: this._armedTalents ?? [],
+      opponentEffects: this._opponentEffects ?? [],
+      toggledOptions: this._toggledOptions ?? [],
+      targetName: this._targetName ?? '',
     });
   }
 
@@ -1429,6 +1508,8 @@ export class EdApp extends LitElement {
     this._situations = [];
     this._activeCharms = [];
     this._armedTalents = [];
+    Object.assign(this, clearAll());
+    this._targetName = '';
     const combatEl = this.renderRoot?.querySelector('ed-combat');
     clearCombatScratch(this._characterId, combatEl);
     const cur = this._character.resources?.health ?? {};

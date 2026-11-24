@@ -60,3 +60,37 @@ test('normalizeModTab passes valid ids through', () => {
 test('normalizeModTab falls back to opts for anything else', () => {
   for (const v of [undefined, null, '', 'x', 'OPTS', 3, {}]) assert.equal(normalizeModTab(v), 'opts');
 });
+
+// --- active-condition-window: optionsAfterPush (removal-only reconcile) -------
+
+// Dynamic import so the pre-existing cases above keep loading until the helper exists.
+const optionsAfterPush = (...a) => import('./combat-mods-state.js').then((m) => m.optionsAfterPush(...a));
+
+test('optionsAfterPush drops local options the model no longer lists', async () => {
+  assert.deepEqual(await optionsAfterPush(['A', 'B', 'C'], ['A', 'C']), ['A', 'C']);
+});
+
+test('optionsAfterPush never adds names the model has but the local list lacks', async () => {
+  assert.deepEqual(await optionsAfterPush(['A'], ['A', 'Z']), ['A']);
+});
+
+test('optionsAfterPush is a no-op when in sync, keeps order, and does not mutate', async () => {
+  const local = ['B', 'A'];
+  const out = await optionsAfterPush(local, ['A', 'B']);
+  assert.deepEqual(out, ['B', 'A']);
+  assert.deepEqual(local, ['B', 'A']);
+  assert.deepEqual(await optionsAfterPush([], ['A']), []);
+  assert.deepEqual(await optionsAfterPush(['A'], []), []);
+});
+
+test('modTabCounts outputs are unchanged by the active-effects work', () => {
+  const c = modTabCounts({
+    options: [{ name: 'A' }, { name: 'X', arms: true }],
+    armedNames: new Set(['X']),
+    toggledOpts: ['A'],
+    sits: [{ name: 'a', locked: true }],
+    toggledSits: ['b'],
+  });
+  assert.equal(c.opts, 2);
+  assert.equal(c.sits, 2);
+});
