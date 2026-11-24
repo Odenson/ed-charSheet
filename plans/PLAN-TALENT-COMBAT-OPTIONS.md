@@ -553,8 +553,9 @@ and the duration; the armed payload stays in the talent's own `effects`:
 
 | `arms` field | Meaning |
 |---|---|
-| `roll.vs` | Which defence the player enters as the precursor target number (`Mystic`/`Physical`/`Social`). Omit for a flat / no-target arm. |
-| `rounds` | How many rounds the armed bonus lasts. Ticked down on each Initiative like a spell (`tickArmedTalents`), dropped at 0. Mystic Aim = `1`; other armers may be `2` or `3`. |
+| `roll.vs` | Which defence the player enters as the precursor target number (`Mystic`/`Physical`/`Social`). Omit for a flat / no-target arm. It sets the target number only; it no longer implies opponent behaviour. |
+| `rounds` | How many rounds the armed bonus lasts. Ticked down on each Initiative like a spell (`tickArmedTalents`), dropped at 0. Mystic Aim = `1`; other armers may be `2` or `3`. May be the string `"rank"` (Taunt, Frighten); the store resolves it to the talent's rank (min 1). |
+| `opponent` | Optional `true`. Marks an opponent arm: a hit records a display-only entry on the target (Active effects window), never folded into any roll or pool. Replaces the old `roll.vs === "Social"` inference (frighten-uplift). The store derives `arms.perSuccess` (`{delta, allTests}`) from the talent's on-success per-success test-modifier; it is not authored. |
 | *(armed payload)* | **Not** re-listed in `arms` — it is the talent's own `on-success` effects that target a test (`target.domain === "test"`). If a talent has two such effects, **both** arm, all against the one target (owner decision, 2026-08-26). |
 
 `roll.strain`, `roll.step`, and `roll.karma` are **derived** in the store from the

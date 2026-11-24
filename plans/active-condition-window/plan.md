@@ -4,6 +4,8 @@ shipped: v2.9.0
 ---
 # Delivery Plan: Active effects window (active-condition-window)
 
+> Superseded in part by plans/frighten-uplift: opponent arms are now flagged by an explicit `arms.opponent: true` in rules data, no longer inferred from `roll.vs === "Social"`. Taunt data is now `{roll:{vs:"Social"}, rounds:"rank", opponent:true}`, and the store derives `arms.perSuccess`.
+
 ## Context & learnings
 Owner approved mock-d.html (Option D): one shared "Active effects" element, styled like the Spells-tab `.aecard` (mark, name · effect, round bar, rounds pill), mounted on Combat (above the Combat log, three groups side by side) and on Spells (single stacked column), fed by ONE session-level list. Sources (all four, qa-log 2026-11-24): active spells (self + cast on Other), armed talents (Aim), timed opponent effects (Taunt only in v1), toggled combat options + blood charms; plus read-through Situational chips / Knocked Down / encumbrance Harried. Taunt auto-adds on a successful roll (rounds = Taunt rank; "-1 tests / -1 Social Defense per success" shown as text, display-only). Optional opponent name labels entries (blank = "target"). Spells cast on Other become tracked entries with countdown; the Spells "Target effects" card is removed. Grouping: no round count -> "This attack"; rounds -> "Lasting - on you" / "Lasting - on target" (Aim moves to Lasting on you). Round ticking = each Initiative roll; X ends an entry where ending is meaningful (house ruling R3; see I1 end semantics). Overview strip untouched. Session-only, no taxonomy change, no stored data. Tier-1 sign-off for Combat/Spells tab contents recorded 2026-11-24. Taunt = `arms` reused on the Taunt TALENT only (owner, qa-log last entry); Taunt skill excluded from v1.
 

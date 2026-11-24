@@ -1,5 +1,6 @@
 ---
-status: building
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: Frighten uplift (frighten-uplift)
 
