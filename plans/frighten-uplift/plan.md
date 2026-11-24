@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.11.0
 ---
 # Delivery Plan: Frighten uplift (frighten-uplift)
 
