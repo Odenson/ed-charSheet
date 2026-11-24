@@ -9,9 +9,9 @@ import { readFileSync } from 'node:fs';
 
 const talentsFile = JSON.parse(readFileSync(new URL('../rules/talents.json', import.meta.url)));
 
-test('Taunt carries exactly the new arms descriptor', () => {
+test('Taunt carries exactly the arms descriptor incl. explicit opponent flag (frighten-uplift I1)', () => {
   const t = talentsFile.talents.Taunt;
-  assert.deepEqual(t.arms, { roll: { vs: 'Social' }, rounds: 'rank' });
+  assert.deepEqual(t.arms, { roll: { vs: 'Social' }, rounds: 'rank', opponent: true });
 });
 
 test('Taunt keeps its note effect and gains no on-success effects (display-only, R1)', () => {
@@ -26,11 +26,11 @@ test('Mystic Aim arms is unchanged (rounds 1, Mystic) (R2)', () => {
   assert.equal(a.roll.vs, 'Mystic');
 });
 
-test('no other talent uses a string arms.rounds besides Taunt', () => {
+test('no other talent uses a string arms.rounds besides Taunt and Frighten', () => {
   const strs = Object.entries(talentsFile.talents)
     .filter(([, t]) => t.arms && typeof t.arms.rounds === 'string')
     .map(([k]) => k);
-  assert.deepEqual(strs, ['Taunt']);
+  assert.deepEqual(strs.sort(), ['Frighten', 'Taunt']);
 });
 
 test('effectTaxonomy reference is still v6 (no version bump)', () => {

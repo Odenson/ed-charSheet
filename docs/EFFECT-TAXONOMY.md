@@ -361,8 +361,14 @@ Dice alongside the step dice.
     field or term, so it is **not** a taxonomy-version change (cf. §6 auto-apply).
     `arms.rounds` is normally a number, but may be the string `"rank"` (Taunt):
     the store resolves it to the talent's rank as a number before it reaches the
-    session. A `roll.vs` of `"Social"` marks an *opponent* arm (display-only effect
-    on the target, never folded into a roll). New value only; no version bump.
+    session. An optional `arms.opponent: true` marks an *opponent* arm (Taunt,
+    Frighten): a display-only effect on the target, never folded into a roll or any
+    pool (it replaces the earlier `roll.vs === "Social"` inference). The store
+    derives `arms.perSuccess` ({ delta, allTests }) from the talent's on-success
+    `perSuccess` test-modifier so the target entry can show the computed total
+    (e.g. Frighten "-2 x N = -2N to all tests"); `perSuccess` is derived, never
+    authored. The Step shown in the entry is the base talent step, not the
+    roll-time karma/bonus-dice step. Optional field only; no version bump.
     Authoring detail lives in `plans/PLAN-TALENT-COMBAT-OPTIONS.md` §13.
 - A structured **trigger** for future automation, reusing the sheet's model:
 

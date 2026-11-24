@@ -161,12 +161,21 @@ export function clearAll() {
 /** A hit on an opponent-arming talent (Taunt) -> one record, else null. */
 export function armOpponent({ arms, successes, targetName, seq } = {}) {
   if (!arms?.opponent || !(successes > 0)) return null;
+  const name = arms.name ?? 'Taunt';
+  let text = arms.text ?? null;
+  const ps = arms.perSuccess;
+  if (ps && Number.isFinite(ps.delta)) {
+    const head = `${ps.delta} x ${successes} = ${ps.delta * successes}${ps.allTests ? ' to all tests' : ''}.`;
+    text = [head, arms.text, Number.isFinite(arms.step) ? `${name} Step ${arms.step}.` : null]
+      .filter(Boolean)
+      .join(' ');
+  }
   return {
     id: `opp:${seq}`,
     kind: 'talent',
-    name: arms.name ?? 'Taunt',
+    name,
     effectLabel: successText(successes),
-    text: arms.text ?? null,
+    text,
     targetName: targetName ?? '',
     roundsLeft: arms.rounds,
     roundsTotal: arms.rounds,

@@ -838,7 +838,7 @@ export class EdCombat extends LitElement {
           karma: roll.karma ?? null,
           aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, target: presetTarget },
           // ed-app arms this on a hit (name + rounds + scope + the folded payload).
-          arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, text: opt.arms.text ?? null },
+          arms: { name: opt.name, rounds: opt.arms.rounds ?? 1, appliesTo: opt.arms.appliesTo ?? null, effects: opt.arms.effects ?? [], opponent: opt.arms.opponent ?? false, text: opt.arms.text ?? null, perSuccess: opt.arms.perSuccess ?? null, step: opt.arms.roll?.step ?? null },
         },
         bubbles: true,
         composed: true,

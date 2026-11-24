@@ -406,7 +406,7 @@ export class EdDisciplines extends LitElement {
         step: roll.step ?? t.step,
         karma: karmaCtx,
         aim: { vs: roll.vs ?? 'Mystic', strain: roll.strain ?? 0, opponent: t.arms.opponent ?? false },
-        arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [], opponent: t.arms.opponent ?? false, text: t.arms.text ?? null },
+        arms: { name: t.name, rounds: t.arms.rounds ?? 1, appliesTo: t.arms.appliesTo ?? null, effects: t.arms.effects ?? [], opponent: t.arms.opponent ?? false, text: t.arms.text ?? null, perSuccess: t.arms.perSuccess ?? null, step: t.arms.roll?.step ?? null },
       };
     }
     return { label: t.name, step: t.step, karma: karmaCtx, mods: t.resultMods ?? [], strain: t.rollStrain ?? 0 };

@@ -1201,12 +1201,24 @@ export function deriveModel(character, rules, session = {}) {
               rounds: resolveArmRounds(cat.arms.rounds, t.rank),
               // Opponent arms (Taunt: rolled vs Social Defense) record a display-only
               // effect on the TARGET — never folded into any roll pool.
-              opponent: cat.arms.roll?.vs === 'Social',
-              text: cat.arms.roll?.vs === 'Social'
+              // Explicit `arms.opponent: true` in the rules data.
+              opponent: cat.arms.opponent === true,
+              text: cat.arms.opponent === true
                 ? ((cat.effects ?? []).find((e) => e?.type === 'note')?.summary ?? null)
                 : null,
+              // Derived (never authored): the per-success test-modifier of an
+              // opponent arm, so the target entry can show the computed total.
+              perSuccess: cat.arms.opponent === true
+                ? (() => {
+                    const e = (cat.effects ?? []).find((x) => x?.type === 'test-modifier'
+                      && x.condition === 'on-success' && x.perSuccess === true && Number.isFinite(x.value));
+                    return e
+                      ? { delta: e.operation === 'subtract' ? -e.value : e.value, allTests: e.target?.name === 'Action' }
+                      : null;
+                  })()
+                : null,
               appliesTo: cat.combatOptions?.[0]?.appliesTo ?? null,
-              effects: (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
+              effects: cat.arms.opponent === true ? [] : (cat.effects ?? []).filter((e) => e?.condition === 'on-success' && (e?.target?.domain === 'test' || e?.type === 'defense-modifier')),
             }
           : null,
         // The Circle the talent was learned at — a stored input, surfaced so the
