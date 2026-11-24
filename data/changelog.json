@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.10.0",
+      "date": "2026-11-24",
+      "summary": "Optional portrait animations in Settings: Slow drift and Embers, both off by default and paused by your system's reduce-motion setting.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Optional portrait animations in Settings: Slow drift and Embers, off by default and paused by your system's reduce-motion setting."
+        }
+      ]
+    },
+    {
       "version": "2.9.0",
       "date": "2026-11-24",
       "summary": "New Active effects window on the Combat and Spells tabs tracks active spells, Aim, Taunt, toggled combat options and charms with round countdowns, an end button and optional opponent names.",

@@ -186,6 +186,57 @@
           "unpriced": false
         }
       }
+    },
+    {
+      "workflow": "release-feature",
+      "since": "2026-11-24T11:15:17.000Z",
+      "until": "2026-11-24T11:17:40.722Z",
+      "finished": "2026-11-24T11:17:40.722Z",
+      "session": "b91e2148-043a-4898-8d15-4e0293b19391",
+      "mainModels": [
+        "claude-sonnet-5-5"
+      ],
+      "note": "",
+      "total": {
+        "tokens": {
+          "input": 16,
+          "output": 2775,
+          "cacheRead": 1283333,
+          "cacheWrite": 7199
+        },
+        "cost": 0.31324459999999993,
+        "messages": 8,
+        "spawns": 0,
+        "unpriced": false
+      },
+      "byAgent": {
+        "orchestrator": {
+          "tokens": {
+            "input": 16,
+            "output": 2775,
+            "cacheRead": 1283333,
+            "cacheWrite": 7199
+          },
+          "cost": 0.31324459999999993,
+          "messages": 8,
+          "spawns": 1,
+          "unpriced": false
+        }
+      },
+      "byModel": {
+        "claude-sonnet-5-5": {
+          "tokens": {
+            "input": 16,
+            "output": 2775,
+            "cacheRead": 1283333,
+            "cacheWrite": 7199
+          },
+          "cost": 0.31324459999999993,
+          "messages": 8,
+          "spawns": 0,
+          "unpriced": false
+        }
+      }
     }
   ]
 }

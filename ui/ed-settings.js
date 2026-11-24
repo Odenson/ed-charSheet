@@ -1,13 +1,15 @@
-// ui/ed-settings.js — the Settings modal (autosave preferences).
+// ui/ed-settings.js — the Settings modal (autosave, portrait animation, Discord).
 //
 // A small preferences dialog for the GitHub autosave: turn it on/off and set the
-// idle interval (seconds of no changes before a background save fires). Rendered
+// idle interval (seconds of no changes before a background save fires). It also
+// holds the device-wide "Portrait animation" switches (Slow drift, Embers; the
+// section shows a hint when the system reduce-motion setting is on). Rendered
 // on the UI kit (ui/kit/, docs/MODALS.md) in its own shadow root; it is mounted at
 // the top of `<ed-app>`'s template and stacks above other modals via layer 2200.
 //
 // Architecture (Tier-1 golden rule): this view NEVER persists anything itself. It
 // takes the current values down as properties and, on Save, dispatches
-// `ed-settings` up with `{ enabled, seconds }` — ed-app persists to localStorage
+// `ed-settings` up with `{ enabled, seconds, drift, embers }` — ed-app persists to localStorage
 // and re-schedules the autosave. Escape / Cancel / backdrop close without change;
 // Enter saves (the kit routes it). Theme-aware via light-dark(); two font weights.
 import { LitElement, html, css } from 'lit';
@@ -33,6 +35,12 @@ export class EdSettings extends LitElement {
     _dEnabled: { state: true },
     _dMasked: { state: true },
     _dFormat: { state: true },
+    // Portrait animation prefs (device-wide; ed-app owns persistence).
+    drift: { type: Boolean },
+    embers: { type: Boolean },
+    _drift: { state: true },
+    _embers: { state: true },
+    _reduceMotion: { state: true },
     _enabled: { state: true },
     _seconds: { state: true },
   };
@@ -67,6 +75,8 @@ export class EdSettings extends LitElement {
     .eds-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
     .eds-track { position: absolute; inset: 0; border-radius: 999px; background: var(--border); transition: background 0.15s; }
     .eds-switch input:checked + .eds-track { background: var(--accent); }
+    .eds-switch input:focus-visible + .eds-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .eds-motion { font-size: var(--fs-small); color: var(--muted); font-weight: 400; padding-bottom: 4px; }
     .eds-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
     .eds-switch input:checked ~ .eds-knob { transform: translateX(18px); }
   `];
@@ -87,6 +97,10 @@ export class EdSettings extends LitElement {
     // Seed the editable draft from the current settings passed down.
     this._enabled = this.enabled !== false;
     this._seconds = Number.isFinite(this.seconds) ? this.seconds : DEFAULT_SECONDS;
+    this._drift = !!this.drift;
+    this._embers = !!this.embers;
+    // Read once while the modal is open (not live-updated).
+    this._reduceMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     this._loadDiscordDraft();
     this._ctl.opened(deepActiveElement());
   }
@@ -127,7 +141,7 @@ export class EdSettings extends LitElement {
   _save = () => {
     if (this.hasCharacter && this._discordInvalid()) return; // inline message blocks Save
     const seconds = this._clampSeconds(this._seconds);
-    const detail = { enabled: !!this._enabled, seconds };
+    const detail = { enabled: !!this._enabled, seconds, drift: !!this._drift, embers: !!this._embers };
     if (this.hasCharacter) detail.discord = { url: (this._dUrl ?? '').trim(), enabled: !!this._dEnabled, format: this._dFormat };
     this.dispatchEvent(new CustomEvent('ed-settings', { detail, bubbles: true, composed: true }));
     this._ctl.close({ reason: 'confirm' });
@@ -190,6 +204,22 @@ export class EdSettings extends LitElement {
             <div class="hint">Seconds of no changes before an autosave (10–3600).</div>
           </div>
           <input class="eds-num" type="number" min=${MIN_SECONDS} max=${MAX_SECONDS} step="5" .value=${String(this._seconds)} ?disabled=${!this._enabled} aria-label="Autosave idle interval in seconds" @input=${(e) => (this._seconds = e.target.value)} />
+        </div>
+        <div class="eds-sec">Portrait animation</div>
+        ${this._reduceMotion ? html`<div class="hint eds-motion">Paused by your system's reduce-motion setting.</div>` : ''}
+        <div class="eds-row">
+          <div class="lbl">Slow drift</div>
+          <label class="eds-switch">
+            <input type="checkbox" .checked=${this._drift} aria-label="Slow drift portrait animation" @change=${(e) => (this._drift = e.target.checked)} />
+            <span class="eds-track"></span><span class="eds-knob"></span>
+          </label>
+        </div>
+        <div class="eds-row">
+          <div class="lbl">Embers</div>
+          <label class="eds-switch">
+            <input type="checkbox" .checked=${this._embers} aria-label="Embers portrait animation" @change=${(e) => (this._embers = e.target.checked)} />
+            <span class="eds-track"></span><span class="eds-knob"></span>
+          </label>
         </div>
         ${this.hasCharacter ? this._renderDiscord() : ''}`,
     });

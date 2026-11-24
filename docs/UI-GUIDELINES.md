@@ -240,8 +240,23 @@ concurrency — plans/PLAN-SAVE-CONCURRENCY.md):
 
 ## 8a. Settings modal
 The header's settings (gear) icon opens the Settings modal (`ui/ed-settings.js`).
-It holds the autosave switch and idle interval and, when a character is loaded,
-a **Discord die reports** section for that character:
+It holds the autosave switch and idle interval, a **Portrait animation**
+section and, when a character is loaded, a **Discord die reports** section for
+that character.
+
+**Portrait animation** (between autosave and Discord) has two independent
+switches, **Slow drift** (CSS scale/pan of the portrait image, 7 s alternate) and
+**Embers** (a canvas of rising sparks and ash over the portrait). Both are
+device-wide (localStorage `ed-portrait-drift` / `ed-portrait-embers`, no
+character data), off by default, and apply on Save like the rest of the modal
+(Cancel/Escape/backdrop change nothing). They animate only the Overview desktop
+portrait panel and the mobile header avatar; the lightbox and the avatar
+placeholder stay still. When the system `prefers-reduced-motion: reduce` is set
+nothing animates and the section shows "Paused by your system's reduce-motion
+setting." (read once when the modal opens; the switches stay operable). The
+canvas never takes pointer events or focus.
+
+Discord die reports:
 - A **Post rolls to Discord** switch, with the hint "Webhook for <name>. Stored
   only in this browser."
 - A webhook URL field (`https://discord.com/api/webhooks/…`; `ptb.`/`canary.`

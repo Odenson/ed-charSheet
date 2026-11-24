@@ -31,6 +31,7 @@ import { learnSkillPlan } from '../engine/skill-options.js';
 import { optionSlots } from '../engine/talent-options.js';
 import { talentRankStepCost, lowestPriorCircle } from '../engine/legend-spent.js';
 import { logCircleTraining, logDisciplineStarted, logTalentLearned, logSkillLearned, logKnackLearned, logEquipmentChange, logSystem, logNewDay } from '../store-log.js';
+import { readPortraitAnim, portraitAnimValue, PORTRAIT_DRIFT_KEY, PORTRAIT_EMBERS_KEY } from './portrait-anim.js';
 import './ed-overview.js';
 import './ed-disciplines.js';
 import './ed-equipment.js';
@@ -114,6 +115,8 @@ export class EdApp extends LitElement {
     _portraitLoading: { state: true },
     _portraitStaged: { state: true },  // the unsaved staged upload, snapshotted when the modal opens
     _settings: { state: true }, // Settings modal open?
+    _animDrift: { state: true }, // portrait Slow drift pref
+    _animEmbers: { state: true }, // portrait Embers pref
     // Session-only armed-potion state (dies on reload). At most ONE armed
     // recovery entry (no stacking); never persisted (store-only-inputs), same
     // ephemeral contract as the Combat scratchpad. Cleared on character switch,
@@ -301,6 +304,10 @@ export class EdApp extends LitElement {
     this._autosaveEnabled = localStorage.getItem('ed-autosave') !== 'off';
     const secs = Number(localStorage.getItem('ed-autosave-seconds'));
     this._autosaveSeconds = Number.isFinite(secs) && secs >= 10 ? secs : 60;
+    // Portrait animation prefs (Slow drift / Embers): device-wide, off by default.
+    const anim = readPortraitAnim(k => localStorage.getItem(k));
+    this._animDrift = anim.drift;
+    this._animEmbers = anim.embers;
     this._autosaveTimer = null; // idle debounce
     this._autosaveMaxTimer = null; // max-wait cap
   }
@@ -2437,8 +2444,17 @@ export class EdApp extends LitElement {
   }
 
   // Persist the autosave preferences (Settings modal) and re-arm/cancel the timer.
-  _applySettings({ enabled, seconds, discord } = {}) {
+  _applySettings({ enabled, seconds, discord, drift, embers } = {}) {
     if (discord && this._characterId) saveDiscordConfig(this._characterId, discord);
+    // Portrait animation prefs (device-wide UI prefs, like autosave). Missing = keep.
+    if (typeof drift === 'boolean') {
+      this._animDrift = drift;
+      try { localStorage.setItem(PORTRAIT_DRIFT_KEY, portraitAnimValue(drift)); } catch { /* storage unavailable */ }
+    }
+    if (typeof embers === 'boolean') {
+      this._animEmbers = embers;
+      try { localStorage.setItem(PORTRAIT_EMBERS_KEY, portraitAnimValue(embers)); } catch { /* storage unavailable */ }
+    }
     this._discordTest = null;
     this._autosaveEnabled = enabled !== false;
     if (Number.isFinite(seconds)) this._autosaveSeconds = seconds;
@@ -2691,7 +2707,8 @@ export class EdApp extends LitElement {
     switch (this._tab) {
       case 'overview':
         return html`<ed-overview .model=${m} .editMode=${this._editMode} .arming=${this._arming()} .improve=${this._improveView()}
-          .characterId=${this._characterId} .portraitImages=${this._portraitImages ?? []} .portraitLoading=${!!this._portraitLoading} .portraitStaged=${this._portraitStaged ?? null}></ed-overview>`;
+          .characterId=${this._characterId} .portraitImages=${this._portraitImages ?? []} .portraitLoading=${!!this._portraitLoading} .portraitStaged=${this._portraitStaged ?? null}
+          .animDrift=${this._animDrift} .animEmbers=${this._animEmbers}></ed-overview>`;
       case 'disciplines':
         return html`<ed-disciplines .model=${m} .editMode=${this._editMode}></ed-disciplines>`;
       case 'spells':
@@ -2881,6 +2898,8 @@ export class EdApp extends LitElement {
         ? html`<ed-settings
             .enabled=${this._autosaveEnabled}
             .seconds=${this._autosaveSeconds}
+            .drift=${this._animDrift}
+            .embers=${this._animEmbers}
             .discord=${this._characterId ? loadDiscordConfig(this._characterId) : null}
             .characterId=${this._characterId ?? ''}
             .characterName=${this._character?.meta?.name ?? ''}
