@@ -6,14 +6,13 @@
 //
 // @typedef {Object} Entry
 //   { id, kind:'spell'|'talent'|'option'|'charm'|'situation'|'condition',
-//     side:'atk'|'you'|'tgt', name, effectLabel, text, roundsLeft, roundsTotal,
+//     side:'you'|'tgt', name, effectLabel, successes, text, roundsLeft, roundsTotal,
 //     pct, low, chips:[{label,count?}], targetName, endable, endAction }
 // @typedef {Object} OpponentRecord
 //   { id:'opp:<seq>', kind:'spell'|'talent', name, effectLabel, text, targetName,
 //     roundsLeft, roundsTotal }
 
 export const GROUPS = [
-  { side: 'atk', label: 'This attack' },
   { side: 'you', label: 'Lasting · on you' },
   { side: 'tgt', label: 'Lasting · on target' },
 ];
@@ -36,16 +35,34 @@ function entry(o) {
     side: o.side,
     name: o.name,
     effectLabel: o.effectLabel ?? null,
+    successes: o.successes > 0 ? o.successes : null,
     text: o.text ?? null,
     ...t,
     chips: o.chips ?? [],
     targetName: o.targetName ?? null,
+    targetNamed: o.targetNamed === true,
     endable,
     endAction: endable ? (o.endAction ?? { kind: o.kind, id: o.id }) : null,
   };
 }
 
-const successText = (n) => `${n} success${n === 1 ? '' : 'es'}`;
+const signed = (n) => (n < 0 ? `-${Math.abs(n)}` : `+${n}`);
+
+/**
+ * One-line effect of an armed talent, scaled by its successes (Anticipate Blow
+ * "+6 Physical Defense", Mystic Aim "+6 Attack steps"). Reads the first numeric
+ * on-success effect of the armed payload; null when there is none.
+ */
+export function armedEffectLabel(a) {
+  const e = (a?.effects ?? []).find((x) => Number.isFinite(x?.value));
+  if (!e) return null;
+  const n = e.perSuccess === true ? e.value * (a.successes ?? 0) : e.value;
+  const v = e.operation === 'subtract' ? -n : n;
+  const name = e.target?.name;
+  if (e.type === 'defense-modifier') return `${signed(v)} ${name ?? ''} Defense`.replace('  ', ' ');
+  if (e.measure === 'step') return `${signed(v)} ${name ? `${name} ` : ''}steps`;
+  return name ? `${signed(v)} to ${name}` : signed(v);
+}
 
 function spellChips(options) {
   const chips = [];
@@ -60,7 +77,6 @@ export function buildActiveEffectsList({
   spells = [], opponent = [], armed = [], options = [], charms = [], situations = [],
   knockedDown = false, encumbranceHarried = false, targetNameFallback = 'target',
 } = {}) {
-  const atk = [];
   const you = [];
   const tgt = [];
 
@@ -68,25 +84,20 @@ export function buildActiveEffectsList({
     you.push(entry({
       id: `spell:${s.name}`, kind: 'spell', side: 'you',
       name: s.chosen?.name ? `${s.name} · ${s.chosen.name}` : s.name,
-      effectLabel: s.effectLabel, roundsLeft: s.roundsLeft, roundsTotal: s.roundsTotal,
+      effectLabel: s.effectLabel, successes: s.successes, roundsLeft: s.roundsLeft, roundsTotal: s.roundsTotal,
       chips: spellChips(s.options),
     }));
   }
   for (const a of armed ?? []) {
     if (a?.opponent) continue; // defensive: opponent records never live in armedTalents
-    const n = a.successes ?? 0;
     you.push(entry({
       id: `talent:${a.name}`, kind: 'talent', side: 'you', name: a.name,
-      effectLabel: a.effectLabel ?? (n > 0 ? successText(n) : null),
+      effectLabel: a.effectLabel ?? armedEffectLabel(a), successes: a.successes,
       roundsLeft: a.roundsLeft, roundsTotal: a.roundsTotal,
     }));
   }
-  for (const c of charms ?? []) {
-    atk.push(entry({ id: `charm:${c.name}`, kind: 'charm', side: 'atk', name: c.name, effectLabel: c.summary || null, endAction: { kind: 'charm', id: `charm:${c.name}` } }));
-  }
-  for (const o of options ?? []) {
-    atk.push(entry({ id: `option:${o.name}`, kind: 'option', side: 'atk', name: o.name, effectLabel: o.summary || null }));
-  }
+  // `charms` / `options` are single-attack toggles already shown where they are
+  // switched on (Combat options / Blood charms); the window lists only lasting effects.
   for (const s of situations ?? []) {
     you.push(entry({ id: `situation:${s.name}`, kind: 'situation', side: 'you', name: s.name, effectLabel: s.summary || null }));
   }
@@ -98,16 +109,17 @@ export function buildActiveEffectsList({
   }
   for (const r of opponent ?? []) {
     tgt.push(entry({
-      id: r.id, kind: r.kind, side: 'tgt', name: r.name, effectLabel: r.effectLabel, text: r.text,
+      id: r.id, kind: r.kind, side: 'tgt', name: r.name, effectLabel: r.effectLabel, successes: r.successes, text: r.text,
       roundsLeft: r.roundsLeft, roundsTotal: r.roundsTotal,
       targetName: (typeof r.targetName === 'string' && r.targetName.trim()) || targetNameFallback,
+      targetNamed: typeof r.targetName === 'string' && r.targetName.trim() !== '',
       endAction: { kind: r.kind, id: r.id },
     }));
   }
-  return [...atk, ...you, ...tgt];
+  return [...you, ...tgt];
 }
 
-/** Bucket entries by side; all three groups are always returned. */
+/** Bucket entries by side; both groups are always returned. */
 export function groupEffects(list) {
   return GROUPS.map((g) => ({ side: g.side, label: g.label, items: (list ?? []).filter((e) => e.side === g.side) }));
 }
@@ -174,7 +186,8 @@ export function armOpponent({ arms, successes, targetName, seq } = {}) {
     id: `opp:${seq}`,
     kind: 'talent',
     name,
-    effectLabel: successText(successes),
+    effectLabel: ps && Number.isFinite(ps.delta) ? `${signed(ps.delta * successes)}${ps.allTests ? ' to all tests' : ''}` : null,
+    successes,
     text,
     targetName: targetName ?? '',
     roundsLeft: arms.rounds,

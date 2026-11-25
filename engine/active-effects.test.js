@@ -43,17 +43,17 @@ const emptyState = (o = {}) => ({
 
 // ---- GROUPS / empty -------------------------------------------------------
 
-test('GROUPS lists the three lifetime groups in order', () => {
-  assert.deepEqual(GROUPS.map((g) => g.side), ['atk', 'you', 'tgt']);
-  assert.equal(GROUPS.length, 3);
+test('GROUPS lists the two lifetime groups in order', () => {
+  assert.deepEqual(GROUPS.map((g) => g.side), ['you', 'tgt']);
+  assert.equal(GROUPS.length, 2);
   assert.ok(GROUPS.every((g) => typeof g.label === 'string' && g.label.length));
 });
 
-test('empty sources -> empty list; groupEffects([]) keeps three empty groups', () => {
+test('empty sources -> empty list; groupEffects([]) keeps two empty groups', () => {
   assert.deepEqual(build(), []);
   const g = groupEffects([]);
-  assert.equal(g.length, 3);
-  assert.deepEqual(g.map((x) => x.side), ['atk', 'you', 'tgt']);
+  assert.equal(g.length, 2);
+  assert.deepEqual(g.map((x) => x.side), ['you', 'tgt']);
   assert.ok(g.every((x) => Array.isArray(x.items) && x.items.length === 0));
   assert.ok(g.every((x) => typeof x.label === 'string'));
 });
@@ -106,7 +106,7 @@ test('a spell with no countdown is round-free: pct 100, low false', () => {
   assert.equal(e.low, false);
 });
 
-test('armed Aim -> kind talent, side you, id talent:<name>, endable; fallback label is the success count text', () => {
+test('armed Aim -> kind talent, side you, id talent:<name>, endable; successes carried; no label without effects', () => {
   const e = build({ armed: [{ name: 'Mystic Aim', successes: 2, roundsLeft: 1, roundsTotal: 1, effects: [] }] })[0];
   assert.equal(e.id, 'talent:Mystic Aim');
   assert.equal(e.kind, 'talent');
@@ -115,7 +115,17 @@ test('armed Aim -> kind talent, side you, id talent:<name>, endable; fallback la
   assert.equal(e.roundsTotal, 1);
   assert.equal(e.endable, true);
   assert.equal(e.endAction.kind, 'talent');
-  assert.equal(e.effectLabel, '2 successes');
+  assert.equal(e.effectLabel, null);
+  assert.equal(e.successes, 2);
+});
+
+test('armed talents get a one-line effect scaled by successes (Anticipate Blow, Mystic Aim)', () => {
+  const ab = { name: 'Anticipate Blow', successes: 3, roundsLeft: 1, roundsTotal: 1, effects: [{ type: 'defense-modifier', target: { domain: 'defense', name: 'Physical' }, operation: 'add', value: 2, perSuccess: true }] };
+  const aim = { name: 'Mystic Aim', successes: 3, roundsLeft: 1, roundsTotal: 1, effects: [{ type: 'test-modifier', target: { domain: 'test', name: 'Attack' }, operation: 'add', value: 2, measure: 'step', perSuccess: true }] };
+  const list = build({ armed: [ab, aim] });
+  assert.equal(list[0].effectLabel, '+6 Physical Defense');
+  assert.equal(list[0].successes, 3);
+  assert.equal(list[1].effectLabel, '+6 Attack steps');
 });
 
 test('an armed record flagged opponent is skipped defensively', () => {
@@ -135,6 +145,12 @@ test('opponent record -> side tgt, kind from record, targetName, text, endable',
   assert.equal(e.endable, true);
 });
 
+test('targetNamed is true only when the opponent was given a name', () => {
+  assert.equal(build({ opponent: [opp({ targetName: 'Dick' })] })[0].targetNamed, true);
+  assert.equal(build({ opponent: [opp({ targetName: '' })] })[0].targetNamed, false);
+  assert.equal(build({ spells: [spell()] })[0].targetNamed, false);
+});
+
 test('blank opponent targetName falls back to "target" (or the supplied fallback)', () => {
   assert.equal(build({ opponent: [opp({ targetName: '' })] })[0].targetName, 'target');
   assert.equal(build({ opponent: [opp({ targetName: null })] })[0].targetName, 'target');
@@ -144,26 +160,9 @@ test('blank opponent targetName falls back to "target" (or the supplied fallback
   );
 });
 
-test('toggled option -> kind option, side atk, round-free, endable', () => {
-  const e = build({ options: [{ name: 'Aggressive Attack', summary: 'x' }] })[0];
-  assert.equal(e.id, 'option:Aggressive Attack');
-  assert.equal(e.kind, 'option');
-  assert.equal(e.side, 'atk');
-  assert.equal(e.roundsLeft, null);
-  assert.equal(e.roundsTotal, null);
-  assert.equal(e.pct, 100);
-  assert.equal(e.low, false);
-  assert.equal(e.endable, true);
-  assert.equal(e.endAction.kind, 'option');
-});
-
-test('active charm -> kind charm, side atk, endable', () => {
-  const e = build({ charms: [{ name: 'Blood Charm A', summary: 's' }] })[0];
-  assert.equal(e.id, 'charm:Blood Charm A');
-  assert.equal(e.kind, 'charm');
-  assert.equal(e.side, 'atk');
-  assert.equal(e.endable, true);
-  assert.equal(e.endAction.kind, 'charm');
+test('single-attack toggles (combat options, charms) are not listed in the window', () => {
+  assert.deepEqual(build({ options: [{ name: 'Aggressive Attack', summary: 'x' }] }), []);
+  assert.deepEqual(build({ charms: [{ name: 'Blood Charm A', summary: 's' }] }), []);
 });
 
 test('situation -> kind situation, side you, round-free, endable', () => {
@@ -202,7 +201,7 @@ test('conditions absent when flags are false/undefined', () => {
 
 // ---- grouping / order -------------------------------------------------------
 
-test('list order: atk, then you, then tgt; source order within "you"', () => {
+test('list order: you, then tgt; source order within "you"', () => {
   const list = build({
     spells: [spell()],
     opponent: [opp()],
@@ -214,11 +213,11 @@ test('list order: atk, then you, then tgt; source order within "you"', () => {
     encumbranceHarried: true,
   });
   const sides = list.map((e) => e.side);
-  const rank = { atk: 0, you: 1, tgt: 2 };
+  const rank = { you: 0, tgt: 1 };
   assert.deepEqual(sides, [...sides].sort((a, b) => rank[a] - rank[b]), 'sides are grouped in GROUPS order');
   const you = list.filter((e) => e.side === 'you').map((e) => e.id);
   assert.deepEqual(you, ['spell:Haste', 'talent:Mystic Aim', 'situation:Surprised', 'condition:Knocked Down', 'condition:Encumbered Harried']);
-  assert.deepEqual(list.filter((e) => e.side === 'atk').map((e) => e.kind).sort(), ['charm', 'option']);
+  assert.ok(!list.some((e) => e.kind === 'option' || e.kind === 'charm'));
   assert.deepEqual(list.filter((e) => e.side === 'tgt').map((e) => e.id), ['opp:1']);
 });
 
@@ -241,11 +240,10 @@ test('builder is deterministic and does not mutate its inputs', () => {
 test('groupEffects buckets entries by side with the GROUPS labels, keeping empty groups', () => {
   const list = build({ spells: [spell()], opponent: [opp()] });
   const g = groupEffects(list);
-  assert.deepEqual(g.map((x) => x.side), ['atk', 'you', 'tgt']);
+  assert.deepEqual(g.map((x) => x.side), ['you', 'tgt']);
   assert.deepEqual(g.map((x) => x.label), GROUPS.map((x) => x.label));
-  assert.equal(g[0].items.length, 0);
-  assert.deepEqual(g[1].items.map((e) => e.id), ['spell:Haste']);
-  assert.deepEqual(g[2].items.map((e) => e.id), ['opp:1']);
+  assert.deepEqual(g[0].items.map((e) => e.id), ['spell:Haste']);
+  assert.deepEqual(g[1].items.map((e) => e.id), ['opp:1']);
 });
 
 // ---- reducers: add / tick ---------------------------------------------------
@@ -304,19 +302,17 @@ test('endEffect(talent): removes the armed talent by name', () => {
 });
 
 test('endEffect(option): removes the name from toggledOptions', () => {
-  const entry = byId(build({ options: [{ name: 'Aggressive Attack', summary: '' }] }), 'option:Aggressive Attack');
-  const { state } = endEffect(emptyState({ toggledOptions: ['Aggressive Attack', 'Defensive Stance'] }), entry.endAction);
+  const { state } = endEffect(emptyState({ toggledOptions: ['Aggressive Attack', 'Defensive Stance'] }), { kind: 'option', id: 'option:Aggressive Attack' });
   assert.deepEqual(state.toggledOptions, ['Defensive Stance']);
 });
 
 test('endEffect(charm): deactivates only - activeCharms loses the name, nothing else changes', () => {
-  const entry = byId(build({ charms: [{ name: 'Blood Charm A', summary: '' }] }), 'charm:Blood Charm A');
   const before = emptyState({
     activeCharms: ['Blood Charm A', 'Blood Charm B'],
     activeSpells: [spell()],
     toggledOptions: ['Aggressive Attack'],
   });
-  const { state, action } = endEffect(before, entry.endAction);
+  const { state, action } = endEffect(before, { kind: 'charm', id: 'charm:Blood Charm A' });
   assert.deepEqual(state.activeCharms, ['Blood Charm B']);
   assert.deepEqual(state.activeSpells, before.activeSpells);
   assert.deepEqual(state.toggledOptions, before.toggledOptions);
@@ -373,13 +369,14 @@ test('armOpponent: a hit makes one tgt-bound record, rounds = arms.rounds (R1)',
   assert.equal(r.targetName, 'Bob');
   assert.equal(r.roundsLeft, 3);
   assert.equal(r.roundsTotal, 3);
-  assert.equal(r.effectLabel, '2 successes');
+  assert.equal(r.effectLabel, null);
+  assert.equal(r.successes, 2);
   assert.equal(r.text, 'T');
 });
 
-test('armOpponent: one success reads "1 success"', () => {
+test('armOpponent: one success is carried as successes: 1', () => {
   const r = armOpponent({ arms: { opponent: true, rounds: 2, text: 'T' }, successes: 1, targetName: '', seq: 1 });
-  assert.equal(r.effectLabel, '1 success');
+  assert.equal(r.successes, 1);
 });
 
 test('armOpponent: a miss (0 successes) or non-opponent arms -> null', () => {
@@ -454,7 +451,8 @@ test('armOpponent perSuccess: text carries "-2 x 3 = -6 to all tests", note and 
   assert.ok(r.text.includes('NOTE.'), r.text);
   assert.ok(r.text.includes('Frighten Step 9'), r.text);
   assert.equal(r.name, 'Frighten');
-  assert.equal(r.effectLabel, '3 successes');
+  assert.equal(r.effectLabel, '-6 to all tests');
+  assert.equal(r.successes, 3);
   assert.equal(r.roundsLeft, 4);
   assert.equal(r.roundsTotal, 4);
 });

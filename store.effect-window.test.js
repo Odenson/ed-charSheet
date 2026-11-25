@@ -72,7 +72,7 @@ test('effectWindow folds spells, Aim, opponent record and toggled option from th
   assert.equal(byId['talent:Mystic Aim'].side, 'you');
   assert.equal(byId['opp:1'].side, 'tgt');
   assert.equal(byId['opp:1'].targetName, 'Bob');
-  assert.equal(byId['option:Aggressive Attack'].side, 'atk');
+  assert.equal(byId['option:Aggressive Attack'], undefined, 'single-attack options are not listed');
   assert.equal(m.targetName, 'Bob');
   assert.deepEqual(m.toggledOptions, ['Aggressive Attack']);
 });
