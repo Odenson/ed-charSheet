@@ -947,8 +947,27 @@
     },
     "Unarmed Combat": {
       "name": "Unarmed Combat",
+      "presentation": {
+        "shortEffect": "Unarmed close-combat attack"
+      },
       "action": "Standard",
-      "attribute": "Dexterity"
+      "attribute": "Dexterity",
+      "strain": 0,
+      "skillUse": {
+        "allowed": true,
+        "tier": "Novice"
+      },
+      "tier": "Novice",
+      "versus": "target's Physical Defense",
+      "summary": "Close-combat attack with your hands, feet, or another body part vs the target's Physical Defense; on a hit, make a Damage test using your Strength Step only, unless noted otherwise.",
+      "effects": [
+        {
+          "type": "note",
+          "condition": "on-success",
+          "source": "talent",
+          "summary": "Hit \u2014 follow with an unarmed Damage test (Strength Step)."
+        }
+      ]
     },
     "Waterfall Slam": {
       "name": "Waterfall Slam",
