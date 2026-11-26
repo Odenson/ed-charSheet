@@ -2732,7 +2732,6 @@ export class EdApp extends LitElement {
       case 'notes':
         return html`<ed-notes
           .model=${m}
-          .editMode=${this._editMode}
           .characterId=${this._characterId}
         ></ed-notes>`;
       default:

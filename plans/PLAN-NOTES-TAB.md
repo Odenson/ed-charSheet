@@ -169,7 +169,10 @@ layout — Phase F).
   as in ed-disciplines' `.seg`. Each view has a defined **empty state**.
 - **Notes:** free-form info-keeping (NPCs, locations, quest threads) —
   read-mode cards; edit-mode add + per-card edit/delete (edits open a modal per
-  UI-GUIDELINES §7 — Escape closes, Enter confirms). Cards show text + relative
+  UI-GUIDELINES §7 — Escape closes, Enter confirms). *Superseded 2026-11-27 by
+  [update-notes-edit](update-notes-edit/plan.md): Notes no longer depend on edit
+  mode — one square-card layout, hover ✎/✕, and Edit/Delete in the full-note
+  popup.* Cards show text + relative
   time. *Distinct from History (Decision #4).*
 - **Roll Log:** newest-first list, each roll rendered compactly from the
   structured entry (label, dice → total, `·vs D…·`, ✓/✗ outcome, karma die,
