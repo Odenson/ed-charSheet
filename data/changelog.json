@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.13.1",
+      "date": "2026-11-26",
+      "summary": "UI guide updated to describe the Notes tab as shipped.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "The UI guide's tab table now describes the Notes tab's four sub-views (Notes, History, Legend and Log) and that notes are editable outside edit mode."
+        }
+      ]
+    },
+    {
       "version": "2.13.0",
       "date": "2026-11-26",
       "summary": "Notes can be added, edited and deleted without edit mode.",

@@ -34,3 +34,7 @@ No Earthdawn rule is involved (pure UI interaction change); no rule-agent batch 
 ## 2026-11-27T21:25:00Z — asked by interrogator (relaying planner)
 **Q:** Tier-1 sign-off: Edit/Delete in the full-note popup conflicts with MODALS.md §5 D5 ("info modals: ✕ only, no footer", part of the UI-GUIDELINES §7 modal contract). Planner proposes keeping it an info modal with an Edit/Delete row at the end of the body, no ui/kit change. Sign off on a recorded D5 exception, or drop popup Edit/Delete (Tier-3 alternative)?
 **A:** Sign off on exception. Owner approves a recorded D5 exception for the Notes full-note popup (like the Roll-modal exception): Edit/Delete in a body row, ui/kit unchanged. T3 becomes Tier 1 (signed off 2026-11-27).
+
+## 2026-11-27T21:38:00Z — asked by dev-lead (post-release)
+**Q:** Deferred Tier-1 doc edit: reword the UI-GUIDELINES §4 tab-table Notes row ("Running character history / log over time") to describe the shipped four sub-views?
+**A:** Owner: "Update and release the changes in the UI guide as well." Signed off; row reworded and released.

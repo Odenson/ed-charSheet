@@ -59,3 +59,6 @@ Check each in light and dark, desktop width and ≤720px, plus touch emulation (
 10. Card ✕ → Confirm → focus on "+ Add note".
 11. Enter on the popup (not on a button) closes it; Escape closes only the top modal.
 12. History, Legend and Log sub-views behave as before; Overview fit unaffected (no Overview change).
+
+### Post-release — deferred doc edit applied
+- Owner signed off (qa-log 2026-11-27T21:38:00Z) the UI-GUIDELINES §4 Notes table row rewording; applied as proposed in Phase 5. Description-only: tab set and contents unchanged.
