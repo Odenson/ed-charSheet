@@ -101,14 +101,18 @@ export class EdNotes extends LitElement {
     .ncard { background: var(--bg-card); border-radius: 8px; position: relative; aspect-ratio: 1 / 1; overflow: hidden; }
     .ncard::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2.25rem; background: linear-gradient(rgba(0, 0, 0, 0), var(--bg-card)); pointer-events: none; }
     .nread { display: block; box-sizing: border-box; height: 100%; padding: 9px 11px; cursor: pointer; }
-    /* The card clips its children, so the keyboard ring is drawn on the card. */
+    /* The card clips its children, so the keyboard ring is drawn on the card.
+       A pointer-opened modal hands focus back with an inline outline:none
+       (kit returnFocusToTrigger); honour it here too so no ring lingers. */
     .nread:focus-visible { outline: none; }
-    .ncard:has(.nread:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .ncard:has(.nread:focus-visible:not([style*="outline: none"])) { outline: 2px solid var(--accent); outline-offset: 2px; }
     .ntext { font-size: var(--fs-body); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
     /* Icons hidden until hover / keyboard focus (Overview .info pattern);
        opacity only, so no layout shift. Always shown on touch. */
     .nicons { position: absolute; top: 4px; right: 4px; z-index: 1; display: flex; gap: 2px; background: var(--bg-card); border-radius: 6px; opacity: 0; transition: opacity 0.15s ease; }
-    .ncard:hover .nicons, .ncard:focus-within .nicons, .nicons :focus-visible { opacity: 1; }
+    /* Keyboard focus only: focus restored to the card after a pointer-opened
+       popup must not keep the icons showing once the mouse leaves. */
+    .ncard:hover .nicons, .ncard:has(:focus-visible:not([style*="outline: none"])) .nicons { opacity: 1; }
     @media (hover: none) {
       .nicons { opacity: 1; }
       .nread { padding-right: 3.5rem; }
