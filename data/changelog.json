@@ -3,7 +3,16 @@
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
     "summary": "",
-    "changes": []
+    "changes": [
+      {
+        "type": "improved",
+        "text": "Active effects now has two columns, Lasting on you and Lasting on target. Every row reads the same way: the effect name and a one-line effect (e.g. Frighten · -4 to all tests against Dick), a duration bar, and a successes pill before any spell options. Long rules text sits behind a Details toggle."
+      },
+      {
+        "type": "fixed",
+        "text": "Mystic Aim and Anticipate Blow picked in the Combat talent dropdown now roll against the vs number you entered instead of asking for it again."
+      }
+    ]
   },
   "releases": [
     {
