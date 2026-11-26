@@ -7,6 +7,21 @@
   },
   "releases": [
     {
+      "version": "2.12.0",
+      "date": "2026-11-26",
+      "summary": "Active effects now has two columns with a uniform row format, and Mystic Aim / Anticipate Blow use the Combat vs number.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Active effects now has two columns, Lasting on you and Lasting on target. Every row reads the same way: the effect name and a one-line effect (e.g. Frighten · -4 to all tests against Dick), a duration bar, and a successes pill before any spell options. Long rules text sits behind a Details toggle."
+        },
+        {
+          "type": "fixed",
+          "text": "Mystic Aim and Anticipate Blow picked in the Combat talent dropdown now roll against the vs number you entered instead of asking for it again."
+        }
+      ]
+    },
+    {
       "version": "2.11.0",
       "date": "2026-11-24",
       "summary": "Frighten now adds a target effect in Active effects (-2 per success to all tests for Rank rounds, with a Willpower end-test reminder).",

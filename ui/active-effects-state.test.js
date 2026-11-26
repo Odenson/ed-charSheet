@@ -11,9 +11,9 @@ const e = (o = {}) => ({
   pct: 50, low: false, chips: [], endable: true, endAction: { kind: 'spell', id: 'spell:Haste' }, ...o,
 });
 
-test('viewGroups columns keeps all three groups even when empty', () => {
+test('viewGroups columns keeps both groups even when empty', () => {
   const g = viewGroups([], 'columns');
-  assert.deepEqual(g.map((x) => x.side), ['atk', 'you', 'tgt']);
+  assert.deepEqual(g.map((x) => x.side), ['you', 'tgt']);
   assert.ok(g.every((x) => x.items.length === 0));
 });
 
@@ -24,21 +24,20 @@ test('viewGroups stack omits empty groups', () => {
 });
 
 test('viewGroups buckets items by side and keeps entry order', () => {
-  const list = [e({ id: 'a' }), e({ id: 'b', side: 'atk', kind: 'option' }), e({ id: 'c' })];
+  const list = [e({ id: 'a' }), e({ id: 'b', side: 'tgt', kind: 'talent' }), e({ id: 'c' })];
   const g = viewGroups(list, 'columns');
   assert.deepEqual(g.find((x) => x.side === 'you').items.map((i) => i.id), ['a', 'c']);
-  assert.deepEqual(g.find((x) => x.side === 'atk').items.map((i) => i.id), ['b']);
+  assert.deepEqual(g.find((x) => x.side === 'tgt').items.map((i) => i.id), ['b']);
   assert.ok(g.every((x) => typeof x.label === 'string'));
 });
 
 test('viewGroups tolerates undefined effects', () => {
-  assert.equal(viewGroups(undefined, 'columns').length, 3);
+  assert.equal(viewGroups(undefined, 'columns').length, 2);
   assert.deepEqual(viewGroups(undefined, 'stack'), []);
 });
 
-test('roundsPillText: counted -> "N rds"; round-free attack -> "this attack"; other round-free -> "active"', () => {
+test('roundsPillText: counted -> "N rds"; round-free -> "active"', () => {
   assert.equal(roundsPillText(e({ roundsLeft: 4 })), '4 rds');
-  assert.equal(roundsPillText(e({ side: 'atk', kind: 'option', roundsLeft: null, roundsTotal: null })), 'this attack');
   assert.equal(roundsPillText(e({ side: 'you', kind: 'situation', roundsLeft: null, roundsTotal: null })), 'active');
   assert.equal(roundsPillText(e({ side: 'you', kind: 'condition', roundsLeft: null, roundsTotal: null })), 'active');
 });

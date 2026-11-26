@@ -44,6 +44,8 @@ export class EdActiveEffects extends LitElement {
     .aebar.low > i { background: var(--amber); }
     .aeopts { display: flex; flex-wrap: wrap; gap: 4px; }
     .pickchip { font-size: var(--fs-eyebrow); color: var(--spell); background: var(--spell-bg); border-radius: 999px; padding: 1px 8px; }
+    .succchip { font-size: var(--fs-eyebrow); color: var(--karma); background: var(--karma-bg); border-radius: 999px; padding: 1px 8px; }
+    .aedetail summary { font-size: var(--fs-eyebrow); color: var(--muted); cursor: pointer; }
     .tepend { font-size: var(--fs-eyebrow); color: var(--muted); border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 8px; }
     .aerounds { flex: none; font-size: var(--fs-eyebrow); font-weight: 500; font-variant-numeric: tabular-nums; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
     .aerounds.ok { color: var(--karma); background: var(--karma-bg); }
@@ -72,10 +74,10 @@ export class EdActiveEffects extends LitElement {
       <div class="aerow">
         <span class="aemark">✦</span>
         <div class="aemid">
-          <span class="aename">${e.name}${e.targetName ? html` <span class="aefx">→ ${e.targetName}</span>` : ''}${label ? html` <span class="aefx">· ${label}</span>` : (e.side === 'tgt' && e.kind === 'spell' ? html` <span class="tepend">Effect —</span>` : '')}</span>
-          ${e.text ? html`<span class="aetext">${e.text}</span>` : ''}
+          <span class="aename">${e.name}${label ? html` <span class="aefx">· ${label}${e.targetNamed ? ` against ${e.targetName}` : ''}</span>` : (e.side === 'tgt' && e.kind === 'spell' ? html` <span class="tepend">Effect —</span>` : '')}</span>
           ${e.roundsLeft != null ? html`<div class="aebar ${e.low ? 'low' : ''}"><i style="width:${e.pct}%"></i></div>` : ''}
-          ${e.chips?.length ? html`<div class="aeopts">${e.chips.map((c) => html`<span class="pickchip">${c.label}${c.count > 1 ? ` ×${c.count}` : ''}</span>`)}</div>` : ''}
+          ${e.successes || e.chips?.length ? html`<div class="aeopts">${e.successes ? html`<span class="succchip">${e.successes} success${e.successes === 1 ? '' : 'es'}</span>` : ''}${(e.chips ?? []).map((c) => html`<span class="pickchip">${c.label}${c.count > 1 ? ` ×${c.count}` : ''}</span>`)}</div>` : ''}
+          ${e.text ? html`<details class="aedetail"><summary>Details</summary><span class="aetext">${e.text}</span></details>` : ''}
         </div>
         <span class="aerounds ${e.low ? 'low' : 'ok'}">${roundsPillText(e)}</span>
         ${e.endable ? html`<button class="aeend" type="button" aria-label=${endButtonLabel(e)} title=${endButtonLabel(e)} @click=${() => this._end(e)}>×</button>` : ''}

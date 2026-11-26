@@ -399,6 +399,7 @@ export function buildActiveSpell(spell, rank, ctx = {}) {
     discipline: spell.discipline,
     effects,
     effectLabel,
+    successes: ctx.successLevels > 0 ? ctx.successLevels : null,
     ...(chosen ? { chosen } : {}),
     roundsLeft: rounds,
     roundsTotal: rounds,
