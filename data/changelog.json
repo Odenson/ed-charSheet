@@ -2,15 +2,21 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "summary": "UI guide updated to describe the Notes tab as shipped.",
-    "changes": [
-      {
-        "type": "fixed",
-        "text": "The UI guide's tab table now describes the Notes tab's four sub-views (Notes, History, Legend and Log) and that notes are editable outside edit mode."
-      }
-    ]
+    "summary": "",
+    "changes": []
   },
   "releases": [
+    {
+      "version": "2.13.1",
+      "date": "2026-11-26",
+      "summary": "UI guide updated to describe the Notes tab as shipped.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "The UI guide's tab table now describes the Notes tab's four sub-views (Notes, History, Legend and Log) and that notes are editable outside edit mode."
+        }
+      ]
+    },
     {
       "version": "2.13.0",
       "date": "2026-11-26",
