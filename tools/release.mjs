@@ -7,8 +7,8 @@
 //   node tools/release.mjs apply --version X.Y.Z --summary "…" [--date YYYY-MM-DD]
 //       Moves `unreleased` into a new top `releases` entry, empties `unreleased`,
 //       rewrites `shipped: unreleased` to `shipped: vX.Y.Z` in plan frontmatter,
-//       and appends `· shipped vX.Y.Z` to the plans/backlog/BACKLOG.md items
-//       linked to those plans.
+//       and sets the Status of the plans/backlog/BACKLOG.md items linked to
+//       those plans to `🚀 released vX.Y.Z (<date>)`.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,34 +30,64 @@ export function planFiles(root = defaultRoot) {
   return out;
 }
 
-// Backlog items (plans/backlog/BACKLOG.md) are linked to a feature folder when
-// /new-feature ticks them: `- [x] **B-NNN — …** · … · → [plans/<slug>/](../<slug>/) (date)`.
+// Backlog items (plans/backlog/BACKLOG.md) are `### B-NNN — <title>` blocks with
+// `- **Field:** value` lines. /new-feature links an item to its feature folder on
+// the Slug line: ``- **Slug:** `<slug>` → [plans/<slug>/](../<slug>/)``. A release
+// rewrites the item's Status line to `🚀 released vX.Y.Z (<date>)`.
 const backlogFile = (root) => path.join(root, 'plans/backlog/BACKLOG.md');
-const isLinkedItem = (line, slug) => /^- \[x\] \*\*B-\d+/.test(line) && line.includes(`[plans/${slug}/]`);
+const STATUS_RE = /^- \*\*Status:\*\*/;
+const SLUG_RE = /^- \*\*Slug:\*\*/;
+
+/** Item blocks: { id, start, end (exclusive), statusLine, slugLine } as line indexes. */
+export function backlogItems(lines) {
+  const items = [];
+  let cur = null;
+  lines.forEach((line, i) => {
+    const head = line.match(/^### (B-\d+)\b/);
+    if (head || /^#{1,3} /.test(line)) {
+      if (cur) { cur.end = i; items.push(cur); cur = null; }
+      if (head) cur = { id: head[1], start: i, statusLine: -1, slugLine: -1 };
+      return;
+    }
+    if (!cur) return;
+    if (cur.statusLine < 0 && STATUS_RE.test(line)) cur.statusLine = i;
+    if (cur.slugLine < 0 && SLUG_RE.test(line)) cur.slugLine = i;
+  });
+  if (cur) { cur.end = lines.length; items.push(cur); }
+  return items;
+}
+
+const linkedTo = (lines, item, slug) => item.slugLine >= 0 && lines[item.slugLine].includes(`[plans/${slug}/]`);
+const isReleased = (lines, item) => item.statusLine >= 0 && /\breleased v\d/.test(lines[item.statusLine]);
 
 export function backlogItemsFor(slugs, root = defaultRoot) {
   const f = backlogFile(root);
   if (!fs.existsSync(f)) return [];
+  const lines = fs.readFileSync(f, 'utf8').split(/\r?\n/);
   const out = [];
-  for (const line of fs.readFileSync(f, 'utf8').split(/\r?\n/))
-    for (const slug of slugs)
-      if (isLinkedItem(line, slug) && !/· shipped v/.test(line)) out.push({ id: line.match(/B-\d+/)[0], slug });
+  for (const item of backlogItems(lines)) {
+    if (isReleased(lines, item)) continue;
+    const slug = slugs.find((s) => linkedTo(lines, item, s));
+    if (slug) out.push({ id: item.id, slug });
+  }
   return out;
 }
 
-export function markBacklogShipped(slugs, version, root = defaultRoot) {
+export function markBacklogShipped(slugs, version, date, root = defaultRoot) {
   const f = backlogFile(root);
   if (!fs.existsSync(f) || !slugs.length) return [];
   const raw = fs.readFileSync(f, 'utf8');
   const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+  const lines = raw.split(/\r?\n/);
+  const status = `- **Status:** 🚀 released v${version} (${date})`;
   const marked = [];
-  const lines = raw.split(/\r?\n/).map((line) => {
-    if (/· shipped v/.test(line)) return line;
-    const slug = slugs.find((s) => isLinkedItem(line, s));
-    if (!slug) return line;
-    marked.push(line.match(/B-\d+/)[0]);
-    return `${line} · shipped v${version}`;
-  });
+  // Bottom-up, so inserting a missing Status line never shifts an unvisited item.
+  for (const item of backlogItems(lines).reverse()) {
+    if (isReleased(lines, item) || !slugs.some((s) => linkedTo(lines, item, s))) continue;
+    if (item.statusLine >= 0) lines[item.statusLine] = status;
+    else lines.splice(item.start + 2, 0, status); // item missing its Status line
+    marked.unshift(item.id);
+  }
   if (marked.length) fs.writeFileSync(f, lines.join(eol));
   return marked;
 }
@@ -160,7 +190,7 @@ export function apply({ root = defaultRoot, version, summary, date }) {
       marked.push(p.slug);
     }
   }
-  const backlog = markBacklogShipped(marked, version, root);
+  const backlog = markBacklogShipped(marked, version, date, root);
   return { version, marked, backlog };
 }
 

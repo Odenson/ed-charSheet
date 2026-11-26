@@ -34,9 +34,14 @@ stands: no commit or push without the user's explicit permission.
 
 - `$ARGUMENTS` — the feature slug (the `plans/<slug>/` folder name), or a
   backlog id `B-NNN`. For an id, read its entry in
-  [plans/backlog/BACKLOG.md](../../plans/backlog/BACKLOG.md): a ticked item's
-  `→ [plans/<slug>/]` link gives the slug. If the item is not ticked, it has not
-  been planned — tell the owner to run `/new-feature B-NNN` first and stop.
+  [plans/backlog/BACKLOG.md](../../plans/backlog/BACKLOG.md) (a
+  `### B-NNN — <title>` block): the `→ [plans/<slug>/]` link on its
+  `- **Slug:**` line gives the slug. If the Slug line has no link, or the Status
+  is `💡 idea` or `📝 planning`, it has not been planned — tell the owner to run
+  (or finish) `/new-feature B-NNN` first and stop.
+- **Backlog item.** Whether you were given an id or a slug, the backlog item
+  whose Slug line links `[plans/<slug>/]` (if any) is this feature's item; you
+  update its `- **Status:**` line in place in Phase 0 and Phase 6.
   If empty or
   it does not resolve to a folder, list the `plans/` subfolders that contain a
   `plan.md` and ask the user which to build. Confirm the slug before proceeding.
@@ -71,7 +76,8 @@ Load the **ed-change-guardrail** skill. Read the feature folder
 
 Start `build-log.md` (or append a new run section) recording the slug, the
 alignment outcome, and the date. Set `status: building` in `plan.md`'s
-frontmatter once alignment passes (add the frontmatter if it is missing).
+frontmatter once alignment passes (add the frontmatter if it is missing), and
+set the backlog item's Status line to `- **Status:** 🔨 building (<today>)`.
 
 ## Reusing subagents (saves tokens)
 
@@ -186,9 +192,14 @@ Record what was applied and what was deferred in `build-log.md`.
 3. **Finalize the commit** (amend or add a commit for the Phase 5 doc edits;
    stage by explicit path) with a Conventional-Commits message ending with the
    attribution trailer from your session's attribution instructions.
-4. **Update plan status.** In `plan.md` frontmatter set `status: implemented` and
-   `shipped: unreleased` (the release version is filled in later), and stage it
-   in the feature commit.
+4. **Update plan and backlog status.** In `plan.md` frontmatter set
+   `status: implemented` and `shipped: unreleased` (the release version is filled
+   in later). If the feature has a backlog item, set its Status line to
+   `- **Status:** 🧪 testing (<today>)`. Stage `plan.md` and
+   `plans/backlog/BACKLOG.md` in the feature commit (the backlog file is
+   docs-only; if it also holds other uncommitted backlog edits, such as the
+   `/new-feature` status change or new `/idea` items, they go in too — note that
+   in `build-log.md`).
 5. **Push to `dev`** (never to `main`): `git push origin dev`. No PR.
 6. **Write the owner handoff into `build-log.md`:** the **GUARDRAILS.md PR
    checklist filled in with results**, any deferred Tier-1/2 doc edits, and — if

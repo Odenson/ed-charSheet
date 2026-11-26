@@ -70,29 +70,41 @@ test('apply: moves unreleased into a new top release and marks plans shipped', (
   assert.match(fs.readFileSync(path.join(root, 'plans/other/plan.md'), 'utf8'), /shipped: v1\.0\.0/);
 });
 
-test('check/apply: backlog items linked to shipped plans are marked shipped', () => {
+const item = (id, status, slugLine) => [
+  `### ${id} — Title`, '',
+  ...(status ? [`- **Status:** ${status}`] : []),
+  '- **Kind:** bug', '- **Area:** Area', slugLine, '- **Added:** 2026-11-01', '', 'blurb', '',
+];
+
+test('check/apply: backlog items linked to shipped plans get a released Status', () => {
   const root = fixture({ plans: { feat: IMPL, other: 'status: draft' } });
   fs.mkdirSync(path.join(root, 'plans/backlog'));
   const backlog = [
-    '# Feature backlog',
-    '- [x] **B-001 — Feat** · feature · Area · added 2026-11-01 · → [plans/feat/](../feat/) (2026-11-02)',
-    '  blurb',
-    '- [x] **B-002 — Other** · bug · Area · added 2026-11-01 · → [plans/other/](../other/) (2026-11-02)',
-    '- [ ] **B-003 — Open** · bug · Area · `feat` · added 2026-11-01',
-    '- [x] **B-004 — Old** · bug · Area · added 2026-10-01 · → [plans/feat/](../feat/) (2026-10-02) · shipped v1.2.3',
-    '',
+    '# Feature backlog', '',
+    '## Entry format', '', '```markdown', '### B-NNN — <title>', '', '- **Status:** 💡 idea (<date>)',
+    '- **Slug:** `<slug>` → [plans/feat/](../feat/)', '```', '',
+    '## Items', '',
+    ...item('B-001', '🧪 testing (2026-11-02)', '- **Slug:** `feat` → [plans/feat/](../feat/)'),
+    ...item('B-002', '🔨 building (2026-11-02)', '- **Slug:** `other` → [plans/other/](../other/)'),
+    ...item('B-003', '💡 idea (2026-11-01)', '- **Slug:** `feat`'),
+    ...item('B-004', '🚀 released v1.2.3 (2026-10-02)', '- **Slug:** `feat` → [plans/feat/](../feat/)'),
+    ...item('B-005', null, '- **Slug:** `feat` → [plans/feat/](../feat/)'),
   ].join('\r\n');
   const file = path.join(root, 'plans/backlog/BACKLOG.md');
   fs.writeFileSync(file, backlog);
-  assert.deepEqual(check({ root }).backlogToMarkShipped, ['B-001']);
-  const out = apply({ root, version: '1.3.0', summary: 'Sum', date: '2026-10-02' });
-  assert.deepEqual(out.backlog, ['B-001']);
-  const lines = fs.readFileSync(file, 'utf8').split('\r\n');
-  assert.match(lines[1], /\(2026-11-02\) · shipped v1\.3\.0$/);
-  assert.doesNotMatch(lines[3], /shipped/);
-  assert.doesNotMatch(lines[4], /shipped/);
-  assert.match(lines[5], /shipped v1\.2\.3$/);
-  assert.equal(lines.length, backlog.split('\r\n').length);
+  assert.deepEqual(check({ root }).backlogToMarkShipped, ['B-001', 'B-005']);
+  const out = apply({ root, version: '1.3.0', summary: 'Sum', date: '2026-11-05' });
+  assert.deepEqual(out.backlog, ['B-001', 'B-005']);
+  const text = fs.readFileSync(file, 'utf8');
+  assert.ok(!/[^\r]\n/.test(text), 'keeps CRLF line endings');
+  const statusOf = (id) => text.split(`### ${id} `)[1].split('\r\n').find((l) => l.startsWith('- **Status:**'));
+  assert.equal(statusOf('B-001'), '- **Status:** 🚀 released v1.3.0 (2026-11-05)');
+  assert.equal(statusOf('B-002'), '- **Status:** 🔨 building (2026-11-02)');
+  assert.equal(statusOf('B-003'), '- **Status:** 💡 idea (2026-11-01)');
+  assert.equal(statusOf('B-004'), '- **Status:** 🚀 released v1.2.3 (2026-10-02)');
+  assert.equal(statusOf('B-005'), '- **Status:** 🚀 released v1.3.0 (2026-11-05)');
+  assert.match(text, /```markdown\r\n### B-NNN — <title>\r\n\r\n- \*\*Status:\*\* 💡 idea \(<date>\)/, 'format example untouched');
+  assert.equal(text.split('\r\n').length, backlog.split('\r\n').length + 1); // B-005 gained a line
 });
 
 test('apply: rejects bad input and duplicate versions', () => {
