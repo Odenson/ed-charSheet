@@ -48,15 +48,28 @@ Edit `.agents/`, then `node tools/sync-agents.mjs`.
 ## Flow 0 — `/idea` (backlog capture)
 
 The owner describes something seen in the app or a feature wanted; `/idea`
-appends a short `B-NNN` entry (title, kind, area, slug, date, 2–5 sentence
-blurb) to the single growing file `plans/backlog/BACKLOG.md`. It does not
-interview, classify or plan. `/new-feature B-NNN` later uses the entry's title
-as the feature title and its slug as the `plans/<slug>/` folder (proposing one
-for older entries without a slug), reads the blurb as its opening context, and
-ticks the item (`[x]` plus a link to `plans/<slug>/`). That link lets
-`/build-feature B-NNN` and `/release-feature B-NNN` resolve the id to the slug,
-and `tools/release.mjs apply` appends `· shipped vX.Y.Z` to the backlog items
-whose plans a release ships.
+appends a short `### B-NNN — <title>` entry (one line each for status, kind,
+area, slug and date, then a 2–5 sentence blurb) to the single growing file
+`plans/backlog/BACKLOG.md`. It does not interview, classify or plan.
+`/new-feature B-NNN` later uses the entry's title as the feature title and its
+slug as the `plans/<slug>/` folder (proposing one for older entries without a
+slug), reads the blurb as its opening context, and links the Slug line to
+`plans/<slug>/`. That link lets `/build-feature B-NNN` and
+`/release-feature B-NNN` resolve the id to the slug.
+
+Each item's **Status** line tracks where it is, rewritten in place with the
+date it was set:
+
+| Status | Set by |
+|---|---|
+| `💡 idea` | `/idea` |
+| `📝 planning` → `📋 planned` | `/new-feature` (setup → report; stays `planning` while a Tier-1 ticket is `BLOCKED`) |
+| `🔨 building` → `🧪 testing` | `/build-feature` (alignment → push to `dev`; committed with the feature) |
+| `🚀 released vX.Y.Z` | `/release-feature`, via `tools/release.mjs apply` |
+| `⏸️ parked`, `❌ dropped` | the owner, by hand |
+
+The file's header is the format reference; keep the `- **Field:** value` lines
+in that shape, because the commands and `tools/release.mjs` parse them.
 
 ## Flow 1 — `/new-feature` (no code, no commits)
 
@@ -161,7 +174,7 @@ cannot carve out one feature. There are no subagents; file logic is in
 |---|---|
 | 0. Preflight | **Hard stops:** not on `dev`, dirty or ahead/behind `origin/dev`, `dev` missing `origin/main`, `npm test` red, CI red on the `dev` head, nothing unreleased, named slug not implemented + unreleased. |
 | 1. Draft + one confirmation | Proposed version (patch if every change is `fixed`, else minor; never major unprompted), summary line, every change, plans to mark shipped, **warnings** (in-flight plans, unreleased lines with no plan, plans with no changelog line), and a reminder if `tools/worker/worker.js` changed (owner redeploys the Cloudflare worker). The owner confirms, edits the version or summary, or cancels. |
-| 2. Finalize | `release.mjs apply` moves `unreleased` to a new top release, marks plans `shipped: vX.Y.Z` and appends `· shipped vX.Y.Z` to their backlog items; `npm test`; commit by explicit path; push `dev`. |
+| 2. Finalize | `release.mjs apply` moves `unreleased` to a new top release, marks plans `shipped: vX.Y.Z` and sets their backlog items' Status to `🚀 released vX.Y.Z`; `npm test`; commit by explicit path; push `dev`. |
 | 3. Release PR | PR `dev → main` with the changelog as the body and the GUARDRAILS checklist; wait for checks; **squash-merge** with the changelog entry as the commit message. |
 | 4. Sync | Merge `origin/main` into `dev`, push, verify the trees match. |
 | 5. Report | Version, PR, merge commit, plans shipped, deploy run, worker reminder. |

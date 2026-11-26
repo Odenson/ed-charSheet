@@ -18,9 +18,10 @@ dev → main"), automated. Flow reference:
 
 - `$ARGUMENTS` — an optional feature slug (`plans/<slug>/` or
   `plans/PLAN-<SLUG>.md`), or a backlog id `B-NNN`: resolve it to the slug from
-  the ticked item's `→ [plans/<slug>/]` link in
+  the `→ [plans/<slug>/]` link on the item's `- **Slug:**` line in
   [plans/backlog/BACKLOG.md](../../plans/backlog/BACKLOG.md); stop and report if
-  the item is not ticked.
+  the Slug line has no link or the item's Status is not `🧪 testing` (not yet
+  built, or already released).
   - **With a slug:** that feature is the release **headline**. Its plan must be
     `status: implemented` and `shipped: unreleased` (built, owner-tested).
   - **Without a slug:** a **full release** of everything unreleased.
@@ -83,9 +84,9 @@ fails:
 
 1. `node tools/release.mjs apply --version <X.Y.Z> --summary "<summary>"` (it moves
    `unreleased` into a new top release dated today, empties `unreleased`, sets
-   `shipped: v<X.Y.Z>` on plans that were `shipped: unreleased`, and appends
-   `· shipped v<X.Y.Z>` to the backlog items linked to those plans; its output
-   `backlog` lists them).
+   `shipped: v<X.Y.Z>` on plans that were `shipped: unreleased`, and sets the
+   Status line of the backlog items linked to those plans to
+   `🚀 released v<X.Y.Z> (<today>)`; its output `backlog` lists them).
 2. `npm test` must be green again; if not, `git checkout -- data plans` and stop.
 3. Commit by explicit path (`data/changelog.json`, each plan file whose
    `shipped:` changed, and `plans/backlog/BACKLOG.md` when `backlog` is non-empty
@@ -133,7 +134,7 @@ only with the owner's say-so.
 3. Report.
 
 Tell the owner (include the token total and estimated cost from step 1): the version, the PR URL and merge commit, the plans now marked
-`shipped: v<X.Y.Z>`, the backlog items marked shipped, any warnings they accepted, whether `dev` and `main` are in
+`shipped: v<X.Y.Z>`, the backlog items now `🚀 released v<X.Y.Z>`, any warnings they accepted, whether `dev` and `main` are in
 sync, and the production deploy run (`gh run list --branch main --limit 1`). Repeat
 the worker-redeploy reminder if it applied.
 
@@ -142,5 +143,5 @@ the worker-redeploy reminder if it applied.
 - One confirmation (Phase 1), then run through; stop immediately on any failed
   preflight, red gate, red CI or merge conflict.
 - Never merge with failing checks; never push to `main`; never force-push.
-- Only the changelog, plan `shipped:` lines, backlog `shipped` marks and the token-usage report files are written — no application code.
+- Only the changelog, plan `shipped:` lines, backlog Status lines and the token-usage report files are written — no application code.
 - Do not open the preview or test the UI: the owner has already verified it.

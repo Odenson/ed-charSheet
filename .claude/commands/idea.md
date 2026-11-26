@@ -29,9 +29,13 @@ can later seed `/new-feature`. Design, rules, tiers and tickets all belong to
 
 1. Read `plans/backlog/BACKLOG.md`. Next id = highest `B-NNN` + 1 (start at
    `B-001`), zero-padded to three digits.
-2. If an open item already covers the same idea, tell the owner and offer to
+2. If an item that is not yet released or dropped already covers the same idea, tell the owner and offer to
    add to that item's blurb instead of creating a duplicate.
-3. Append to the bottom of `## Items`, in the format the file's header shows:
+3. Append to the bottom of `## Items` a `### B-NNN — <title>` block in exactly
+   the format the file's "Entry format" section shows (one `- **Field:** value`
+   line per field, a blank line, then the blurb; a blank line before the next
+   `###`):
+   - **status** — `💡 idea (<today>)`.
    - **title** — short noun phrase usable as a `/new-feature` name.
    - **slug** — the future `plans/<slug>/` folder name: 2–4 words, lowercase
      kebab-case, built from the title's key nouns (e.g. "Optional talent

@@ -23,7 +23,12 @@ Rules and flow reference: [docs/FEATURE-WORKFLOW.md](../../docs/FEATURE-WORKFLOW
   feature is a backlog item), read that entry: its **title is the feature name**,
   its **`slug` is the folder name**, and its blurb is your opening context —
   confirm it rather than re-asking what it already says. If the id is missing or
-  already ticked, tell the owner and ask how to proceed.
+  its **Status** is anything other than `💡 idea` (already planned, in progress,
+  released, parked or dropped), tell the owner and ask how to proceed.
+- **Backlog format.** Items are `### B-NNN — <title>` blocks with
+  `- **Field:** value` lines (Status, Kind, Area, Slug, Added) and the blurb
+  below; the file's header defines the format and the Status lifecycle. Edit
+  only the lines named here, in place, keeping that shape.
 
 ## Setup
 
@@ -36,15 +41,17 @@ Rules and flow reference: [docs/FEATURE-WORKFLOW.md](../../docs/FEATURE-WORKFLOW
      2–4 word lowercase kebab-case slug from the name's key nouns (e.g.
      "Optional talent details in the add-talent modal" → `talent-details-modal`)
      and ask the owner to confirm or rename it (your first question). For a
-     backlog item, write the confirmed slug into its entry (`· slug `<slug>``
-     before `· added`).
+     backlog item, write the confirmed slug into its entry's `- **Slug:**` line
+     (add the line before `- **Added:**` if it is missing).
    - If `plans/<slug>/` already holds a `plan.md` for a different feature, tell
      the owner and ask for another slug.
 2. Create the folder `plans/<slug>/` if it does not exist. If this feature came
-   from a backlog item, tick it in `plans/backlog/BACKLOG.md` now: change its
-   `- [ ]` to `- [x]` and append `· → [plans/<slug>/](../<slug>/) (<today>)` to
-   its first line. Copy the blurb into the top of `qa-log.md` as the starting
-   context.
+   from a backlog item, update its entry in `plans/backlog/BACKLOG.md` now: set
+   its Status line to `- **Status:** 📝 planning (<today>)` and link its Slug
+   line to the folder: ``- **Slug:** `<slug>` → [plans/<slug>/](../<slug>/)``
+   (the link is how `/build-feature`, `/release-feature` and
+   `tools/release.mjs` find the feature). Copy the blurb into the top of
+   `qa-log.md` as the starting context.
 3. You maintain these files there throughout:
    - `tickets.md` — the feature decomposed into tickets (your output).
    - `qa-log.md` — every question asked and answer given, by any participant.
@@ -186,6 +193,10 @@ Summarize in chat:
 
 `plan.md` carries `status: draft` frontmatter (written by the planner); you leave
 it as `draft` — the owner moves it on by running `/build-feature`.
+
+If the feature came from a backlog item, set its Status line to
+`- **Status:** 📋 planned (<today>)` — unless a Tier-1 ticket is still
+`BLOCKED`, in which case leave it at `📝 planning` and say so in the summary.
 
 **Token report.** Run, with the `<since>` from Setup (it totals the main session
 and every subagent transcript since then):
