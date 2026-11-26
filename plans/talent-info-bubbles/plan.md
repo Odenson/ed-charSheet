@@ -1,5 +1,6 @@
 ---
-status: building
+status: implemented
+shipped: unreleased
 ---
 # Delivery Plan: Talent info bubbles (talent-info-bubbles)
 

@@ -27,3 +27,35 @@
 
 ### Disputes
 - None.
+
+### Dev Lead review (Phase 4) — commit 9fd4be2
+- Spec/acceptance: I1-I7 implemented as planned; `grants` still `string[]`, `grantItems` added beside it; `detail.notes` → `detail.effects` with no remaining reader.
+- Golden rule: the view reads model fields only (no catalog lookup in `ui/`), no new dispatch, engine untouched, nothing stored.
+- Tier: all Tier 3; styles use `--fs-*` tokens and theme vars (`h4` eyebrow style reused, `.tname`, `.lrow` existing); `tinfo` as `<button>` matches `_talentRow`.
+- Modals: second kit controller (kind `info`, layer 2100) rendered after `_modal`; bubble outside the radio `<label>`; click stops propagation.
+- Gate reported green (2608 pass). Tests unchanged vs snapshot (checked at ship).
+- **Outcome:** clean — no revision needed.
+
+### Doc sync (Phase 5)
+- design-agent (scoped): **no edits needed**; UI-GUIDELINES §4 and MODALS.md §5 (written by the dev) match the code; ARCHITECTURE.md unaffected; no `detail.notes` mention left in docs. No Tier-1/2 proposals.
+- Not applied (optional, cosmetic): add the stacked 2100 detail to the MODALS.md §5 host/layer table row; the paragraph below the table already covers it.
+
+### Ship (Phase 6)
+- Tests: `store-talent-picker-detail.test.js` identical to the tester's snapshot.
+- Gate: `npm test` 2608 pass, 0 fail. Local `dev` not behind `origin/dev`.
+- plan.md `status: implemented`, `shipped: unreleased`; B-002 and B-003 → 🧪 testing. BACKLOG.md carried the /new-feature status edits too (all B-002/B-003, this feature).
+
+### Owner handoff — GUARDRAILS.md PR checklist
+- [x] Classified every change: all Tier 3 (store view-model fields, new modal/picker content, docs).
+- [x] No Tier-1 change (no schema/version tag, no stored field, UI contract honoured via ui/kit); no Tier-2 taxonomy change.
+- [x] Data down / events up: view reads model only; no new dispatch; engine untouched and DOM-free.
+- [x] Only inputs stored: `grantItems`, picker `detail`, `detail.effects` are derived.
+- [x] Theme: new styles use `--fs-*` tokens and theme vars; `check-ui-kit` passes.
+- [x] Modals: kit controller, kind `info`, layer 2100; Escape/Enter/focus via MODALS.md contract.
+- [x] Docs updated: UI-GUIDELINES §4, MODALS.md §5, changelog `unreleased`.
+- [x] `npm test` green.
+- [ ] Manual UI verification by owner (below).
+- Deferred Tier-1/2 doc edits: none.
+
+### Manual UI verification checklist
+See plan.md "Manual verification" M1-M4 (repeated in full in the final report).
