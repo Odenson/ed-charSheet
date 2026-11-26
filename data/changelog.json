@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.13.2",
+      "date": "2026-11-26",
+      "summary": "Unarmed Combat now shows its short effect and full talent details.",
+      "changes": [
+        {
+          "type": "fixed",
+          "text": "Unarmed Combat now shows its short effect and full talent details (attack vs Physical Defense, Strength Step damage)."
+        }
+      ]
+    },
+    {
       "version": "2.13.1",
       "date": "2026-11-26",
       "summary": "UI guide updated to describe the Notes tab as shipped.",
