@@ -1,6 +1,6 @@
 ---
 description: Build a planned feature end-to-end as the Dev Lead — align to the docs and guardrails, spec, test-first, implement, review, then commit and push to dev for owner testing. No PR; /release-feature ships it.
-argument-hint: [feature slug]
+argument-hint: [feature slug | backlog id B-NNN]
 ---
 
 # /build-feature — Dev Lead build orchestrator
@@ -32,7 +32,12 @@ stands: no commit or push without the user's explicit permission.
 
 ## Inputs
 
-- `$ARGUMENTS` — the feature slug (the `plans/<slug>/` folder name). If empty or
+- `$ARGUMENTS` — the feature slug (the `plans/<slug>/` folder name), or a
+  backlog id `B-NNN`. For an id, read its entry in
+  [plans/backlog/BACKLOG.md](../../plans/backlog/BACKLOG.md): a ticked item's
+  `→ [plans/<slug>/]` link gives the slug. If the item is not ticked, it has not
+  been planned — tell the owner to run `/new-feature B-NNN` first and stop.
+  If empty or
   it does not resolve to a folder, list the `plans/` subfolders that contain a
   `plan.md` and ask the user which to build. Confirm the slug before proceeding.
 

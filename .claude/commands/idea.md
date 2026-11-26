@@ -33,6 +33,10 @@ can later seed `/new-feature`. Design, rules, tiers and tickets all belong to
    add to that item's blurb instead of creating a duplicate.
 3. Append to the bottom of `## Items`, in the format the file's header shows:
    - **title** — short noun phrase usable as a `/new-feature` name.
+   - **slug** — the future `plans/<slug>/` folder name: 2–4 words, lowercase
+     kebab-case, built from the title's key nouns (e.g. "Optional talent
+     details in the add-talent modal" → `talent-details-modal`). It must not
+     match an existing `plans/` folder or another item's slug.
    - **kind** — `bug` (something wrong now), `feature` (new capability) or
      `improvement` (make an existing thing better).
    - **area** — the tab/screen/subsystem in the owner's words (e.g. Combat tab,
@@ -42,4 +46,5 @@ can later seed `/new-feature`. Design, rules, tiers and tickets all belong to
      it matters, and any direction the owner already stated. Keep the owner's
      intent; don't invent requirements or solutions they didn't mention.
 4. Reply with the entry as written and one line: start it with
-   `/new-feature B-NNN`.
+   `/new-feature B-NNN`. Mention that the title and slug can be edited in the
+   backlog before then.
