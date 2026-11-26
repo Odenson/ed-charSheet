@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.13.0
 ---
 # Delivery Plan: Notes tab editable outside edit mode (update-notes-edit)
 

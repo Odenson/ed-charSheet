@@ -2,15 +2,21 @@
   "schema": "ed-changelog/1",
   "note": "Authored release notes — the single source of truth for the in-app changelog (see WORKFLOW.md). Because dev -> main is squash-merged, this is maintained by hand, not generated from git. Add lines to `unreleased` as you work on dev; at release, move them into a new `releases` entry with a SemVer version and date. Keep newest release first.",
   "unreleased": {
-    "summary": "Notes can be added, edited and deleted without edit mode.",
-    "changes": [
-      {
-        "type": "improved",
-        "text": "Notes can now be added, edited and deleted without edit mode: + Add note is always there, ✎/✕ appear when you hover a note (always shown on touch), and the full-note popup has Edit and Delete."
-      }
-    ]
+    "summary": "",
+    "changes": []
   },
   "releases": [
+    {
+      "version": "2.13.0",
+      "date": "2026-11-26",
+      "summary": "Notes can be added, edited and deleted without edit mode.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Notes can now be added, edited and deleted without edit mode: + Add note is always there, ✎/✕ appear when you hover a note (always shown on touch), and the full-note popup has Edit and Delete."
+        }
+      ]
+    },
     {
       "version": "2.12.0",
       "date": "2026-11-26",

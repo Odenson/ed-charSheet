@@ -47,7 +47,7 @@ Older items without one get a slug proposed by `/new-feature`.
   informational bubble on each talent, required and optional, that the user can
   click to learn more about it. Closely related to B-002, which is the same need
   in the add-optional-talent modal.
-- [x] **B-004 — Notes tab editable outside edit mode** · improvement · Notes tab · added 2026-11-27 · → [plans/update-notes-edit/](../update-notes-edit/) (2026-11-27)
+- [x] **B-004 — Notes tab editable outside edit mode** · improvement · Notes tab · added 2026-11-27 · → [plans/update-notes-edit/](../update-notes-edit/) (2026-11-27) · shipped v2.13.0
   Editing normally requires edit mode, but Notes is meant to be an exception,
   the same way History already lets you add or edit events without it. Today the
   Notes tab only lets you add or edit a note in edit mode. The owner wants the
