@@ -178,6 +178,12 @@ handle their own Enter; it and the edit-mode learn-skill picker also carry categ
 30rem scroll, "Got it") shown after a new character is created, and the "Finish
 creation?" `ed-confirm` (tone `accent`, with a warning line) rendered by ed-app.
 
+The Disciplines talent detail can also open **stacked** above a talent picker
+(talent-info-bubbles): kind `info`, layer 2100, 30rem scroll, its own controller
+(`_talentInfoCtl`) in the Disciplines shadow root. The info bubbles in the learn,
+creation-option and start-discipline modals open it; Escape, Enter, ✕ and the
+backdrop close only it, and the picker underneath keeps its state.
+
 **Footers (D5) and hint (V4).** Input and confirm modals: `[Cancel] [Primary]`,
 right-aligned, with a muted hint "Enter = OK · Esc = Cancel" ("Ctrl+Enter saves ·
 Esc = Cancel" for textarea modals; the text cannot be overridden). Read-only

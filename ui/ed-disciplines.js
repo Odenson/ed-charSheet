@@ -48,6 +48,7 @@ export class EdDisciplines extends LitElement {
     editMode: { type: Boolean },
     _sel: { state: true },
     _modal: { state: true },
+    _talentInfo: { state: true },     // picker talent whose stacked detail is open (talent-info-bubbles)
     _trainSilver: { state: true },
     _startSel: { state: true },
     _startOption: { state: true },
@@ -212,6 +213,13 @@ export class EdDisciplines extends LitElement {
     .quickhint { margin: 2px 4px 8px; line-height: 1.9; }
     .lrow { display: flex; align-items: center; gap: 4px; }
     .lrow .lopt { flex: 1; min-width: 0; }
+    .lrow > .tinfo { margin-left: 6px; }
+    .startoptrow { display: flex; gap: 8px; align-items: flex-start; }
+    .startoptrow > .tinfo, .tspacer { margin-top: 2px; }
+    .tspacer { width: 14px; flex: none; }
+    .meffh { margin: 10px 0 4px; }
+    .meffects { margin: 0; padding-left: 18px; font-size: var(--fs-small); line-height: 1.5; color: var(--fg); }
+    .meffects li + li { margin-top: 3px; }
     .linfo { font-size: var(--fs-small); color: var(--muted); line-height: 1.5; padding: 0 10px 4px; }
     .newskill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 
@@ -306,6 +314,7 @@ export class EdDisciplines extends LitElement {
     super();
     this._sel = 0;
     this._modal = null;
+    this._talentInfo = null;
     this._creationSearch = '';
     this._creationFilter = 'all';
     this._skillFilter = 'all';
@@ -327,6 +336,32 @@ export class EdDisciplines extends LitElement {
       initialFocus: () => (this._modal?.type === 'advance' || this._modal?.type === 'start-discipline' ? '.silin' : null),
       onClose: () => { this._modal = null; },
     });
+    // Two kit controllers in one shadow root; each finds its own dialog by id. This one is the
+    // talent detail stacked above a picker (talent-info-bubbles): kind `info`, layer 2100, so
+    // Escape/Enter/✕/backdrop close only it and the picker underneath keeps its state.
+    this._talentInfoCtl = new ModalController(this, { kind: 'info', onClose: () => { this._talentInfo = null; } });
+  }
+
+  // Open the stacked talent detail for a picker talent. Never picks or toggles the row it sits
+  // in, and leaves the picker's state (_modal, _startSel, _startOption, …) untouched.
+  _openTalentInfo(item, e) {
+    e.stopPropagation();
+    e.preventDefault();
+    this._talentInfo = item;
+    this._talentInfoCtl.opened(e.currentTarget);
+  }
+
+  // The Disciplines-tab info bubble for a picker talent: filled for a required Discipline
+  // talent, outlined for a Talent Option. A sibling of the pick button, never inside it.
+  _talentBubble(item, required) {
+    const status = required ? 'required Discipline talent' : 'Talent option';
+    return html`<button
+      type="button"
+      class="tinfo ${required ? 'req' : 'opt'}"
+      aria-label="${item.name} — ${status}, view details"
+      title="${item.name} — ${status}. Click for details."
+      @click=${(e) => this._openTalentInfo(item, e)}
+    >i</button>`;
   }
 
   // Open the detail modal for `entry` and hand the controller the trigger so
@@ -575,10 +610,10 @@ export class EdDisciplines extends LitElement {
     <div class="mtext mmuted">You may start with one talent from ${m.discipline}'s Novice option pool. It takes one of your talent points per Rank, like the Circle 1 talents.</div>
     <div class="hmopts">
       ${cands.map((o, i) => html`
-        <button class="lopt" ?autofocus=${i === 0} @click=${() => { this._modalCtl.close(); this._creationEdit({ kind: 'talent', discipline: m.discipline, name: o.name, rank: 1 }); }}>
+        <div class="lrow">${this._talentBubble(o, false)}<button class="lopt" ?autofocus=${i === 0} @click=${() => { this._modalCtl.close(); this._creationEdit({ kind: 'talent', discipline: m.discipline, name: o.name, rank: 1 }); }}>
           <span>${o.name}</span>
           ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
-        </button>`)}
+        </button></div>`)}
     </div>`,
     });
   }
@@ -763,7 +798,9 @@ export class EdDisciplines extends LitElement {
     });
   }
 
-  _talentModal(t) {
+  // `ctl`/`layer`: the Disciplines-tab detail uses the shared controller at 2000; a picker's
+  // bubble opens it stacked on top through _talentInfoCtl at 2100.
+  _talentModal(t, ctl = this._modalCtl, layer = 2000) {
     const dt = t.detail ?? {};
     const chips = [
       t.brief ? { c: 'effc', v: t.brief } : null,
@@ -775,10 +812,10 @@ export class EdDisciplines extends LitElement {
       dt.skillUse && dt.skillUse.allowed === false ? { v: 'No skill use' } : null,
       dt.versus ? { v: `vs ${dt.versus}` } : null,
     ].filter(Boolean);
-    return modalFrame(this._modalCtl, {
+    return modalFrame(ctl, {
       title: html`<span class="tinfo ${t.required ? 'req' : 'opt'}" aria-hidden="true">i</span>${t.name}`,
       label: t.name,
-      layer: 2000,
+      layer,
       width: '30rem',
       scroll: true,
       body: html`
@@ -786,7 +823,9 @@ export class EdDisciplines extends LitElement {
     ${dt.summary
       ? html`<div class="mtext">${dt.summary}</div>`
       : html`<div class="mtext" style="color: var(--muted)">Full details coming.</div>`}
-    ${(dt.notes ?? []).map((n) => html`<div class="mnote">${n}</div>`)}
+    ${dt.effects?.length
+      ? html`<h4 class="meffh">Effects</h4><ul class="meffects">${dt.effects.map((n) => html`<li>${n}</li>`)}</ul>`
+      : ''}
     ${t.grantSources?.length
       ? html`<div class="mnote">Rank ${t.rank} ${this._grantSign(t.rankBonus)}${Math.abs(t.rankBonus ?? 0)} by ${this._grantTitle(t.grantSources)} — absorbed into the step above.</div>`
       : ''}`,
@@ -1441,13 +1480,13 @@ export class EdDisciplines extends LitElement {
       ? html`
     <div class="mtext">${seed ? 'Learns' : 'Starting at Circle 1 learns'} every Circle 1 Discipline Talent you do not already know, at Rank 1:</div>
     <div class="cbox startgrants">
-      ${cand.grants.map((g) => html`<div class="crow"><span class="ck">${g}</span><span class="cchk">${pill(perTalent)} Legend</span></div>`)}
+      ${(cand.grantItems ?? []).map((g) => html`<div class="crow"><span class="ck tname">${this._talentBubble(g, true)}${g.name}</span><span class="cchk">${pill(perTalent)} Legend</span></div>`)}
     </div>
     ${cand.optionSlotOpen && items.length
       ? html`<div class="mtext">Optional Circle 1 Talent Option (priced like a Discipline Talent; skipping leaves the slot open):</div>
         <div class="startopts" role="radiogroup" aria-label="Circle 1 Talent Option">
-          <label class="startopt"><input type="radio" name="startopt" .checked=${option == null} @change=${() => { this._startOption = null; }} /><span>No option for now</span></label>
-          ${items.map((i) => html`<label class="startopt"><input type="radio" name="startopt" .checked=${option === i.name} @change=${() => { this._startOption = i.name; }} /><span>${i.name}${i.brief ? html` <span class="csub">${i.brief}</span>` : ''}</span></label>`)}
+          <div class="startoptrow"><span class="tspacer" aria-hidden="true"></span><label class="startopt"><input type="radio" name="startopt" .checked=${option == null} @change=${() => { this._startOption = null; }} /><span>No option for now</span></label></div>
+          ${items.map((i) => html`<div class="startoptrow">${this._talentBubble(i, false)}<label class="startopt"><input type="radio" name="startopt" .checked=${option === i.name} @change=${() => { this._startOption = i.name; }} /><span>${i.name}${i.brief ? html` <span class="csub">${i.brief}</span>` : ''}</span></label></div>`)}
         </div>`
       : html`<div class="mnote2"><span>${cand.optionSlotOpen ? 'No Circle 1 Talent Option pool is available.' : 'The Circle 1 Talent Option slot is already filled.'}</span></div>`}
     <div class="cbox">
@@ -1493,10 +1532,10 @@ export class EdDisciplines extends LitElement {
       ${m.learnable.length
         ? m.learnable.map(
             (o, i) => html`
-              <button class="lopt" ?autofocus=${i === 0} @click=${() => this._learnPick(m.discipline, o.name, m.circle)}>
+              <div class="lrow">${this._talentBubble(o, false)}<button class="lopt" ?autofocus=${i === 0} @click=${() => this._learnPick(m.discipline, o.name, m.circle)}>
                 <span>${o.name}</span>
                 ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
-              </button>
+              </button></div>
             `,
           )
         : html`<div class="mtext" style="color: var(--muted)">No eligible talents left to add at this Circle.</div>`}
@@ -1902,6 +1941,7 @@ export class EdDisciplines extends LitElement {
                             ? this._startModal(this._modal)
                             : this._talentModal(this._modal)
         : ''}
+      ${this._talentInfo ? this._talentModal(this._talentInfo, this._talentInfoCtl, 2100) : ''}
       ${this._customSkillForm()}
     `;
   }

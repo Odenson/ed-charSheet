@@ -929,7 +929,9 @@ export function persistCreationEdit(character, touched, id) {
 // The paraphrased detail the talent info modal shows (rules/talents.json `cat`). `tier` is
 // derived from the learned Circle (PLAN-TALENT-TIER-DERIVATION) — the chip shows what pricing
 // actually uses, never a stored/catalog copy. One definition for the stored talent rows and the
-// creation rows (a Rank-0 talent has no stored row but the same info modal).
+// creation rows (a Rank-0 talent has no stored row but the same info modal), and the picker
+// talents (talent-info-bubbles). `effects` lists the catalog effect summaries the modal shows
+// under its "Effects" heading.
 function talentDetail(cat, circle, legendFile) {
   return {
     summary: cat.summary || null,
@@ -937,7 +939,7 @@ function talentDetail(cat, circle, legendFile) {
     strain: cat.strain ?? null,
     tier: tierForCircle(circle, legendFile?.costs),
     skillUse: cat.skillUse || null,
-    notes: (cat.effects || []).map((e) => e.summary).filter(Boolean),
+    effects: (cat.effects || []).map((e) => e.summary).filter(Boolean),
     documented: !!cat.summary,
   };
 }
@@ -961,6 +963,20 @@ export function deriveModel(character, rules, session = {}) {
 
   // talents.json is now { schema, …, talents: { name: {…} } }.
   const talentCatalog = talentsFile.talents ?? talentsFile;
+  // One shape for every talent a Disciplines-tab picker lists (talent-info-bubbles): the
+  // catalog text the info bubble's detail modal shows. Derived only; `detail` is null when the
+  // name is not in the catalog (the modal then reads "Full details coming.").
+  const pickerTalent = (name, circle, required = false) => {
+    const cat = talentCatalog[name];
+    return {
+      name,
+      required,
+      brief: cat?.presentation?.shortEffect ?? null,
+      action: cat?.action || null,
+      attribute: cat?.attribute || null,
+      detail: cat ? talentDetail(cat, circle, legendFile) : null,
+    };
+  };
   const discByName = Object.fromEntries((disciplinesFile.disciplines ?? []).map((d) => [d.name, d]));
   const diceForStep = makeDiceForStep(steps);
   const stepByNumber = Object.fromEntries(steps.map((s) => [s.step, s])); // for the dice roller
@@ -1292,7 +1308,7 @@ export function deriveModel(character, rules, session = {}) {
     const slots = optionSlots(ref, d.talents, d.circle).map((s) => {
       if (!s.open) return s;
       const pool = learnableTalents(ref, s.circle, { costs: legendFile?.costs, knownNames });
-      return { ...s, available: pool.available, learnable: pool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })) };
+      return { ...s, available: pool.available, learnable: pool.items.map((name) => pickerTalent(name, s.circle)) };
     });
     return {
       name: d.name,
@@ -1757,8 +1773,10 @@ export function deriveModel(character, rules, session = {}) {
         ...c,
         optionPool: {
           ...c.optionPool,
-          items: c.optionPool.items.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })),
+          items: c.optionPool.items.map((name) => pickerTalent(name, 1)),
         },
+        // `grants` stays string[] (ui/ed-app.js reads it); grantItems carries the detail.
+        grantItems: c.grants.map((name) => pickerTalent(name, 1, true)),
       }))
     : [];
 
@@ -2137,7 +2155,7 @@ export function deriveModel(character, rules, session = {}) {
             ...status.talents,
             option: {
               ...status.talents.option,
-              candidates: status.talents.option.candidates.map((name) => ({ name, brief: talentCatalog[name]?.presentation?.shortEffect ?? null })),
+              candidates: status.talents.option.candidates.map((name) => pickerTalent(name, 1)),
             },
             rows: status.talents.rows.map((r) => {
               const cat = talentCatalog[r.name] ?? {};

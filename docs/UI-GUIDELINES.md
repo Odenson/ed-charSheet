@@ -85,6 +85,8 @@ Attack and Damage taken cards, tabbed combat modifiers, log as a table).*
 
 *Notes tab (update-notes-edit, 2026-11-27): like History, Notes adds, edits and deletes outside edit mode — an owner-recorded exception to edit-mode gating. "+ Add note" is always shown. Cards are always square with a bottom fade (free height, no fade at ≤720px) and a click on the card opens the full note. ✎/✕ appear on hover or keyboard focus (always shown on touch, `hover: none`) and never open the popup. The full-note popup has Edit and Delete; Edit switches to the note modal, and Delete's cancel returns to the popup.*
 
+*Talent info bubbles (talent-info-bubbles, 2026-11-27): the three Disciplines talent pickers (edit-mode Add talent option, Add Discipline / Seed Circle 1, creation "+ add option") carry the Disciplines-tab `ⓘ` bubble left of each talent name: filled on the required Circle 1 grants, outlined on Talent Options. A click (or Enter) opens the shared talent detail modal stacked above the picker and never selects the talent or toggles its radio; Escape, ✕ and backdrop close only the detail and focus returns to the bubble. The detail modal (here and on the Disciplines tab) lists the talent's effect summaries under an "Effects" heading.*
+
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,
 initiative, knockdown, karma step, carry/lift, …) shows as a **muted dashed
