@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.13.2
 ---
 # Delivery Plan: Unarmed Combat missing short effect (unarmed-short-effect)
 

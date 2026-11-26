@@ -29,7 +29,7 @@ Older items without one get a slug proposed by `/new-feature`.
 
 ## Items
 
-- [x] **B-001 — Unarmed Combat missing short effect** · bug · Warrior discipline / talents · slug `unarmed-short-effect` · added 2026-11-27 · → [plans/unarmed-short-effect/](../unarmed-short-effect/) (2026-11-27)
+- [x] **B-001 — Unarmed Combat missing short effect** · bug · Warrior discipline / talents · slug `unarmed-short-effect` · added 2026-11-27 · → [plans/unarmed-short-effect/](../unarmed-short-effect/) (2026-11-27) · shipped v2.13.2
   While testing the Fighter Test (Troll) character on dev, the Warrior's Unarmed
   Combat talent, an optional pick at Circle 1, shows no short effect. Other
   talents carry a `shortEffect`, so this one looks incomplete next to them.
