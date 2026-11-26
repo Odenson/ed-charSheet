@@ -651,7 +651,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     active-effects-state.js # pure view helpers for it: viewGroups, roundsPillText, endButtonLabel
     ed-spells.js      # Spells tab (grimoire, matrices, Weave/Cast/Effect flow, hosts the shared <ed-active-effects> window (self-cast and cast-on-Other spells; the Target effects card is removed); weapon + target-number cast modal for object-bearing spells such as Night's Edge, taxonomy v6 `object`; "Cast on nothing" wasted-cast path)
     ed-equipment.js   # Equipment tab (items grouped by function)
-    ed-notes.js       # Notes tab (running character log)
+    ed-notes.js       # Notes tab: Notes / History / Legend / Log sub-views; Notes and History add/edit/delete outside edit mode (update-notes-edit)
     ed-settings.js    # settings modal (autosave; portrait animation switches; per-character Discord die reports)
     ed-portrait-embers.js # <ed-portrait-embers> decorative canvas of rising embers over the portrait (no state, no pointer events)
     portrait-anim.js  # pure helpers for portrait animation: device pref parsing + ember particle step (tested in portrait-anim.test.js)
@@ -671,6 +671,7 @@ per finished roll, plain text (default) or a Discord embed (per-character choice
     ed-character-picker.js # character chooser modal (first-run picker, §7.5); rows incl. local drafts (unsaved-draft badge, Discard), and the "Start a new character" section (one "+" per Discipline)
     ed-new-character.js # new-character modal (name + race, kind `input`, layer 2150); also the rename modal when a draft's first Save finds its id taken (dispatches create-character / rename-draft)
     attribute-improve-state.js # pure view-state for the Overview attribute `+` / pending undo (improve-attributes)
+    notes-state.js         # pure Notes-list helpers upsertNote / removeNote (update-notes-edit); ed-notes builds the next list and dispatches ed-edit-notes, never mutates
     creation-text.js  # pure wording of creation mode: refusal-reason sentences, the "Finish creation?" confirm message and forfeit warning (no game logic; numbers come from the engine's finishPlan)
     ed-changelog.js   # changelog badge/modal
     kit/                   # the UI kit: the modal keyboard + focus contract (docs/MODALS.md)
