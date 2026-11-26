@@ -823,12 +823,15 @@ export class EdCombat extends LitElement {
   // entered defence and resolves Hit/Miss; ed-app arms the payload into session
   // `armedTalents` on a hit (nothing is armed until it HITS), so the bonus reaches
   // any later attack regardless of which surface rolled the aim.
-  _rollAim(opt) {
+  _rollAim(opt, { fromAction = false } = {}) {
     const roll = opt?.arms?.roll;
     if (roll?.step == null) return; // no derived step (rank 0) — wouldn't be offered
-    // An opponent arm (Taunt) rolls vs the Combat "vs" number already entered on
-    // the attack row — don't ask for it again in the modal.
-    const presetTarget = opt.arms.opponent ? this._targetNum() : null;
+    // The Combat "vs" number already entered on the attack row is this roll's
+    // target — don't ask for it again in the modal — when the arm talent IS the
+    // picked action (any arm talent: Mystic Aim, Anticipate Blow, Frighten,
+    // Taunt), or for an opponent arm. A chip-fired self arm (Mystic Aim chip
+    // beside a weapon attack) still asks: there "vs" is the attack's defence.
+    const presetTarget = fromAction || opt.arms.opponent ? this._targetNum() : null;
     this.dispatchEvent(
       new CustomEvent('ed-roll', {
         detail: {
@@ -868,7 +871,7 @@ export class EdCombat extends LitElement {
     // An `arms` talent picked as the action (e.g. Mystic Aim with no weapon) is a
     // precursor aim test, not an attack — route it through the same arm flow the
     // Combat-option chip uses so it arms into session consistently.
-    if (opt?.arms) { this._rollAim(opt); return; }
+    if (opt?.arms) { this._rollAim(opt, { fromAction: true }); return; }
     const target = this._targetNum();
     // "None" = a standalone talent/skill roll (free action), not a weapon attack:
     // label it by the talent/skill and do NOT arm the success-level damage bonus
