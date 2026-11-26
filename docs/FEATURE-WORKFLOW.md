@@ -13,7 +13,8 @@ Governing rules: [GUARDRAILS.md](GUARDRAILS.md) (tiers, sign-off, PR checklist),
 
 | Order | Command | Orchestrator | Purpose | Produces |
 |---|---|---|---|---|
-| 1 | `/new-feature [name]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md`, `token-usage.md` |
+| 0 | `/idea [text]` | Scribe | Capture an idea, problem or suggestion as a backlog item — no interview | one entry in `plans/backlog/BACKLOG.md` |
+| 1 | `/new-feature [name \| B-NNN]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md`, `token-usage.md` |
 | 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, push to `dev` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, commit on `dev`, `token-usage.md` |
 | 3 | `/release-feature [slug]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR, `token-usage.md` |
 
@@ -43,6 +44,14 @@ orchestrator gets it from `rule-agent` (subagents cannot spawn agents).
 
 The five `feature-*` subagents are Claude-only (no `.opencode.yml` fragment).
 Edit `.agents/`, then `node tools/sync-agents.mjs`.
+
+## Flow 0 — `/idea` (backlog capture)
+
+The owner describes something seen in the app or a feature wanted; `/idea`
+appends a short `B-NNN` entry (title, kind, area, date, 2–5 sentence blurb) to
+the single growing file `plans/backlog/BACKLOG.md`. It does not interview,
+classify or plan. `/new-feature B-NNN` later reads that blurb as its opening
+context and ticks the item (`[x]` plus a link to `plans/<slug>/`).
 
 ## Flow 1 — `/new-feature` (no code, no commits)
 
