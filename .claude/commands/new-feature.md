@@ -1,6 +1,6 @@
 ---
 description: Interrogate a new feature one question at a time, then decompose it into a reviewed delivery plan.
-argument-hint: [short feature name]
+argument-hint: [short feature name | backlog id B-NNN]
 ---
 
 # /new-feature — feature interrogation & planning orchestrator
@@ -16,16 +16,35 @@ Rules and flow reference: [docs/FEATURE-WORKFLOW.md](../../docs/FEATURE-WORKFLOW
 
 ## Inputs
 
-- `$ARGUMENTS` — an optional short feature name. If empty, ask the user for one
-  before starting.
+- `$ARGUMENTS` — an optional short feature name, or a backlog id (`B-NNN`) from
+  [plans/backlog/BACKLOG.md](../../plans/backlog/BACKLOG.md) (captured with
+  `/idea`). If empty, ask the user for one before starting.
+- **Backlog item.** If `$ARGUMENTS` is a `B-NNN` id (or the owner says the
+  feature is a backlog item), read that entry: its **title is the feature name**,
+  its **`slug` is the folder name**, and its blurb is your opening context —
+  confirm it rather than re-asking what it already says. If the id is missing or
+  already ticked, tell the owner and ask how to proceed.
 
 ## Setup
 
 0. Record the start time for the token report: `date -u +%Y-%m-%dT%H:%M:%SZ`
    (keep it as `<since>`).
-1. Derive a `<slug>` from the feature name: lowercase, kebab-case, no spaces
-   (e.g. "Bulk item export" → `bulk-item-export`).
-2. Create the folder `plans/<slug>/` if it does not exist.
+1. Settle the `<slug>`:
+   - **Backlog item with a slug** — use it as is; do not re-derive it from the
+     title.
+   - **Backlog item without a slug** (older entries) or a plain name — propose a
+     2–4 word lowercase kebab-case slug from the name's key nouns (e.g.
+     "Optional talent details in the add-talent modal" → `talent-details-modal`)
+     and ask the owner to confirm or rename it (your first question). For a
+     backlog item, write the confirmed slug into its entry (`· slug `<slug>``
+     before `· added`).
+   - If `plans/<slug>/` already holds a `plan.md` for a different feature, tell
+     the owner and ask for another slug.
+2. Create the folder `plans/<slug>/` if it does not exist. If this feature came
+   from a backlog item, tick it in `plans/backlog/BACKLOG.md` now: change its
+   `- [ ]` to `- [x]` and append `· → [plans/<slug>/](../<slug>/) (<today>)` to
+   its first line. Copy the blurb into the top of `qa-log.md` as the starting
+   context.
 3. You maintain these files there throughout:
    - `tickets.md` — the feature decomposed into tickets (your output).
    - `qa-log.md` — every question asked and answer given, by any participant.
@@ -64,6 +83,8 @@ When the interview is done, write `tickets.md`:
 
 ```markdown
 # Feature: <name> (<slug>)
+
+Backlog: B-NNN   <!-- only when the feature came from the backlog -->
 
 ## Summary
 <2-4 sentence description of the feature and the problem it solves>

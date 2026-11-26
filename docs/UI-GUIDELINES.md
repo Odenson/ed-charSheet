@@ -83,6 +83,8 @@ Attack and Damage taken cards, tabbed combat modifiers, log as a table).*
 
 *Overview Health card redesigned 2026-11-15 by owner decision ([update-health-overview plan](../plans/update-health-overview/plan.md), decisions in its qa-log). Damage and Wounds are emphasised rows with no grey backing, numbers right-aligned with the stats below (the ⚄ sits left of the Recoveries value); the gauge is Damage out of Death with a tick at Unconscious. Damage goes amber from Unconscious−10 (an owner UI choice, not a rule) and red at or past Unconscious; Wounds are red at 1+. The state chip and title carry headroom text, so colour is never the only signal. A missing Death rating shows the dashed placeholder pill instead of a gauge. The ✚ free-entry Take/Heal/Recovery-used modal was removed: damage goes in through the shared Take-damage modal, and healing only through the Recovery test.*
 
+*Notes tab (update-notes-edit, 2026-11-27): like History, Notes adds, edits and deletes outside edit mode — an owner-recorded exception to edit-mode gating. "+ Add note" is always shown. Cards are always square with a bottom fade (free height, no fade at ≤720px) and a click on the card opens the full note. ✎/✕ appear on hover or keyboard focus (always shown on touch, `hover: none`) and never open the popup. The full-note popup has Edit and Delete; Edit switches to the note modal, and Delete's cancel returns to the popup.*
+
 ## 5. Derived values are placeholder pills
 Any value the rules engine will compute (defences, armour, health ratings,
 initiative, knockdown, karma step, carry/lift, …) shows as a **muted dashed

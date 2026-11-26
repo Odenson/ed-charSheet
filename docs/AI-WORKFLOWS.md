@@ -16,7 +16,7 @@ Two tools are supported: **Claude Code** (`.claude/`) and **OpenCode**
 | Skill | `.claude/skills/ed-change-guardrail/` | on trigger | process for classifying a change |
 | Hook | `.claude/settings.json` + `tools/guardrail-hook.mjs` | deterministic, on tool use | forces the skill before first protected edit |
 | Agents | `.agents/` (source) → `.claude/agents/`, `.opencode/agent/` | when delegated to | rules lookups, design-doc sync, feature delivery |
-| Commands | `.claude/commands/` | when typed | `/new-feature`, `/build-feature`, `/release-feature` orchestrators (Claude Code only) |
+| Commands | `.claude/commands/` | when typed | `/idea` backlog capture (`plans/backlog/BACKLOG.md`); `/new-feature`, `/build-feature`, `/release-feature` orchestrators (Claude Code only) |
 
 ## Agents
 

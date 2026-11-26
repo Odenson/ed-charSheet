@@ -183,7 +183,14 @@ right-aligned, with a muted hint "Enter = OK · Esc = Cancel" ("Ctrl+Enter saves
 Esc = Cancel" for textarea modals; the text cannot be overridden). Read-only
 (`info`) modals: ✕ only, no footer, no hint. **Roll-modal exception** (owner,
 qa-log 13:40): the roll result view and the Knockdown result keep a visible
-**OK** via the `ack` option; Enter = OK closes it. Pickers: ✕ only.
+**OK** via the `ack` option; Enter = OK closes it. **Notes full-note popup
+exception** (owner, update-notes-edit qa-log 2026-11-27T21:25:00Z): the Notes
+full-note popup (`kind: 'info'`) shows **Edit** and **Delete** in a row at the end
+of its body (`.nfoot`), not a kit footer; `ui/kit/` is unchanged and Enter on the
+dialog still closes it (Enter on a button activates it). Edit closes the popup
+without restoring focus and opens the note modal with the card as its trigger;
+Delete stacks the existing `<ed-confirm>` above the popup, so Cancel/Escape
+returns to the popup. Pickers: ✕ only.
 
 ## 6. buttonCss
 

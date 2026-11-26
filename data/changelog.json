@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.13.0",
+      "date": "2026-11-26",
+      "summary": "Notes can be added, edited and deleted without edit mode.",
+      "changes": [
+        {
+          "type": "improved",
+          "text": "Notes can now be added, edited and deleted without edit mode: + Add note is always there, ✎/✕ appear when you hover a note (always shown on touch), and the full-note popup has Edit and Delete."
+        }
+      ]
+    },
+    {
       "version": "2.12.0",
       "date": "2026-11-26",
       "summary": "Active effects now has two columns with a uniform row format, and Mystic Aim / Anticipate Blow use the Combat vs number.",

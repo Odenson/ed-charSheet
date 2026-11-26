@@ -60,7 +60,7 @@ test('check: warns about in-flight plans and unreleased lines with no plan', () 
 test('apply: moves unreleased into a new top release and marks plans shipped', () => {
   const root = fixture({ plans: { feat: IMPL, other: 'status: implemented\nshipped: v1.0.0' } });
   const out = apply({ root, version: '1.3.0', summary: 'Sum', date: '2026-10-02' });
-  assert.deepEqual(out, { version: '1.3.0', marked: ['feat'] });
+  assert.deepEqual(out, { version: '1.3.0', marked: ['feat'], backlog: [] });
   const log = JSON.parse(fs.readFileSync(path.join(root, 'data/changelog.json'), 'utf8'));
   assert.equal(log.releases[0].version, '1.3.0');
   assert.equal(log.releases[0].summary, 'Sum');
@@ -68,6 +68,31 @@ test('apply: moves unreleased into a new top release and marks plans shipped', (
   assert.deepEqual(log.unreleased, { summary: '', changes: [] });
   assert.match(fs.readFileSync(path.join(root, 'plans/feat/plan.md'), 'utf8'), /shipped: v1\.3\.0/);
   assert.match(fs.readFileSync(path.join(root, 'plans/other/plan.md'), 'utf8'), /shipped: v1\.0\.0/);
+});
+
+test('check/apply: backlog items linked to shipped plans are marked shipped', () => {
+  const root = fixture({ plans: { feat: IMPL, other: 'status: draft' } });
+  fs.mkdirSync(path.join(root, 'plans/backlog'));
+  const backlog = [
+    '# Feature backlog',
+    '- [x] **B-001 — Feat** · feature · Area · added 2026-11-01 · → [plans/feat/](../feat/) (2026-11-02)',
+    '  blurb',
+    '- [x] **B-002 — Other** · bug · Area · added 2026-11-01 · → [plans/other/](../other/) (2026-11-02)',
+    '- [ ] **B-003 — Open** · bug · Area · `feat` · added 2026-11-01',
+    '- [x] **B-004 — Old** · bug · Area · added 2026-10-01 · → [plans/feat/](../feat/) (2026-10-02) · shipped v1.2.3',
+    '',
+  ].join('\r\n');
+  const file = path.join(root, 'plans/backlog/BACKLOG.md');
+  fs.writeFileSync(file, backlog);
+  assert.deepEqual(check({ root }).backlogToMarkShipped, ['B-001']);
+  const out = apply({ root, version: '1.3.0', summary: 'Sum', date: '2026-10-02' });
+  assert.deepEqual(out.backlog, ['B-001']);
+  const lines = fs.readFileSync(file, 'utf8').split('\r\n');
+  assert.match(lines[1], /\(2026-11-02\) · shipped v1\.3\.0$/);
+  assert.doesNotMatch(lines[3], /shipped/);
+  assert.doesNotMatch(lines[4], /shipped/);
+  assert.match(lines[5], /shipped v1\.2\.3$/);
+  assert.equal(lines.length, backlog.split('\r\n').length);
 });
 
 test('apply: rejects bad input and duplicate versions', () => {

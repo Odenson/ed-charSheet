@@ -6,7 +6,9 @@
 //       the owner). Git/CI/test preconditions are checked by the command.
 //   node tools/release.mjs apply --version X.Y.Z --summary "…" [--date YYYY-MM-DD]
 //       Moves `unreleased` into a new top `releases` entry, empties `unreleased`,
-//       and rewrites `shipped: unreleased` to `shipped: vX.Y.Z` in plan frontmatter.
+//       rewrites `shipped: unreleased` to `shipped: vX.Y.Z` in plan frontmatter,
+//       and appends `· shipped vX.Y.Z` to the plans/backlog/BACKLOG.md items
+//       linked to those plans.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +28,38 @@ export function planFiles(root = defaultRoot) {
       out.push({ file: path.join(dir, e.name, 'plan.md'), slug: e.name });
   }
   return out;
+}
+
+// Backlog items (plans/backlog/BACKLOG.md) are linked to a feature folder when
+// /new-feature ticks them: `- [x] **B-NNN — …** · … · → [plans/<slug>/](../<slug>/) (date)`.
+const backlogFile = (root) => path.join(root, 'plans/backlog/BACKLOG.md');
+const isLinkedItem = (line, slug) => /^- \[x\] \*\*B-\d+/.test(line) && line.includes(`[plans/${slug}/]`);
+
+export function backlogItemsFor(slugs, root = defaultRoot) {
+  const f = backlogFile(root);
+  if (!fs.existsSync(f)) return [];
+  const out = [];
+  for (const line of fs.readFileSync(f, 'utf8').split(/\r?\n/))
+    for (const slug of slugs)
+      if (isLinkedItem(line, slug) && !/· shipped v/.test(line)) out.push({ id: line.match(/B-\d+/)[0], slug });
+  return out;
+}
+
+export function markBacklogShipped(slugs, version, root = defaultRoot) {
+  const f = backlogFile(root);
+  if (!fs.existsSync(f) || !slugs.length) return [];
+  const raw = fs.readFileSync(f, 'utf8');
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+  const marked = [];
+  const lines = raw.split(/\r?\n/).map((line) => {
+    if (/· shipped v/.test(line)) return line;
+    const slug = slugs.find((s) => isLinkedItem(line, s));
+    if (!slug) return line;
+    marked.push(line.match(/B-\d+/)[0]);
+    return `${line} · shipped v${version}`;
+  });
+  if (marked.length) fs.writeFileSync(f, lines.join(eol));
+  return marked;
 }
 
 export function frontmatter(text) {
@@ -97,6 +131,7 @@ export function check({ root = defaultRoot, slug = null } = {}) {
     unreleasedSummary: log.unreleased?.summary ?? '',
     changes,
     plansToMarkShipped: unreleasedPlans.map((p) => p.slug),
+    backlogToMarkShipped: backlogItemsFor(unreleasedPlans.map((p) => p.slug), root).map((b) => b.id),
   };
 }
 
@@ -125,7 +160,8 @@ export function apply({ root = defaultRoot, version, summary, date }) {
       marked.push(p.slug);
     }
   }
-  return { version, marked };
+  const backlog = markBacklogShipped(marked, version, root);
+  return { version, marked, backlog };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

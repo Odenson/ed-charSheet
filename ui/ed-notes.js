@@ -23,9 +23,10 @@ import { legendSpentBody, legendSpentStyles } from './legend-spent-view.js';
 import { loadRollLog, setRollLogMax, clearRollLog, DEFAULT_MAX, MAX_OPTIONS } from '../store-rolllog.js';
 import './ed-confirm.js';
 import './ed-add-legend.js';
-import { ModalController } from './kit/modal-controller.js';
+import { ModalController, currentModality, returnFocusToTrigger } from './kit/modal-controller.js';
 import { modalFrame, modalCss } from './kit/modal.js';
 import { isDirty } from './kit/dirty.js';
+import { upsertNote, removeNote } from './notes-state.js';
 
 // Ids for entries the player creates. Real entries only — the virtual
 // "Starting total" row keeps its reserved '__starting_total__' id.
@@ -43,7 +44,6 @@ const SEGS = [
 export class EdNotes extends LitElement {
   static properties = {
     model: { attribute: false },
-    editMode: { type: Boolean },
     characterId: { type: String },
     _view: { state: true },
     _rolls: { state: true },
@@ -52,7 +52,7 @@ export class EdNotes extends LitElement {
     _historyModal: { state: true }, // null | { id }  (id null → new)
     _legendModal: { state: true }, // bool — the shared add-Legend form (Phase F)
     _spentModal: { state: true }, // bool — the Legend-spent breakdown (shared with Overview)
-    _expandedNote: { state: true }, // id | null — read-mode full-text popup
+    _expandedNote: { state: true }, // id | null — full-text popup
     _confirm: { state: true }, // null | { kind, id }
     _historySortAsc: { state: true }, // false = newest first (default)
   };
@@ -94,16 +94,35 @@ export class EdNotes extends LitElement {
 
     /* Notes: untimed info cards (decision #4). */
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 8px; }
-    .ncard { background: var(--bg-card); border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 8px; }
+    /* One layout in both modes (update-notes-edit): uniform square cards
+       (height = column width); overflow fades out and a click on the card face
+       (.nread) pops the full note to the front. The ✎/✕ row (.nicons) is a
+       sibling of .nread — never a button inside role="button". */
+    .ncard { background: var(--bg-card); border-radius: 8px; position: relative; aspect-ratio: 1 / 1; overflow: hidden; }
+    .ncard::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2.25rem; background: linear-gradient(rgba(0, 0, 0, 0), var(--bg-card)); pointer-events: none; }
+    .nread { display: block; box-sizing: border-box; height: 100%; padding: 9px 11px; cursor: pointer; }
+    /* The card clips its children, so the keyboard ring is drawn on the card.
+       A pointer-opened modal hands focus back with an inline outline:none
+       (kit returnFocusToTrigger); honour it here too so no ring lingers. */
+    .nread:focus-visible { outline: none; }
+    .ncard:has(.nread:focus-visible:not([style*="outline: none"])) { outline: 2px solid var(--accent); outline-offset: 2px; }
     .ntext { font-size: var(--fs-body); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
-    .nactions { display: flex; gap: 4px; justify-content: flex-end; }
+    /* Icons hidden until hover / keyboard focus (Overview .info pattern);
+       opacity only, so no layout shift. Always shown on touch. */
+    .nicons { position: absolute; top: 4px; right: 4px; z-index: 1; display: flex; gap: 2px; background: var(--bg-card); border-radius: 6px; opacity: 0; transition: opacity 0.15s ease; }
+    /* Keyboard focus only: focus restored to the card after a pointer-opened
+       popup must not keep the icons showing once the mouse leaves. */
+    .ncard:hover .nicons, .ncard:has(:focus-visible:not([style*="outline: none"])) .nicons { opacity: 1; }
+    @media (hover: none) {
+      .nicons { opacity: 1; }
+      .nread { padding-right: 3.5rem; }
+    }
     .edit, .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: var(--fs-body); line-height: 1; padding: 2px 4px; }
     .edit:hover { color: var(--accent); }
     .del:hover { color: var(--danger); }
-    /* Read mode: uniform square cards (height = column width); overflow fades
-       out and a click pops the full note to the front. */
-    .cards.read .ncard { position: relative; aspect-ratio: 1 / 1; overflow: hidden; cursor: pointer; }
-    .cards.read .ncard::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2.25rem; background: linear-gradient(rgba(0, 0, 0, 0), var(--bg-card)); pointer-events: none; }
+    /* The full-note popup's Edit/Delete row — in the body, not a kit footer
+       (MODALS.md §5 Notes full-note popup exception). */
+    .nfoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 0.9rem; }
 
     /* Log: newest-first rows (store order) — rolls plus app actions. */
     .rctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-small); color: var(--muted); }
@@ -159,8 +178,8 @@ export class EdNotes extends LitElement {
 
     @media (max-width: 720px) {
       .cards { grid-template-columns: 1fr; }
-      .cards.read .ncard { aspect-ratio: auto; }
-      .cards.read .ncard::after { display: none; }
+      .ncard { aspect-ratio: auto; }
+      .ncard::after { display: none; }
       .lrow { grid-template-columns: 4.5rem minmax(0, 1fr) auto; }
       .ldate { display: none; }
     }
@@ -196,7 +215,12 @@ export class EdNotes extends LitElement {
       onConfirm: () => this._saveHistory(),
       onClose: () => { this._historyModal = null; },
     });
-    this._expCtl = new ModalController(this, { kind: 'info', onClose: () => { this._expandedNote = null; } });
+    this._expTrigger = null; // the .nread that opened the full-note popup
+    this._focusAddAfterUpdate = null; // null | { keyboard } — focus "+ Add note" after a note delete lands
+    this._expCtl = new ModalController(this, {
+      kind: 'info',
+      onClose: () => { this._expandedNote = null; this._expTrigger = null; },
+    });
     this._spentCtl = new ModalController(this, { kind: 'info', onClose: () => { this._spentModal = false; } });
   }
 
@@ -210,6 +234,18 @@ export class EdNotes extends LitElement {
       this._loadRolls();
       this._expCtl.close({ restoreFocus: false });
       this._expandedNote = null;
+      this._expTrigger = null;
+    }
+    // Never leave the popup open on a note that no longer exists.
+    if (this._expandedNote != null && !this._notes().some((n) => n.id === this._expandedNote)) {
+      this._expCtl.close({ restoreFocus: false });
+    }
+    // After a note delete: ed-app re-derives and the new model arrives on a
+    // later update; then hand focus to "+ Add note" (ring only if keyboard).
+    if (changed.has('model') && this._focusAddAfterUpdate) {
+      const { keyboard } = this._focusAddAfterUpdate;
+      this._focusAddAfterUpdate = null;
+      returnFocusToTrigger(this.renderRoot.querySelector('.addbtn'), { openedByKeyboard: keyboard });
     }
   }
 
@@ -269,7 +305,7 @@ export class EdNotes extends LitElement {
     this.dispatchEvent(new CustomEvent('ed-edit-legend-earned', { detail: earned, bubbles: true, composed: true }));
   }
 
-  // --- Notes CRUD (edit-mode gated; untimed cards, decision #4) ---
+  // --- Notes CRUD (outside edit mode, like History; untimed cards, decision #4) ---
   _openNote(id, trigger) {
     const entry = this._notes().find((n) => n.id === id);
     this._noteSnap = { text: entry?.text ?? '' };
@@ -282,14 +318,7 @@ export class EdNotes extends LitElement {
     e?.preventDefault();
     const text = (this._noteField()?.value ?? '').trim();
     if (!text) return;
-    const list = [...this._notes()];
-    const id = this._noteModal?.id ?? null;
-    if (id == null) list.unshift({ id: uid(), text });
-    else {
-      const i = list.findIndex((n) => n.id === id);
-      if (i >= 0) list[i] = { ...list[i], text };
-    }
-    this._dispatchNotes(list);
+    this._dispatchNotes(upsertNote(this._notes(), this._noteModal?.id ?? null, text, uid));
     this._noteCtl.close({ reason: 'confirm' });
   }
 
@@ -328,7 +357,9 @@ export class EdNotes extends LitElement {
     const c = this._confirm;
     if (!c) return;
     if (c.kind === 'note') {
-      this._dispatchNotes(this._notes().filter((n) => n.id !== c.id));
+      this._dispatchNotes(removeNote(this._notes(), c.id));
+      if (this._expandedNote === c.id) this._expCtl.close({ restoreFocus: false });
+      this._focusAddAfterUpdate = { keyboard: currentModality() === 'keyboard' };
     } else if (c.kind === 'history') {
       this._dispatchHistory(this._history().filter((h) => h.id !== c.id));
     } else if (c.kind === 'legend') {
@@ -432,57 +463,71 @@ export class EdNotes extends LitElement {
     return html`
       <div class="headline">
         <span class="hbig">Notes</span>
-        ${this.editMode ? html`<button class="addbtn" @click=${(e) => this._openNote(null, e.currentTarget)}>+ Add note</button>` : ''}
+        <button class="addbtn" @click=${(e) => this._openNote(null, e.currentTarget)}>+ Add note</button>
       </div>
       ${list.length
         ? html`
-            <div class="cards ${this.editMode ? '' : 'read'}">
+            <div class="cards">
               ${list.map((n) => this._noteCard(n))}
             </div>
           `
-        : html`<div class="empty">${this.editMode
-            ? 'No notes yet — add NPCs, locations, quest threads, or table reminders.'
-            : 'No notes yet. Turn on edit mode to add some.'}</div>`}
+        : html`<div class="empty">No notes yet — add NPCs, locations, quest threads, or table reminders.</div>`}
     `;
   }
 
   _noteCard(n) {
-    if (this.editMode) {
-      return html`
-        <div class="ncard">
-          <div class="ntext">${n.text}</div>
-          <div class="nactions">
-            <button class="edit" aria-label="Edit note" title="Edit note" @click=${(e) => this._openNote(n.id, e.currentTarget)}>✎</button>
-            <button class="del" aria-label="Delete note" title="Delete note" @click=${() => this._requestConfirm('note', n.id)}>✕</button>
-          </div>
-        </div>
-      `;
-    }
-    const open = (e) => { this._expandedNote = n.id; this._expCtl.opened(e.currentTarget); };
+    const open = (e) => {
+      this._expandedNote = n.id;
+      this._expTrigger = e.currentTarget;
+      this._expCtl.opened(e.currentTarget);
+    };
+    const onKey = (e) => {
+      if (e.target !== e.currentTarget) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open(e);
+      }
+    };
     return html`
-      <div
-        class="ncard"
-        role="button"
-        tabindex="0"
-        aria-label="Read full note"
-        @click=${open}
-        @keydown=${(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            open(e);
-          }
-        }}
-      >
-        <div class="ntext">${n.text}</div>
+      <div class="ncard">
+        <div class="nread" role="button" tabindex="0" aria-label="Read full note" @click=${open} @keydown=${onKey}>
+          <div class="ntext">${n.text}</div>
+        </div>
+        <div class="nicons">
+          <button class="edit" aria-label="Edit note" title="Edit note"
+            @click=${(e) => { e.stopPropagation(); this._openNote(n.id, e.currentTarget); }}>✎</button>
+          <button class="del" aria-label="Delete note" title="Delete note"
+            @click=${(e) => { e.stopPropagation(); this._requestConfirm('note', n.id); }}>✕</button>
+        </div>
       </div>
     `;
   }
 
+  // The full-note popup: kind 'info' (Enter on the dialog closes it), with an
+  // Edit/Delete row at the end of the body — MODALS.md §5 Notes full-note popup
+  // exception; no kit footer. Delete stacks <ed-confirm> above it.
   _expandedNoteTmpl() {
     const entry = this._notes().find((n) => n.id === this._expandedNote);
     return modalFrame(this._expCtl, {
-      title: 'Note', layer: 2100, width: '30rem', body: html`<div class="ntext">${entry?.text ?? ''}</div>`,
+      title: 'Note',
+      layer: 2100,
+      width: '30rem',
+      body: html`
+        <div class="ntext">${entry?.text ?? ''}</div>
+        <div class="nfoot">
+          <button class="btn danger" @click=${() => this._requestConfirm('note', this._expandedNote)}>Delete</button>
+          <button class="btn" @click=${() => this._popupEdit()}>Edit</button>
+        </div>`,
     });
+  }
+
+  // Popup → note modal: read both before close() (onClose nulls them); the
+  // note modal then returns focus to the card's .nread.
+  _popupEdit() {
+    const id = this._expandedNote;
+    const t = this._expTrigger;
+    this._expCtl.close({ restoreFocus: false });
+    this._openNote(id, t);
   }
 
   _rollsView() {

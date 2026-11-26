@@ -13,9 +13,10 @@ Governing rules: [GUARDRAILS.md](GUARDRAILS.md) (tiers, sign-off, PR checklist),
 
 | Order | Command | Orchestrator | Purpose | Produces |
 |---|---|---|---|---|
-| 1 | `/new-feature [name]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md`, `token-usage.md` |
-| 2 | `/build-feature [slug]` | Dev Lead | Spec, test-first build, review, doc sync, push to `dev` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, commit on `dev`, `token-usage.md` |
-| 3 | `/release-feature [slug]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR, `token-usage.md` |
+| 0 | `/idea [text]` | Scribe | Capture an idea, problem or suggestion as a backlog item — no interview | one entry in `plans/backlog/BACKLOG.md` |
+| 1 | `/new-feature [name \| B-NNN]` | Interrogator | Interview the owner, classify tickets by tier, produce a reviewed plan | `tickets.md`, `qa-log.md`, `plan.md`, `review.md`, `token-usage.md` |
+| 2 | `/build-feature [slug \| B-NNN]` | Dev Lead | Spec, test-first build, review, doc sync, push to `dev` | `spec.md`, `test-plan.md`, `build-log.md`, code, tests, commit on `dev`, `token-usage.md` |
+| 3 | `/release-feature [slug \| B-NNN]` | Release Manager | After the owner has tested: finalize the changelog, release PR, squash-merge, sync `dev` | changelog entry, plans `shipped: vX.Y.Z`, merged release PR, `token-usage.md` |
 
 All artifacts live in `plans/<slug>/` (kebab-case slug), the shared context for
 every participant. The older flat `plans/PLAN-*.md` files are history.
@@ -43,6 +44,19 @@ orchestrator gets it from `rule-agent` (subagents cannot spawn agents).
 
 The five `feature-*` subagents are Claude-only (no `.opencode.yml` fragment).
 Edit `.agents/`, then `node tools/sync-agents.mjs`.
+
+## Flow 0 — `/idea` (backlog capture)
+
+The owner describes something seen in the app or a feature wanted; `/idea`
+appends a short `B-NNN` entry (title, kind, area, slug, date, 2–5 sentence
+blurb) to the single growing file `plans/backlog/BACKLOG.md`. It does not
+interview, classify or plan. `/new-feature B-NNN` later uses the entry's title
+as the feature title and its slug as the `plans/<slug>/` folder (proposing one
+for older entries without a slug), reads the blurb as its opening context, and
+ticks the item (`[x]` plus a link to `plans/<slug>/`). That link lets
+`/build-feature B-NNN` and `/release-feature B-NNN` resolve the id to the slug,
+and `tools/release.mjs apply` appends `· shipped vX.Y.Z` to the backlog items
+whose plans a release ships.
 
 ## Flow 1 — `/new-feature` (no code, no commits)
 
@@ -147,7 +161,7 @@ cannot carve out one feature. There are no subagents; file logic is in
 |---|---|
 | 0. Preflight | **Hard stops:** not on `dev`, dirty or ahead/behind `origin/dev`, `dev` missing `origin/main`, `npm test` red, CI red on the `dev` head, nothing unreleased, named slug not implemented + unreleased. |
 | 1. Draft + one confirmation | Proposed version (patch if every change is `fixed`, else minor; never major unprompted), summary line, every change, plans to mark shipped, **warnings** (in-flight plans, unreleased lines with no plan, plans with no changelog line), and a reminder if `tools/worker/worker.js` changed (owner redeploys the Cloudflare worker). The owner confirms, edits the version or summary, or cancels. |
-| 2. Finalize | `release.mjs apply` moves `unreleased` to a new top release and marks plans `shipped: vX.Y.Z`; `npm test`; commit by explicit path; push `dev`. |
+| 2. Finalize | `release.mjs apply` moves `unreleased` to a new top release, marks plans `shipped: vX.Y.Z` and appends `· shipped vX.Y.Z` to their backlog items; `npm test`; commit by explicit path; push `dev`. |
 | 3. Release PR | PR `dev → main` with the changelog as the body and the GUARDRAILS checklist; wait for checks; **squash-merge** with the changelog entry as the commit message. |
 | 4. Sync | Merge `origin/main` into `dev`, push, verify the trees match. |
 | 5. Report | Version, PR, merge commit, plans shipped, deploy run, worker reminder. |
