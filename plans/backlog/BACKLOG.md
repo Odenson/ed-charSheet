@@ -71,7 +71,7 @@ Unarmed Combat needs its short effect added.
 
 ### B-002 — Optional talent details in the add-talent modal
 
-- **Status:** 🧪 testing (2026-11-27)
+- **Status:** 🚀 released v2.14.0 (2026-11-27)
 - **Kind:** improvement
 - **Area:** Circle advancement / add optional talent
 - **Slug:** `talent-info-bubbles` → [plans/talent-info-bubbles/](../talent-info-bubbles/)
@@ -85,7 +85,7 @@ selecting it.
 
 ### B-003 — Talent info bubbles in the new-discipline modal
 
-- **Status:** 🧪 testing (2026-11-27)
+- **Status:** 🚀 released v2.14.0 (2026-11-27)
 - **Kind:** improvement
 - **Area:** Add new discipline modal
 - **Slug:** `talent-info-bubbles` → [plans/talent-info-bubbles/](../talent-info-bubbles/)

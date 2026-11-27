@@ -1,6 +1,6 @@
 ---
 status: implemented
-shipped: unreleased
+shipped: v2.14.0
 ---
 # Delivery Plan: Talent info bubbles (talent-info-bubbles)
 
