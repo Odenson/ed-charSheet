@@ -7,6 +7,17 @@
   },
   "releases": [
     {
+      "version": "2.14.0",
+      "date": "2026-11-27",
+      "summary": "Talent pickers now show an info bubble on every talent that opens its full details, picker rows show the talent's chips, and talent details list the talent's effects.",
+      "changes": [
+        {
+          "type": "added",
+          "text": "Talent pickers (Add talent option, Add Discipline / Seed Circle 1, and the creation option picker) now have an info bubble on each talent that opens its full details, and talent details list the talent's effects."
+        }
+      ]
+    },
+    {
       "version": "2.13.2",
       "date": "2026-11-26",
       "summary": "Unarmed Combat now shows its short effect and full talent details.",

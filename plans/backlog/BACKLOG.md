@@ -71,10 +71,10 @@ Unarmed Combat needs its short effect added.
 
 ### B-002 — Optional talent details in the add-talent modal
 
-- **Status:** 💡 idea (2026-11-27)
+- **Status:** 🚀 released v2.14.0 (2026-11-27)
 - **Kind:** improvement
 - **Area:** Circle advancement / add optional talent
-- **Slug:** `talent-details-modal`
+- **Slug:** `talent-info-bubbles` → [plans/talent-info-bubbles/](../talent-info-bubbles/)
 - **Added:** 2026-11-27
 
 When advancing a Circle and using Add to pick an optional talent, the modal
@@ -85,10 +85,10 @@ selecting it.
 
 ### B-003 — Talent info bubbles in the new-discipline modal
 
-- **Status:** 💡 idea (2026-11-27)
+- **Status:** 🚀 released v2.14.0 (2026-11-27)
 - **Kind:** improvement
 - **Area:** Add new discipline modal
-- **Slug:** `discipline-talent-info`
+- **Slug:** `talent-info-bubbles` → [plans/talent-info-bubbles/](../talent-info-bubbles/)
 - **Added:** 2026-11-27
 
 When adding a new discipline, the modal lists the rank 1 talents needed to
