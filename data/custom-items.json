@@ -110,6 +110,40 @@
       "presentation": {
         "shortEffect": "+1 unarmed damage"
       }
+    },
+    "Metal Guanlets": {
+      "kind": "weapon",
+      "effects": [
+        {
+          "type": "attack-modifier",
+          "operation": "add",
+          "value": 2,
+          "measure": "step",
+          "target": {
+            "domain": "attack",
+            "name": "Damage"
+          },
+          "condition": "always",
+          "source": "item",
+          "summary": "Adds +2 Damage step"
+        }
+      ],
+      "ref": {
+        "cost": 5,
+        "category": "unarmed",
+        "strMin": 7,
+        "size": 1,
+        "damageStep": 2,
+        "weight": {
+          "amount": 0.1,
+          "unit": "lb"
+        },
+        "availability": "Common",
+        "description": "A set of metal guanlets with leather lining"
+      },
+      "presentation": {
+        "shortEffect": "+2 unarmed damage"
+      }
     }
   }
 }
