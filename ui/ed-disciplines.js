@@ -153,6 +153,7 @@ export class EdDisciplines extends LitElement {
     .lpick:disabled { opacity: 0.5; cursor: not-allowed; }
     .lpick:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
     .lbrief { font-size: var(--fs-small); color: var(--muted); }
+    .lchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
     .searchin { width: 100%; font: inherit; font-size: var(--fs-body); color: var(--fg); background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin: 6px 0; box-sizing: border-box; }
     .searchin:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
     .pill { font-size: var(--fs-fine); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
@@ -613,6 +614,7 @@ export class EdDisciplines extends LitElement {
         <div class="lrow">${this._talentBubble(o, false)}<button class="lopt" ?autofocus=${i === 0} @click=${() => { this._modalCtl.close(); this._creationEdit({ kind: 'talent', discipline: m.discipline, name: o.name, rank: 1 }); }}>
           <span>${o.name}</span>
           ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
+          ${this._chipList(this._talentChips(o, { picker: true }), 'lchips')}
         </button></div>`)}
     </div>`,
     });
@@ -798,13 +800,13 @@ export class EdDisciplines extends LitElement {
     });
   }
 
-  // `ctl`/`layer`: the Disciplines-tab detail uses the shared controller at 2000; a picker's
-  // bubble opens it stacked on top through _talentInfoCtl at 2100.
-  _talentModal(t, ctl = this._modalCtl, layer = 2000) {
+  // The detail chips for a talent (modal header and picker rows). `picker` drops the brief and
+  // the Required/Optional chip, which a picker row already shows as its subtitle and context.
+  _talentChips(t, { picker = false } = {}) {
     const dt = t.detail ?? {};
-    const chips = [
-      t.brief ? { c: 'effc', v: t.brief } : null,
-      { v: t.free ? 'Free' : t.required ? 'Required' : 'Optional' },
+    return [
+      !picker && t.brief ? { c: 'effc', v: t.brief } : null,
+      picker ? null : { v: t.free ? 'Free' : t.required ? 'Required' : 'Optional' },
       t.action ? (t.actionBase != null ? { v: `${t.action} action`, c: 'changed', title: actionHoverText(t) } : { v: `${t.action} action` }) : null,
       t.attribute ? { v: t.attribute } : null,
       dt.strain ? { v: `Strain ${dt.strain}` } : null,
@@ -812,6 +814,17 @@ export class EdDisciplines extends LitElement {
       dt.skillUse && dt.skillUse.allowed === false ? { v: 'No skill use' } : null,
       dt.versus ? { v: `vs ${dt.versus}` } : null,
     ].filter(Boolean);
+  }
+
+  _chipList(chips, cls) {
+    return html`<span class=${cls}>${chips.map((c) => html`<span class="chip ${c.c ?? ''}" title=${c.title ?? nothing}>${c.v}</span>`)}</span>`;
+  }
+
+  // `ctl`/`layer`: the Disciplines-tab detail uses the shared controller at 2000; a picker's
+  // bubble opens it stacked on top through _talentInfoCtl at 2100.
+  _talentModal(t, ctl = this._modalCtl, layer = 2000) {
+    const dt = t.detail ?? {};
+    const chips = this._talentChips(t);
     return modalFrame(ctl, {
       title: html`<span class="tinfo ${t.required ? 'req' : 'opt'}" aria-hidden="true">i</span>${t.name}`,
       label: t.name,
@@ -1535,6 +1548,7 @@ export class EdDisciplines extends LitElement {
               <div class="lrow">${this._talentBubble(o, false)}<button class="lopt" ?autofocus=${i === 0} @click=${() => this._learnPick(m.discipline, o.name, m.circle)}>
                 <span>${o.name}</span>
                 ${o.brief ? html`<span class="lbrief">${o.brief}</span>` : ''}
+                ${this._chipList(this._talentChips(o, { picker: true }), 'lchips')}
               </button></div>
             `,
           )
